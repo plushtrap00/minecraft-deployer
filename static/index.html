@@ -1054,18 +1054,18 @@ function doLogin() {
   fetch('/api/auth/login', { method: 'POST', body: form })
     .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, d: d }; }); })
     .then(function(res) {
+      btn.disabled = false;
+      btn.textContent = 'Entrar';
       if (!res.ok) {
         err.textContent = res.d.detail || 'Error de autenticación';
-        btn.disabled = false;
-        btn.textContent = 'Entrar';
         return;
       }
       onLoginSuccess(res.d.token, res.d.role);
     })
     .catch(function(e) {
-      err.textContent = 'Error de red: ' + e.message;
       btn.disabled = false;
       btn.textContent = 'Entrar';
+      err.textContent = 'Error de red: ' + e.message;
     });
 }
 
