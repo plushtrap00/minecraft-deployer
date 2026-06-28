@@ -16,8 +16,10 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 .page.active{display:block;}
 .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:22px;margin-bottom:18px;}
 .card h2{font-size:.85rem;font-weight:600;margin-bottom:16px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
-input[type=text],input[type=number],select,textarea{background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:.88rem;outline:none;transition:border-color .2s;font-family:inherit;}
-input[type=text]:focus,input[type=number]:focus,select:focus,textarea:focus{border-color:var(--accent);}
+input[type=text],input[type=number],input[type=password],select,textarea{background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:9px 12px;font-size:.88rem;outline:none;transition:border-color .2s;font-family:inherit;}
+input[type=text]:focus,input[type=number]:focus,input[type=password]:focus,select:focus,textarea:focus{border-color:var(--accent);}
+input[type=password].input-error,input[type=text].input-error{border-color:var(--red);}
+input[type=password].input-ok,input[type=text].input-ok{border-color:var(--green);}
 textarea{width:100%;resize:vertical;min-height:300px;font-family:'Consolas','Monaco',monospace;font-size:.82rem;line-height:1.5;}
 button{background:var(--accent);color:#0d1117;border:none;border-radius:6px;padding:9px 16px;font-size:.88rem;font-weight:600;cursor:pointer;transition:background .2s;white-space:nowrap;}
 button:hover{background:var(--accent-hover);}
@@ -937,16 +939,23 @@ code{background:var(--bg);padding:1px 5px;border-radius:4px;color:var(--accent);
   </div>
   <div class="card">
     <h2>➕ Añadir usuario</h2>
-    <div style="display:flex;flex-direction:column;gap:12px;max-width:360px">
+    <div style="display:flex;flex-direction:column;gap:16px;max-width:360px">
       <div>
         <label class="field-label">Nombre de usuario <span class="req">*</span></label>
-        <input type="text" id="new-user-name" placeholder="nombre_usuario" style="width:100%">
+        <input type="text" id="new-user-name" placeholder="nombre_usuario" style="width:100%" maxlength="16" autocomplete="off" spellcheck="false">
+        <div id="new-user-name-err" style="font-size:.75rem;color:var(--red);margin-top:5px;min-height:14px"></div>
+        <div style="font-size:.72rem;color:var(--muted);margin-top:3px">Solo letras, números, <code>_</code> y <code>-</code> · máx. 16 caracteres</div>
       </div>
       <div>
         <label class="field-label">Contraseña <span class="req">*</span></label>
-        <input type="password" id="new-user-pass" placeholder="contraseña" style="width:100%">
+        <div style="position:relative">
+          <input type="password" id="new-user-pass" placeholder="mín. 3 caracteres" style="width:100%;padding-right:40px" autocomplete="new-password">
+          <button type="button" id="toggle-pass-vis" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;padding:4px 6px;font-size:.85rem;line-height:1" title="Mostrar/ocultar">👁</button>
+        </div>
+        <div id="new-user-pass-err" style="font-size:.75rem;color:var(--red);margin-top:5px;min-height:14px"></div>
+        <div style="font-size:.72rem;color:var(--muted);margin-top:3px">Solo caracteres estándar (sin emojis) · mín. 3 caracteres</div>
       </div>
-      <button id="add-user-btn" style="align-self:flex-start">+ Crear usuario</button>
+      <button id="add-user-btn" style="align-self:flex-start" disabled>+ Crear usuario</button>
     </div>
   </div>
 </div>
@@ -2879,10 +2888,59 @@ function deleteUser(username) {
 
 document.getElementById('btn-refresh-users').addEventListener('click', loadUsers);
 
+// Validación del formulario de nuevo usuario
+var USERNAME_RE = /^[a-zA-Z0-9_-]+$/;
+var PRINTABLE_RE = /^[\x20-\x7E]+$/;
+
+function validateNewUsername(val) {
+  if (!val) return 'El nombre de usuario es obligatorio';
+  if (val.length > 16) return 'Máximo 16 caracteres';
+  if (!USERNAME_RE.test(val)) return 'Solo se permiten letras, números, guion bajo (_) y guion (-)';
+  return '';
+}
+
+function validateNewPassword(val) {
+  if (!val) return 'La contraseña es obligatoria';
+  if (val.length < 3) return 'Mínimo 3 caracteres';
+  if (!PRINTABLE_RE.test(val)) return 'Solo se permiten caracteres estándar (sin emojis ni símbolos raros)';
+  return '';
+}
+
+function updateAddUserBtn() {
+  var nameErr = validateNewUsername(document.getElementById('new-user-name').value.trim());
+  var passErr = validateNewPassword(document.getElementById('new-user-pass').value);
+  document.getElementById('add-user-btn').disabled = !!(nameErr || passErr);
+}
+
+function setFieldState(inputEl, errEl, errMsg) {
+  inputEl.classList.toggle('input-error', !!errMsg);
+  inputEl.classList.toggle('input-ok', !errMsg && inputEl.value.length > 0);
+  errEl.textContent = errMsg;
+}
+
+document.getElementById('new-user-name').addEventListener('input', function() {
+  setFieldState(this, document.getElementById('new-user-name-err'), validateNewUsername(this.value.trim()));
+  updateAddUserBtn();
+});
+
+document.getElementById('new-user-pass').addEventListener('input', function() {
+  setFieldState(this, document.getElementById('new-user-pass-err'), validateNewPassword(this.value));
+  updateAddUserBtn();
+});
+
+document.getElementById('toggle-pass-vis').addEventListener('click', function() {
+  var inp = document.getElementById('new-user-pass');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  this.textContent = inp.type === 'password' ? '👁' : '🙈';
+});
+
 document.getElementById('add-user-btn').addEventListener('click', function() {
   var username = document.getElementById('new-user-name').value.trim();
   var password = document.getElementById('new-user-pass').value;
-  if (!username || !password) { showToast('Introduce usuario y contraseña', 'error'); return; }
+  var nameErr = validateNewUsername(username);
+  var passErr = validateNewPassword(password);
+  if (nameErr || passErr) return;
+  this.disabled = true;
   apiFetch('/api/users', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -2892,12 +2950,22 @@ document.getElementById('add-user-btn').addEventListener('click', function() {
     .then(function(res) {
       if (res.ok) {
         showToast('Usuario "' + username + '" creado', 'success');
-        document.getElementById('new-user-name').value = '';
-        document.getElementById('new-user-pass').value = '';
+        var nameInp = document.getElementById('new-user-name');
+        var passInp = document.getElementById('new-user-pass');
+        nameInp.value = ''; nameInp.className = nameInp.className.replace(/input-ok|input-error/g,'').trim();
+        passInp.value = ''; passInp.className = passInp.className.replace(/input-ok|input-error/g,'').trim();
+        document.getElementById('new-user-name-err').textContent = '';
+        document.getElementById('new-user-pass-err').textContent = '';
+        document.getElementById('add-user-btn').disabled = true;
         loadUsers();
       } else {
         showToast(res.d.detail || 'Error al crear usuario', 'error');
+        document.getElementById('add-user-btn').disabled = false;
       }
+    })
+    .catch(function() {
+      showToast('Error de red', 'error');
+      document.getElementById('add-user-btn').disabled = false;
     });
 });
 

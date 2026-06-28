@@ -6,11 +6,15 @@ Rutas:
 - POST   /api/users           → crea un usuario normal
 - DELETE /api/users/{username}→ elimina un usuario normal
 """
+import re
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from services.users import list_users, create_user, delete_user
+
+_USERNAME_RE = re.compile(r'^[a-zA-Z0-9_-]{1,16}$')
+_PRINTABLE_RE = re.compile(r'^[\x20-\x7E]+$')
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
@@ -34,10 +38,13 @@ async def get_users(request: Request):
 @router.post("", status_code=201)
 async def add_user(request: Request, body: CreateUserBody):
     _require_admin(request)
-    if not body.username.strip() or not body.password:
-        raise HTTPException(status_code=400, detail="Usuario y contraseña son requeridos")
+    username = body.username.strip()
+    if not _USERNAME_RE.match(username):
+        raise HTTPException(status_code=400, detail="Nombre de usuario inválido: solo letras, números, _ y - (máx. 16 caracteres)")
+    if len(body.password) < 3 or not _PRINTABLE_RE.match(body.password):
+        raise HTTPException(status_code=400, detail="Contraseña inválida: mínimo 3 caracteres, sin emojis ni símbolos raros")
     try:
-        user = create_user(body.username.strip(), body.password)
+        user = create_user(username, body.password)
         return JSONResponse(user, status_code=201)
     except ValueError as e:
         raise HTTPException(status_code=409, detail=str(e))
