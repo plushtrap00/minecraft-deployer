@@ -36,8 +36,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
 
-        # Dejar pasar rutas públicas y archivos estáticos (CSS/JS)
-        if path in PUBLIC_PATHS or path.startswith("/static/"):
+        # Dejar pasar rutas públicas y archivos estáticos (CSS/JS/iconos)
+        if path in PUBLIC_PATHS or path.startswith("/static/") or path.startswith("/icon/"):
             return await call_next(request)
 
         # Dejar pasar OPTIONS (preflight CORS)
@@ -63,6 +63,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
 app = FastAPI(title="Minecraft Server Deployer")
 app.add_middleware(AuthMiddleware)
 app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
+app.mount("/icon", StaticFiles(directory=Path(__file__).parent / "icon"), name="icon")
 
 app.include_router(auth_router)
 app.include_router(users_router)
