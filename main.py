@@ -11,6 +11,7 @@ import subprocess
 from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 from dotenv import load_dotenv
 
@@ -35,8 +36,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         path = request.url.path
 
-        # Dejar pasar rutas públicas
-        if path in PUBLIC_PATHS:
+        # Dejar pasar rutas públicas y archivos estáticos (CSS/JS)
+        if path in PUBLIC_PATHS or path.startswith("/static/"):
             return await call_next(request)
 
         # Dejar pasar OPTIONS (preflight CORS)
@@ -61,6 +62,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
 app = FastAPI(title="Minecraft Server Deployer")
 app.add_middleware(AuthMiddleware)
+app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
 
 app.include_router(auth_router)
 app.include_router(users_router)
