@@ -1,0 +1,30 @@
+services:
+  minecraft-deployer:
+    build:
+      context: .
+      args:
+        # Cambia aquí la versión de Java sin tocar el Dockerfile
+        JAVA_VERSION: "21"
+    ports:
+      - "8000:8000"
+      - "25565:25565"
+    volumes:
+      # Carpeta donde se guardan los modpacks (persistente entre reinicios)
+      - servers:/servers
+      # Contraseña de la app — genera el .env con: python set_password.py
+      - ./.env:/app/.env:ro
+    environment:
+      SERVERS_PATH: /servers
+    restart: unless-stopped
+
+volumes:
+  servers:
+
+# Para usar una carpeta del host en lugar del volumen Docker
+# (útil si quieres acceder a los archivos directamente desde el SO):
+#
+#   volumes:
+#     - ./servers-minecraft:/servers
+#     - ./.env:/app/.env:ro
+#
+# Y elimina el bloque "volumes: servers:" del final.
