@@ -181,6 +181,12 @@ JWT_SECRET=${JWT_SECRET}
 EOF
 ok ".env generado"
 
+# Crear users.json vacío si no existe (persistencia de usuarios normales)
+if [[ ! -f "users.json" ]]; then
+    echo "[]" > users.json
+    ok "users.json creado"
+fi
+
 # ══════════════════════════════════════════════════════════════════════════════
 # 4A. INSTALACIÓN CON DOCKER
 # ══════════════════════════════════════════════════════════════════════════════
@@ -215,6 +221,7 @@ services:
     volumes:
       - servers:/servers
       - ./.env:/app/.env:ro
+      - ./users.json:/app/users.json
     environment:
       SERVERS_PATH: /servers
     restart: unless-stopped

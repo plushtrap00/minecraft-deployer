@@ -313,6 +313,7 @@ code{background:var(--bg);padding:1px 5px;border-radius:4px;color:var(--accent);
   <button class="nav-tab" id="tab-manage">📦 Gestión de modpacks</button>
   <button class="nav-tab" id="tab-server">🖥️ Servidor</button>
   <button class="nav-tab" id="tab-players">👥 Jugadores</button>
+  <button class="nav-tab" id="tab-users" style="display:none">👤 Usuarios</button>
   <button class="nav-tab" id="btn-sysmon" style="margin-left:auto">💻 Sistema</button>
 </div>
 
@@ -927,6 +928,29 @@ code{background:var(--bg);padding:1px 5px;border-radius:4px;color:var(--accent);
   </div>
 </div>
 
+<!-- ══ USUARIOS (solo admin) ══════════════════════════════ -->
+<div class="page" id="page-users">
+  <div class="card" style="margin-top:20px">
+    <h2>👤 Usuarios del sistema <button class="btn-secondary" style="padding:4px 10px;font-size:.75rem;margin-left:8px" id="btn-refresh-users">↻ Actualizar</button></h2>
+    <div class="info-box">Como administrador puedes crear y eliminar usuarios. El administrador no puede eliminarse a sí mismo.</div>
+    <div id="users-list"><p class="empty-msg">Cargando...</p></div>
+  </div>
+  <div class="card">
+    <h2>➕ Añadir usuario</h2>
+    <div style="display:flex;flex-direction:column;gap:12px;max-width:360px">
+      <div>
+        <label class="field-label">Nombre de usuario <span class="req">*</span></label>
+        <input type="text" id="new-user-name" placeholder="nombre_usuario" style="width:100%">
+      </div>
+      <div>
+        <label class="field-label">Contraseña <span class="req">*</span></label>
+        <input type="password" id="new-user-pass" placeholder="contraseña" style="width:100%">
+      </div>
+      <button id="add-user-btn" style="align-self:flex-start">+ Crear usuario</button>
+    </div>
+  </div>
+</div>
+
 <!-- Alert / Confirm modal -->
 <div class="modal-overlay" id="dialog-overlay">
   <div class="modal" style="max-width:420px">
@@ -962,6 +986,7 @@ code{background:var(--bg);padding:1px 5px;border-radius:4px;color:var(--accent);
 
 // ── Auth / Login ──────────────────────────────────────────────────────────────
 var authToken = localStorage.getItem('mc_token') || '';
+var currentRole = localStorage.getItem('mc_role') || 'user';
 
 function authHeaders() {
   return authToken ? { 'Authorization': 'Bearer ' + authToken } : {};
@@ -979,18 +1004,29 @@ function apiFetch(url, opts) {
   });
 }
 
+function applyRoleUI() {
+  var tab = document.getElementById('tab-users');
+  tab.style.display = currentRole === 'admin' ? '' : 'none';
+}
+
 function logout() {
   localStorage.removeItem('mc_token');
+  localStorage.removeItem('mc_role');
   authToken = '';
+  currentRole = 'user';
+  applyRoleUI();
   document.getElementById('login-screen').classList.remove('hidden');
   document.getElementById('login-pass').value = '';
   document.getElementById('login-error').textContent = '';
 }
 
-function onLoginSuccess(token) {
+function onLoginSuccess(token, role) {
   authToken = token;
+  currentRole = role || 'user';
   localStorage.setItem('mc_token', token);
+  localStorage.setItem('mc_role', currentRole);
   document.getElementById('login-screen').classList.add('hidden');
+  applyRoleUI();
 }
 
 function doLogin() {
@@ -1014,7 +1050,7 @@ function doLogin() {
         btn.textContent = 'Entrar';
         return;
       }
-      onLoginSuccess(res.d.token);
+      onLoginSuccess(res.d.token, res.d.role);
     })
     .catch(function(e) {
       err.textContent = 'Error de red: ' + e.message;
@@ -1030,11 +1066,15 @@ document.getElementById('login-pass').addEventListener('keydown', function(e) {
 
 // Verificar token existente al arrancar
 (function checkExistingToken() {
-  if (!authToken) return; // sin token, mostrar login
+  if (!authToken) return;
   fetch('/api/auth/verify', { headers: authHeaders() })
-    .then(function(r) {
-      if (r.ok) {
+    .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, d: d }; }); })
+    .then(function(res) {
+      if (res.ok) {
+        currentRole = res.d.role || 'user';
+        localStorage.setItem('mc_role', currentRole);
         document.getElementById('login-screen').classList.add('hidden');
+        applyRoleUI();
       } else {
         logout();
       }
@@ -1264,7 +1304,7 @@ document.getElementById('dialog-overlay').addEventListener('click', function(e) 
 });
 
 //  Navegacin
-['deploy','manage','server','players'].forEach(function(name) {
+['deploy','manage','server','players','users'].forEach(function(name) {
   document.getElementById('tab-'+name).addEventListener('click', function() {
     document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
     document.querySelectorAll('.nav-tab').forEach(function(t){ t.classList.remove('active'); });
@@ -1272,6 +1312,7 @@ document.getElementById('dialog-overlay').addEventListener('click', function(e) 
     this.classList.add('active');
     if (name === 'manage') loadModpacks();
     if (name === 'server') { checkServerStatus(); loadFirewallStatus(); }
+    if (name === 'users') loadUsers();
   });
 });
 
@@ -2796,6 +2837,69 @@ function renderSysmon(d) {
 
   document.getElementById('sysmon-body').innerHTML = html;
 }
+
+
+// ── Gestión de usuarios (admin) ───────────────────────────────────────────────
+function loadUsers() {
+  apiFetch('/api/users')
+    .then(function(r) { return r.json(); })
+    .then(function(users) {
+      var list = document.getElementById('users-list');
+      if (!users.length) {
+        list.innerHTML = '<p class="empty-msg">No hay usuarios.</p>';
+        return;
+      }
+      list.innerHTML = users.map(function(u) {
+        var isAdmin = u.role === 'admin';
+        var badge = isAdmin
+          ? '<span style="background:rgba(88,166,255,.15);color:var(--accent);border-radius:99px;padding:2px 9px;font-size:.72rem;font-weight:700">Admin</span>'
+          : '<span style="background:rgba(63,185,80,.15);color:var(--green);border-radius:99px;padding:2px 9px;font-size:.72rem;font-weight:700">Usuario</span>';
+        var actions = isAdmin ? '' :
+          '<div class="pe-actions"><button class="btn-danger" style="padding:4px 10px;font-size:.78rem" onclick="deleteUser(\'' + escHtml(u.username) + '\')">Eliminar</button></div>';
+        return '<div class="player-entry">' +
+          '<span class="pe-name">' + escHtml(u.username) + '</span>' +
+          badge + actions +
+          '</div>';
+      }).join('');
+    })
+    .catch(function() {
+      document.getElementById('users-list').innerHTML = '<p class="empty-msg">Error cargando usuarios.</p>';
+    });
+}
+
+function deleteUser(username) {
+  if (!confirm('¿Eliminar usuario "' + username + '"?')) return;
+  apiFetch('/api/users/' + encodeURIComponent(username), { method: 'DELETE' })
+    .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, d: d }; }); })
+    .then(function(res) {
+      if (res.ok) { showToast('Usuario eliminado', 'success'); loadUsers(); }
+      else showToast(res.d.detail || 'Error al eliminar', 'error');
+    });
+}
+
+document.getElementById('btn-refresh-users').addEventListener('click', loadUsers);
+
+document.getElementById('add-user-btn').addEventListener('click', function() {
+  var username = document.getElementById('new-user-name').value.trim();
+  var password = document.getElementById('new-user-pass').value;
+  if (!username || !password) { showToast('Introduce usuario y contraseña', 'error'); return; }
+  apiFetch('/api/users', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username: username, password: password })
+  })
+    .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, d: d }; }); })
+    .then(function(res) {
+      if (res.ok) {
+        showToast('Usuario "' + username + '" creado', 'success');
+        document.getElementById('new-user-name').value = '';
+        document.getElementById('new-user-pass').value = '';
+        loadUsers();
+      } else {
+        showToast(res.d.detail || 'Error al crear usuario', 'error');
+      }
+    });
+});
 
 </script>
 

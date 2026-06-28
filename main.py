@@ -25,6 +25,7 @@ from routes.modpacks import router as modpacks_router, upload_router, firewall_r
 from routes.players import router as players_router
 from routes.server import router as server_router
 from routes.auth import router as auth_router, verify_token
+from routes.users import router as users_router
 
 # ── Middleware de autenticación ────────────────────────────────────────────────
 
@@ -47,8 +48,13 @@ class AuthMiddleware(BaseHTTPMiddleware):
         token = auth.removeprefix("Bearer ").strip()
         if not token:
             token = request.query_params.get("token", "")
-        if not token or not verify_token(token):
+
+        user_info = verify_token(token) if token else None
+        if not user_info:
             return JSONResponse({"detail": "No autorizado"}, status_code=401)
+
+        request.state.user = user_info["sub"]
+        request.state.role = user_info["role"]
 
         return await call_next(request)
 
@@ -57,6 +63,7 @@ app = FastAPI(title="Minecraft Server Deployer")
 app.add_middleware(AuthMiddleware)
 
 app.include_router(auth_router)
+app.include_router(users_router)
 app.include_router(system_router)
 app.include_router(modpacks_router)
 app.include_router(upload_router)
