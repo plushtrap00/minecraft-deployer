@@ -8,6 +8,7 @@ Rutas:
 - GET  /api/modpacks            → lista de modpacks con metadata
 """
 import shutil
+from pathlib import Path
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse, JSONResponse
 
