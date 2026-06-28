@@ -20,7 +20,7 @@ function apiFetch(url, opts) {
 
 function applyRoleUI() {
   var tab = document.getElementById('tab-users');
-  tab.style.display = currentRole === 'admin' ? '' : 'none';
+  tab.style.display = currentRole === 'admin' ? 'inline-block' : 'none';
 }
 
 function logout() {
