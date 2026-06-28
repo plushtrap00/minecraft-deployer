@@ -1,0 +1,7 @@
+#tab-users{display:none;}
+.users-form{display:flex;flex-direction:column;gap:16px;max-width:360px;}
+.pass-wrapper{position:relative;}
+.pass-wrapper input[type=password]{padding-right:40px;}
+.btn-pass-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;padding:4px 6px;font-size:.85rem;line-height:1;}
+.btn-pass-toggle:hover{color:var(--text);background:none;}
+.add-user-btn{align-self:flex-start;}

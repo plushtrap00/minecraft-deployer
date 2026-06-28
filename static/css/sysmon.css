@@ -1,0 +1,30 @@
+#sysmon-panel{position:fixed;top:60px;right:18px;width:380px;max-height:calc(100vh - 80px);overflow-y:auto;background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.5);z-index:999;display:none;flex-direction:column;}
+#sysmon-panel.open{display:flex;}
+.sysmon-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--card);z-index:1;}
+.sysmon-title{font-weight:700;font-size:.9rem;}
+.sysmon-header-right{display:flex;gap:8px;align-items:center;}
+.sysmon-updated{font-size:.7rem;color:var(--muted);}
+.sysmon-close-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem;padding:2px 4px;}
+.sysmon-close-btn:hover{color:var(--text);background:none;}
+.sysmon-body{padding:14px 16px;display:flex;flex-direction:column;gap:12px;}
+.sysmon-section{display:flex;flex-direction:column;gap:6px;}
+.sysmon-section-title{font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;}
+.sysmon-bar-row{display:flex;align-items:center;gap:8px;font-size:.8rem;}
+.sysmon-bar-label{width:80px;flex-shrink:0;color:var(--muted);font-size:.75rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sysmon-bar-wrap{flex:1;height:8px;background:rgba(255,255,255,.07);border-radius:4px;overflow:hidden;}
+.sysmon-bar-fill{height:100%;border-radius:4px;transition:width .4s;}
+.sysmon-bar-fill.ok{background:var(--green);}
+.sysmon-bar-fill.warn{background:var(--yellow);}
+.sysmon-bar-fill.bad{background:var(--red);}
+.sysmon-bar-val{width:52px;text-align:right;font-size:.78rem;flex-shrink:0;}
+.sysmon-temp-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;}
+.sysmon-temp-chip{font-size:.72rem;color:var(--muted);margin-top:4px;font-weight:600;}
+.sysmon-temp-item{display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,.04);border-radius:5px;padding:4px 8px;font-size:.78rem;}
+.sysmon-temp-deg{font-weight:700;}
+.sysmon-temp-deg.ok{color:var(--green);}
+.sysmon-temp-deg.warn{color:var(--yellow);}
+.sysmon-temp-deg.bad{color:var(--red);}
+.sysmon-proc-row{display:flex;justify-content:space-between;align-items:center;font-size:.76rem;padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+.sysmon-proc-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text);}
+.sysmon-proc-stats{display:flex;gap:10px;flex-shrink:0;color:var(--muted);}
+.sysmon-no-temps{font-size:.78rem;color:var(--muted);font-style:italic;}

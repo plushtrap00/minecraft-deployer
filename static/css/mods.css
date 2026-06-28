@@ -1,0 +1,20 @@
+.mod-upload-zone{border:2px dashed var(--border);border-radius:8px;padding:20px;text-align:center;cursor:pointer;transition:border-color .2s;position:relative;margin-bottom:12px;}
+.mod-upload-zone:hover,.mod-upload-zone.drag-over{border-color:var(--accent);background:rgba(88,166,255,.04);}
+.mod-upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.muz-icon{font-size:1.3rem;margin-bottom:4px;}
+.muz-text{font-size:.85rem;color:var(--muted);}
+.muz-link{color:var(--accent);}
+.muz-hint{font-size:.72rem;color:var(--muted);margin-top:3px;}
+
+.mod-list-item{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--border);font-size:.83rem;}
+.mod-list-item:last-child{border-bottom:none;}
+.mod-list-item:hover{background:rgba(88,166,255,.03);}
+.mod-list-item .mod-icon{font-size:1.1rem;flex-shrink:0;}
+.mod-list-item .mod-info{flex:1;min-width:0;}
+.mod-list-item .mod-display{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.mod-list-item .mod-file{font-size:.72rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:monospace;}
+.mod-list-item .mod-size{font-size:.75rem;color:var(--muted);white-space:nowrap;flex-shrink:0;}
+.mods-table-wrap{background:var(--bg);border:1px solid var(--border);border-radius:8px;overflow:hidden;max-height:600px;overflow-y:auto;}
+.mods-header{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+.mods-count{font-size:.78rem;color:var(--muted);white-space:nowrap;}
+#mods-search{margin-bottom:12px;}
