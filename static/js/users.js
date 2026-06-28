@@ -15,10 +15,10 @@ function loadUsers() {
           : '<span style="background:rgba(63,185,80,.15);color:var(--green);border-radius:99px;padding:2px 9px;font-size:.72rem;font-weight:700">Usuario</span>';
         var actions = isAdmin ? '' :
           '<div class="pe-actions"><button class="btn-danger" style="padding:4px 10px;font-size:.78rem" onclick="deleteUser(\'' + escHtml(u.username) + '\')">Eliminar</button></div>';
-        return '<div class="player-entry">' +
-          '<span class="pe-name">' + escHtml(u.username) + '</span>' +
-          badge + actions +
-          '</div>';
+        return '<div class="player-entry">'
+          + '<span class="pe-name">' + escHtml(u.username) + '</span>'
+          + badge + actions
+          + '</div>';
       }).join('');
     })
     .catch(function() {
@@ -29,10 +29,16 @@ function loadUsers() {
 function deleteUser(username) {
   if (!confirm('¿Eliminar usuario "' + username + '"?')) return;
   apiFetch('/api/users/' + encodeURIComponent(username), { method: 'DELETE' })
-    .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, d: d }; }); })
+    .then(function(r) {
+      return r.json().then(function(d) { return { ok: r.ok, d: d }; });
+    })
     .then(function(res) {
-      if (res.ok) { showToast('Usuario eliminado', 'success'); loadUsers(); }
-      else showToast(res.d.detail || 'Error al eliminar', 'error');
+      if (res.ok) {
+        showToast('Usuario eliminado', 'success');
+        loadUsers();
+      } else {
+        showToast(res.d.detail || 'Error al eliminar', 'error');
+      }
     });
 }
 
@@ -96,14 +102,18 @@ document.getElementById('add-user-btn').addEventListener('click', function() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username: username, password: password })
   })
-    .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, d: d }; }); })
+    .then(function(r) {
+      return r.json().then(function(d) { return { ok: r.ok, d: d }; });
+    })
     .then(function(res) {
       if (res.ok) {
         showToast('Usuario "' + username + '" creado', 'success');
         var nameInp = document.getElementById('new-user-name');
         var passInp = document.getElementById('new-user-pass');
-        nameInp.value = ''; nameInp.className = nameInp.className.replace(/input-ok|input-error/g,'').trim();
-        passInp.value = ''; passInp.className = passInp.className.replace(/input-ok|input-error/g,'').trim();
+        nameInp.value = '';
+        nameInp.className = nameInp.className.replace(/input-ok|input-error/g, '').trim();
+        passInp.value = '';
+        passInp.className = passInp.className.replace(/input-ok|input-error/g, '').trim();
         document.getElementById('new-user-name-err').textContent = '';
         document.getElementById('new-user-pass-err').textContent = '';
         document.getElementById('add-user-btn').disabled = true;

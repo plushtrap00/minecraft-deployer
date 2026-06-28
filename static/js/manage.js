@@ -15,8 +15,10 @@ function parseConfigText(text) {
   var lines = text.split('\n');
   lines.forEach(function(line) {
     var s = line.trim();
-    if (!s) { comments = []; return; }
-    // Section
+    if (!s) {
+      comments = [];
+      return;
+    }
     var secM = s.match(/^\[([^\]]+)\]$/);
     if (secM) {
       if (current) sections.push(current);
@@ -24,12 +26,10 @@ function parseConfigText(text) {
       comments = [];
       return;
     }
-    // Comment
     if (s.startsWith('#')) {
       comments.push(s.substring(1).trim());
       return;
     }
-    // Key = value
     var kvM = s.match(/^([\w.]+)\s*=\s*(.*)$/);
     if (kvM && current) {
       var key = kvM[1];
@@ -46,7 +46,7 @@ function parseConfigText(text) {
       else if (/^-?\d+\.\d+$/.test(val)) type = 'float';
       else if (/^-?\d+$/.test(val)) type = 'integer';
       else type = 'string';
-      current.fields.push({ key:key, value:val, type:type, desc:desc.join(' '), defVal:defVal, range:range });
+      current.fields.push({ key: key, value: val, type: type, desc: desc.join(' '), defVal: defVal, range: range });
       comments = [];
     }
   });
@@ -66,29 +66,34 @@ function renderConfigForm(sections) {
     sec.fields.forEach(function(f, fi) {
       var inputId = 'cfg_' + si + '_' + fi;
       html += '<div class="cfg-field">';
-      html += '<div class="cfg-field-header"><span class="cfg-field-key">' + f.key + '</span>'
-        + '<span class="cfg-field-type">' + f.type + '</span></div>';
+      html += '<div class="cfg-field-header">'
+        + '<span class="cfg-field-key">' + f.key + '</span>'
+        + '<span class="cfg-field-type">' + f.type + '</span>'
+        + '</div>';
       if (f.desc) html += '<div class="cfg-field-desc">' + escHtml(f.desc) + '</div>';
-      // Input by type
       if (f.type === 'boolean') {
         var on = f.value === 'true';
         html += '<div class="cfg-toggle-row">'
-          + '<div class="toggle-track' + (on ? ' on' : '') + '" id="' + inputId + '" data-si="'+si+'" data-fi="'+fi+'" data-cfgkey="'+f.key+'">'
+          + '<div class="toggle-track' + (on ? ' on' : '') + '" id="' + inputId + '"'
+          + ' data-si="' + si + '" data-fi="' + fi + '" data-cfgkey="' + f.key + '">'
           + '<div class="toggle-thumb"></div></div>'
           + '<span style="font-size:.83rem;color:var(--muted)">' + (on ? 'true' : 'false') + '</span>'
           + '</div>';
       } else if (f.type === 'list') {
-        html += '<textarea class="cfg-list-input" id="'+inputId+'" data-si="'+si+'" data-fi="'+fi+'">'
+        html += '<textarea class="cfg-list-input" id="' + inputId + '"'
+          + ' data-si="' + si + '" data-fi="' + fi + '">'
           + escHtml(f.value) + '</textarea>';
       } else {
-        html += '<input type="' + (f.type==='integer'||f.type==='float'?'number':'text')
-          + '" class="cfg-input" id="'+inputId+'" data-si="'+si+'" data-fi="'+fi+'" value="' + escHtml(f.value) + '"'
-          + (f.type==='float'?' step="any"':'') + '>';
+        html += '<input type="' + (f.type === 'integer' || f.type === 'float' ? 'number' : 'text') + '"'
+          + ' class="cfg-input" id="' + inputId + '"'
+          + ' data-si="' + si + '" data-fi="' + fi + '"'
+          + ' value="' + escHtml(f.value) + '"'
+          + (f.type === 'float' ? ' step="any"' : '') + '>';
       }
       if (f.defVal || f.range) {
         html += '<div class="cfg-field-meta">';
         if (f.defVal) html += 'Por defecto: <span>' + escHtml(f.defVal) + '</span> ';
-        if (f.range)  html += '&nbsp;·&nbsp; Rango: <span>' + escHtml(f.range) + '</span>';
+        if (f.range) html += '&nbsp;·&nbsp; Rango: <span>' + escHtml(f.range) + '</span>';
         html += '</div>';
       }
       html += '</div>';
@@ -96,13 +101,13 @@ function renderConfigForm(sections) {
     html += '</div>';
   });
   el.innerHTML = html;
-  // Toggle listeners
   el.querySelectorAll('.toggle-track[data-cfgkey]').forEach(function(track) {
     track.addEventListener('click', function() {
       this.classList.toggle('on');
       var label = this.nextElementSibling;
       if (label) label.textContent = this.classList.contains('on') ? 'true' : 'false';
-      var si = parseInt(this.dataset.si), fi = parseInt(this.dataset.fi);
+      var si = parseInt(this.dataset.si);
+      var fi = parseInt(this.dataset.fi);
       if (cfgParsed && cfgParsed[si] && cfgParsed[si].fields[fi]) {
         cfgParsed[si].fields[fi].value = this.classList.contains('on') ? 'true' : 'false';
       }
@@ -111,38 +116,31 @@ function renderConfigForm(sections) {
 }
 
 function formToRawText() {
-  // Rebuild raw text from form values, preserving comments
   if (!cfgParsed) return cfgRawText;
-  // Build a lookup of new values: section.key -> newVal
   var newVals = {};
   cfgParsed.forEach(function(sec, si) {
     sec.fields.forEach(function(f, fi) {
       var id = 'cfg_' + si + '_' + fi;
       var el = document.getElementById(id);
       if (!el) return;
-      var val;
-      if (f.type === 'boolean') {
-        val = document.getElementById(id) ? null : null; // handled via cfgParsed
-        val = f.value; // already updated by toggle listener
-      } else {
-        val = el.value;
-      }
+      var val = f.type === 'boolean' ? f.value : el.value;
       newVals[sec.name + '::' + f.key] = val;
     });
   });
-  // Rebuild line by line
   var currentSec = null;
   var lines = cfgRawText.split('\n');
   return lines.map(function(line) {
     var s = line.trim();
     var secM = s.match(/^\[([^\]]+)\]$/);
-    if (secM) { currentSec = secM[1]; return line; }
+    if (secM) {
+      currentSec = secM[1];
+      return line;
+    }
     if (s.startsWith('#') || !s) return line;
     var kvM = s.match(/^([\w.]+)\s*=\s*(.*)$/);
     if (kvM && currentSec) {
       var lookup = currentSec + '::' + kvM[1];
       if (newVals[lookup] !== undefined) {
-        // preserve indentation
         var indent = line.match(/^(\s*)/)[1];
         return indent + kvM[1] + ' = ' + newVals[lookup];
       }
@@ -160,72 +158,113 @@ function setCfgMode(mode) {
   if (mode === 'form') {
     formView.style.display = 'block';
     rawView.style.display  = 'none';
-    btnForm.classList.add('active'); btnRaw.classList.remove('active');
+    btnForm.classList.add('active');
+    btnRaw.classList.remove('active');
     if (cfgParsed) renderConfigForm(cfgParsed);
   } else {
-    // Sync form → raw before switching
     if (cfgParsed) {
       document.getElementById('config-editor').value = formToRawText();
     }
     formView.style.display = 'none';
     rawView.style.display  = 'flex';
-    btnRaw.classList.add('active'); btnForm.classList.remove('active');
+    btnRaw.classList.add('active');
+    btnForm.classList.remove('active');
     syncLines();
   }
 }
 
-document.getElementById('cfg-btn-form').addEventListener('click', function(){ setCfgMode('form'); });
-document.getElementById('cfg-btn-raw').addEventListener('click', function(){ setCfgMode('raw'); });
+document.getElementById('cfg-btn-form').addEventListener('click', function() { setCfgMode('form'); });
+document.getElementById('cfg-btn-raw').addEventListener('click', function() { setCfgMode('raw'); });
 
 
-//  Gestin de modpacks
-var currentModpack=null; var modConfigs={}; var kubejsFiles={}; var selectedConfigPath=null;
-var filteredModKeys=[]; var filteredKjsKeys=[]; var modPage=0; var kjsPage=0; var PAGE_SIZE=25;
+// -- Gestión de modpacks ------------------------------------------------------
+var currentModpack = null;
+var modConfigs = {};
+var kubejsFiles = {};
+var selectedConfigPath = null;
+var filteredModKeys = [];
+var filteredKjsKeys = [];
+var modPage = 0;
+var kjsPage = 0;
+var PAGE_SIZE = 25;
 
-document.getElementById('btn-refresh-packs').addEventListener('click',loadModpacks);
-function loadModpacks(){
-  var list=document.getElementById('modpack-list'); list.innerHTML='<p class="empty-msg">Cargando...</p>';
-  apiFetch('/api/modpacks').then(function(r){ return r.json(); }).then(function(d){ renderModpacks(d.modpacks); })
-    .catch(function(){ list.innerHTML='<p class="empty-msg" style="color:var(--red)">Error</p>'; });
+document.getElementById('btn-refresh-packs').addEventListener('click', loadModpacks);
+
+function loadModpacks() {
+  var list = document.getElementById('modpack-list');
+  list.innerHTML = '<p class="empty-msg">Cargando...</p>';
+  apiFetch('/api/modpacks')
+    .then(function(r) { return r.json(); })
+    .then(function(d) { renderModpacks(d.modpacks); })
+    .catch(function() {
+      list.innerHTML = '<p class="empty-msg" style="color:var(--red)">Error</p>';
+    });
 }
-function renderModpacks(packs){
-  var list=document.getElementById('modpack-list');
-  if (!packs||!packs.length){ list.innerHTML='<p class="empty-msg">No hay modpacks en ~/servers-minecraft</p>'; return; }
-  list.innerHTML='';
-  packs.forEach(function(p){
-    var badges='';
-    if (p.has_server_properties) badges+='<span class="badge badge-props">server.properties</span> ';
-    if (p.has_config) badges+='<span class="badge badge-config">config/</span> ';
-    if (p.has_kubejs) badges+='<span class="badge badge-kjs">KubeJS</span> ';
-    if (!p.start_script) badges+='<span class="badge" style="background:rgba(248,81,73,.15);color:var(--red)">⚠ sin script arranque</span>';
-    if (p.mc_version) badges+=' <span class="badge" style="background:rgba(88,166,255,.1);color:var(--accent)">MC '+p.mc_version+'</span>';
-    if (p.modloader) badges+=' <span class="badge" style="background:rgba(210,153,34,.1);color:var(--yellow)">'+p.modloader+'</span>';
-    var el=document.createElement('div'); el.className='modpack-card'; el.dataset.name=p.name;
-    el.innerHTML='<span style="font-size:1.4rem">🗂️</span><div style="flex:1"><div style="font-weight:600">'+p.name+'</div>'
-      +'<div style="margin-top:3px">'+badges+'</div></div>'
-      +'<button class="btn-secondary" style="font-size:.78rem;padding:5px 10px">Gestionar →</button>';
-    el.querySelector('button').addEventListener('click',function(e){ e.stopPropagation(); selectModpack(p.name); });
-    el.addEventListener('click',function(){ selectModpack(p.name); });
+
+function renderModpacks(packs) {
+  var list = document.getElementById('modpack-list');
+  if (!packs || !packs.length) {
+    list.innerHTML = '<p class="empty-msg">No hay modpacks en ~/servers-minecraft</p>';
+    return;
+  }
+  list.innerHTML = '';
+  packs.forEach(function(p) {
+    var badges = '';
+    if (p.has_server_properties) badges += '<span class="badge badge-props">server.properties</span> ';
+    if (p.has_config) badges += '<span class="badge badge-config">config/</span> ';
+    if (p.has_kubejs) badges += '<span class="badge badge-kjs">KubeJS</span> ';
+    if (!p.start_script) {
+      badges += '<span class="badge" style="background:rgba(248,81,73,.15);color:var(--red)">⚠ sin script arranque</span>';
+    }
+    if (p.mc_version) {
+      badges += ' <span class="badge" style="background:rgba(88,166,255,.1);color:var(--accent)">MC ' + p.mc_version + '</span>';
+    }
+    if (p.modloader) {
+      badges += ' <span class="badge" style="background:rgba(210,153,34,.1);color:var(--yellow)">' + p.modloader + '</span>';
+    }
+    var el = document.createElement('div');
+    el.className = 'modpack-card';
+    el.dataset.name = p.name;
+    el.innerHTML = '<span style="font-size:1.4rem">🗂️</span>'
+      + '<div style="flex:1">'
+      + '<div style="font-weight:600">' + p.name + '</div>'
+      + '<div style="margin-top:3px">' + badges + '</div>'
+      + '</div>'
+      + '<button class="btn-secondary" style="font-size:.78rem;padding:5px 10px">Gestionar →</button>';
+    el.querySelector('button').addEventListener('click', function(e) {
+      e.stopPropagation();
+      selectModpack(p.name);
+    });
+    el.addEventListener('click', function() { selectModpack(p.name); });
     list.appendChild(el);
   });
 }
-function selectModpack(name){
-  currentModpack=name;
-  document.querySelectorAll('.modpack-card').forEach(function(c){ c.classList.toggle('selected',c.dataset.name===name); });
-  document.getElementById('mgmt-title').textContent=name;
+
+function selectModpack(name) {
+  currentModpack = name;
+  document.querySelectorAll('.modpack-card').forEach(function(c) {
+    c.classList.toggle('selected', c.dataset.name === name);
+  });
+  document.getElementById('mgmt-title').textContent = name;
   document.getElementById('mgmt-panel').classList.add('show');
   activateMgmtTab('props');
-  loadServerProps(); loadModConfigs(); loadKubejs(); loadWorlds();
+  loadServerProps();
+  loadModConfigs();
+  loadKubejs();
+  loadWorlds();
 }
-['props','configs','kubejs','logs','mods'].forEach(function(name){
-  document.getElementById('mtab-'+name).addEventListener('click',function(){ activateMgmtTab(name); });
+
+['props', 'configs', 'kubejs', 'logs', 'mods'].forEach(function(name) {
+  document.getElementById('mtab-' + name).addEventListener('click', function() {
+    activateMgmtTab(name);
+  });
 });
-function activateMgmtTab(name){
-  document.querySelectorAll('.mgmt-tab').forEach(function(t){ t.classList.remove('active'); });
-  document.querySelectorAll('.mgmt-content').forEach(function(c){ c.classList.remove('active'); });
-  document.getElementById('mtab-'+name).classList.add('active');
-  document.getElementById('mgmt-'+name).classList.add('active');
-  // Trigger load for tabs that need it on activation
+
+function activateMgmtTab(name) {
+  document.querySelectorAll('.mgmt-tab').forEach(function(t) { t.classList.remove('active'); });
+  document.querySelectorAll('.mgmt-content').forEach(function(c) { c.classList.remove('active'); });
+  document.getElementById('mtab-' + name).classList.add('active');
+  document.getElementById('mgmt-' + name).classList.add('active');
   if (name === 'mods') { loadModsList(); loadModpackVersion(); }
   if (name === 'logs') loadLogList();
   if (name === 'configs') loadModConfigs();
@@ -234,12 +273,15 @@ function activateMgmtTab(name){
 }
 
 
-// -- server.properties form --------------------------------------------------
-var KNOWN_KEYS = ['motd','server-port','max-players','online-mode','white-list','enforce-whitelist',
-  'level-name','level-seed','level-type','gamemode','difficulty','hardcore','generate-structures','allow-nether',
-  'pvp','spawn-monsters','spawn-animals','spawn-npcs','allow-flight','spawn-protection',
-  'view-distance','simulation-distance','network-compression-threshold','max-tick-time','rate-limit',
-  'enable-rcon','rcon.port','rcon.password','enable-query','query.port','broadcast-rcon-to-ops'];
+// -- server.properties form ---------------------------------------------------
+var KNOWN_KEYS = [
+  'motd', 'server-port', 'max-players', 'online-mode', 'white-list', 'enforce-whitelist',
+  'level-name', 'level-seed', 'level-type', 'gamemode', 'difficulty', 'hardcore',
+  'generate-structures', 'allow-nether', 'pvp', 'spawn-monsters', 'spawn-animals',
+  'spawn-npcs', 'allow-flight', 'spawn-protection', 'view-distance', 'simulation-distance',
+  'network-compression-threshold', 'max-tick-time', 'rate-limit', 'enable-rcon',
+  'rcon.port', 'rcon.password', 'enable-query', 'query.port', 'broadcast-rcon-to-ops'
+];
 
 function parseProps(text) {
   var props = {};
@@ -248,17 +290,16 @@ function parseProps(text) {
     if (!line || line.startsWith('#')) return;
     var eq = line.indexOf('=');
     if (eq === -1) return;
-    props[line.substring(0,eq).trim()] = line.substring(eq+1).trim();
+    props[line.substring(0, eq).trim()] = line.substring(eq + 1).trim();
   });
   return props;
 }
 
 function serializeProps(props) {
-  return Object.keys(props).map(function(k){ return k+'='+props[k]; }).join('\n');
+  return Object.keys(props).map(function(k) { return k + '=' + props[k]; }).join('\n');
 }
 
 function propsToForm(props) {
-  // Set known fields
   document.querySelectorAll('.prop-input').forEach(function(el) {
     var key = el.dataset.key;
     var val = props[key];
@@ -267,15 +308,12 @@ function propsToForm(props) {
       el.value = val;
     }
   });
-  // Set toggles
   document.querySelectorAll('.toggle-track[data-key]').forEach(function(track) {
     var key = track.dataset.key;
     var val = props[key];
     if (val === undefined) return;
-    var on = val === 'true';
-    track.classList.toggle('on', on);
+    track.classList.toggle('on', val === 'true');
   });
-  // Unknown props -> raw editor
   var unknown = {};
   Object.keys(props).forEach(function(k) {
     if (KNOWN_KEYS.indexOf(k) === -1) unknown[k] = props[k];
@@ -285,19 +323,16 @@ function propsToForm(props) {
 
 function formToProps(originalText) {
   var props = parseProps(originalText);
-  // Read known fields from form
   document.querySelectorAll('.prop-input').forEach(function(el) {
     var key = el.dataset.key;
     if (!key) return;
     props[key] = el.value;
   });
-  // Read toggles
   document.querySelectorAll('.toggle-track[data-key]').forEach(function(track) {
     var key = track.dataset.key;
     if (!key) return;
     props[key] = track.classList.contains('on') ? 'true' : 'false';
   });
-  // Merge raw editor
   var rawText = document.getElementById('props-raw-editor').value;
   var rawProps = parseProps(rawText);
   Object.assign(props, rawProps);
@@ -305,7 +340,6 @@ function formToProps(originalText) {
 }
 
 function buildPropsText(props, originalText) {
-  // Preserve comments and order from original, update values
   var lines = originalText.split('\n');
   var updated = {};
   var result = lines.map(function(line) {
@@ -313,16 +347,15 @@ function buildPropsText(props, originalText) {
     if (!trimmed || trimmed.startsWith('#')) return line;
     var eq = trimmed.indexOf('=');
     if (eq === -1) return line;
-    var key = trimmed.substring(0,eq).trim();
+    var key = trimmed.substring(0, eq).trim();
     if (props[key] !== undefined) {
       updated[key] = true;
       return key + '=' + props[key];
     }
     return line;
   });
-  // Append any new keys not in original
   Object.keys(props).forEach(function(k) {
-    if (!updated[k]) result.push(k+'='+props[k]);
+    if (!updated[k]) result.push(k + '=' + props[k]);
   });
   return result.join('\n');
 }
@@ -330,30 +363,31 @@ function buildPropsText(props, originalText) {
 var originalPropsText = '';
 
 function loadServerProps() {
-  apiFetch('/api/modpacks/'+encodeURIComponent(currentModpack)+'/server-properties')
-    .then(function(r){ if(!r.ok) throw new Error(); return r.json(); })
-    .then(function(d){
+  apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/server-properties')
+    .then(function(r) {
+      if (!r.ok) throw new Error();
+      return r.json();
+    })
+    .then(function(d) {
       originalPropsText = d.content;
       document.getElementById('props-editor').value = d.content;
       propsToForm(parseProps(d.content));
     })
-    .catch(function(){
+    .catch(function() {
       document.getElementById('props-editor').value = '# server.properties no encontrado';
     });
 }
 
-// Section collapsing
 document.querySelectorAll('.props-section-header').forEach(function(header) {
   header.addEventListener('click', function() {
     var section = this.dataset.section;
-    var body = document.getElementById('ps-'+section);
+    var body = document.getElementById('ps-' + section);
     var collapsed = body.style.display === 'none';
     body.style.display = collapsed ? '' : 'none';
     this.classList.toggle('collapsed', !collapsed);
   });
 });
 
-// Toggle clicks inside form
 document.getElementById('props-form').addEventListener('click', function(e) {
   var track = e.target.closest('.toggle-track[data-key]');
   if (track) track.classList.toggle('on');
@@ -364,83 +398,124 @@ document.getElementById('save-props-btn').addEventListener('click', function() {
   var newText = buildPropsText(props, originalPropsText);
   var form = new FormData();
   form.append('content', newText);
-  apiFetch('/api/modpacks/'+encodeURIComponent(currentModpack)+'/server-properties', {method:'POST',body:form})
-    .then(function(r){ return r.json(); })
-    .then(function(d){
+  apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/server-properties', {
+    method: 'POST',
+    body: form
+  })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
       if (d.success) {
         originalPropsText = newText;
-        showToast('✅ server.properties guardado','success');
+        showToast('✅ server.properties guardado', 'success');
       }
     })
-    .catch(function(){ showToast('❌ Error al guardar','error'); });
+    .catch(function() { showToast('❌ Error al guardar', 'error'); });
 });
 
 
-//  Config de mods
-function loadModConfigs(){
-  document.getElementById('mod-tree').innerHTML='<p class="empty-msg" style="padding:12px">Cargando...</p>';
-  apiFetch('/api/modpacks/'+encodeURIComponent(currentModpack)+'/configs')
-    .then(function(r){ return r.json(); })
-    .then(function(d){ modConfigs=d.mods; filteredModKeys=sortedKeys(modConfigs,null); modPage=0; renderTreePage('mod'); })
-    .catch(function(){ document.getElementById('mod-tree').innerHTML='<p class="empty-msg" style="padding:12px;color:var(--red)">Error</p>'; });
+// -- Config de mods -----------------------------------------------------------
+function loadModConfigs() {
+  document.getElementById('mod-tree').innerHTML = '<p class="empty-msg" style="padding:12px">Cargando...</p>';
+  apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/configs')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      modConfigs = d.mods;
+      filteredModKeys = sortedKeys(modConfigs, null);
+      modPage = 0;
+      renderTreePage('mod');
+    })
+    .catch(function() {
+      document.getElementById('mod-tree').innerHTML =
+        '<p class="empty-msg" style="padding:12px;color:var(--red)">Error</p>';
+    });
 }
-document.getElementById('mod-search').addEventListener('input',function(){
+
+document.getElementById('mod-search').addEventListener('input', function() {
   activeModFilter = this.value;
-  filteredModKeys=sortedKeys(modConfigs,this.value); modPage=0; renderTreePage('mod');
+  filteredModKeys = sortedKeys(modConfigs, this.value);
+  modPage = 0;
+  renderTreePage('mod');
 });
-document.getElementById('pg-prev').addEventListener('click',function(){ modPage--; renderTreePage('mod'); });
-document.getElementById('pg-next').addEventListener('click',function(){ modPage++; renderTreePage('mod'); });
+
+document.getElementById('pg-prev').addEventListener('click', function() {
+  modPage--;
+  renderTreePage('mod');
+});
+
+document.getElementById('pg-next').addEventListener('click', function() {
+  modPage++;
+  renderTreePage('mod');
+});
 
 
-//  KubeJS
-function loadKubejs(){
-  var tab=document.getElementById('mtab-kubejs');
-  apiFetch('/api/modpacks/'+encodeURIComponent(currentModpack)+'/kubejs')
-    .then(function(r){ return r.json(); })
-    .then(function(d){
-      if (d.exists){ tab.style.display=''; kubejsFiles=d.groups; filteredKjsKeys=sortedKeys(kubejsFiles,null); kjsPage=0; renderTreePage('kjs'); }
-      else { tab.style.display='none'; }
-    }).catch(function(){ tab.style.display='none'; });
+// -- KubeJS -------------------------------------------------------------------
+function loadKubejs() {
+  var tab = document.getElementById('mtab-kubejs');
+  apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/kubejs')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.exists) {
+        tab.style.display = 'inline-block';
+        kubejsFiles = d.groups;
+        filteredKjsKeys = sortedKeys(kubejsFiles, null);
+        kjsPage = 0;
+        renderTreePage('kjs');
+      } else {
+        tab.style.display = 'none';
+      }
+    })
+    .catch(function() { tab.style.display = 'none'; });
 }
-document.getElementById('kubejs-search').addEventListener('input',function(){
+
+document.getElementById('kubejs-search').addEventListener('input', function() {
   activeKjsFilter = this.value;
-  filteredKjsKeys=sortedKeys(kubejsFiles,this.value); kjsPage=0; renderTreePage('kjs');
+  filteredKjsKeys = sortedKeys(kubejsFiles, this.value);
+  kjsPage = 0;
+  renderTreePage('kjs');
 });
-document.getElementById('kpg-prev').addEventListener('click',function(){ kjsPage--; renderTreePage('kjs'); });
-document.getElementById('kpg-next').addEventListener('click',function(){ kjsPage++; renderTreePage('kjs'); });
+
+document.getElementById('kpg-prev').addEventListener('click', function() {
+  kjsPage--;
+  renderTreePage('kjs');
+});
+
+document.getElementById('kpg-next').addEventListener('click', function() {
+  kjsPage++;
+  renderTreePage('kjs');
+});
 
 
-//  Tree renderer
-// activeFilter tracks the current search term for file-level filtering
+// -- Tree renderer ------------------------------------------------------------
 var activeModFilter = '';
 var activeKjsFilter = '';
 
 function sortedKeys(data, filter) {
-  var keys = Object.keys(data).sort(function(a,b){
-    if(a==='__root__') return -1; if(b==='__root__') return 1; return a.localeCompare(b);
+  var keys = Object.keys(data).sort(function(a, b) {
+    if (a === '__root__') return -1;
+    if (b === '__root__') return 1;
+    return a.localeCompare(b);
   });
   if (filter) {
     var f = filter.toLowerCase();
-    keys = keys.filter(function(k){
-      // Group matches by name OR any of its files match
-      if (k === '__root__') return data[k].some(function(x){ return x.toLowerCase().indexOf(f) !== -1; });
-      return k.toLowerCase().indexOf(f) !== -1 || data[k].some(function(x){ return x.toLowerCase().indexOf(f) !== -1; });
+    keys = keys.filter(function(k) {
+      if (k === '__root__') {
+        return data[k].some(function(x) { return x.toLowerCase().indexOf(f) !== -1; });
+      }
+      return k.toLowerCase().indexOf(f) !== -1
+        || data[k].some(function(x) { return x.toLowerCase().indexOf(f) !== -1; });
     });
   }
   return keys;
 }
 
 function getFilteredFiles(files, groupKey, filter) {
-  // If no filter, return all files
   if (!filter) return files;
   var f = filter.toLowerCase();
-  // If the group name itself matches, show all files in group
   if (groupKey !== '__root__' && groupKey.toLowerCase().indexOf(f) !== -1) return files;
-  // Otherwise only show files that match
-  return files.filter(function(x){ return x.toLowerCase().indexOf(f) !== -1; });
+  return files.filter(function(x) { return x.toLowerCase().indexOf(f) !== -1; });
 }
 
-function renderTreePage(which){
+function renderTreePage(which) {
   var isKjs = which === 'kjs';
   var keys = isKjs ? filteredKjsKeys : filteredModKeys;
   var data = isKjs ? kubejsFiles : modConfigs;
@@ -464,22 +539,22 @@ function renderTreePage(which){
   var start = page * PAGE_SIZE;
   var end = Math.min(start + PAGE_SIZE, total);
   var html = '';
-  keys.slice(start, end).forEach(function(key){
-    var label = key === '__root__' ? (isKjs ? '📄 Raíz de kubejs' : '📄 Raíz de config') : '📁 ' + key;
+  keys.slice(start, end).forEach(function(key) {
+    var label = key === '__root__'
+      ? (isKjs ? '📄 Raíz de kubejs' : '📄 Raíz de config')
+      : '📁 ' + key;
     var allFiles = data[key];
     var files = getFilteredFiles(allFiles, key, filter);
-    // Auto-expand when filtering
     var openClass = hasFilter ? ' open' : '';
     var listOpen = hasFilter ? ' open' : '';
     html += '<div class="mod-group">'
       + '<div class="mod-group-header' + openClass + '"><span>' + label
       + ' <span style="color:var(--muted);font-weight:400">(' + files.length
-      + (allFiles.length !== files.length ? '/'+allFiles.length : '') + ')</span></span>'
+      + (allFiles.length !== files.length ? '/' + allFiles.length : '') + ')</span></span>'
       + '<span class="mg-arrow">▶</span></div>'
       + '<div class="mod-file-list' + listOpen + '">';
-    files.forEach(function(f){
+    files.forEach(function(f) {
       var fname = f.split('/').pop();
-      // Highlight matching part in filename
       var display = fname;
       if (hasFilter) {
         var fi = fname.toLowerCase().indexOf(filter.toLowerCase());
@@ -490,14 +565,14 @@ function renderTreePage(which){
             + fname.substring(fi + filter.length);
         }
       }
-      html += '<div class="' + itemClass + '" data-path="' + f + '" data-type="' + (isKjs?'kjs':'cfg') + '">'
+      html += '<div class="' + itemClass + '" data-path="' + f + '" data-type="' + (isKjs ? 'kjs' : 'cfg') + '">'
         + display + '</div>';
     });
     html += '</div></div>';
   });
   tree.innerHTML = html;
-  tree.querySelectorAll('.mod-group-header').forEach(function(h){
-    h.addEventListener('click', function(){
+  tree.querySelectorAll('.mod-group-header').forEach(function(h) {
+    h.addEventListener('click', function() {
       this.classList.toggle('open');
       this.nextElementSibling.classList.toggle('open');
     });
@@ -505,32 +580,34 @@ function renderTreePage(which){
   var totalPages = Math.ceil(total / PAGE_SIZE);
   pg.style.display = 'flex';
   document.getElementById(infoId).textContent = totalPages > 1
-    ? 'Pág.'+(page+1)+'/'+totalPages+' ('+total+')' : total + ' mods';
+    ? 'Pág.' + (page + 1) + '/' + totalPages + ' (' + total + ')'
+    : total + ' mods';
   document.getElementById(prevId).disabled = page === 0;
   document.getElementById(nextId).disabled = page >= totalPages - 1;
 }
 
-//  File click delegation
-document.addEventListener('click',function(e){
-  var item=e.target.closest('.mod-file-item');
+
+// -- File click delegation ----------------------------------------------------
+document.addEventListener('click', function(e) {
+  var item = e.target.closest('.mod-file-item');
   if (!item) return;
   openFile(item.dataset.path, item.dataset.type);
 });
-function openFile(path,type){
-  selectedConfigPath=type+':'+path;
-  document.querySelectorAll('.mod-file-item').forEach(function(el){
-    el.classList.toggle('selected',el.dataset.path===path&&el.dataset.type===type);
+
+function openFile(path, type) {
+  selectedConfigPath = type + ':' + path;
+  document.querySelectorAll('.mod-file-item').forEach(function(el) {
+    el.classList.toggle('selected', el.dataset.path === path && el.dataset.type === type);
   });
-  document.getElementById('modal-path').textContent=(type==='kjs'?'kubejs/':'config/')+path;
-  document.getElementById('config-editor').value='Cargando...';
-  cfgParsed=null; cfgRawText='';
-  // Decide mode based on file extension
+  document.getElementById('modal-path').textContent = (type === 'kjs' ? 'kubejs/' : 'config/') + path;
+  document.getElementById('config-editor').value = 'Cargando...';
+  cfgParsed = null;
+  cfgRawText = '';
   var canForm = type === 'cfg' && isFormattable(path);
   var toolbar = document.getElementById('cfg-toolbar');
   var hint = document.getElementById('cfg-mode-hint');
   toolbar.style.display = canForm ? 'flex' : 'none';
   if (!canForm) {
-    // Force raw mode for non-toml/cfg files
     document.getElementById('cfg-form-view').style.display = 'none';
     document.getElementById('cfg-raw-view').style.display = 'flex';
     document.getElementById('cfg-btn-form').classList.remove('active');
@@ -541,10 +618,10 @@ function openFile(path,type){
     setCfgMode('form');
   }
   document.getElementById('editor-modal').classList.add('show');
-  var endpoint=type==='kjs'?'/kubejs-file':'/config-file';
-  apiFetch('/api/modpacks/'+encodeURIComponent(currentModpack)+endpoint+'?path='+encodeURIComponent(path))
-    .then(function(r){ return r.json(); })
-    .then(function(d){
+  var endpoint = type === 'kjs' ? '/kubejs-file' : '/config-file';
+  apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + endpoint + '?path=' + encodeURIComponent(path))
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
       cfgRawText = d.content;
       document.getElementById('config-editor').value = d.content;
       if (canForm) {
@@ -553,43 +630,66 @@ function openFile(path,type){
       }
       syncLines();
     })
-    .catch(function(){
-      document.getElementById('config-editor').value='# Error al cargar';
+    .catch(function() {
+      document.getElementById('config-editor').value = '# Error al cargar';
       syncLines();
     });
 }
 
 
-//  Modal editor
-function closeModal(){ document.getElementById('editor-modal').classList.remove('show'); }
-document.getElementById('modal-close-btn').addEventListener('click',closeModal);
-document.getElementById('modal-close-btn2').addEventListener('click',closeModal);
-document.getElementById('editor-modal').addEventListener('click',function(e){ if(e.target===this) closeModal(); });
-document.getElementById('modal-save-btn').addEventListener('click',function(){
+// -- Modal editor -------------------------------------------------------------
+function closeModal() {
+  document.getElementById('editor-modal').classList.remove('show');
+}
+
+document.getElementById('modal-close-btn').addEventListener('click', closeModal);
+document.getElementById('modal-close-btn2').addEventListener('click', closeModal);
+document.getElementById('editor-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+document.getElementById('modal-save-btn').addEventListener('click', function() {
   if (!selectedConfigPath) return;
-  var parts=selectedConfigPath.split(':'); var type=parts[0]; var path=parts.slice(1).join(':');
-  // If in form mode, convert form back to raw text first
+  var parts = selectedConfigPath.split(':');
+  var type = parts[0];
+  var path = parts.slice(1).join(':');
   var textToSave;
   if (cfgParsed && cfgFormMode === 'form') {
     textToSave = formToRawText();
   } else {
     textToSave = document.getElementById('config-editor').value;
   }
-  var form=new FormData(); form.append('path',path); form.append('content',textToSave);
-  var endpoint=type==='kjs'?'/kubejs-file':'/config-file';
-  apiFetch('/api/modpacks/'+encodeURIComponent(currentModpack)+endpoint,{method:'POST',body:form})
-    .then(function(r){ return r.json(); }).then(function(d){ if(d.success) showToast('Archivo guardado','success'); })
-    .catch(function(){ showToast('Error al guardar','error'); });
+  var form = new FormData();
+  form.append('path', path);
+  form.append('content', textToSave);
+  var endpoint = type === 'kjs' ? '/kubejs-file' : '/config-file';
+  apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + endpoint, {
+    method: 'POST',
+    body: form
+  })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.success) showToast('Archivo guardado', 'success');
+    })
+    .catch(function() { showToast('Error al guardar', 'error'); });
 });
-var ta=document.getElementById('config-editor');
-var ln=document.getElementById('line-numbers');
-function syncLines(){
-  if(!ta||!ln) return;
-  var lines=ta.value.split('\n'); var nums='';
-  for(var i=1;i<=lines.length;i++) nums+=i+'\n';
-  ln.textContent=nums;
-  var lineNum=ta.value.substring(0,ta.selectionStart).split('\n').length;
-  document.getElementById('line-info').textContent='Línea '+lineNum+' de '+lines.length;
+
+var ta = document.getElementById('config-editor');
+var ln = document.getElementById('line-numbers');
+
+function syncLines() {
+  if (!ta || !ln) return;
+  var lines = ta.value.split('\n');
+  var nums = '';
+  for (var i = 1; i <= lines.length; i++) {
+    nums += i + '\n';
+  }
+  ln.textContent = nums;
+  var lineNum = ta.value.substring(0, ta.selectionStart).split('\n').length;
+  document.getElementById('line-info').textContent = 'Línea ' + lineNum + ' de ' + lines.length;
 }
-ta.addEventListener('input',syncLines); ta.addEventListener('click',syncLines);
-ta.addEventListener('keyup',syncLines); ta.addEventListener('scroll',function(){ ln.scrollTop=ta.scrollTop; });
+
+ta.addEventListener('input', syncLines);
+ta.addEventListener('click', syncLines);
+ta.addEventListener('keyup', syncLines);
+ta.addEventListener('scroll', function() { ln.scrollTop = ta.scrollTop; });

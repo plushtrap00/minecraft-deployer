@@ -1,12 +1,19 @@
 // -- Utility helpers ----------------------------------------------------------
 function escHtml(s) {
   if (!s) return '';
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
-function escRegex(s) { return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+
+function escRegex(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
 
-// -- Dialog (alert / confirm) ------------------------------------------------
+// -- Dialog (alert / confirm) -------------------------------------------------
 function showAlert(msg, icon) {
   var overlay = document.getElementById('dialog-overlay');
   document.getElementById('dialog-icon').textContent = icon || 'ℹ️';
@@ -43,10 +50,12 @@ document.getElementById('dialog-overlay').addEventListener('click', function(e) 
 });
 
 
-//  Toast
+// -- Toast --------------------------------------------------------------------
 function showToast(msg, type) {
   var t = document.getElementById('toast');
   t.textContent = msg;
-  t.className = 'toast show ' + (type||'');
-  setTimeout(function(){ t.className = 'toast'; }, 3000);
+  t.className = 'toast show ' + (type || '');
+  setTimeout(function() {
+    t.className = 'toast';
+  }, 3000);
 }

@@ -48,7 +48,10 @@ function doLogin() {
   var pass = document.getElementById('login-pass').value;
   var btn  = document.getElementById('login-btn');
   var err  = document.getElementById('login-error');
-  if (!pass) { err.textContent = 'Introduce la contraseña'; return; }
+  if (!pass) {
+    err.textContent = 'Introduce la contraseña';
+    return;
+  }
   btn.disabled = true;
   btn.textContent = 'Entrando...';
   err.textContent = '';
@@ -56,7 +59,9 @@ function doLogin() {
   form.append('username', user);
   form.append('password', pass);
   fetch('/api/auth/login', { method: 'POST', body: form })
-    .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, d: d }; }); })
+    .then(function(r) {
+      return r.json().then(function(d) { return { ok: r.ok, d: d }; });
+    })
     .then(function(res) {
       btn.disabled = false;
       btn.textContent = 'Entrar';
@@ -82,7 +87,9 @@ document.getElementById('login-pass').addEventListener('keydown', function(e) {
 (function checkExistingToken() {
   if (!authToken) return;
   fetch('/api/auth/verify', { headers: authHeaders() })
-    .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, d: d }; }); })
+    .then(function(r) {
+      return r.json().then(function(d) { return { ok: r.ok, d: d }; });
+    })
     .then(function(res) {
       if (res.ok) {
         currentRole = res.d.role || 'user';
