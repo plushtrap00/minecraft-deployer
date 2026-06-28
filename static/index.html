@@ -317,6 +317,7 @@ code{background:var(--bg);padding:1px 5px;border-radius:4px;color:var(--accent);
   <button class="nav-tab" id="tab-players">👥 Jugadores</button>
   <button class="nav-tab" id="tab-users" style="display:none">👤 Usuarios</button>
   <button class="nav-tab" id="btn-sysmon" style="margin-left:auto">💻 Sistema</button>
+  <button class="nav-tab" id="btn-logout" style="color:var(--red)" title="Cerrar sesión">⏻ Salir</button>
 </div>
 
 <!-- ══ INSTALAR ══════════════════════════════════════════ -->
@@ -2742,6 +2743,10 @@ document.getElementById('btn-refresh-metrics').addEventListener('click', functio
 // ── Monitor de sistema ────────────────────────────────────────────────────────
 var sysmonOpen = false;
 var sysmonTimer = null;
+
+document.getElementById('btn-logout').addEventListener('click', function() {
+  if (confirm('¿Cerrar sesión?')) logout();
+});
 
 document.getElementById('btn-sysmon').addEventListener('click', function() {
   sysmonOpen = !sysmonOpen;
