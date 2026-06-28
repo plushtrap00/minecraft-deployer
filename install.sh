@@ -5,7 +5,6 @@
 # ══════════════════════════════════════════════════════════════════════════════
 set -euo pipefail
 
-# ── URL del repositorio (cámbiala por la tuya de GitHub) ──────────────────────
 REPO_URL="https://github.com/plushtrap00/minecraft-deployer"
 DEFAULT_INSTALL_DIR="$HOME/minecraft-deployer"
 
@@ -13,12 +12,12 @@ DEFAULT_INSTALL_DIR="$HOME/minecraft-deployer"
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
 CYAN='\033[0;36m'; BOLD='\033[1m'; NC='\033[0m'
 
-info()    { echo -e "${CYAN}  →${NC} $*"; }
-ok()      { echo -e "${GREEN}  ✓${NC} $*"; }
-warn()    { echo -e "${YELLOW}  ⚠${NC} $*"; }
-die()     { echo -e "${RED}  ✗${NC} $*" >&2; exit 1; }
-sep()     { echo -e "\n${BOLD}── $* $(printf '─%.0s' $(seq 1 $((46 - ${#1}))))${NC}\n"; }
-prompt()  { echo -en "${BOLD}  $*${NC}"; }
+info()   { echo -e "${CYAN}  →${NC} $*"; }
+ok()     { echo -e "${GREEN}  ✓${NC} $*"; }
+warn()   { echo -e "${YELLOW}  ⚠${NC} $*"; }
+die()    { echo -e "${RED}  ✗${NC} $*" >&2; exit 1; }
+sep()    { echo -e "\n${BOLD}── $* $(printf '─%.0s' $(seq 1 $((46 - ${#1}))))${NC}\n"; }
+prompt() { echo -en "${BOLD}  $*${NC}"; }
 
 # ── Banner ─────────────────────────────────────────────────────────────────────
 clear
@@ -29,11 +28,7 @@ cat <<'BANNER'
   ╚═══════════════════════════════════════════════════╝
 BANNER
 echo -e "${NC}"
-echo "  Instala y configura Minecraft Server Deployer"
-echo "  en tu servidor con un solo comando."
-echo ""
 
-# ── Verificar que corremos en Linux ───────────────────────────────────────────
 [[ "$(uname -s)" == "Linux" ]] || die "Este instalador solo funciona en Linux."
 
 # ── Detectar gestor de paquetes ───────────────────────────────────────────────
@@ -47,88 +42,60 @@ pkg_install() {
         apt) sudo apt-get install -y -q "$@" ;;
         dnf) sudo dnf install -y "$@" ;;
         yum) sudo yum install -y "$@" ;;
-        *)   die "No se detectó gestor de paquetes. Instala manualmente: $*" ;;
+        *)   die "Gestor de paquetes no detectado. Instala manualmente: $*" ;;
     esac
 }
 
-# ── 1. Dependencias ────────────────────────────────────────────────────────────
-sep "Comprobando dependencias"
+# ══════════════════════════════════════════════════════════════════════════════
+# 1. MODO DE INSTALACIÓN
+# ══════════════════════════════════════════════════════════════════════════════
+sep "Modo de instalación"
+echo "  ¿Cómo quieres instalar Minecraft Server Deployer?"
+echo ""
+echo "    1) Docker   — todo en contenedores, más aislado y portable"
+echo "    2) Nativo   — directo en el sistema, sin Docker"
+echo ""
 
-# Docker
-if ! command -v docker &>/dev/null; then
-    warn "Docker no encontrado. Instalando..."
-    curl -fsSL https://get.docker.com | sh
-    sudo usermod -aG docker "$USER"
-    warn "Docker instalado. Si el siguiente paso falla por permisos,"
-    warn "cierra sesión, vuelve a entrar y ejecuta de nuevo el instalador."
-    # Activar grupo docker sin cerrar sesión
-    exec sg docker "$0 $*" 2>/dev/null || true
-else
-    ok "Docker $(docker --version | grep -oP '\d+\.\d+\.\d+' | head -1)"
-fi
+while true; do
+    prompt "  Elige una opción [1/2]: "
+    read -r INSTALL_MODE
+    [[ "$INSTALL_MODE" == "1" || "$INSTALL_MODE" == "2" ]] && break
+    warn "Introduce 1 o 2."
+done
 
-# Docker Compose (plugin moderno)
-if ! docker compose version &>/dev/null 2>&1; then
-    warn "Docker Compose plugin no encontrado. Instalando..."
-    case $PKG in
-        apt) sudo apt-get install -y -q docker-compose-plugin ;;
-        dnf|yum) sudo "$PKG" install -y docker-compose-plugin ;;
-        *)   die "Instala el plugin de Docker Compose manualmente." ;;
-    esac
-fi
-ok "Docker Compose $(docker compose version --short 2>/dev/null || echo 'OK')"
-
-# Python3 (para hashear la contraseña)
-if ! command -v python3 &>/dev/null; then
-    warn "Python3 no encontrado. Instalando..."
-    pkg_install python3
-fi
-ok "Python3 $(python3 --version | grep -oP '\d+\.\d+\.\d+')"
-
-# bcrypt
-if ! python3 -c "import bcrypt" &>/dev/null 2>&1; then
-    info "Instalando bcrypt..."
-    pip3 install --quiet bcrypt 2>/dev/null \
-        || python3 -m pip install --quiet bcrypt 2>/dev/null \
-        || { pkg_install python3-bcrypt 2>/dev/null || true; }
-fi
-python3 -c "import bcrypt" || die "No se pudo instalar bcrypt. Ejecuta: pip3 install bcrypt"
-ok "bcrypt disponible"
-
-# ── 2. Directorio de instalación ──────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════════════════
+# 2. DIRECTORIO DE INSTALACIÓN
+# ══════════════════════════════════════════════════════════════════════════════
 sep "Directorio de instalación"
 
-prompt "  Carpeta donde instalar [${DEFAULT_INSTALL_DIR}]: "
+prompt "  Carpeta donde instalar la app [${DEFAULT_INSTALL_DIR}]: "
 read -r INSTALL_DIR
 INSTALL_DIR="${INSTALL_DIR:-$DEFAULT_INSTALL_DIR}"
 INSTALL_DIR="${INSTALL_DIR/#\~/$HOME}"
 
-# ── 3. Descargar el proyecto ───────────────────────────────────────────────────
+# ── Descargar proyecto ─────────────────────────────────────────────────────────
 if [[ -f "$INSTALL_DIR/main.py" ]]; then
     warn "Ya existe una instalación en '$INSTALL_DIR'."
-    prompt "  ¿Actualizar a la última versión? [s/N]: "
+    prompt "  ¿Actualizar el código? [s/N]: "
     read -r DO_UPDATE
     if [[ "${DO_UPDATE,,}" == "s" ]]; then
-        info "Actualizando..."
         if command -v git &>/dev/null && [[ -d "$INSTALL_DIR/.git" ]]; then
-            git -C "$INSTALL_DIR" pull --quiet
-            ok "Código actualizado"
+            git -C "$INSTALL_DIR" pull --quiet && ok "Código actualizado"
         else
-            warn "No es un repositorio git. Saltando actualización de código."
+            warn "No es un repositorio git. Saltando actualización."
         fi
     fi
 else
-    sep "Descargando proyecto"
     mkdir -p "$INSTALL_DIR"
     if command -v git &>/dev/null; then
         info "Clonando repositorio..."
         git clone --depth 1 "$REPO_URL" "$INSTALL_DIR"
     else
-        info "git no encontrado. Descargando ZIP..."
+        info "Descargando ZIP..."
         pkg_install curl unzip
         TMP_ZIP=$(mktemp /tmp/mc-deployer-XXXXXX.zip)
-        curl -fsSL "${REPO_URL}/archive/refs/heads/main.zip" -o "$TMP_ZIP"
         TMP_DIR=$(mktemp -d /tmp/mc-deployer-XXXXXX)
+        curl -fsSL "${REPO_URL}/archive/refs/heads/main.zip" -o "$TMP_ZIP"
         unzip -q "$TMP_ZIP" -d "$TMP_DIR"
         cp -r "$TMP_DIR"/*/. "$INSTALL_DIR/"
         rm -rf "$TMP_ZIP" "$TMP_DIR"
@@ -138,9 +105,11 @@ fi
 
 cd "$INSTALL_DIR"
 
-# ── 4. Configuración ───────────────────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════════════════
+# 3. CONFIGURACIÓN COMÚN (credenciales + puertos)
+# ══════════════════════════════════════════════════════════════════════════════
 sep "Credenciales de acceso"
-echo "  Elige el usuario y contraseña para entrar a la interfaz web."
+echo "  Usuario y contraseña para entrar a la interfaz web."
 echo ""
 
 prompt "  Usuario [admin]: "
@@ -150,20 +119,15 @@ APP_USER="${APP_USER:-admin}"
 while true; do
     prompt "  Contraseña (mín. 8 caracteres): "
     read -rs APP_PASS; echo ""
-    if [[ ${#APP_PASS} -lt 8 ]]; then
-        warn "La contraseña debe tener al menos 8 caracteres."; continue
-    fi
+    if [[ ${#APP_PASS} -lt 8 ]]; then warn "Mínimo 8 caracteres."; continue; fi
     prompt "  Confirmar contraseña: "
     read -rs APP_PASS2; echo ""
     [[ "$APP_PASS" == "$APP_PASS2" ]] && break
-    warn "Las contraseñas no coinciden. Inténtalo de nuevo."
+    warn "Las contraseñas no coinciden."
 done
 ok "Credenciales configuradas"
 
 sep "Puertos"
-echo "  Puertos que se abrirán en tu servidor."
-echo ""
-
 while true; do
     prompt "  Puerto interfaz web [8000]: "
     read -r WEB_PORT; WEB_PORT="${WEB_PORT:-8000}"
@@ -178,6 +142,7 @@ while true; do
     warn "Puerto inválido (1-65535)."
 done
 
+# ── Versión de Java ────────────────────────────────────────────────────────────
 sep "Versión de Java"
 echo "    21 → Minecraft 1.20.5 o superior  (NeoForge, Fabric moderno)"
 echo "    17 → Minecraft 1.17 – 1.20.4"
@@ -189,41 +154,19 @@ while true; do
     warn "Introduce 17 o 21."
 done
 
-sep "Almacenamiento de modpacks"
-echo "  ¿Dónde guardar los archivos de los servidores Minecraft?"
-echo "  · Pulsa Enter → volumen Docker gestionado (recomendado)"
-echo "  · Ruta absoluta → ej. /home/$USER/mis-servidores"
-echo ""
-prompt "  Ruta [volumen Docker]: "
-read -r SERVERS_HOST_PATH
-
-# ── 5. Resumen ─────────────────────────────────────────────────────────────────
-sep "Resumen"
-echo "  Usuario:          $APP_USER"
-echo "  Puerto web:       $WEB_PORT"
-echo "  Puerto Minecraft: $MC_PORT"
-echo "  Java:             $JAVA_VER"
-if [[ -z "$SERVERS_HOST_PATH" ]]; then
-    echo "  Servidores:       volumen Docker gestionado"
-else
-    echo "  Servidores:       $SERVERS_HOST_PATH"
+# ── Generar hash de contraseña ─────────────────────────────────────────────────
+if ! python3 -c "import bcrypt" &>/dev/null 2>&1; then
+    info "Instalando bcrypt..."
+    pip3 install --quiet bcrypt 2>/dev/null \
+        || python3 -m pip install --quiet bcrypt 2>/dev/null \
+        || pkg_install python3-bcrypt
 fi
-echo ""
-prompt "  ¿Continuar con la instalación? [S/n]: "
-read -r CONFIRM
-[[ "${CONFIRM,,}" =~ ^(s|si|sí|y|yes|)$ ]] || { echo "  Instalación cancelada."; exit 0; }
 
-# ── 6. Generar .env ────────────────────────────────────────────────────────────
-info "Generando .env..."
-
-# Preservar JWT_SECRET si ya existe (no invalida sesiones activas en actualizaciones)
 JWT_SECRET=""
 if [[ -f ".env" ]]; then
     JWT_SECRET=$(grep -oP '(?<=^JWT_SECRET=).+' .env 2>/dev/null || true)
 fi
-if [[ -z "$JWT_SECRET" ]]; then
-    JWT_SECRET=$(python3 -c "import secrets; print(secrets.token_hex(32))")
-fi
+[[ -z "$JWT_SECRET" ]] && JWT_SECRET=$(python3 -c "import secrets; print(secrets.token_hex(32))")
 
 APP_HASH=$(python3 - "$APP_PASS" <<'PYEOF'
 import bcrypt, sys
@@ -238,19 +181,28 @@ JWT_SECRET=${JWT_SECRET}
 EOF
 ok ".env generado"
 
-# ── 7. Generar docker-compose.yml ─────────────────────────────────────────────
-info "Generando docker-compose.yml..."
+# ══════════════════════════════════════════════════════════════════════════════
+# 4A. INSTALACIÓN CON DOCKER
+# ══════════════════════════════════════════════════════════════════════════════
+if [[ "$INSTALL_MODE" == "1" ]]; then
 
-if [[ -z "$SERVERS_HOST_PATH" ]]; then
-    VOLUME_MOUNT="      - servers:/servers"
-    VOLUMES_BLOCK=$'\nvolumes:\n  servers:'
-else
-    mkdir -p "$SERVERS_HOST_PATH"
-    VOLUME_MOUNT="      - ${SERVERS_HOST_PATH}:/servers"
-    VOLUMES_BLOCK=""
-fi
+    sep "Instalando dependencias (Docker)"
 
-cat > docker-compose.yml <<EOF
+    if ! command -v docker &>/dev/null; then
+        warn "Docker no encontrado. Instalando..."
+        curl -fsSL https://get.docker.com | sh
+        sudo usermod -aG docker "$USER"
+    fi
+    ok "Docker $(docker --version | grep -oP '\d+\.\d+\.\d+' | head -1)"
+
+    if ! docker compose version &>/dev/null 2>&1; then
+        warn "Docker Compose plugin no encontrado. Instalando..."
+        pkg_install docker-compose-plugin
+    fi
+    ok "Docker Compose listo"
+
+    # Los servidores se guardan en un volumen Docker gestionado
+    cat > docker-compose.yml <<EOF
 services:
   minecraft-deployer:
     build:
@@ -261,25 +213,109 @@ services:
       - "${WEB_PORT}:8000"
       - "${MC_PORT}:25565"
     volumes:
-${VOLUME_MOUNT}
+      - servers:/servers
       - ./.env:/app/.env:ro
     environment:
       SERVERS_PATH: /servers
     restart: unless-stopped
-${VOLUMES_BLOCK}
+
+volumes:
+  servers:
 EOF
-ok "docker-compose.yml generado"
+    ok "docker-compose.yml generado"
 
-# ── 8. Build + arranque ────────────────────────────────────────────────────────
-sep "Construyendo imagen Docker"
-echo "  (Esto puede tardar varios minutos la primera vez)"
-echo ""
-docker compose build
+    sep "Construyendo imagen Docker"
+    echo "  (Puede tardar varios minutos la primera vez)"
+    echo ""
+    docker compose build
 
-sep "Arrancando la app"
-docker compose up -d
+    sep "Arrancando la app"
+    docker compose up -d
 
-# ── 9. Éxito ───────────────────────────────────────────────────────────────────
+    MANAGE_STOP="docker compose -f '${INSTALL_DIR}/docker-compose.yml' down"
+    MANAGE_START="docker compose -f '${INSTALL_DIR}/docker-compose.yml' up -d"
+    MANAGE_LOGS="docker compose -f '${INSTALL_DIR}/docker-compose.yml' logs -f"
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 4B. INSTALACIÓN NATIVA
+# ══════════════════════════════════════════════════════════════════════════════
+else
+
+    sep "Ruta de servidores Minecraft"
+    echo "  ¿Dónde se guardarán los modpacks y servidores?"
+    echo ""
+    prompt "  Ruta [${HOME}/servers-minecraft]: "
+    read -r SERVERS_PATH
+    SERVERS_PATH="${SERVERS_PATH:-${HOME}/servers-minecraft}"
+    SERVERS_PATH="${SERVERS_PATH/#\~/$HOME}"
+    mkdir -p "$SERVERS_PATH"
+    ok "Carpeta de servidores: $SERVERS_PATH"
+
+    # Añadir SERVERS_PATH al .env
+    echo "SERVERS_PATH=${SERVERS_PATH}" >> .env
+
+    sep "Instalando dependencias (nativo)"
+
+    # Python3 + pip
+    if ! command -v python3 &>/dev/null; then
+        pkg_install python3 python3-pip
+    fi
+    if ! command -v pip3 &>/dev/null; then
+        pkg_install python3-pip
+    fi
+    ok "Python3 $(python3 --version | grep -oP '\d+\.\d+\.\d+')"
+
+    # Dependencias Python
+    info "Instalando dependencias Python..."
+    pip3 install --quiet -r requirements.txt
+    ok "Dependencias instaladas"
+
+    # Java
+    if ! command -v java &>/dev/null; then
+        warn "Java no encontrado. Instalando OpenJDK ${JAVA_VER}..."
+        case $PKG in
+            apt) pkg_install "openjdk-${JAVA_VER}-jre-headless" ;;
+            dnf|yum) pkg_install "java-${JAVA_VER}-openjdk-headless" ;;
+            *) warn "Instala Java ${JAVA_VER} manualmente para poder arrancar servidores." ;;
+        esac
+    fi
+    java -version 2>&1 | head -1 | { read v; ok "Java: $v"; } || true
+
+    sep "Creando servicio systemd"
+
+    SERVICE_FILE="/etc/systemd/system/minecraft-deployer.service"
+    sudo tee "$SERVICE_FILE" > /dev/null <<EOF
+[Unit]
+Description=Minecraft Server Deployer
+After=network.target
+
+[Service]
+Type=simple
+User=${USER}
+WorkingDirectory=${INSTALL_DIR}
+EnvironmentFile=${INSTALL_DIR}/.env
+ExecStart=$(command -v python3) ${INSTALL_DIR}/main.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+    sudo systemctl daemon-reload
+    sudo systemctl enable minecraft-deployer
+    sudo systemctl restart minecraft-deployer
+    ok "Servicio minecraft-deployer activo"
+
+    MANAGE_STOP="sudo systemctl stop minecraft-deployer"
+    MANAGE_START="sudo systemctl start minecraft-deployer"
+    MANAGE_LOGS="sudo journalctl -u minecraft-deployer -f"
+
+fi
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 5. ÉXITO
+# ══════════════════════════════════════════════════════════════════════════════
 LOCAL_IP=$(hostname -I 2>/dev/null | awk '{print $1}' || echo "localhost")
 
 echo ""
@@ -294,8 +330,8 @@ echo -e "  Abre en tu navegador:  ${BOLD}http://${LOCAL_IP}:${WEB_PORT}${NC}"
 echo -e "  Usuario:               ${BOLD}${APP_USER}${NC}"
 echo ""
 echo "  Comandos útiles:"
-echo "    Ver logs:   docker compose -f '${INSTALL_DIR}/docker-compose.yml' logs -f"
-echo "    Parar:      docker compose -f '${INSTALL_DIR}/docker-compose.yml' down"
-echo "    Arrancar:   docker compose -f '${INSTALL_DIR}/docker-compose.yml' up -d"
+echo "    Ver logs:   ${MANAGE_LOGS}"
+echo "    Parar:      ${MANAGE_STOP}"
+echo "    Arrancar:   ${MANAGE_START}"
 echo "    Reconfigurar: bash '${INSTALL_DIR}/install.sh'"
 echo ""
