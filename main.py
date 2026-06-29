@@ -77,13 +77,16 @@ app.include_router(server_router)
 
 # ── Limpieza al arrancar ───────────────────────────────────────────────────────
 
-def kill_port_25565() -> list:
-    """Mata cualquier proceso que ocupe el puerto 25565 (puerto por defecto de Minecraft)."""
+def kill_port(port: int) -> list:
+    """Mata cualquier proceso que ocupe el puerto TCP indicado."""
     killed = []
     try:
-        result = subprocess.run(["ss", "-tlnp", "sport", "=", ":25565"], capture_output=True, text=True)
+        result = subprocess.run(
+            ["ss", "-tlnp", "sport", "=", f":{port}"],
+            capture_output=True, text=True,
+        )
         for line in result.stdout.splitlines():
-            if "25565" in line and "pid=" in line:
+            if str(port) in line and "pid=" in line:
                 for pid_str in re.findall(r'pid=(\d+)', line):
                     try:
                         os.kill(int(pid_str), 9)
@@ -95,7 +98,10 @@ def kill_port_25565() -> list:
     # Fallback con fuser
     if not killed:
         try:
-            result = subprocess.run(["fuser", "25565/tcp"], capture_output=True, text=True)
+            result = subprocess.run(
+                ["fuser", f"{port}/tcp"],
+                capture_output=True, text=True,
+            )
             for pid_str in result.stdout.split():
                 try:
                     os.kill(int(pid_str.strip()), 9)
@@ -105,6 +111,10 @@ def kill_port_25565() -> list:
         except Exception:
             pass
     return killed
+
+
+def kill_port_25565() -> list:
+    return kill_port(25565)
 
 
 def kill_orphan_servers() -> list:
@@ -170,6 +180,14 @@ if __name__ == "__main__":
     from config import DEFAULT_SERVERS_PATH
 
     print("Minecraft Server Deployer arrancando...")
+
+    print("Liberando puerto 8000 si está ocupado...")
+    web_killed = kill_port(8000)
+    if web_killed:
+        print(f"  Eliminados {len(web_killed)} proceso(s) en el puerto 8000: {web_killed}")
+        time.sleep(1)
+    else:
+        print("  Puerto 8000 libre.")
 
     print("Liberando puerto 25565 si está ocupado...")
     port_killed = kill_port_25565()
