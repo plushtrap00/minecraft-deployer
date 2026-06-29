@@ -76,7 +76,7 @@ document.addEventListener('click', function(e) {
 });
 
 function apiCall(method, url, body, successMsg) {
-  return fetch(url, { method: method, body: body })
+  return fetch(url, { method: method, body: body, headers: authHeaders() })
     .then(function(r) {
       return r.json().then(function(d) { return { ok: r.ok, d: d }; });
     })
