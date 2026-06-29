@@ -1,3 +1,21 @@
-.world-card{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px 16px;display:flex;align-items:center;gap:12px;margin-bottom:8px;}
-.world-card.active-world{border-color:var(--green);background:rgba(63,185,80,.05);}
-.wc-actions{display:flex;gap:6px;margin-left:auto;}
+.world-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.world-card.active-world {
+  border-color: var(--green);
+  background: rgba(63, 185, 80, .05);
+}
+
+.wc-actions {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}

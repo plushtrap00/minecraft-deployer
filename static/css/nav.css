@@ -1,6 +1,40 @@
-.nav{display:flex;gap:4px;padding:16px 24px 0;border-bottom:1px solid var(--border);}
-.nav-tab{background:none;border:none;border-bottom:2px solid transparent;color:var(--muted);padding:10px 18px;font-size:.9rem;font-weight:600;cursor:pointer;border-radius:6px 6px 0 0;margin-bottom:-1px;transition:color .15s;}
-.nav-tab:hover{color:var(--text);background:none;}
-.nav-tab.active{color:var(--accent);border-bottom-color:var(--accent);background:none;}
-.nav-tab-danger{color:var(--red);}
-.nav-tab-danger:hover{color:var(--red);background:rgba(248,81,73,.07);}
+.nav {
+  display: flex;
+  gap: 4px;
+  padding: 16px 24px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.nav-tab {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--muted);
+  padding: 10px 18px;
+  font-size: .9rem;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: 6px 6px 0 0;
+  margin-bottom: -1px;
+  transition: color .15s;
+}
+
+.nav-tab:hover {
+  color: var(--text);
+  background: none;
+}
+
+.nav-tab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  background: none;
+}
+
+.nav-tab-danger {
+  color: var(--red);
+}
+
+.nav-tab-danger:hover {
+  color: var(--red);
+  background: rgba(248, 81, 73, .07);
+}
