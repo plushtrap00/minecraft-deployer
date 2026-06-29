@@ -88,7 +88,7 @@ function applyNetToggleUI(isPublic) {
   if (isPublic) {
     track.classList.add('on');
     label.textContent = '🌐 Público';
-    desc.textContent  = 'Accesible desde internet via DuckDNS / IP pública';
+    desc.textContent  = 'Accesible desde internet · mc.pabloesteban.org:25565';
   } else {
     track.classList.remove('on');
     label.textContent = '🏠 Solo LAN';
