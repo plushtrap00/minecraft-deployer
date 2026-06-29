@@ -39,7 +39,7 @@ async def system_info():
 @router.get("/api/disk-usage")
 async def disk_usage():
     try:
-        total, used, free = shutil.disk_usage("/")
+        total, used, free = shutil.disk_usage(DEFAULT_SERVERS_PATH)
         gb = 1024 ** 3
         return JSONResponse({
             "total_gb": round(total / gb, 1),
