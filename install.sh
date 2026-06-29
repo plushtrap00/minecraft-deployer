@@ -91,21 +91,35 @@ fi
 # 1. MODO DE INSTALACIÓN
 # ══════════════════════════════════════════════════════════════════════════════
 sep "Modo de instalación"
-echo "  ¿Cómo quieres instalar Minecraft Server Deployer?"
-echo ""
-echo "    1) Docker   — todo en contenedores, más aislado y portable"
-echo "    2) Nativo   — directo en el sistema, sin Docker"
-echo ""
 
-while true; do
-    prompt "  Elige una opción [1/2]: "
-    read -r INSTALL_MODE
-    [[ "$INSTALL_MODE" == "1" || "$INSTALL_MODE" == "2" ]] && break
-    warn "Introduce 1 o 2."
-done
+# En re-ejecuciones (ej. reinicio del contenedor) leer el modo guardado
+SAVED_MODE_FILE="$HOME/.mc-deployer-mode"
+if [[ -f "$SAVED_MODE_FILE" ]]; then
+    INSTALL_MODE=$(cat "$SAVED_MODE_FILE")
+    ok "Modo anterior detectado: $( [[ "$INSTALL_MODE" == "1" ]] && echo "Contenedor" || echo "Nativo" )"
+else
+    echo "  ¿Cómo quieres instalar Minecraft Server Deployer?"
+    echo ""
+    echo "    1) Contenedor  — estás dentro de un contenedor Docker"
+    echo "    2) Nativo      — directo en el sistema con systemd"
+    echo ""
+
+    while true; do
+        prompt "  Elige una opción [1/2]: "
+        read -r INSTALL_MODE
+        [[ "$INSTALL_MODE" == "1" || "$INSTALL_MODE" == "2" ]] && break
+        warn "Introduce 1 o 2."
+    done
+
+    echo "$INSTALL_MODE" > "$SAVED_MODE_FILE"
+fi
+
+if [[ "$INSTALL_MODE" == "1" ]] && [[ ! -f "/.dockerenv" ]]; then
+    die "No estás dentro de un contenedor Docker. Elige el modo nativo (opción 2) o ejecuta el instalador desde dentro de un contenedor."
+fi
 
 # ══════════════════════════════════════════════════════════════════════════════
-# 2. DIRECTORIO DE INSTALACIÓN
+# 2. DIRECTORIO E INSTALACIÓN / ACTUALIZACIÓN DEL CÓDIGO
 # ══════════════════════════════════════════════════════════════════════════════
 sep "Directorio de instalación"
 
@@ -114,17 +128,47 @@ read -r INSTALL_DIR
 INSTALL_DIR="${INSTALL_DIR:-$DEFAULT_INSTALL_DIR}"
 INSTALL_DIR="${INSTALL_DIR/#\~/$HOME}"
 
-# ── Descargar proyecto ─────────────────────────────────────────────────────────
+VENV_DIR="$INSTALL_DIR/.venv"
+VENV_PYTHON="$VENV_DIR/bin/python"
+VENV_PIP="$VENV_DIR/bin/pip"
+
+ALREADY_INSTALLED=false
 if [[ -f "$INSTALL_DIR/main.py" ]]; then
-    warn "Ya existe una instalación en '$INSTALL_DIR'."
-    prompt "  ¿Actualizar el código? [s/N]: "
-    read -r DO_UPDATE
-    if [[ "${DO_UPDATE,,}" == "s" ]]; then
-        if command -v git &>/dev/null && [[ -d "$INSTALL_DIR/.git" ]]; then
-            git -C "$INSTALL_DIR" pull --quiet && ok "Código actualizado"
+    ALREADY_INSTALLED=true
+
+    if command -v git &>/dev/null && [[ -d "$INSTALL_DIR/.git" ]]; then
+        info "Comprobando actualizaciones en GitHub..."
+        git -C "$INSTALL_DIR" fetch --quiet origin 2>/dev/null || true
+        BEHIND=$(git -C "$INSTALL_DIR" rev-list HEAD..origin/main --count 2>/dev/null || echo "0")
+
+        if (( BEHIND > 0 )); then
+            warn "Hay ${BEHIND} commit(s) nuevos disponibles."
+            prompt "  ¿Actualizar ahora? [s/N]: "
+            read -r DO_UPDATE
+            if [[ "${DO_UPDATE,,}" == "s" ]]; then
+                git -C "$INSTALL_DIR" pull --quiet && ok "Código actualizado"
+            else
+                info "Saltando actualización."
+            fi
         else
-            warn "No es un repositorio git. Saltando actualización."
+            ok "El código está al día"
+            # Sin cambios: arrancar directamente si el entorno ya está listo
+            if [[ -d "$VENV_DIR" ]] && [[ -f "$INSTALL_DIR/.env" ]]; then
+                if [[ "$INSTALL_MODE" == "1" ]]; then
+                    info "Sin cambios. Arrancando la app..."
+                    cd "$INSTALL_DIR"
+                    exec "$VENV_PYTHON" main.py
+                else
+                    info "Sin cambios. Reiniciando el servicio..."
+                    $SUDO systemctl restart minecraft-deployer
+                    ok "Servicio reiniciado"
+                    exit 0
+                fi
+            fi
+            # Si el entorno no está listo (venv o .env faltan), cae al flujo normal
         fi
+    else
+        warn "No es un repositorio git. No se pueden comprobar actualizaciones."
     fi
 else
     mkdir -p "$INSTALL_DIR"
@@ -147,11 +191,9 @@ fi
 cd "$INSTALL_DIR"
 
 # ── Entorno virtual Python ─────────────────────────────────────────────────────
-VENV_DIR="$INSTALL_DIR/.venv"
 if [[ ! -d "$VENV_DIR" ]]; then
     info "Creando entorno virtual Python en .venv/ ..."
     if ! python3 -m venv "$VENV_DIR" 2>/dev/null; then
-        # Último recurso: instalar el paquete venv específico de esta versión de Python
         PY_MINOR=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
         warn "Fallo al crear venv. Instalando python${PY_MINOR}-venv..."
         case $PKG in
@@ -164,170 +206,164 @@ if [[ ! -d "$VENV_DIR" ]]; then
     fi
     ok "Entorno virtual creado"
 fi
-VENV_PYTHON="$VENV_DIR/bin/python"
-VENV_PIP="$VENV_DIR/bin/pip"
 
-# Actualizar pip dentro del venv silenciosamente
 "$VENV_PIP" install --quiet --upgrade pip
 
 # ══════════════════════════════════════════════════════════════════════════════
-# 3. CONFIGURACIÓN COMÚN (credenciales + puertos)
+# 3. CONFIGURACIÓN — solo en primera instalación
+#    En actualizaciones se reutiliza el .env existente
 # ══════════════════════════════════════════════════════════════════════════════
-sep "Credenciales de acceso"
-echo "  Usuario y contraseña para entrar a la interfaz web."
-echo ""
+if [[ "$ALREADY_INSTALLED" == "false" ]] || [[ ! -f ".env" ]]; then
 
-prompt "  Usuario [admin]: "
-read -r APP_USER
-APP_USER="${APP_USER:-admin}"
+    sep "Credenciales de acceso"
+    echo "  Usuario y contraseña para entrar a la interfaz web."
+    echo ""
 
-while true; do
-    prompt "  Contraseña (mín. 8 caracteres): "
-    read -rs APP_PASS; echo ""
-    if [[ ${#APP_PASS} -lt 8 ]]; then warn "Mínimo 8 caracteres."; continue; fi
-    prompt "  Confirmar contraseña: "
-    read -rs APP_PASS2; echo ""
-    [[ "$APP_PASS" == "$APP_PASS2" ]] && break
-    warn "Las contraseñas no coinciden."
-done
-ok "Credenciales configuradas"
+    prompt "  Usuario [admin]: "
+    read -r APP_USER
+    APP_USER="${APP_USER:-admin}"
 
-sep "Puertos"
-while true; do
-    prompt "  Puerto interfaz web [8000]: "
-    read -r WEB_PORT; WEB_PORT="${WEB_PORT:-8000}"
-    [[ "$WEB_PORT" =~ ^[0-9]+$ ]] && (( WEB_PORT >= 1 && WEB_PORT <= 65535 )) && break
-    warn "Puerto inválido (1-65535)."
-done
+    while true; do
+        prompt "  Contraseña (mín. 8 caracteres): "
+        read -rs APP_PASS; echo ""
+        if [[ ${#APP_PASS} -lt 8 ]]; then warn "Mínimo 8 caracteres."; continue; fi
+        prompt "  Confirmar contraseña: "
+        read -rs APP_PASS2; echo ""
+        [[ "$APP_PASS" == "$APP_PASS2" ]] && break
+        warn "Las contraseñas no coinciden."
+    done
+    ok "Credenciales configuradas"
 
-while true; do
-    prompt "  Puerto Minecraft [25565]: "
-    read -r MC_PORT; MC_PORT="${MC_PORT:-25565}"
-    [[ "$MC_PORT" =~ ^[0-9]+$ ]] && (( MC_PORT >= 1 && MC_PORT <= 65535 )) && break
-    warn "Puerto inválido (1-65535)."
-done
+    sep "Puertos"
+    while true; do
+        prompt "  Puerto interfaz web [8000]: "
+        read -r WEB_PORT; WEB_PORT="${WEB_PORT:-8000}"
+        [[ "$WEB_PORT" =~ ^[0-9]+$ ]] && (( WEB_PORT >= 1 && WEB_PORT <= 65535 )) && break
+        warn "Puerto inválido (1-65535)."
+    done
 
-# ── Versión de Java ────────────────────────────────────────────────────────────
-sep "Versión de Java"
-echo "    21 → Minecraft 1.20.5 o superior  (NeoForge, Fabric moderno)"
-echo "    17 → Minecraft 1.17 – 1.20.4"
-echo ""
-while true; do
-    prompt "  Versión de Java [21]: "
-    read -r JAVA_VER; JAVA_VER="${JAVA_VER:-21}"
-    [[ "$JAVA_VER" == "17" || "$JAVA_VER" == "21" ]] && break
-    warn "Introduce 17 o 21."
-done
+    while true; do
+        prompt "  Puerto Minecraft [25565]: "
+        read -r MC_PORT; MC_PORT="${MC_PORT:-25565}"
+        [[ "$MC_PORT" =~ ^[0-9]+$ ]] && (( MC_PORT >= 1 && MC_PORT <= 65535 )) && break
+        warn "Puerto inválido (1-65535)."
+    done
 
-# ── Instalar bcrypt en el venv y generar hash ──────────────────────────────────
-info "Instalando bcrypt..."
-"$VENV_PIP" install --quiet bcrypt
+    sep "Versión de Java"
+    echo "    21 → Minecraft 1.20.5 o superior  (NeoForge, Fabric moderno)"
+    echo "    17 → Minecraft 1.17 – 1.20.4"
+    echo ""
+    while true; do
+        prompt "  Versión de Java [21]: "
+        read -r JAVA_VER; JAVA_VER="${JAVA_VER:-21}"
+        [[ "$JAVA_VER" == "17" || "$JAVA_VER" == "21" ]] && break
+        warn "Introduce 17 o 21."
+    done
 
-JWT_SECRET=""
-if [[ -f ".env" ]]; then
-    JWT_SECRET=$(grep -oP '(?<=^JWT_SECRET=).+' .env 2>/dev/null || true)
-fi
-[[ -z "$JWT_SECRET" ]] && JWT_SECRET=$("$VENV_PYTHON" -c "import secrets; print(secrets.token_hex(32))")
+    info "Instalando bcrypt..."
+    "$VENV_PIP" install --quiet bcrypt
 
-APP_HASH=$("$VENV_PYTHON" - "$APP_PASS" <<'PYEOF'
+    JWT_SECRET=$("$VENV_PYTHON" -c "import secrets; print(secrets.token_hex(32))")
+
+    APP_HASH=$("$VENV_PYTHON" - "$APP_PASS" <<'PYEOF'
 import bcrypt, sys
 print(bcrypt.hashpw(sys.argv[1].encode(), bcrypt.gensalt()).decode())
 PYEOF
 )
 
-cat > .env <<EOF
+    cat > .env <<EOF
 APP_USERNAME=${APP_USER}
 APP_PASSWORD_HASH=${APP_HASH}
 JWT_SECRET=${JWT_SECRET}
+WEB_PORT=${WEB_PORT}
+JAVA_VER=${JAVA_VER}
 EOF
-ok ".env generado"
+    ok ".env generado"
 
-# Crear users.json vacío si no existe (persistencia de usuarios normales)
-if [[ ! -f "users.json" ]]; then
-    echo "[]" > users.json
-    ok "users.json creado"
+    if [[ ! -f "users.json" ]]; then
+        echo "[]" > users.json
+        ok "users.json creado"
+    fi
+
+else
+    ok "Usando configuración existente (.env)"
+    JAVA_VER=$(grep -oP '(?<=^JAVA_VER=).+' .env 2>/dev/null || echo "21")
+    WEB_PORT=$(grep -oP '(?<=^WEB_PORT=).+' .env 2>/dev/null || echo "8000")
 fi
 
 # ══════════════════════════════════════════════════════════════════════════════
-# 4A. INSTALACIÓN CON DOCKER
+# 4A. MODO CONTENEDOR
 # ══════════════════════════════════════════════════════════════════════════════
 if [[ "$INSTALL_MODE" == "1" ]]; then
 
-    sep "Instalando dependencias (Docker)"
-
-    if ! command -v docker &>/dev/null; then
-        warn "Docker no encontrado. Instalando..."
-        curl -fsSL https://get.docker.com | sh
-        [[ -n "$SUDO" ]] && sudo usermod -aG docker "$USER"
+    sep "Ruta de servidores Minecraft"
+    if ! grep -q '^SERVERS_PATH=' .env 2>/dev/null; then
+        echo "  ¿Dónde se guardarán los modpacks y servidores dentro del contenedor?"
+        echo ""
+        prompt "  Ruta [/servers]: "
+        read -r SERVERS_PATH
+        SERVERS_PATH="${SERVERS_PATH:-/servers}"
+        echo "SERVERS_PATH=${SERVERS_PATH}" >> .env
+    else
+        SERVERS_PATH=$(grep -oP '(?<=^SERVERS_PATH=).+' .env)
     fi
-    ok "Docker $(docker --version | grep -oP '\d+\.\d+\.\d+' | head -1)"
+    mkdir -p "$SERVERS_PATH"
+    ok "Carpeta de servidores: $SERVERS_PATH"
 
-    if ! docker compose version &>/dev/null 2>&1; then
-        warn "Docker Compose plugin no encontrado. Instalando..."
-        pkg_install docker-compose-plugin
+    sep "Instalando dependencias Python"
+    "$VENV_PIP" install --quiet -r requirements.txt
+    ok "Dependencias Python instaladas"
+
+    sep "Comprobando Java"
+    if ! command -v java &>/dev/null; then
+        warn "Java no encontrado. Instalando OpenJDK ${JAVA_VER}..."
+        case $PKG in
+            apt) pkg_install "openjdk-${JAVA_VER}-jre-headless" ;;
+            dnf|yum) pkg_install "java-${JAVA_VER}-openjdk-headless" ;;
+            *) warn "Instala Java ${JAVA_VER} manualmente para poder arrancar servidores." ;;
+        esac
     fi
-    ok "Docker Compose listo"
+    java -version 2>&1 | head -1 | { read v; ok "Java: $v"; } || true
 
-    # Los servidores se guardan en un volumen Docker gestionado
-    cat > docker-compose.yml <<EOF
-services:
-  minecraft-deployer:
-    build:
-      context: .
-      args:
-        JAVA_VERSION: "${JAVA_VER}"
-    ports:
-      - "${WEB_PORT}:8000"
-      - "${MC_PORT}:25565"
-    volumes:
-      - servers:/servers
-      - ./.env:/app/.env:ro
-      - ./users.json:/app/users.json
-    environment:
-      SERVERS_PATH: /servers
-    restart: unless-stopped
-
-volumes:
-  servers:
-EOF
-    ok "docker-compose.yml generado"
-
-    sep "Construyendo imagen Docker"
-    echo "  (Puede tardar varios minutos la primera vez)"
+    LOCAL_IP=$(hostname -I 2>/dev/null | awk '{print $1}' || echo "localhost")
     echo ""
-    docker compose build
-
-    sep "Arrancando la app"
-    docker compose up -d
-
-    MANAGE_STOP="docker compose -f '${INSTALL_DIR}/docker-compose.yml' down"
-    MANAGE_START="docker compose -f '${INSTALL_DIR}/docker-compose.yml' up -d"
-    MANAGE_LOGS="docker compose -f '${INSTALL_DIR}/docker-compose.yml' logs -f"
+    echo -e "${GREEN}${BOLD}"
+    cat <<'SUCCESS'
+  ╔═══════════════════════════════════════════════════╗
+  ║           ¡Instalación completada!                ║
+  ╚═══════════════════════════════════════════════════╝
+SUCCESS
+    echo -e "${NC}"
+    echo -e "  Abre en tu navegador:  ${BOLD}http://${LOCAL_IP}:${WEB_PORT}${NC}"
+    echo ""
+    echo "  Arrancando la app (Ctrl+C para parar)..."
+    echo ""
+    exec "$VENV_PYTHON" main.py
 
 # ══════════════════════════════════════════════════════════════════════════════
-# 4B. INSTALACIÓN NATIVA
+# 4B. MODO NATIVO
 # ══════════════════════════════════════════════════════════════════════════════
 else
 
     sep "Ruta de servidores Minecraft"
-    echo "  ¿Dónde se guardarán los modpacks y servidores?"
-    echo ""
-    prompt "  Ruta [${HOME}/servers-minecraft]: "
-    read -r SERVERS_PATH
-    SERVERS_PATH="${SERVERS_PATH:-${HOME}/servers-minecraft}"
-    SERVERS_PATH="${SERVERS_PATH/#\~/$HOME}"
+    if ! grep -q '^SERVERS_PATH=' .env 2>/dev/null; then
+        echo "  ¿Dónde se guardarán los modpacks y servidores?"
+        echo ""
+        prompt "  Ruta [${HOME}/servers-minecraft]: "
+        read -r SERVERS_PATH
+        SERVERS_PATH="${SERVERS_PATH:-${HOME}/servers-minecraft}"
+        SERVERS_PATH="${SERVERS_PATH/#\~/$HOME}"
+        echo "SERVERS_PATH=${SERVERS_PATH}" >> .env
+    else
+        SERVERS_PATH=$(grep -oP '(?<=^SERVERS_PATH=).+' .env)
+    fi
     mkdir -p "$SERVERS_PATH"
     ok "Carpeta de servidores: $SERVERS_PATH"
 
-    echo "SERVERS_PATH=${SERVERS_PATH}" >> .env
-
-    sep "Instalando dependencias Python (nativo)"
-
-    info "Instalando paquetes de requirements.txt en el entorno virtual..."
+    sep "Instalando dependencias Python"
     "$VENV_PIP" install --quiet -r requirements.txt
     ok "Dependencias Python instaladas"
 
-    # Java
     sep "Comprobando Java"
     if ! command -v java &>/dev/null; then
         warn "Java no encontrado. Instalando OpenJDK ${JAVA_VER}..."
@@ -365,31 +401,23 @@ EOF
     $SUDO systemctl restart minecraft-deployer
     ok "Servicio minecraft-deployer activo"
 
-    MANAGE_STOP="sudo systemctl stop minecraft-deployer"
-    MANAGE_START="sudo systemctl start minecraft-deployer"
-    MANAGE_LOGS="sudo journalctl -u minecraft-deployer -f"
-
-fi
-
-# ══════════════════════════════════════════════════════════════════════════════
-# 5. ÉXITO
-# ══════════════════════════════════════════════════════════════════════════════
-LOCAL_IP=$(hostname -I 2>/dev/null | awk '{print $1}' || echo "localhost")
-
-echo ""
-echo -e "${GREEN}${BOLD}"
-cat <<'SUCCESS'
+    LOCAL_IP=$(hostname -I 2>/dev/null | awk '{print $1}' || echo "localhost")
+    echo ""
+    echo -e "${GREEN}${BOLD}"
+    cat <<'SUCCESS'
   ╔═══════════════════════════════════════════════════╗
   ║           ¡Instalación completada!                ║
   ╚═══════════════════════════════════════════════════╝
 SUCCESS
-echo -e "${NC}"
-echo -e "  Abre en tu navegador:  ${BOLD}http://${LOCAL_IP}:${WEB_PORT}${NC}"
-echo -e "  Usuario:               ${BOLD}${APP_USER}${NC}"
-echo ""
-echo "  Comandos útiles:"
-echo "    Ver logs:   ${MANAGE_LOGS}"
-echo "    Parar:      ${MANAGE_STOP}"
-echo "    Arrancar:   ${MANAGE_START}"
-echo "    Reconfigurar: bash '${INSTALL_DIR}/install.sh'"
-echo ""
+    echo -e "${NC}"
+    echo -e "  Abre en tu navegador:  ${BOLD}http://${LOCAL_IP}:${WEB_PORT}${NC}"
+    echo -e "  Usuario:               ${BOLD}$(grep -oP '(?<=^APP_USERNAME=).+' .env || echo 'admin')${NC}"
+    echo ""
+    echo "  Comandos útiles:"
+    echo "    Ver logs:     sudo journalctl -u minecraft-deployer -f"
+    echo "    Parar:        sudo systemctl stop minecraft-deployer"
+    echo "    Arrancar:     sudo systemctl start minecraft-deployer"
+    echo "    Reconfigurar: bash '${INSTALL_DIR}/install.sh'"
+    echo ""
+
+fi

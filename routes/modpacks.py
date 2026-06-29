@@ -320,6 +320,42 @@ async def create_world(
     return JSONResponse({"success": True, "world_name": world_name, "message": "Mundo configurado. Se generará al iniciar el servidor."})
 
 
+@router.get("/{modpack}/worlds/{world_name}/download")
+async def download_world(modpack: str, world_name: str):
+    import shutil, tempfile, os
+    from fastapi.responses import StreamingResponse
+    base = DEFAULT_SERVERS_PATH / modpack
+    world_path = base / world_name
+    try:
+        world_path.resolve().relative_to(base.resolve())
+    except ValueError:
+        raise HTTPException(status_code=403, detail="Ruta no permitida")
+    if not world_path.exists():
+        raise HTTPException(status_code=404, detail="El mundo no existe")
+
+    tmp_dir = tempfile.mkdtemp()
+    try:
+        archive_base = os.path.join(tmp_dir, world_name)
+        archive_path = shutil.make_archive(archive_base, "zip", root_dir=str(base), base_dir=world_name)
+    except Exception as e:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+    def iter_and_cleanup():
+        try:
+            with open(archive_path, "rb") as f:
+                while chunk := f.read(65536):
+                    yield chunk
+        finally:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+
+    return StreamingResponse(
+        iter_and_cleanup(),
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{world_name}.zip"'},
+    )
+
+
 @router.delete("/{modpack}/worlds/{world_name}")
 async def delete_world(modpack: str, world_name: str):
     base = DEFAULT_SERVERS_PATH / modpack

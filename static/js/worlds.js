@@ -31,13 +31,15 @@ function renderWorlds(d) {
     var deleteBtn = !w.active
       ? '<button class="btn-danger wc-delete" data-world="' + w.name + '" style="font-size:.78rem;padding:5px 10px">🗑 Borrar</button>'
       : '';
+    var downloadUrl = '/api/modpacks/' + encodeURIComponent(currentModpack) + '/worlds/' + encodeURIComponent(w.name) + '/download?token=' + encodeURIComponent(authToken);
+    var downloadBtn = '<a href="' + downloadUrl + '" download="' + w.name + '.zip" class="btn-secondary" style="font-size:.78rem;padding:5px 10px;text-decoration:none">⬇ Descargar</a>';
     html += '<div class="world-card' + (w.active ? ' active-world' : '') + '">'
       + '<span style="font-size:1.5rem">' + (w.active ? '🟢' : '🌍') + '</span>'
       + '<div style="flex:1">'
       + '<div style="font-weight:600">' + w.name + ' ' + activeBadge + '</div>'
       + '<div style="font-size:.78rem;color:var(--muted)">' + w.size_mb + ' MB en disco</div>'
       + '</div>'
-      + '<div class="wc-actions">' + activateBtn + deleteBtn + '</div>'
+      + '<div class="wc-actions">' + activateBtn + downloadBtn + deleteBtn + '</div>'
       + '</div>';
   });
   html += '<p class="hint" style="margin-top:8px">Tipo actual: <code>' + (d.level_type || 'minecraft:normal') + '</code>'
