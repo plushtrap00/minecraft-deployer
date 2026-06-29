@@ -12,7 +12,7 @@ from pathlib import Path
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse, JSONResponse
 
-from config import DEFAULT_SERVERS_PATH
+from config import DEFAULT_SERVERS_PATH, MC_DOMAIN
 from services.utils import get_system_ram_gb, get_modpacks
 from services.modpack import detect_modpack_version
 
@@ -33,6 +33,7 @@ async def system_info():
     return JSONResponse({
         "ram_total_gb": ram_gb,
         "ram_max_allowed_gb": max_allowed,
+        "mc_domain": MC_DOMAIN,
     })
 
 

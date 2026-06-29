@@ -1,6 +1,16 @@
 // -- Servidor -----------------------------------------------------------------
 var sseSource = null;
 var serverRunning = false;
+var mcDomain = '';
+
+function loadMcDomain() {
+  apiFetch('/api/system-info')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      mcDomain = d.mc_domain || '';
+    })
+    .catch(function() {});
+}
 
 function checkServerStatus() {
   apiFetch('/api/server/status')
@@ -88,7 +98,7 @@ function applyNetToggleUI(isPublic) {
   if (isPublic) {
     track.classList.add('on');
     label.textContent = '🌐 Público';
-    desc.textContent  = 'Accesible desde internet · mc.pabloesteban.org:25565';
+    desc.textContent  = mcDomain ? 'Accesible desde internet · ' + mcDomain + ':25565' : 'Accesible desde internet';
   } else {
     track.classList.remove('on');
     label.textContent = '🏠 Solo LAN';

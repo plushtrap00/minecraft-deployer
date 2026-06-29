@@ -6,7 +6,7 @@
     document.getElementById('page-'+name).classList.add('active');
     this.classList.add('active');
     if (name === 'manage') loadModpacks();
-    if (name === 'server') { checkServerStatus(); loadFirewallStatus(); }
+    if (name === 'server') { loadMcDomain(); checkServerStatus(); loadFirewallStatus(); }
     if (name === 'users') loadUsers();
   });
 });

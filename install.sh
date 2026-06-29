@@ -249,6 +249,14 @@ if [[ "$ALREADY_INSTALLED" == "false" ]] || [[ ! -f ".env" ]]; then
         warn "Puerto inválido (1-65535)."
     done
 
+    sep "Dominio público"
+    echo "  Dominio con el que los jugadores se conectarán al servidor Minecraft."
+    echo "  Déjalo vacío si no tienes dominio (se mostrará la IP pública)."
+    echo ""
+    prompt "  Dominio Minecraft [ej: mc.tudominio.com]: "
+    read -r MC_DOMAIN
+    ok "Dominio: ${MC_DOMAIN:-no configurado}"
+
     sep "Versión de Java"
     echo "    21 → Minecraft 1.20.5 o superior  (NeoForge, Fabric moderno)"
     echo "    17 → Minecraft 1.17 – 1.20.4"
@@ -277,6 +285,7 @@ APP_PASSWORD_HASH=${APP_HASH}
 JWT_SECRET=${JWT_SECRET}
 WEB_PORT=${WEB_PORT}
 JAVA_VER=${JAVA_VER}
+MC_DOMAIN=${MC_DOMAIN}
 EOF
     ok ".env generado"
 
