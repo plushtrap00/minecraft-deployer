@@ -64,7 +64,7 @@ if ! command -v python3 &>/dev/null; then
     case $PKG in
         apt)
             $SUDO apt-get update -qq
-            pkg_install python3 python3-pip python3-venv python3-full
+            pkg_install python3 python3-pip python3-full
             ;;
         dnf) pkg_install python3 python3-pip ;;
         yum) pkg_install python3 python3-pip ;;
@@ -73,11 +73,14 @@ if ! command -v python3 &>/dev/null; then
 fi
 ok "Python $(python3 --version 2>&1 | grep -oP '\d+\.\d+\.\d+' || python3 --version 2>&1)"
 
-# Asegurarse de que el módulo venv está disponible (Debian lo separa)
-if ! python3 -m venv --help &>/dev/null 2>&1; then
-    info "Instalando módulo venv..."
+# En Debian/Ubuntu el paquete venv es específico de versión: python3.12-venv, python3.11-venv, etc.
+# python3-venv es un metapaquete que no siempre instala ensurepip correctamente.
+if [[ "$PKG" == "apt" ]]; then
+    PY_MINOR=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
+    info "Instalando python${PY_MINOR}-venv..."
+    $SUDO apt-get install -y -q "python${PY_MINOR}-venv" 2>/dev/null || pkg_install python3-venv python3-full
+elif ! python3 -m venv --help &>/dev/null 2>&1; then
     case $PKG in
-        apt) pkg_install python3-venv python3-full ;;
         dnf) pkg_install python3 ;;
         yum) pkg_install python3 ;;
         *)   die "Módulo venv no disponible. Instala python3-venv manualmente." ;;
@@ -147,7 +150,18 @@ cd "$INSTALL_DIR"
 VENV_DIR="$INSTALL_DIR/.venv"
 if [[ ! -d "$VENV_DIR" ]]; then
     info "Creando entorno virtual Python en .venv/ ..."
-    python3 -m venv "$VENV_DIR"
+    if ! python3 -m venv "$VENV_DIR" 2>/dev/null; then
+        # Último recurso: instalar el paquete venv específico de esta versión de Python
+        PY_MINOR=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
+        warn "Fallo al crear venv. Instalando python${PY_MINOR}-venv..."
+        case $PKG in
+            apt) $SUDO apt-get install -y -q "python${PY_MINOR}-venv" ;;
+            dnf) $SUDO dnf install -y "python${PY_MINOR}-venv" 2>/dev/null || $SUDO dnf install -y python3 ;;
+            yum) $SUDO yum install -y python3 ;;
+            *)   die "No se pudo crear el entorno virtual. Instala python3-venv manualmente." ;;
+        esac
+        python3 -m venv "$VENV_DIR"
+    fi
     ok "Entorno virtual creado"
 fi
 VENV_PYTHON="$VENV_DIR/bin/python"
