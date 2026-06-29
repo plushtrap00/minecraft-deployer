@@ -31,6 +31,14 @@ echo -e "${NC}"
 
 [[ "$(uname -s)" == "Linux" ]] || die "Este instalador solo funciona en Linux."
 
+# ── Sudo o root ────────────────────────────────────────────────────────────────
+# En contenedores Docker se ejecuta como root sin sudo
+if [[ $EUID -eq 0 ]]; then
+    SUDO=""
+else
+    SUDO="sudo"
+fi
+
 # ── Detectar gestor de paquetes ───────────────────────────────────────────────
 if   command -v apt-get &>/dev/null; then PKG="apt"
 elif command -v dnf     &>/dev/null; then PKG="dnf"
@@ -39,12 +47,42 @@ else PKG="unknown"; fi
 
 pkg_install() {
     case $PKG in
-        apt) sudo apt-get install -y -q "$@" ;;
-        dnf) sudo dnf install -y "$@" ;;
-        yum) sudo yum install -y "$@" ;;
+        apt) $SUDO apt-get install -y -q "$@" ;;
+        dnf) $SUDO dnf install -y "$@" ;;
+        yum) $SUDO yum install -y "$@" ;;
         *)   die "Gestor de paquetes no detectado. Instala manualmente: $*" ;;
     esac
 }
+
+# ══════════════════════════════════════════════════════════════════════════════
+# 0. PYTHON — se necesita antes de cualquier otra cosa
+# ══════════════════════════════════════════════════════════════════════════════
+sep "Comprobando Python"
+
+if ! command -v python3 &>/dev/null; then
+    info "Python3 no encontrado. Instalando..."
+    case $PKG in
+        apt)
+            $SUDO apt-get update -qq
+            pkg_install python3 python3-pip python3-venv python3-full
+            ;;
+        dnf) pkg_install python3 python3-pip ;;
+        yum) pkg_install python3 python3-pip ;;
+        *)   die "Python3 no encontrado y no se puede instalar automáticamente. Instálalo manualmente." ;;
+    esac
+fi
+ok "Python $(python3 --version 2>&1 | grep -oP '\d+\.\d+\.\d+' || python3 --version 2>&1)"
+
+# Asegurarse de que el módulo venv está disponible (Debian lo separa)
+if ! python3 -m venv --help &>/dev/null 2>&1; then
+    info "Instalando módulo venv..."
+    case $PKG in
+        apt) pkg_install python3-venv python3-full ;;
+        dnf) pkg_install python3 ;;
+        yum) pkg_install python3 ;;
+        *)   die "Módulo venv no disponible. Instala python3-venv manualmente." ;;
+    esac
+fi
 
 # ══════════════════════════════════════════════════════════════════════════════
 # 1. MODO DE INSTALACIÓN
@@ -91,7 +129,7 @@ else
         info "Clonando repositorio..."
         git clone --depth 1 "$REPO_URL" "$INSTALL_DIR"
     else
-        info "Descargando ZIP..."
+        info "git no encontrado. Instalando curl y descargando ZIP..."
         pkg_install curl unzip
         TMP_ZIP=$(mktemp /tmp/mc-deployer-XXXXXX.zip)
         TMP_DIR=$(mktemp -d /tmp/mc-deployer-XXXXXX)
@@ -104,6 +142,19 @@ else
 fi
 
 cd "$INSTALL_DIR"
+
+# ── Entorno virtual Python ─────────────────────────────────────────────────────
+VENV_DIR="$INSTALL_DIR/.venv"
+if [[ ! -d "$VENV_DIR" ]]; then
+    info "Creando entorno virtual Python en .venv/ ..."
+    python3 -m venv "$VENV_DIR"
+    ok "Entorno virtual creado"
+fi
+VENV_PYTHON="$VENV_DIR/bin/python"
+VENV_PIP="$VENV_DIR/bin/pip"
+
+# Actualizar pip dentro del venv silenciosamente
+"$VENV_PIP" install --quiet --upgrade pip
 
 # ══════════════════════════════════════════════════════════════════════════════
 # 3. CONFIGURACIÓN COMÚN (credenciales + puertos)
@@ -154,21 +205,17 @@ while true; do
     warn "Introduce 17 o 21."
 done
 
-# ── Generar hash de contraseña ─────────────────────────────────────────────────
-if ! python3 -c "import bcrypt" &>/dev/null 2>&1; then
-    info "Instalando bcrypt..."
-    pip3 install --quiet bcrypt 2>/dev/null \
-        || python3 -m pip install --quiet bcrypt 2>/dev/null \
-        || pkg_install python3-bcrypt
-fi
+# ── Instalar bcrypt en el venv y generar hash ──────────────────────────────────
+info "Instalando bcrypt..."
+"$VENV_PIP" install --quiet bcrypt
 
 JWT_SECRET=""
 if [[ -f ".env" ]]; then
     JWT_SECRET=$(grep -oP '(?<=^JWT_SECRET=).+' .env 2>/dev/null || true)
 fi
-[[ -z "$JWT_SECRET" ]] && JWT_SECRET=$(python3 -c "import secrets; print(secrets.token_hex(32))")
+[[ -z "$JWT_SECRET" ]] && JWT_SECRET=$("$VENV_PYTHON" -c "import secrets; print(secrets.token_hex(32))")
 
-APP_HASH=$(python3 - "$APP_PASS" <<'PYEOF'
+APP_HASH=$("$VENV_PYTHON" - "$APP_PASS" <<'PYEOF'
 import bcrypt, sys
 print(bcrypt.hashpw(sys.argv[1].encode(), bcrypt.gensalt()).decode())
 PYEOF
@@ -197,7 +244,7 @@ if [[ "$INSTALL_MODE" == "1" ]]; then
     if ! command -v docker &>/dev/null; then
         warn "Docker no encontrado. Instalando..."
         curl -fsSL https://get.docker.com | sh
-        sudo usermod -aG docker "$USER"
+        [[ -n "$SUDO" ]] && sudo usermod -aG docker "$USER"
     fi
     ok "Docker $(docker --version | grep -oP '\d+\.\d+\.\d+' | head -1)"
 
@@ -258,26 +305,16 @@ else
     mkdir -p "$SERVERS_PATH"
     ok "Carpeta de servidores: $SERVERS_PATH"
 
-    # Añadir SERVERS_PATH al .env
     echo "SERVERS_PATH=${SERVERS_PATH}" >> .env
 
-    sep "Instalando dependencias (nativo)"
+    sep "Instalando dependencias Python (nativo)"
 
-    # Python3 + pip
-    if ! command -v python3 &>/dev/null; then
-        pkg_install python3 python3-pip
-    fi
-    if ! command -v pip3 &>/dev/null; then
-        pkg_install python3-pip
-    fi
-    ok "Python3 $(python3 --version | grep -oP '\d+\.\d+\.\d+')"
-
-    # Dependencias Python
-    info "Instalando dependencias Python..."
-    pip3 install --quiet -r requirements.txt
-    ok "Dependencias instaladas"
+    info "Instalando paquetes de requirements.txt en el entorno virtual..."
+    "$VENV_PIP" install --quiet -r requirements.txt
+    ok "Dependencias Python instaladas"
 
     # Java
+    sep "Comprobando Java"
     if ! command -v java &>/dev/null; then
         warn "Java no encontrado. Instalando OpenJDK ${JAVA_VER}..."
         case $PKG in
@@ -291,7 +328,7 @@ else
     sep "Creando servicio systemd"
 
     SERVICE_FILE="/etc/systemd/system/minecraft-deployer.service"
-    sudo tee "$SERVICE_FILE" > /dev/null <<EOF
+    $SUDO tee "$SERVICE_FILE" > /dev/null <<EOF
 [Unit]
 Description=Minecraft Server Deployer
 After=network.target
@@ -301,7 +338,7 @@ Type=simple
 User=${USER}
 WorkingDirectory=${INSTALL_DIR}
 EnvironmentFile=${INSTALL_DIR}/.env
-ExecStart=$(command -v python3) ${INSTALL_DIR}/main.py
+ExecStart=${VENV_DIR}/bin/python ${INSTALL_DIR}/main.py
 Restart=on-failure
 RestartSec=5
 
@@ -309,9 +346,9 @@ RestartSec=5
 WantedBy=multi-user.target
 EOF
 
-    sudo systemctl daemon-reload
-    sudo systemctl enable minecraft-deployer
-    sudo systemctl restart minecraft-deployer
+    $SUDO systemctl daemon-reload
+    $SUDO systemctl enable minecraft-deployer
+    $SUDO systemctl restart minecraft-deployer
     ok "Servicio minecraft-deployer activo"
 
     MANAGE_STOP="sudo systemctl stop minecraft-deployer"
