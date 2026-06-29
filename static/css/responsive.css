@@ -1,0 +1,133 @@
+/* ── Responsive — breakpoint principal: 640px ──────────────────────────────── */
+
+@media (max-width: 640px) {
+
+  /* Nav: scroll horizontal en lugar de overflow */
+  .nav {
+    padding: 10px 12px 0;
+    gap: 2px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-wrap: nowrap;
+  }
+
+  .nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .nav-tab {
+    padding: 8px 10px;
+    font-size: .78rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* Páginas: menos padding */
+  .page {
+    padding: 12px;
+  }
+
+  .page > *:first-child {
+    margin-top: 12px;
+  }
+
+  .card {
+    padding: 14px;
+  }
+
+  /* Grids de 2 columnas → 1 columna */
+  .props-grid,
+  .ram-grid,
+  .result-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Métricas: 2x2 en lugar de 4x1 */
+  .metrics-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  /* Consola menos alta */
+  .console-wrap {
+    height: 280px;
+  }
+
+  /* World cards: acciones en nueva fila */
+  .world-card {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .wc-actions {
+    width: 100%;
+    margin-left: 0;
+    justify-content: flex-end;
+  }
+
+  /* Tabs de gestión: scroll horizontal */
+  .mgmt-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-wrap: nowrap;
+  }
+
+  .mgmt-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mgmt-tab {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* Modales: ocupan toda la pantalla */
+  .modal-overlay {
+    padding: 8px;
+    align-items: flex-end;
+  }
+
+  .modal,
+  .modal-sm,
+  .modal-dialog {
+    max-width: 100%;
+    max-height: 92vh;
+    border-radius: 12px 12px 0 0;
+  }
+
+  /* Barra de comandos */
+  .cmd-row {
+    flex-direction: column;
+  }
+
+  /* Input flex (buscar, etc.) */
+  .input-flex {
+    flex-direction: column;
+  }
+
+  /* Toast: ancho completo centrado */
+  .toast {
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+  }
+
+  /* Server pick: ocultar badges en pantallas muy pequeñas */
+  .server-pick-item {
+    flex-wrap: wrap;
+  }
+}
+
+/* ── Breakpoint medio: tablets (641–880px) ───────────────────────────────────── */
+
+@media (min-width: 641px) and (max-width: 880px) {
+  .metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .page {
+    padding: 16px;
+  }
+}
