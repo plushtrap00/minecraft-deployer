@@ -14,43 +14,59 @@ function parseConfigText(text) {
   var comments = [];
   var lines = text.split('\n');
   lines.forEach(function(line) {
-    var s = line.trim();
-    if (!s) {
+    var trimmedLine = line.trim();
+    if (!trimmedLine) {
       comments = [];
       return;
     }
-    var secM = s.match(/^\[([^\]]+)\]$/);
-    if (secM) {
-      if (current) sections.push(current);
-      current = { name: secM[1], fields: [] };
+    var sectionMatch = trimmedLine.match(/^\[([^\]]+)\]$/);
+    if (sectionMatch) {
+      if (current) {
+        sections.push(current);
+      }
+      current = { name: sectionMatch[1], fields: [] };
       comments = [];
       return;
     }
-    if (s.startsWith('#')) {
-      comments.push(s.substring(1).trim());
+    if (trimmedLine.startsWith('#')) {
+      comments.push(trimmedLine.substring(1).trim());
       return;
     }
-    var kvM = s.match(/^([\w.]+)\s*=\s*(.*)$/);
-    if (kvM && current) {
-      var key = kvM[1];
-      var val = kvM[2].trim();
-      var desc = [], defVal = null, range = null;
-      comments.forEach(function(c) {
-        if (c.startsWith('Default:')) defVal = c.substring(8).trim();
-        else if (c.startsWith('Range:')) range = c.substring(6).trim();
-        else desc.push(c);
+    var keyValueMatch = trimmedLine.match(/^([\w.]+)\s*=\s*(.*)$/);
+    if (keyValueMatch && current) {
+      var key = keyValueMatch[1];
+      var val = keyValueMatch[2].trim();
+      var desc = [];
+      var defVal = null;
+      var range = null;
+      comments.forEach(function(comment) {
+        if (comment.startsWith('Default:')) {
+          defVal = comment.substring(8).trim();
+        } else if (comment.startsWith('Range:')) {
+          range = comment.substring(6).trim();
+        } else {
+          desc.push(comment);
+        }
       });
       var type;
-      if (val === 'true' || val === 'false') type = 'boolean';
-      else if (val.startsWith('[')) type = 'list';
-      else if (/^-?\d+\.\d+$/.test(val)) type = 'float';
-      else if (/^-?\d+$/.test(val)) type = 'integer';
-      else type = 'string';
+      if (val === 'true' || val === 'false') {
+        type = 'boolean';
+      } else if (val.startsWith('[')) {
+        type = 'list';
+      } else if (/^-?\d+\.\d+$/.test(val)) {
+        type = 'float';
+      } else if (/^-?\d+$/.test(val)) {
+        type = 'integer';
+      } else {
+        type = 'string';
+      }
       current.fields.push({ key: key, value: val, type: type, desc: desc.join(' '), defVal: defVal, range: range });
       comments = [];
     }
   });
-  if (current) sections.push(current);
+  if (current) {
+    sections.push(current);
+  }
   return sections;
 }
 
@@ -61,39 +77,49 @@ function renderConfigForm(sections) {
     return;
   }
   var html = '';
-  sections.forEach(function(sec, si) {
-    html += '<div class="cfg-section"><div class="cfg-section-title">[' + sec.name + ']</div>';
-    sec.fields.forEach(function(f, fi) {
-      var inputId = 'cfg_' + si + '_' + fi;
+  sections.forEach(function(section, sectionIndex) {
+    html += '<div class="cfg-section"><div class="cfg-section-title">[' + section.name + ']</div>';
+    section.fields.forEach(function(field, fieldIndex) {
+      var inputId = 'cfg_' + sectionIndex + '_' + fieldIndex;
       html += '<div class="cfg-field">';
       html += '<div class="cfg-field-header">'
-        + '<span class="cfg-field-key">' + f.key + '</span>'
-        + '<span class="cfg-field-type">' + f.type + '</span>'
+        + '<span class="cfg-field-key">' + field.key + '</span>'
+        + '<span class="cfg-field-type">' + field.type + '</span>'
         + '</div>';
-      if (f.desc) html += '<div class="cfg-field-desc">' + escHtml(f.desc) + '</div>';
-      if (f.type === 'boolean') {
-        var on = f.value === 'true';
-        html += '<div class="cfg-toggle-row">'
-          + '<div class="toggle-track' + (on ? ' on' : '') + '" id="' + inputId + '"'
-          + ' data-si="' + si + '" data-fi="' + fi + '" data-cfgkey="' + f.key + '">'
-          + '<div class="toggle-thumb"></div></div>'
-          + '<span style="font-size:.83rem;color:var(--muted)">' + (on ? 'true' : 'false') + '</span>'
-          + '</div>';
-      } else if (f.type === 'list') {
-        html += '<textarea class="cfg-list-input" id="' + inputId + '"'
-          + ' data-si="' + si + '" data-fi="' + fi + '">'
-          + escHtml(f.value) + '</textarea>';
-      } else {
-        html += '<input type="' + (f.type === 'integer' || f.type === 'float' ? 'number' : 'text') + '"'
-          + ' class="cfg-input" id="' + inputId + '"'
-          + ' data-si="' + si + '" data-fi="' + fi + '"'
-          + ' value="' + escHtml(f.value) + '"'
-          + (f.type === 'float' ? ' step="any"' : '') + '>';
+      if (field.desc) {
+        html += '<div class="cfg-field-desc">' + escHtml(field.desc) + '</div>';
       }
-      if (f.defVal || f.range) {
+      if (field.type === 'boolean') {
+        var isOn = field.value === 'true';
+        var trackClass = isOn ? ' on' : '';
+        var boolLabel = isOn ? 'true' : 'false';
+        html += '<div class="cfg-toggle-row">'
+          + '<div class="toggle-track' + trackClass + '" id="' + inputId + '"'
+          + ' data-si="' + sectionIndex + '" data-fi="' + fieldIndex + '" data-cfgkey="' + field.key + '">'
+          + '<div class="toggle-thumb"></div></div>'
+          + '<span style="font-size:.83rem;color:var(--muted)">' + boolLabel + '</span>'
+          + '</div>';
+      } else if (field.type === 'list') {
+        html += '<textarea class="cfg-list-input" id="' + inputId + '"'
+          + ' data-si="' + sectionIndex + '" data-fi="' + fieldIndex + '">'
+          + escHtml(field.value) + '</textarea>';
+      } else {
+        var inputType = (field.type === 'integer' || field.type === 'float') ? 'number' : 'text';
+        var stepAttr = field.type === 'float' ? ' step="any"' : '';
+        html += '<input type="' + inputType + '"'
+          + ' class="cfg-input" id="' + inputId + '"'
+          + ' data-si="' + sectionIndex + '" data-fi="' + fieldIndex + '"'
+          + ' value="' + escHtml(field.value) + '"'
+          + stepAttr + '>';
+      }
+      if (field.defVal || field.range) {
         html += '<div class="cfg-field-meta">';
-        if (f.defVal) html += 'Por defecto: <span>' + escHtml(f.defVal) + '</span> ';
-        if (f.range) html += '&nbsp;·&nbsp; Rango: <span>' + escHtml(f.range) + '</span>';
+        if (field.defVal) {
+          html += 'Por defecto: <span>' + escHtml(field.defVal) + '</span> ';
+        }
+        if (field.range) {
+          html += '&nbsp;·&nbsp; Rango: <span>' + escHtml(field.range) + '</span>';
+        }
         html += '</div>';
       }
       html += '</div>';
@@ -105,44 +131,52 @@ function renderConfigForm(sections) {
     track.addEventListener('click', function() {
       this.classList.toggle('on');
       var label = this.nextElementSibling;
-      if (label) label.textContent = this.classList.contains('on') ? 'true' : 'false';
-      var si = parseInt(this.dataset.si);
-      var fi = parseInt(this.dataset.fi);
-      if (cfgParsed && cfgParsed[si] && cfgParsed[si].fields[fi]) {
-        cfgParsed[si].fields[fi].value = this.classList.contains('on') ? 'true' : 'false';
+      if (label) {
+        label.textContent = this.classList.contains('on') ? 'true' : 'false';
+      }
+      var sectionIndex = parseInt(this.dataset.si);
+      var fieldIndex = parseInt(this.dataset.fi);
+      if (cfgParsed && cfgParsed[sectionIndex] && cfgParsed[sectionIndex].fields[fieldIndex]) {
+        cfgParsed[sectionIndex].fields[fieldIndex].value = this.classList.contains('on') ? 'true' : 'false';
       }
     });
   });
 }
 
 function formToRawText() {
-  if (!cfgParsed) return cfgRawText;
+  if (!cfgParsed) {
+    return cfgRawText;
+  }
   var newVals = {};
-  cfgParsed.forEach(function(sec, si) {
-    sec.fields.forEach(function(f, fi) {
-      var id = 'cfg_' + si + '_' + fi;
+  cfgParsed.forEach(function(section, sectionIndex) {
+    section.fields.forEach(function(field, fieldIndex) {
+      var id = 'cfg_' + sectionIndex + '_' + fieldIndex;
       var el = document.getElementById(id);
-      if (!el) return;
-      var val = f.type === 'boolean' ? f.value : el.value;
-      newVals[sec.name + '::' + f.key] = val;
+      if (!el) {
+        return;
+      }
+      var val = field.type === 'boolean' ? field.value : el.value;
+      newVals[section.name + '::' + field.key] = val;
     });
   });
   var currentSec = null;
   var lines = cfgRawText.split('\n');
   return lines.map(function(line) {
-    var s = line.trim();
-    var secM = s.match(/^\[([^\]]+)\]$/);
-    if (secM) {
-      currentSec = secM[1];
+    var trimmedLine = line.trim();
+    var sectionMatch = trimmedLine.match(/^\[([^\]]+)\]$/);
+    if (sectionMatch) {
+      currentSec = sectionMatch[1];
       return line;
     }
-    if (s.startsWith('#') || !s) return line;
-    var kvM = s.match(/^([\w.]+)\s*=\s*(.*)$/);
-    if (kvM && currentSec) {
-      var lookup = currentSec + '::' + kvM[1];
+    if (trimmedLine.startsWith('#') || !trimmedLine) {
+      return line;
+    }
+    var keyValueMatch = trimmedLine.match(/^([\w.]+)\s*=\s*(.*)$/);
+    if (keyValueMatch && currentSec) {
+      var lookup = currentSec + '::' + keyValueMatch[1];
       if (newVals[lookup] !== undefined) {
         var indent = line.match(/^(\s*)/)[1];
-        return indent + kvM[1] + ' = ' + newVals[lookup];
+        return indent + keyValueMatch[1] + ' = ' + newVals[lookup];
       }
     }
     return line;
@@ -152,21 +186,23 @@ function formToRawText() {
 function setCfgMode(mode) {
   cfgFormMode = mode;
   var formView = document.getElementById('cfg-form-view');
-  var rawView  = document.getElementById('cfg-raw-view');
-  var btnForm  = document.getElementById('cfg-btn-form');
-  var btnRaw   = document.getElementById('cfg-btn-raw');
+  var rawView = document.getElementById('cfg-raw-view');
+  var btnForm = document.getElementById('cfg-btn-form');
+  var btnRaw = document.getElementById('cfg-btn-raw');
   if (mode === 'form') {
     formView.style.display = 'block';
-    rawView.style.display  = 'none';
+    rawView.style.display = 'none';
     btnForm.classList.add('active');
     btnRaw.classList.remove('active');
-    if (cfgParsed) renderConfigForm(cfgParsed);
+    if (cfgParsed) {
+      renderConfigForm(cfgParsed);
+    }
   } else {
     if (cfgParsed) {
       document.getElementById('config-editor').value = formToRawText();
     }
     formView.style.display = 'none';
-    rawView.style.display  = 'flex';
+    rawView.style.display = 'flex';
     btnRaw.classList.add('active');
     btnForm.classList.remove('active');
     syncLines();
@@ -194,8 +230,8 @@ function loadModpacks() {
   var list = document.getElementById('modpack-list');
   list.innerHTML = '<p class="empty-msg">Cargando...</p>';
   apiFetch('/api/modpacks')
-    .then(function(r) { return r.json(); })
-    .then(function(d) { renderModpacks(d.modpacks); })
+    .then(function(response) { return response.json(); })
+    .then(function(data) { renderModpacks(data.modpacks); })
     .catch(function() {
       list.innerHTML = '<p class="empty-msg" style="color:var(--red)">Error</p>';
     });
@@ -208,35 +244,41 @@ function renderModpacks(packs) {
     return;
   }
   list.innerHTML = '';
-  packs.forEach(function(p) {
+  packs.forEach(function(pack) {
     var badges = '';
-    if (p.has_server_properties) badges += '<span class="badge badge-props">server.properties</span> ';
-    if (p.has_config) badges += '<span class="badge badge-config">config/</span> ';
-    if (p.has_kubejs) badges += '<span class="badge badge-kjs">KubeJS</span> ';
-    if (!p.start_script) {
+    if (pack.has_server_properties) {
+      badges += '<span class="badge badge-props">server.properties</span> ';
+    }
+    if (pack.has_config) {
+      badges += '<span class="badge badge-config">config/</span> ';
+    }
+    if (pack.has_kubejs) {
+      badges += '<span class="badge badge-kjs">KubeJS</span> ';
+    }
+    if (!pack.start_script) {
       badges += '<span class="badge" style="background:rgba(248,81,73,.15);color:var(--red)">⚠ sin script arranque</span>';
     }
-    if (p.mc_version) {
-      badges += ' <span class="badge" style="background:rgba(88,166,255,.1);color:var(--accent)">MC ' + p.mc_version + '</span>';
+    if (pack.mc_version) {
+      badges += ' <span class="badge" style="background:rgba(88,166,255,.1);color:var(--accent)">MC ' + pack.mc_version + '</span>';
     }
-    if (p.modloader) {
-      badges += ' <span class="badge" style="background:rgba(210,153,34,.1);color:var(--yellow)">' + p.modloader + '</span>';
+    if (pack.modloader) {
+      badges += ' <span class="badge" style="background:rgba(210,153,34,.1);color:var(--yellow)">' + pack.modloader + '</span>';
     }
-    var el = document.createElement('div');
-    el.className = 'modpack-card';
-    el.dataset.name = p.name;
-    el.innerHTML = '<span style="font-size:1.4rem">🗂️</span>'
+    var element = document.createElement('div');
+    element.className = 'modpack-card';
+    element.dataset.name = pack.name;
+    element.innerHTML = '<span style="font-size:1.4rem">🗂️</span>'
       + '<div style="flex:1">'
-      + '<div style="font-weight:600">' + p.name + '</div>'
+      + '<div style="font-weight:600">' + pack.name + '</div>'
       + '<div style="margin-top:3px">' + badges + '</div>'
       + '</div>'
       + '<button class="btn-secondary" style="font-size:.78rem;padding:5px 10px">Gestionar →</button>';
-    el.querySelector('button').addEventListener('click', function(e) {
-      e.stopPropagation();
-      selectModpack(p.name);
+    element.querySelector('button').addEventListener('click', function(event) {
+      event.stopPropagation();
+      selectModpack(pack.name);
     });
-    el.addEventListener('click', function() { selectModpack(p.name); });
-    list.appendChild(el);
+    element.addEventListener('click', function() { selectModpack(pack.name); });
+    list.appendChild(element);
   });
 }
 
@@ -245,8 +287,8 @@ function selectModpack(name) {
     cancelFetchesMatching('/api/modpacks/' + encodeURIComponent(currentModpack));
   }
   currentModpack = name;
-  document.querySelectorAll('.modpack-card').forEach(function(c) {
-    c.classList.toggle('selected', c.dataset.name === name);
+  document.querySelectorAll('.modpack-card').forEach(function(card) {
+    card.classList.toggle('selected', card.dataset.name === name);
   });
   document.getElementById('mgmt-title').textContent = name;
   document.getElementById('mgmt-panel').classList.add('show');
@@ -261,15 +303,30 @@ function selectModpack(name) {
 });
 
 function activateMgmtTab(name) {
-  document.querySelectorAll('.mgmt-tab').forEach(function(t) { t.classList.remove('active'); });
-  document.querySelectorAll('.mgmt-content').forEach(function(c) { c.classList.remove('active'); });
+  document.querySelectorAll('.mgmt-tab').forEach(function(tab) {
+    tab.classList.remove('active');
+  });
+  document.querySelectorAll('.mgmt-content').forEach(function(content) {
+    content.classList.remove('active');
+  });
   document.getElementById('mtab-' + name).classList.add('active');
   document.getElementById('mgmt-' + name).classList.add('active');
-  if (name === 'mods') { loadModsList(); loadModpackVersion(); }
-  if (name === 'logs') loadLogList();
-  if (name === 'configs') loadModConfigs();
-  if (name === 'kubejs') loadKubejs();
-  if (name === 'props') loadServerProps();
+  if (name === 'mods') {
+    loadModsList();
+    loadModpackVersion();
+  }
+  if (name === 'logs') {
+    loadLogList();
+  }
+  if (name === 'configs') {
+    loadModConfigs();
+  }
+  if (name === 'kubejs') {
+    loadKubejs();
+  }
+  if (name === 'props') {
+    loadServerProps();
+  }
 }
 
 
@@ -287,23 +344,29 @@ function parseProps(text) {
   var props = {};
   text.split('\n').forEach(function(line) {
     line = line.trim();
-    if (!line || line.startsWith('#')) return;
+    if (!line || line.startsWith('#')) {
+      return;
+    }
     var eq = line.indexOf('=');
-    if (eq === -1) return;
+    if (eq === -1) {
+      return;
+    }
     props[line.substring(0, eq).trim()] = line.substring(eq + 1).trim();
   });
   return props;
 }
 
 function serializeProps(props) {
-  return Object.keys(props).map(function(k) { return k + '=' + props[k]; }).join('\n');
+  return Object.keys(props).map(function(key) { return key + '=' + props[key]; }).join('\n');
 }
 
 function propsToForm(props) {
   document.querySelectorAll('.prop-input').forEach(function(el) {
     var key = el.dataset.key;
     var val = props[key];
-    if (val === undefined) return;
+    if (val === undefined) {
+      return;
+    }
     if (el.tagName === 'SELECT' || el.type === 'text' || el.type === 'number') {
       el.value = val;
     }
@@ -311,12 +374,16 @@ function propsToForm(props) {
   document.querySelectorAll('.toggle-track[data-key]').forEach(function(track) {
     var key = track.dataset.key;
     var val = props[key];
-    if (val === undefined) return;
+    if (val === undefined) {
+      return;
+    }
     track.classList.toggle('on', val === 'true');
   });
   var unknown = {};
-  Object.keys(props).forEach(function(k) {
-    if (KNOWN_KEYS.indexOf(k) === -1) unknown[k] = props[k];
+  Object.keys(props).forEach(function(key) {
+    if (KNOWN_KEYS.indexOf(key) === -1) {
+      unknown[key] = props[key];
+    }
   });
   document.getElementById('props-raw-editor').value = serializeProps(unknown);
 }
@@ -325,12 +392,16 @@ function formToProps(originalText) {
   var props = parseProps(originalText);
   document.querySelectorAll('.prop-input').forEach(function(el) {
     var key = el.dataset.key;
-    if (!key) return;
+    if (!key) {
+      return;
+    }
     props[key] = el.value;
   });
   document.querySelectorAll('.toggle-track[data-key]').forEach(function(track) {
     var key = track.dataset.key;
-    if (!key) return;
+    if (!key) {
+      return;
+    }
     props[key] = track.classList.contains('on') ? 'true' : 'false';
   });
   var rawText = document.getElementById('props-raw-editor').value;
@@ -344,9 +415,13 @@ function buildPropsText(props, originalText) {
   var updated = {};
   var result = lines.map(function(line) {
     var trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) return line;
+    if (!trimmed || trimmed.startsWith('#')) {
+      return line;
+    }
     var eq = trimmed.indexOf('=');
-    if (eq === -1) return line;
+    if (eq === -1) {
+      return line;
+    }
     var key = trimmed.substring(0, eq).trim();
     if (props[key] !== undefined) {
       updated[key] = true;
@@ -354,8 +429,10 @@ function buildPropsText(props, originalText) {
     }
     return line;
   });
-  Object.keys(props).forEach(function(k) {
-    if (!updated[k]) result.push(k + '=' + props[k]);
+  Object.keys(props).forEach(function(key) {
+    if (!updated[key]) {
+      result.push(key + '=' + props[key]);
+    }
   });
   return result.join('\n');
 }
@@ -364,14 +441,16 @@ var originalPropsText = '';
 
 function loadServerProps() {
   apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/server-properties')
-    .then(function(r) {
-      if (!r.ok) throw new Error();
-      return r.json();
+    .then(function(response) {
+      if (!response.ok) {
+        throw new Error();
+      }
+      return response.json();
     })
-    .then(function(d) {
-      originalPropsText = d.content;
-      document.getElementById('props-editor').value = d.content;
-      propsToForm(parseProps(d.content));
+    .then(function(data) {
+      originalPropsText = data.content;
+      document.getElementById('props-editor').value = data.content;
+      propsToForm(parseProps(data.content));
     })
     .catch(function() {
       document.getElementById('props-editor').value = '# server.properties no encontrado';
@@ -388,9 +467,11 @@ document.querySelectorAll('.props-section-header').forEach(function(header) {
   });
 });
 
-document.getElementById('props-form').addEventListener('click', function(e) {
-  var track = e.target.closest('.toggle-track[data-key]');
-  if (track) track.classList.toggle('on');
+document.getElementById('props-form').addEventListener('click', function(event) {
+  var track = event.target.closest('.toggle-track[data-key]');
+  if (track) {
+    track.classList.toggle('on');
+  }
 });
 
 document.getElementById('save-props-btn').addEventListener('click', function() {
@@ -402,9 +483,9 @@ document.getElementById('save-props-btn').addEventListener('click', function() {
     method: 'POST',
     body: form
   })
-    .then(function(r) { return r.json(); })
-    .then(function(d) {
-      if (d.success) {
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      if (data.success) {
         originalPropsText = newText;
         showToast('✅ server.properties guardado', 'success');
       }
@@ -417,9 +498,9 @@ document.getElementById('save-props-btn').addEventListener('click', function() {
 function loadModConfigs() {
   document.getElementById('mod-tree').innerHTML = '<p class="empty-msg" style="padding:12px">Cargando...</p>';
   apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/configs')
-    .then(function(r) { return r.json(); })
-    .then(function(d) {
-      modConfigs = d.mods;
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      modConfigs = data.mods;
       filteredModKeys = sortedKeys(modConfigs, null);
       modPage = 0;
       renderTreePage('mod');
@@ -452,11 +533,11 @@ document.getElementById('pg-next').addEventListener('click', function() {
 function loadKubejs() {
   var tab = document.getElementById('mtab-kubejs');
   apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/kubejs')
-    .then(function(r) { return r.json(); })
-    .then(function(d) {
-      if (d.exists) {
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      if (data.exists) {
         tab.style.display = 'inline-block';
-        kubejsFiles = d.groups;
+        kubejsFiles = data.groups;
         filteredKjsKeys = sortedKeys(kubejsFiles, null);
         kjsPage = 0;
         renderTreePage('kjs');
@@ -491,28 +572,36 @@ var activeKjsFilter = '';
 
 function sortedKeys(data, filter) {
   var keys = Object.keys(data).sort(function(a, b) {
-    if (a === '__root__') return -1;
-    if (b === '__root__') return 1;
+    if (a === '__root__') {
+      return -1;
+    }
+    if (b === '__root__') {
+      return 1;
+    }
     return a.localeCompare(b);
   });
   if (filter) {
-    var f = filter.toLowerCase();
-    keys = keys.filter(function(k) {
-      if (k === '__root__') {
-        return data[k].some(function(x) { return x.toLowerCase().indexOf(f) !== -1; });
+    var filterLower = filter.toLowerCase();
+    keys = keys.filter(function(key) {
+      if (key === '__root__') {
+        return data[key].some(function(filename) { return filename.toLowerCase().indexOf(filterLower) !== -1; });
       }
-      return k.toLowerCase().indexOf(f) !== -1
-        || data[k].some(function(x) { return x.toLowerCase().indexOf(f) !== -1; });
+      return key.toLowerCase().indexOf(filterLower) !== -1
+        || data[key].some(function(filename) { return filename.toLowerCase().indexOf(filterLower) !== -1; });
     });
   }
   return keys;
 }
 
 function getFilteredFiles(files, groupKey, filter) {
-  if (!filter) return files;
-  var f = filter.toLowerCase();
-  if (groupKey !== '__root__' && groupKey.toLowerCase().indexOf(f) !== -1) return files;
-  return files.filter(function(x) { return x.toLowerCase().indexOf(f) !== -1; });
+  if (!filter) {
+    return files;
+  }
+  var filterLower = filter.toLowerCase();
+  if (groupKey !== '__root__' && groupKey.toLowerCase().indexOf(filterLower) !== -1) {
+    return files;
+  }
+  return files.filter(function(filename) { return filename.toLowerCase().indexOf(filterLower) !== -1; });
 }
 
 function renderTreePage(which) {
@@ -540,57 +629,64 @@ function renderTreePage(which) {
   var end = Math.min(start + PAGE_SIZE, total);
   var html = '';
   keys.slice(start, end).forEach(function(key) {
-    var label = key === '__root__'
-      ? (isKjs ? '📄 Raíz de kubejs' : '📄 Raíz de config')
-      : '📁 ' + key;
+    var label;
+    if (key === '__root__') {
+      label = isKjs ? '📄 Raíz de kubejs' : '📄 Raíz de config';
+    } else {
+      label = '📁 ' + key;
+    }
     var allFiles = data[key];
     var files = getFilteredFiles(allFiles, key, filter);
     var openClass = hasFilter ? ' open' : '';
-    var listOpen = hasFilter ? ' open' : '';
     html += '<div class="mod-group">'
       + '<div class="mod-group-header' + openClass + '"><span>' + label
       + ' <span style="color:var(--muted);font-weight:400">(' + files.length
       + (allFiles.length !== files.length ? '/' + allFiles.length : '') + ')</span></span>'
       + '<span class="mg-arrow">▶</span></div>'
-      + '<div class="mod-file-list' + listOpen + '">';
-    files.forEach(function(f) {
-      var fname = f.split('/').pop();
+      + '<div class="mod-file-list' + openClass + '">';
+    files.forEach(function(filePath) {
+      var fname = filePath.split('/').pop();
       var display = fname;
       if (hasFilter) {
-        var fi = fname.toLowerCase().indexOf(filter.toLowerCase());
-        if (fi !== -1) {
-          display = fname.substring(0, fi)
+        var filterLower = filter.toLowerCase();
+        var matchIndex = fname.toLowerCase().indexOf(filterLower);
+        if (matchIndex !== -1) {
+          display = fname.substring(0, matchIndex)
             + '<mark style="background:rgba(210,153,34,.35);color:var(--text);border-radius:2px">'
-            + fname.substring(fi, fi + filter.length) + '</mark>'
-            + fname.substring(fi + filter.length);
+            + fname.substring(matchIndex, matchIndex + filter.length) + '</mark>'
+            + fname.substring(matchIndex + filter.length);
         }
       }
-      html += '<div class="' + itemClass + '" data-path="' + f + '" data-type="' + (isKjs ? 'kjs' : 'cfg') + '">'
+      html += '<div class="' + itemClass + '" data-path="' + filePath + '" data-type="' + (isKjs ? 'kjs' : 'cfg') + '">'
         + display + '</div>';
     });
     html += '</div></div>';
   });
   tree.innerHTML = html;
-  tree.querySelectorAll('.mod-group-header').forEach(function(h) {
-    h.addEventListener('click', function() {
+  tree.querySelectorAll('.mod-group-header').forEach(function(header) {
+    header.addEventListener('click', function() {
       this.classList.toggle('open');
       this.nextElementSibling.classList.toggle('open');
     });
   });
   var totalPages = Math.ceil(total / PAGE_SIZE);
   pg.style.display = 'flex';
-  document.getElementById(infoId).textContent = totalPages > 1
-    ? 'Pág.' + (page + 1) + '/' + totalPages + ' (' + total + ')'
-    : total + ' mods';
+  if (totalPages > 1) {
+    document.getElementById(infoId).textContent = 'Pág.' + (page + 1) + '/' + totalPages + ' (' + total + ')';
+  } else {
+    document.getElementById(infoId).textContent = total + ' mods';
+  }
   document.getElementById(prevId).disabled = page === 0;
   document.getElementById(nextId).disabled = page >= totalPages - 1;
 }
 
 
 // -- File click delegation ----------------------------------------------------
-document.addEventListener('click', function(e) {
-  var item = e.target.closest('.mod-file-item');
-  if (!item) return;
+document.addEventListener('click', function(event) {
+  var item = event.target.closest('.mod-file-item');
+  if (!item) {
+    return;
+  }
   openFile(item.dataset.path, item.dataset.type);
 });
 
@@ -620,13 +716,15 @@ function openFile(path, type) {
   document.getElementById('editor-modal').classList.add('show');
   var endpoint = type === 'kjs' ? '/kubejs-file' : '/config-file';
   apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + endpoint + '?path=' + encodeURIComponent(path))
-    .then(function(r) { return r.json(); })
-    .then(function(d) {
-      cfgRawText = d.content;
-      document.getElementById('config-editor').value = d.content;
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      cfgRawText = data.content;
+      document.getElementById('config-editor').value = data.content;
       if (canForm) {
-        cfgParsed = parseConfigText(d.content);
-        if (cfgFormMode === 'form') renderConfigForm(cfgParsed);
+        cfgParsed = parseConfigText(data.content);
+        if (cfgFormMode === 'form') {
+          renderConfigForm(cfgParsed);
+        }
       }
       syncLines();
     })
@@ -644,12 +742,16 @@ function closeModal() {
 
 document.getElementById('modal-close-btn').addEventListener('click', closeModal);
 document.getElementById('modal-close-btn2').addEventListener('click', closeModal);
-document.getElementById('editor-modal').addEventListener('click', function(e) {
-  if (e.target === this) closeModal();
+document.getElementById('editor-modal').addEventListener('click', function(event) {
+  if (event.target === this) {
+    closeModal();
+  }
 });
 
 document.getElementById('modal-save-btn').addEventListener('click', function() {
-  if (!selectedConfigPath) return;
+  if (!selectedConfigPath) {
+    return;
+  }
   var parts = selectedConfigPath.split(':');
   var type = parts[0];
   var path = parts.slice(1).join(':');
@@ -667,9 +769,11 @@ document.getElementById('modal-save-btn').addEventListener('click', function() {
     method: 'POST',
     body: form
   })
-    .then(function(r) { return r.json(); })
-    .then(function(d) {
-      if (d.success) showToast('Archivo guardado', 'success');
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      if (data.success) {
+        showToast('Archivo guardado', 'success');
+      }
     })
     .catch(function() { showToast('Error al guardar', 'error'); });
 });
@@ -678,7 +782,9 @@ var ta = document.getElementById('config-editor');
 var ln = document.getElementById('line-numbers');
 
 function syncLines() {
-  if (!ta || !ln) return;
+  if (!ta || !ln) {
+    return;
+  }
   var lines = ta.value.split('\n');
   var nums = '';
   for (var i = 1; i <= lines.length; i++) {

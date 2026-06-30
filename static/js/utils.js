@@ -1,15 +1,17 @@
 // -- Utility helpers ----------------------------------------------------------
-function escHtml(s) {
-  if (!s) return '';
-  return String(s)
+function escHtml(str) {
+  if (!str) {
+    return '';
+  }
+  return String(str)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
 
-function escRegex(s) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+function escRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 
@@ -40,22 +42,26 @@ function showConfirm(title, msg, onConfirm) {
   });
   document.getElementById('dialog-ok').addEventListener('click', function() {
     overlay.classList.remove('show');
-    if (onConfirm) onConfirm();
+    if (onConfirm) {
+      onConfirm();
+    }
   });
   overlay.classList.add('show');
 }
 
-document.getElementById('dialog-overlay').addEventListener('click', function(e) {
-  if (e.target === this) this.classList.remove('show');
+document.getElementById('dialog-overlay').addEventListener('click', function(event) {
+  if (event.target === this) {
+    this.classList.remove('show');
+  }
 });
 
 
 // -- Toast --------------------------------------------------------------------
 function showToast(msg, type) {
-  var t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'toast show ' + (type || '');
+  var toastEl = document.getElementById('toast');
+  toastEl.textContent = msg;
+  toastEl.className = 'toast show ' + (type || '');
   setTimeout(function() {
-    t.className = 'toast';
+    toastEl.className = 'toast';
   }, 3000);
 }

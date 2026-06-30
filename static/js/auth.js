@@ -3,7 +3,10 @@ var authToken = localStorage.getItem('mc_token') || '';
 var currentRole = localStorage.getItem('mc_role') || 'user';
 
 function authHeaders() {
-  return authToken ? { 'Authorization': 'Bearer ' + authToken } : {};
+  if (authToken) {
+    return { 'Authorization': 'Bearer ' + authToken };
+  }
+  return {};
 }
 
 var _pendingFetches = {};
@@ -13,31 +16,38 @@ function apiFetch(url, opts) {
   opts.headers = Object.assign({}, opts.headers || {}, authHeaders());
 
   // GET requests: cancel any previous in-flight request to the same URL
-  var key = (opts.method || 'GET') + ':' + url;
+  var requestKey = (opts.method || 'GET') + ':' + url;
   if ((opts.method || 'GET') === 'GET') {
-    if (_pendingFetches[key]) _pendingFetches[key].abort();
-    var ctrl = new AbortController();
-    _pendingFetches[key] = ctrl;
-    opts.signal = ctrl.signal;
+    if (_pendingFetches[requestKey]) {
+      _pendingFetches[requestKey].abort();
+    }
+    var controller = new AbortController();
+    _pendingFetches[requestKey] = controller;
+    opts.signal = controller.signal;
   }
 
-  return fetch(url, opts).then(function(r) {
-    delete _pendingFetches[key];
-    if (r.status === 401) { logout(); throw new Error('Sesión expirada'); }
-    return r;
-  }).catch(function(e) {
-    delete _pendingFetches[key];
+  return fetch(url, opts).then(function(response) {
+    delete _pendingFetches[requestKey];
+    if (response.status === 401) {
+      logout();
+      throw new Error('Sesión expirada');
+    }
+    return response;
+  }).catch(function(error) {
+    delete _pendingFetches[requestKey];
     // Aborted requests die silently — no error UI
-    if (e.name === 'AbortError') return new Promise(function() {});
-    throw e;
+    if (error.name === 'AbortError') {
+      return new Promise(function() {});
+    }
+    throw error;
   });
 }
 
 function cancelFetchesMatching(prefix) {
-  Object.keys(_pendingFetches).forEach(function(k) {
-    if (k.indexOf(prefix) !== -1) {
-      _pendingFetches[k].abort();
-      delete _pendingFetches[k];
+  Object.keys(_pendingFetches).forEach(function(requestKey) {
+    if (requestKey.indexOf(prefix) !== -1) {
+      _pendingFetches[requestKey].abort();
+      delete _pendingFetches[requestKey];
     }
   });
 }
@@ -68,55 +78,63 @@ function onLoginSuccess(token, role) {
 }
 
 function doLogin() {
-  var user = document.getElementById('login-user').value.trim();
-  var pass = document.getElementById('login-pass').value;
-  var btn  = document.getElementById('login-btn');
-  var err  = document.getElementById('login-error');
-  if (!pass) {
-    err.textContent = 'Introduce la contraseña';
+  var username = document.getElementById('login-user').value.trim();
+  var password = document.getElementById('login-pass').value;
+  var btn = document.getElementById('login-btn');
+  var errorEl = document.getElementById('login-error');
+  if (!password) {
+    errorEl.textContent = 'Introduce la contraseña';
     return;
   }
   btn.disabled = true;
   btn.textContent = 'Entrando...';
-  err.textContent = '';
+  errorEl.textContent = '';
   var form = new FormData();
-  form.append('username', user);
-  form.append('password', pass);
+  form.append('username', username);
+  form.append('password', password);
   fetch('/api/auth/login', { method: 'POST', body: form })
-    .then(function(r) {
-      return r.json().then(function(d) { return { ok: r.ok, d: d }; });
+    .then(function(response) {
+      return response.json().then(function(data) {
+        return { ok: response.ok, data: data };
+      });
     })
-    .then(function(res) {
+    .then(function(result) {
       btn.disabled = false;
       btn.textContent = 'Entrar';
-      if (!res.ok) {
-        err.textContent = res.d.detail || 'Error de autenticación';
+      if (!result.ok) {
+        errorEl.textContent = result.data.detail || 'Error de autenticación';
         return;
       }
-      onLoginSuccess(res.d.token, res.d.role);
+      onLoginSuccess(result.data.token, result.data.role);
     })
-    .catch(function(e) {
+    .catch(function(error) {
       btn.disabled = false;
       btn.textContent = 'Entrar';
-      err.textContent = 'Error de red: ' + e.message;
+      errorEl.textContent = 'Error de red: ' + error.message;
     });
 }
 
 document.getElementById('login-btn').addEventListener('click', doLogin);
-document.getElementById('login-pass').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') doLogin();
+document.getElementById('login-pass').addEventListener('keydown', function(event) {
+  if (event.key === 'Enter') {
+    doLogin();
+  }
 });
 
 // Verificar token existente al arrancar
 (function checkExistingToken() {
-  if (!authToken) return;
+  if (!authToken) {
+    return;
+  }
   fetch('/api/auth/verify', { headers: authHeaders() })
-    .then(function(r) {
-      return r.json().then(function(d) { return { ok: r.ok, d: d }; });
+    .then(function(response) {
+      return response.json().then(function(data) {
+        return { ok: response.ok, data: data };
+      });
     })
-    .then(function(res) {
-      if (res.ok) {
-        currentRole = res.d.role || 'user';
+    .then(function(result) {
+      if (result.ok) {
+        currentRole = result.data.role || 'user';
         localStorage.setItem('mc_role', currentRole);
         document.getElementById('login-screen').classList.add('hidden');
         applyRoleUI();
@@ -124,5 +142,7 @@ document.getElementById('login-pass').addEventListener('keydown', function(e) {
         logout();
       }
     })
-    .catch(function() { logout(); });
+    .catch(function() {
+      logout();
+    });
 })();

@@ -1,14 +1,14 @@
 // -- Players ------------------------------------------------------------------
 function loadPlayers() {
   apiFetch('/api/players')
-    .then(function(r) { return r.json(); })
-    .then(function(d) {
-      renderPlayerList('ops-list', d.ops, 'op', function(p) {
-        return '<span class="pe-meta">Nivel ' + p.level + '</span>';
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      renderPlayerList('ops-list', data.ops, 'op', function(player) {
+        return '<span class="pe-meta">Nivel ' + player.level + '</span>';
       });
-      renderPlayerList('whitelist-list', d.whitelist, 'wl', null);
-      renderBanList('banned-list', d.banned_players, 'player');
-      renderBanList('banned-ips-list', d.banned_ips, 'ip');
+      renderPlayerList('whitelist-list', data.whitelist, 'wl', null);
+      renderBanList('banned-list', data.banned_players, 'player');
+      renderBanList('banned-ips-list', data.banned_ips, 'ip');
     })
     .catch(function() { showToast('Error al cargar jugadores', 'error'); });
 }
@@ -20,16 +20,17 @@ function renderPlayerList(containerId, players, type, extraFn) {
     return;
   }
   var html = '';
-  players.forEach(function(p) {
-    var name = p.name || p.uuid || '?';
-    var extra = extraFn ? extraFn(p) : '';
+  players.forEach(function(player) {
+    var name = player.name || player.uuid || '?';
+    var extra = extraFn ? extraFn(player) : '';
+    var removeLabel = type === 'op' ? 'Quitar op' : 'Eliminar';
     html += '<div class="player-entry">'
       + '<span style="font-size:1.1rem">👤</span>'
       + '<span class="pe-name">' + name + '</span>'
       + extra
       + '<div class="pe-actions">'
       + '<button class="btn-danger player-remove-btn" data-type="' + type + '" data-name="' + name + '" style="padding:3px 10px;font-size:.75rem">'
-      + (type === 'op' ? 'Quitar op' : 'Eliminar') + '</button>'
+      + removeLabel + '</button>'
       + '</div></div>';
   });
   el.innerHTML = html;
@@ -42,13 +43,15 @@ function renderBanList(containerId, bans, type) {
     return;
   }
   var html = '';
-  bans.forEach(function(b) {
-    var name = type === 'ip' ? b.ip : (b.name || b.uuid || '?');
-    var reason = b.reason || '';
+  bans.forEach(function(ban) {
+    var name = type === 'ip' ? ban.ip : (ban.name || ban.uuid || '?');
+    var reason = ban.reason || '';
+    var icon = type === 'ip' ? '🌐' : '👤';
+    var reasonHtml = reason ? '<div class="pe-meta">' + reason + '</div>' : '';
     html += '<div class="player-entry">'
-      + '<span style="font-size:1.1rem">' + (type === 'ip' ? '🌐' : '👤') + '</span>'
+      + '<span style="font-size:1.1rem">' + icon + '</span>'
       + '<div style="flex:1"><div class="pe-name">' + name + '</div>'
-      + (reason ? '<div class="pe-meta">' + reason + '</div>' : '')
+      + reasonHtml
       + '</div>'
       + '<div class="pe-actions">'
       + '<button class="btn-secondary player-unban-btn" data-type="' + type + '" data-name="' + name + '" style="padding:3px 10px;font-size:.75rem">Desbanear</button>'
@@ -57,39 +60,47 @@ function renderBanList(containerId, bans, type) {
   el.innerHTML = html;
 }
 
-document.addEventListener('click', function(e) {
-  var removeBtn = e.target.closest('.player-remove-btn');
+document.addEventListener('click', function(event) {
+  var removeBtn = event.target.closest('.player-remove-btn');
   if (removeBtn) {
     var type = removeBtn.dataset.type;
     var name = removeBtn.dataset.name;
-    if (type === 'op') removeOp(name);
-    else if (type === 'wl') removeWhitelist(name);
+    if (type === 'op') {
+      removeOp(name);
+    } else if (type === 'wl') {
+      removeWhitelist(name);
+    }
     return;
   }
-  var unbanBtn = e.target.closest('.player-unban-btn');
+  var unbanBtn = event.target.closest('.player-unban-btn');
   if (unbanBtn) {
-    var type2 = unbanBtn.dataset.type;
-    var name2 = unbanBtn.dataset.name;
-    if (type2 === 'player') unbanPlayer(name2);
-    else if (type2 === 'ip') unbanIp(name2);
+    var unbanType = unbanBtn.dataset.type;
+    var unbanName = unbanBtn.dataset.name;
+    if (unbanType === 'player') {
+      unbanPlayer(unbanName);
+    } else if (unbanType === 'ip') {
+      unbanIp(unbanName);
+    }
   }
 });
 
 function apiCall(method, url, body, successMsg) {
   return fetch(url, { method: method, body: body, headers: authHeaders() })
-    .then(function(r) {
-      return r.json().then(function(d) { return { ok: r.ok, d: d }; });
+    .then(function(response) {
+      return response.json().then(function(data) {
+        return { ok: response.ok, data: data };
+      });
     })
-    .then(function(res) {
-      if (res.ok && res.d.success) {
-        var n = res.d.synced ? res.d.synced.length : 0;
-        showToast(successMsg + ' (' + n + ' servers)', 'success');
+    .then(function(result) {
+      if (result.ok && result.data.success) {
+        var syncedCount = result.data.synced ? result.data.synced.length : 0;
+        showToast(successMsg + ' (' + syncedCount + ' servers)', 'success');
         loadPlayers();
       } else {
-        showToast('Error: ' + (res.d.detail || 'desconocido'), 'error');
+        showToast('Error: ' + (result.data.detail || 'desconocido'), 'error');
       }
     })
-    .catch(function(e) { showToast('Error: ' + e.message, 'error'); });
+    .catch(function(error) { showToast('Error: ' + error.message, 'error'); });
 }
 
 // Add op
@@ -106,8 +117,10 @@ document.getElementById('btn-add-op').addEventListener('click', function() {
     .then(function() { document.getElementById('op-name-input').value = ''; });
 });
 
-document.getElementById('op-name-input').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') document.getElementById('btn-add-op').click();
+document.getElementById('op-name-input').addEventListener('keydown', function(event) {
+  if (event.key === 'Enter') {
+    document.getElementById('btn-add-op').click();
+  }
 });
 
 function removeOp(name) {
@@ -135,8 +148,10 @@ document.getElementById('btn-add-wl').addEventListener('click', function() {
     .then(function() { document.getElementById('wl-name-input').value = ''; });
 });
 
-document.getElementById('wl-name-input').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') document.getElementById('btn-add-wl').click();
+document.getElementById('wl-name-input').addEventListener('keydown', function(event) {
+  if (event.key === 'Enter') {
+    document.getElementById('btn-add-wl').click();
+  }
 });
 
 function removeWhitelist(name) {
@@ -212,10 +227,13 @@ function doUnbanIp(ip) {
 // Sync all
 document.getElementById('btn-sync-all').addEventListener('click', function() {
   apiFetch('/api/players/sync', { method: 'POST' })
-    .then(function(r) { return r.json(); })
-    .then(function(d) {
-      if (d.warning) showToast(d.warning, '');
-      else showToast('Sincronizado a todos los servers', 'success');
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      if (data.warning) {
+        showToast(data.warning, '');
+      } else {
+        showToast('Sincronizado a todos los servers', 'success');
+      }
     })
     .catch(function() { showToast('Error al sincronizar', 'error'); });
 });

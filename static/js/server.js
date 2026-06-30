@@ -5,24 +5,28 @@ var mcDomain = '';
 
 function loadMcDomain() {
   apiFetch('/api/system-info')
-    .then(function(r) { return r.json(); })
-    .then(function(d) {
-      mcDomain = d.mc_domain || '';
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      mcDomain = data.mc_domain || '';
     })
     .catch(function() {});
 }
 
 function checkServerStatus() {
   apiFetch('/api/server/status')
-    .then(function(r) { return r.json(); })
-    .then(function(d) { applyServerState(d.running, d.modpack); })
+    .then(function(response) { return response.json(); })
+    .then(function(data) { applyServerState(data.running, data.modpack); })
     .catch(function() { applyServerState(false, null); });
 }
 
 function applyServerState(running, modpack) {
   serverRunning = running;
   var dot = document.getElementById('status-dot');
-  document.getElementById('status-modpack').textContent = running && modpack ? '— ' + modpack : '';
+  if (running && modpack) {
+    document.getElementById('status-modpack').textContent = '— ' + modpack;
+  } else {
+    document.getElementById('status-modpack').textContent = '';
+  }
   document.getElementById('stop-btn').style.display = running ? '' : 'none';
   document.getElementById('server-picker').style.display = running ? 'none' : 'block';
   document.getElementById('console-card').style.display = running ? 'block' : 'none';
@@ -31,7 +35,9 @@ function applyServerState(running, modpack) {
     dot.className = 'status-dot running';
     document.getElementById('status-text').textContent = 'Servidor en marcha';
     document.getElementById('console-modpack').textContent = modpack || '';
-    if (!sseSource) startSSE();
+    if (!sseSource) {
+      startSSE();
+    }
     startMetricsPolling();
   } else {
     dot.className = 'status-dot';
@@ -50,36 +56,41 @@ function loadServerPickList() {
   var list = document.getElementById('server-pick-list');
   list.innerHTML = '<p class="empty-msg">Cargando...</p>';
   apiFetch('/api/modpacks')
-    .then(function(r) { return r.json(); })
-    .then(function(d) {
-      var packs = d.modpacks;
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      var packs = data.modpacks;
       if (!packs || !packs.length) {
         list.innerHTML = '<p class="empty-msg">No hay modpacks instalados</p>';
         return;
       }
       list.innerHTML = '';
-      packs.forEach(function(p) {
-        var el = document.createElement('div');
-        el.className = 'server-pick-item' + (p.start_script ? '' : ' no-script');
-        var scriptLabel = p.start_script
-          ? '<span style="font-size:.72rem;color:var(--muted)">' + p.start_script + '</span>'
-          : '<span style="font-size:.72rem;color:var(--red)">sin script de arranque</span>';
-        var verLabel = (p.mc_version || p.modloader)
-          ? '<span style="font-size:.72rem;color:var(--accent);margin-left:6px">'
-            + (p.mc_version ? 'MC ' + p.mc_version : '')
-            + (p.mc_version && p.modloader ? ' · ' : '')
-            + (p.modloader || '') + '</span>'
-          : '';
-        el.innerHTML = '<span style="font-size:1.3rem">🗂️</span>'
+      packs.forEach(function(pack) {
+        var element = document.createElement('div');
+        element.className = 'server-pick-item' + (pack.start_script ? '' : ' no-script');
+        var scriptLabel;
+        if (pack.start_script) {
+          scriptLabel = '<span style="font-size:.72rem;color:var(--muted)">' + pack.start_script + '</span>';
+        } else {
+          scriptLabel = '<span style="font-size:.72rem;color:var(--red)">sin script de arranque</span>';
+        }
+        var verLabel = '';
+        if (pack.mc_version || pack.modloader) {
+          verLabel = '<span style="font-size:.72rem;color:var(--accent);margin-left:6px">'
+            + (pack.mc_version ? 'MC ' + pack.mc_version : '')
+            + (pack.mc_version && pack.modloader ? ' · ' : '')
+            + (pack.modloader || '') + '</span>';
+        }
+        var startDisabled = pack.start_script ? '' : ' disabled';
+        element.innerHTML = '<span style="font-size:1.3rem">🗂️</span>'
           + '<div style="flex:1">'
-          + '<div style="font-weight:600">' + p.name + '</div>'
+          + '<div style="font-weight:600">' + pack.name + '</div>'
           + '<div style="margin-top:2px">' + scriptLabel + verLabel + '</div>'
           + '</div>'
-          + '<button style="padding:6px 14px;font-size:.82rem"' + (p.start_script ? '' : ' disabled') + '>▶ Iniciar</button>';
-        if (p.start_script) {
-          el.querySelector('button').addEventListener('click', function() { startServer(p.name); });
+          + '<button style="padding:6px 14px;font-size:.82rem"' + startDisabled + '>▶ Iniciar</button>';
+        if (pack.start_script) {
+          element.querySelector('button').addEventListener('click', function() { startServer(pack.name); });
         }
-        list.appendChild(el);
+        list.appendChild(element);
       });
     })
     .catch(function() {
@@ -94,23 +105,27 @@ var netPublic = false;
 function applyNetToggleUI(isPublic) {
   var track = document.getElementById('net-toggle-track');
   var label = document.getElementById('net-toggle-label');
-  var desc  = document.getElementById('net-toggle-desc');
+  var desc = document.getElementById('net-toggle-desc');
   if (isPublic) {
     track.classList.add('on');
     label.textContent = '🌐 Público';
-    desc.textContent  = mcDomain ? 'Accesible desde internet · ' + mcDomain + ':25565' : 'Accesible desde internet';
+    if (mcDomain) {
+      desc.textContent = 'Accesible desde internet · ' + mcDomain + ':25565';
+    } else {
+      desc.textContent = 'Accesible desde internet';
+    }
   } else {
     track.classList.remove('on');
     label.textContent = '🏠 Solo LAN';
-    desc.textContent  = 'Solo accesible desde tu red local (192.168.1.x)';
+    desc.textContent = 'Solo accesible desde tu red local (192.168.1.x)';
   }
 }
 
 function loadFirewallStatus() {
   apiFetch('/api/firewall/status')
-    .then(function(r) { return r.json(); })
-    .then(function(d) {
-      netPublic = (d.mode === 'public');
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      netPublic = (data.mode === 'public');
       applyNetToggleUI(netPublic);
     })
     .catch(function() {});
@@ -124,24 +139,30 @@ document.getElementById('net-toggle-track').addEventListener('click', function()
   var form = new FormData();
   form.append('mode', newMode);
   apiFetch('/api/firewall/set', { method: 'POST', body: form })
-    .then(function(r) {
-      return r.json().then(function(d) { return { ok: r.ok, d: d }; });
+    .then(function(response) {
+      return response.json().then(function(data) {
+        return { ok: response.ok, data: data };
+      });
     })
-    .then(function(res) {
+    .then(function(result) {
       track.style.opacity = '';
       track.style.pointerEvents = '';
-      if (res.ok) {
-        netPublic = (res.d.mode === 'public');
+      if (result.ok) {
+        netPublic = (result.data.mode === 'public');
         applyNetToggleUI(netPublic);
-        showToast(netPublic ? '🌐 Firewall: acceso público activado' : '🏠 Firewall: solo LAN', 'success');
+        if (netPublic) {
+          showToast('🌐 Firewall: acceso público activado', 'success');
+        } else {
+          showToast('🏠 Firewall: solo LAN', 'success');
+        }
       } else {
-        showToast('Error: ' + (res.d.detail || 'no se pudo cambiar el firewall'), 'error');
+        showToast('Error: ' + (result.data.detail || 'no se pudo cambiar el firewall'), 'error');
       }
     })
-    .catch(function(e) {
+    .catch(function(error) {
       track.style.opacity = '';
       track.style.pointerEvents = '';
-      showToast('Error de red: ' + e.message, 'error');
+      showToast('Error de red: ' + error.message, 'error');
     });
 });
 
@@ -154,20 +175,22 @@ function startServer(modpack) {
   var form = new FormData();
   form.append('modpack', modpack);
   apiFetch('/api/server/start', { method: 'POST', body: form })
-    .then(function(r) {
-      return r.json().then(function(d) { return { ok: r.ok, d: d }; });
+    .then(function(response) {
+      return response.json().then(function(data) {
+        return { ok: response.ok, data: data };
+      });
     })
-    .then(function(res) {
-      if (res.ok) {
+    .then(function(result) {
+      if (result.ok) {
         document.getElementById('console').innerHTML = '';
         applyServerState(true, modpack);
       } else {
-        showToast(res.d.detail || 'Error al iniciar', 'error');
+        showToast(result.data.detail || 'Error al iniciar', 'error');
         applyServerState(false, null);
       }
     })
-    .catch(function(e) {
-      showToast(e.message, 'error');
+    .catch(function(error) {
+      showToast(error.message, 'error');
       applyServerState(false, null);
     });
 }
@@ -181,14 +204,18 @@ document.getElementById('stop-btn').addEventListener('click', function() {
 });
 
 document.getElementById('cmd-send-btn').addEventListener('click', sendCommand);
-document.getElementById('cmd-input').addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') sendCommand();
+document.getElementById('cmd-input').addEventListener('keydown', function(event) {
+  if (event.key === 'Enter') {
+    sendCommand();
+  }
 });
 
 function sendCommand() {
   var input = document.getElementById('cmd-input');
   var cmd = input.value.trim();
-  if (!cmd) return;
+  if (!cmd) {
+    return;
+  }
   input.value = '';
   var form = new FormData();
   form.append('cmd', cmd);
@@ -198,40 +225,46 @@ function sendCommand() {
 
 function startSSE() {
   sseSource = new EventSource('/api/server/logs?token=' + encodeURIComponent(authToken));
-  sseSource.onmessage = function(e) {
-    if (e.data === '__STOPPED__') {
+  sseSource.onmessage = function(event) {
+    if (event.data === '__STOPPED__') {
       applyServerState(false, null);
       return;
     }
-    appendLine(e.data);
+    appendLine(event.data);
   };
   sseSource.onerror = function() {
     setTimeout(function() {
-      if (serverRunning && !sseSource) startSSE();
+      if (serverRunning && !sseSource) {
+        startSSE();
+      }
     }, 3000);
   };
 }
 
 function appendLine(line) {
-  var el = document.getElementById('console');
-  if (!el) return;
+  var consoleEl = document.getElementById('console');
+  if (!consoleEl) {
+    return;
+  }
   var div = document.createElement('div');
   var clean = line.replace(/\[[0-9;]*m/g, '');
-  var low = clean.toLowerCase();
-  if (low.indexOf('error') !== -1 || low.indexOf('exception') !== -1) {
+  var lineLower = clean.toLowerCase();
+  if (lineLower.indexOf('error') !== -1 || lineLower.indexOf('exception') !== -1) {
     div.className = 'log-error';
-  } else if (low.indexOf('warn') !== -1) {
+  } else if (lineLower.indexOf('warn') !== -1) {
     div.className = 'log-warn';
-  } else if (low.indexOf('done') !== -1 || low.indexOf('joined') !== -1 || low.indexOf('left') !== -1) {
+  } else if (lineLower.indexOf('done') !== -1 || lineLower.indexOf('joined') !== -1 || lineLower.indexOf('left') !== -1) {
     div.className = 'log-done';
-  } else if (low.indexOf('loading') !== -1 || low.indexOf('starting') !== -1) {
+  } else if (lineLower.indexOf('loading') !== -1 || lineLower.indexOf('starting') !== -1) {
     div.className = 'log-info';
   }
   div.textContent = clean;
-  el.appendChild(div);
-  var excess = el.children.length - 800;
-  for (var i = 0; i < excess; i++) el.removeChild(el.firstChild);
-  el.scrollTop = el.scrollHeight;
+  consoleEl.appendChild(div);
+  var excess = consoleEl.children.length - 800;
+  for (var i = 0; i < excess; i++) {
+    consoleEl.removeChild(consoleEl.firstChild);
+  }
+  consoleEl.scrollTop = consoleEl.scrollHeight;
 }
 
 
@@ -240,7 +273,9 @@ var metricsTimer = null;
 
 function startMetricsPolling() {
   fetchMetrics();
-  if (!metricsTimer) metricsTimer = setInterval(fetchMetrics, 60000);
+  if (!metricsTimer) {
+    metricsTimer = setInterval(fetchMetrics, 60000);
+  }
   _startRelativeTicker();
 }
 
@@ -254,10 +289,10 @@ function stopMetricsPolling() {
 
 function fetchMetrics() {
   apiFetch('/api/server/metrics')
-    .then(function(r) { return r.json(); })
-    .then(function(d) {
-      updateMetricsUI(d);
-      if (d.spark_available) {
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      updateMetricsUI(data);
+      if (data.spark_available) {
         apiFetch('/api/server/metrics/refresh', { method: 'POST' }).catch(function() {});
       }
     })
@@ -278,13 +313,13 @@ function resetMetrics() {
   });
 }
 
-function updateMetricsUI(d) {
-  var players = d.players_online || [];
+function updateMetricsUI(data) {
+  var players = data.players_online || [];
   var playersRow = document.getElementById('metrics-players-row');
   if (players.length) {
     playersRow.style.display = 'block';
-    document.getElementById('metrics-players-list').innerHTML = players.map(function(p) {
-      return '<span class="player-chip">👤 ' + escHtml(p) + '</span>';
+    document.getElementById('metrics-players-list').innerHTML = players.map(function(playerName) {
+      return '<span class="player-chip">👤 ' + escHtml(playerName) + '</span>';
     }).join('');
   } else {
     playersRow.style.display = 'none';
@@ -292,40 +327,62 @@ function updateMetricsUI(d) {
 
   var sparkGrid = document.getElementById('metrics-grid-spark');
   var sparkBadge = document.getElementById('spark-badge');
-  if (d.spark_available) {
+  if (data.spark_available) {
     sparkGrid.style.display = '';
     sparkBadge.style.display = 'block';
-    var tps = d.tps;
+
+    var tps = data.tps;
     var tpsEl = document.getElementById('mv-tps');
     var tpsCard = document.getElementById('mc-tps');
     if (tps !== null && tps !== undefined) {
       tpsEl.textContent = tps.toFixed(1);
-      tpsCard.className = 'metric-card ' + (tps >= 19 ? 'good' : tps >= 15 ? 'warn' : 'bad');
+      if (tps >= 19) {
+        tpsCard.className = 'metric-card good';
+      } else if (tps >= 15) {
+        tpsCard.className = 'metric-card warn';
+      } else {
+        tpsCard.className = 'metric-card bad';
+      }
     } else {
       tpsEl.textContent = '—';
       tpsCard.className = 'metric-card';
     }
-    var mspt = d.mspt;
+
+    var mspt = data.mspt;
     var msptEl = document.getElementById('mv-mspt');
     var msptCard = document.getElementById('mc-mspt');
     if (mspt !== null && mspt !== undefined) {
       msptEl.textContent = mspt.toFixed(1);
-      msptCard.className = 'metric-card ' + (mspt <= 50 ? 'good' : mspt <= 100 ? 'warn' : 'bad');
+      if (mspt <= 50) {
+        msptCard.className = 'metric-card good';
+      } else if (mspt <= 100) {
+        msptCard.className = 'metric-card warn';
+      } else {
+        msptCard.className = 'metric-card bad';
+      }
     } else {
       msptEl.textContent = '—';
       msptCard.className = 'metric-card';
     }
-    var cpuProc = d.cpu_process;
+
+    var cpuProc = data.cpu_process;
     var cpuProcEl = document.getElementById('mv-cpu-proc');
     var cpuProcCard = document.getElementById('mc-cpu-proc');
     if (cpuProc !== null && cpuProc !== undefined) {
       cpuProcEl.textContent = cpuProc + '%';
-      cpuProcCard.className = 'metric-card ' + (cpuProc < 50 ? 'good' : cpuProc < 80 ? 'warn' : 'bad');
+      if (cpuProc < 50) {
+        cpuProcCard.className = 'metric-card good';
+      } else if (cpuProc < 80) {
+        cpuProcCard.className = 'metric-card warn';
+      } else {
+        cpuProcCard.className = 'metric-card bad';
+      }
     } else {
       cpuProcEl.textContent = '—';
       cpuProcCard.className = 'metric-card';
     }
-    var cpuSys = d.cpu_system;
+
+    var cpuSys = data.cpu_system;
     var cpuSysEl = document.getElementById('mv-cpu-sys');
     if (cpuSys !== null && cpuSys !== undefined) {
       cpuSysEl.textContent = cpuSys + '%';
@@ -341,17 +398,26 @@ function updateMetricsUI(d) {
 }
 
 function _startRelativeTicker() {
-  if (window._relativeTickerTimer) return;
+  if (window._relativeTickerTimer) {
+    return;
+  }
   window._relativeTickerTimer = setInterval(function() {
     var el = document.getElementById('metrics-updated');
-    if (!el || !window._metricsLastFetch) return;
+    if (!el || !window._metricsLastFetch) {
+      return;
+    }
     var sec = Math.floor((Date.now() - window._metricsLastFetch) / 1000);
-    var txt;
-    if (sec < 5) txt = 'ahora mismo';
-    else if (sec < 60) txt = 'hace ' + sec + 's';
-    else if (sec < 3600) txt = 'hace ' + Math.floor(sec / 60) + 'm ' + (sec % 60) + 's';
-    else txt = 'hace ' + Math.floor(sec / 3600) + 'h';
-    el.textContent = 'Actualizado ' + txt;
+    var timeText;
+    if (sec < 5) {
+      timeText = 'ahora mismo';
+    } else if (sec < 60) {
+      timeText = 'hace ' + sec + 's';
+    } else if (sec < 3600) {
+      timeText = 'hace ' + Math.floor(sec / 60) + 'm ' + (sec % 60) + 's';
+    } else {
+      timeText = 'hace ' + Math.floor(sec / 3600) + 'h';
+    }
+    el.textContent = 'Actualizado ' + timeText;
   }, 1000);
 }
 

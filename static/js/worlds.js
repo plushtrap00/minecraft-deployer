@@ -1,61 +1,66 @@
 // -- Mundos -------------------------------------------------------------------
 function loadWorlds() {
   var list = document.getElementById('worlds-list');
-  if (!list) return;
+  if (!list) {
+    return;
+  }
   list.innerHTML = '<p class="empty-msg">Cargando...</p>';
   apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/worlds')
-    .then(function(r) { return r.json(); })
-    .then(function(d) { renderWorlds(d); })
+    .then(function(response) { return response.json(); })
+    .then(function(data) { renderWorlds(data); })
     .catch(function() {
       list.innerHTML = '<p class="empty-msg" style="color:var(--red)">Error al cargar mundos</p>';
     });
 }
 
-function renderWorlds(d) {
+function renderWorlds(data) {
   var list = document.getElementById('worlds-list');
-  var worlds = d.worlds;
+  var worlds = data.worlds;
   if (!worlds || !worlds.length) {
     list.innerHTML = '<p class="empty-msg">No se detectaron mundos generados aún.</p>'
-      + '<p class="hint" style="margin-top:6px">Mundo configurado: <code>' + (d.active || 'world') + '</code>'
-      + ' · Tipo: <code>' + (d.level_type || 'minecraft:normal') + '</code></p>';
+      + '<p class="hint" style="margin-top:6px">Mundo configurado: <code>' + (data.active || 'world') + '</code>'
+      + ' · Tipo: <code>' + (data.level_type || 'minecraft:normal') + '</code></p>';
     return;
   }
   var html = '';
-  worlds.forEach(function(w) {
-    var activeBadge = w.active
+  worlds.forEach(function(world) {
+    var activeBadge = world.active
       ? '<span style="font-size:.72rem;background:rgba(63,185,80,.15);color:var(--green);padding:2px 8px;border-radius:99px;font-weight:600">✓ Activo</span>'
       : '';
-    var activateBtn = !w.active
-      ? '<button class="btn-secondary wc-activate" data-world="' + w.name + '" style="font-size:.78rem;padding:5px 10px">Activar</button>'
+    var activateBtn = !world.active
+      ? '<button class="btn-secondary wc-activate" data-world="' + world.name + '" style="font-size:.78rem;padding:5px 10px">Activar</button>'
       : '';
-    var deleteBtn = !w.active
-      ? '<button class="btn-danger wc-delete" data-world="' + w.name + '" style="font-size:.78rem;padding:5px 10px">🗑 Borrar</button>'
+    var deleteBtn = !world.active
+      ? '<button class="btn-danger wc-delete" data-world="' + world.name + '" style="font-size:.78rem;padding:5px 10px">🗑 Borrar</button>'
       : '';
-    var downloadUrl = '/api/modpacks/' + encodeURIComponent(currentModpack) + '/worlds/' + encodeURIComponent(w.name) + '/download?token=' + encodeURIComponent(authToken);
-    var downloadBtn = '<a href="' + downloadUrl + '" download="' + w.name + '.zip" class="btn-secondary" style="font-size:.78rem;padding:5px 10px;text-decoration:none">⬇ Descargar</a>';
-    html += '<div class="world-card' + (w.active ? ' active-world' : '') + '">'
-      + '<span style="font-size:1.5rem">' + (w.active ? '🟢' : '🌍') + '</span>'
+    var downloadUrl = '/api/modpacks/' + encodeURIComponent(currentModpack) + '/worlds/' + encodeURIComponent(world.name) + '/download?token=' + encodeURIComponent(authToken);
+    var downloadBtn = '<a href="' + downloadUrl + '" download="' + world.name + '.zip" class="btn-secondary" style="font-size:.78rem;padding:5px 10px;text-decoration:none">⬇ Descargar</a>';
+    var worldIcon = world.active ? '🟢' : '🌍';
+    var activeClass = world.active ? ' active-world' : '';
+    html += '<div class="world-card' + activeClass + '">'
+      + '<span style="font-size:1.5rem">' + worldIcon + '</span>'
       + '<div style="flex:1">'
-      + '<div style="font-weight:600">' + w.name + ' ' + activeBadge + '</div>'
-      + '<div style="font-size:.78rem;color:var(--muted)">' + w.size_mb + ' MB en disco</div>'
+      + '<div style="font-weight:600">' + world.name + ' ' + activeBadge + '</div>'
+      + '<div style="font-size:.78rem;color:var(--muted)">' + world.size_mb + ' MB en disco</div>'
       + '</div>'
       + '<div class="wc-actions">' + activateBtn + downloadBtn + deleteBtn + '</div>'
       + '</div>';
   });
-  html += '<p class="hint" style="margin-top:8px">Tipo actual: <code>' + (d.level_type || 'minecraft:normal') + '</code>'
-    + (d.seed ? ' · Seed: <code>' + d.seed + '</code>' : '') + '</p>';
+  var seedHint = data.seed ? ' · Seed: <code>' + data.seed + '</code>' : '';
+  html += '<p class="hint" style="margin-top:8px">Tipo actual: <code>' + (data.level_type || 'minecraft:normal') + '</code>'
+    + seedHint + '</p>';
   list.innerHTML = html;
 }
 
-document.addEventListener('click', function(e) {
-  var ab = e.target.closest('.wc-activate');
-  if (ab) {
-    activateWorld(ab.dataset.world);
+document.addEventListener('click', function(event) {
+  var activateBtn = event.target.closest('.wc-activate');
+  if (activateBtn) {
+    activateWorld(activateBtn.dataset.world);
     return;
   }
-  var db = e.target.closest('.wc-delete');
-  if (db) {
-    deleteWorld(db.dataset.world);
+  var deleteBtn = event.target.closest('.wc-delete');
+  if (deleteBtn) {
+    deleteWorld(deleteBtn.dataset.world);
   }
 });
 
@@ -74,9 +79,9 @@ function doActivateWorld(name) {
     method: 'POST',
     body: form
   })
-    .then(function(r) { return r.json(); })
-    .then(function(d) {
-      if (d.success) {
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      if (data.success) {
         showToast('Mundo activado', 'success');
         loadWorlds();
         loadServerProps();
@@ -97,9 +102,9 @@ function doDeleteWorld(name) {
   apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/worlds/' + encodeURIComponent(name), {
     method: 'DELETE'
   })
-    .then(function(r) { return r.json(); })
-    .then(function(d) {
-      if (d.success) {
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      if (data.success) {
         showToast('Mundo borrado', 'success');
         loadWorlds();
       }
@@ -123,25 +128,27 @@ var typeDescs = {
 
 (function() {
   var btnNew = document.getElementById('btn-new-world');
-  if (!btnNew) return;
+  if (!btnNew) {
+    return;
+  }
 
   btnNew.addEventListener('click', function() {
     var form = document.getElementById('new-world-form');
-    var open = form.style.display !== 'none';
-    form.style.display = open ? 'none' : 'block';
-    if (!open && currentModpack) {
+    var isOpen = form.style.display !== 'none';
+    form.style.display = isOpen ? 'none' : 'block';
+    if (!isOpen && currentModpack) {
       apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/detected-mods')
-        .then(function(r) { return r.json(); })
-        .then(function(d) {
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
           var bop = document.getElementById('opt-bop');
-          var tf  = document.getElementById('opt-tf');
+          var terraForged = document.getElementById('opt-tf');
           if (bop) {
-            bop.disabled = !d.has_biomesoplenty;
-            bop.textContent = '🌺 Biomes O Plenty' + (d.has_biomesoplenty ? ' — detectado' : ' — mod no detectado');
+            bop.disabled = !data.has_biomesoplenty;
+            bop.textContent = '🌺 Biomes O Plenty' + (data.has_biomesoplenty ? ' — detectado' : ' — mod no detectado');
           }
-          if (tf) {
-            tf.disabled = !d.has_terraforged;
-            tf.textContent = '🏔️ TerraForged' + (d.has_terraforged ? ' — detectado' : ' — mod no detectado');
+          if (terraForged) {
+            terraForged.disabled = !data.has_terraforged;
+            terraForged.textContent = '🏔️ TerraForged' + (data.has_terraforged ? ' — detectado' : ' — mod no detectado');
           }
         })
         .catch(function() {});
@@ -167,35 +174,42 @@ var typeDescs = {
       return;
     }
     var sel = document.getElementById('nw-type-select');
-    var type = sel.value === 'custom'
-      ? document.getElementById('nw-type-custom').value.trim()
-      : sel.value;
-    if (!type) {
+    var worldType;
+    if (sel.value === 'custom') {
+      worldType = document.getElementById('nw-type-custom').value.trim();
+    } else {
+      worldType = sel.value;
+    }
+    if (!worldType) {
       showAlert('Escribe el tipo de mundo');
       return;
     }
     var form = new FormData();
     form.append('world_name', name);
-    form.append('level_type', type);
+    form.append('level_type', worldType);
     form.append('seed', document.getElementById('nw-seed').value.trim());
     form.append('activate', nwActivate ? '1' : '0');
     apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/worlds/create', {
       method: 'POST',
       body: form
     })
-      .then(function(r) {
-        return r.json().then(function(d) { return { ok: r.ok, d: d }; });
+      .then(function(response) {
+        return response.json().then(function(data) {
+          return { ok: response.ok, data: data };
+        });
       })
-      .then(function(res) {
-        if (res.ok && res.d.success) {
-          showToast(res.d.message, 'success');
+      .then(function(result) {
+        if (result.ok && result.data.success) {
+          showToast(result.data.message, 'success');
           document.getElementById('new-world-form').style.display = 'none';
           document.getElementById('nw-name').value = '';
           document.getElementById('nw-seed').value = '';
           loadWorlds();
-          if (nwActivate) loadServerProps();
+          if (nwActivate) {
+            loadServerProps();
+          }
         } else {
-          showToast(res.d.detail || 'Error', 'error');
+          showToast(result.data.detail || 'Error', 'error');
         }
       })
       .catch(function() { showToast('Error al crear mundo', 'error'); });
@@ -204,7 +218,13 @@ var typeDescs = {
 
 function updateTypeDesc() {
   var sel = document.getElementById('nw-type-select');
-  if (!sel) return;
+  if (!sel) {
+    return;
+  }
   document.getElementById('nw-type-desc').textContent = typeDescs[sel.value] || '';
-  document.getElementById('nw-type-custom').style.display = sel.value === 'custom' ? 'block' : 'none';
+  if (sel.value === 'custom') {
+    document.getElementById('nw-type-custom').style.display = 'block';
+  } else {
+    document.getElementById('nw-type-custom').style.display = 'none';
+  }
 }

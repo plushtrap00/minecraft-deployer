@@ -3,7 +3,9 @@ var sysmonOpen = false;
 var sysmonTimer = null;
 
 document.getElementById('btn-logout').addEventListener('click', function() {
-  if (confirm('¿Cerrar sesión?')) logout();
+  if (confirm('¿Cerrar sesión?')) {
+    logout();
+  }
 });
 
 document.getElementById('btn-sysmon').addEventListener('click', function() {
@@ -13,7 +15,9 @@ document.getElementById('btn-sysmon').addEventListener('click', function() {
     panel.classList.add('open');
     this.classList.add('active');
     fetchSysmon();
-    if (!sysmonTimer) sysmonTimer = setInterval(fetchSysmon, 10000);
+    if (!sysmonTimer) {
+      sysmonTimer = setInterval(fetchSysmon, 10000);
+    }
   } else {
     panel.classList.remove('open');
     this.classList.remove('active');
@@ -38,26 +42,34 @@ document.getElementById('sysmon-refresh-btn').addEventListener('click', fetchSys
 
 function fetchSysmon() {
   apiFetch('/api/system-stats')
-    .then(function(r) {
-      return r.json().then(function(d) { return { ok: r.ok, d: d }; });
+    .then(function(response) {
+      return response.json().then(function(data) {
+        return { ok: response.ok, data: data };
+      });
     })
-    .then(function(res) {
-      if (!res.ok || !res.d || !res.d.cpu) {
-        var msg = (res.d && res.d.detail) ? res.d.detail : 'Respuesta inesperada del servidor';
+    .then(function(result) {
+      if (!result.ok || !result.data || !result.data.cpu) {
+        var errorMsg = (result.data && result.data.detail) ? result.data.detail : 'Respuesta inesperada del servidor';
         document.getElementById('sysmon-body').innerHTML =
-          '<p style="color:var(--red);font-size:.82rem">Error: ' + escHtml(msg) + '</p>';
+          '<p style="color:var(--red);font-size:.82rem">Error: ' + escHtml(errorMsg) + '</p>';
         return;
       }
-      renderSysmon(res.d);
+      renderSysmon(result.data);
     })
-    .catch(function(e) {
+    .catch(function(error) {
       document.getElementById('sysmon-body').innerHTML =
-        '<p style="color:var(--red);font-size:.82rem">Error de red: ' + escHtml(e.message) + '</p>';
+        '<p style="color:var(--red);font-size:.82rem">Error de red: ' + escHtml(error.message) + '</p>';
     });
 }
 
 function sysColor(pct) {
-  return pct < 60 ? 'ok' : pct < 85 ? 'warn' : 'bad';
+  if (pct < 60) {
+    return 'ok';
+  }
+  if (pct < 85) {
+    return 'warn';
+  }
+  return 'bad';
 }
 
 function sysBar(label, pct, valLabel) {
@@ -69,7 +81,7 @@ function sysBar(label, pct, valLabel) {
     + '</div>';
 }
 
-function renderSysmon(d) {
+function renderSysmon(stats) {
   var now = new Date();
   document.getElementById('sysmon-updated').textContent =
     now.getHours().toString().padStart(2, '0') + ':'
@@ -80,40 +92,45 @@ function renderSysmon(d) {
 
   html += '<div class="sysmon-section">';
   html += '<div class="sysmon-section-title">⚙️ CPU</div>';
-  html += sysBar('CPU', d.cpu.total_percent, d.cpu.total_percent.toFixed(0) + '%');
+  html += sysBar('CPU', stats.cpu.total_percent, stats.cpu.total_percent.toFixed(0) + '%');
   html += '</div>';
 
   html += '<div class="sysmon-section">';
   html += '<div class="sysmon-section-title">🧠 RAM</div>';
-  html += sysBar('RAM', d.ram.percent, d.ram.used_gb.toFixed(1) + ' / ' + d.ram.total_gb.toFixed(1) + ' GB');
+  html += sysBar('RAM', stats.ram.percent, stats.ram.used_gb.toFixed(1) + ' / ' + stats.ram.total_gb.toFixed(1) + ' GB');
   html += '</div>';
 
   html += '<div class="sysmon-section">';
   html += '<div class="sysmon-section-title">🌡️ Temperatura</div>';
-  var cpuTemps = [], gpuTemps = [];
-  if (d.temps) {
-    Object.keys(d.temps).forEach(function(chip) {
-      var entries = d.temps[chip] || [];
+  var cpuTemps = [];
+  var gpuTemps = [];
+  if (stats.temps) {
+    Object.keys(stats.temps).forEach(function(chip) {
+      var entries = stats.temps[chip] || [];
       var chipLow = chip.toLowerCase();
       var isCpu = chipLow.includes('cpu') || chipLow.includes('core') || chipLow.includes('k10')
         || chipLow.includes('coretemp') || chipLow.includes('acpi') || chipLow.includes('pch');
       var isGpu = chipLow.includes('gpu') || chipLow.includes('amdgpu') || chipLow.includes('radeon')
         || chipLow.includes('nouveau') || chipLow.includes('nvidia');
-      entries.forEach(function(t) {
-        if (isGpu) gpuTemps.push(t.current);
-        else if (isCpu) cpuTemps.push(t.current);
-        else cpuTemps.push(t.current);
+      entries.forEach(function(tempEntry) {
+        if (isGpu) {
+          gpuTemps.push(tempEntry.current);
+        } else if (isCpu) {
+          cpuTemps.push(tempEntry.current);
+        } else {
+          cpuTemps.push(tempEntry.current);
+        }
       });
     });
   }
   var hasAny = cpuTemps.length || gpuTemps.length;
   if (hasAny) {
     if (cpuTemps.length) {
-      var avgCpu = cpuTemps.reduce(function(a, b) { return a + b; }, 0) / cpuTemps.length;
+      var avgCpu = cpuTemps.reduce(function(acc, val) { return acc + val; }, 0) / cpuTemps.length;
       html += sysBar('CPU', avgCpu, avgCpu.toFixed(1) + '°C');
     }
     if (gpuTemps.length) {
-      var avgGpu = gpuTemps.reduce(function(a, b) { return a + b; }, 0) / gpuTemps.length;
+      var avgGpu = gpuTemps.reduce(function(acc, val) { return acc + val; }, 0) / gpuTemps.length;
       html += sysBar('GPU', avgGpu, avgGpu.toFixed(1) + '°C');
     }
   } else {
