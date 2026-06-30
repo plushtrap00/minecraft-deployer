@@ -13,6 +13,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.middleware.gzip import GZipMiddleware
 from dotenv import load_dotenv
 
 _ENV_PATH = Path(__file__).parent / ".env"
@@ -61,6 +62,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
 
 app = FastAPI(title="Minecraft Server Deployer")
+app.add_middleware(GZipMiddleware, minimum_size=500)
 app.add_middleware(AuthMiddleware)
 app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
 app.mount("/icon", StaticFiles(directory=Path(__file__).parent / "icon"), name="icon")
