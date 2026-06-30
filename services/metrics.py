@@ -110,25 +110,12 @@ def _parse_metrics_line(line: str):
 # ── RAM desde /proc ────────────────────────────────────────────────────────────
 def _get_child_pids(pid: int) -> list:
     """Devuelve todos los PIDs del arbol de procesos hijos (incluyendo el propio)."""
-    pids = [pid]
+    import psutil
     try:
-        children_path = Path(f"/proc/{pid}/task/{pid}/children")
-        if children_path.exists():
-            for child in children_path.read_text().split():
-                pids.extend(_get_child_pids(int(child)))
-        else:
-            for entry in Path("/proc").iterdir():
-                if not entry.name.isdigit():
-                    continue
-                try:
-                    for line in (entry / "status").read_text().splitlines():
-                        if line.startswith("PPid:") and int(line.split()[1]) == pid:
-                            pids.extend(_get_child_pids(int(entry.name)))
-                except Exception:
-                    pass
+        proc = psutil.Process(pid)
+        return [pid] + [c.pid for c in proc.children(recursive=True)]
     except Exception:
-        pass
-    return pids
+        return [pid]
 
 
 def _read_pid_vmrss_kb(pid: int) -> int:

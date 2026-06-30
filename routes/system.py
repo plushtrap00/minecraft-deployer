@@ -92,11 +92,15 @@ async def system_stats():
 
 
 async def _system_stats_inner():
-    import psutil, time
+    import psutil, time, asyncio
 
-    # CPU
-    cpu_total = psutil.cpu_percent(interval=0.3)
-    cpu_cores = psutil.cpu_percent(interval=0.3, percpu=True)
+    # CPU — llamadas bloqueantes en thread para no congelar el event loop
+    def _read_cpu():
+        total = psutil.cpu_percent(interval=0.3)
+        cores = psutil.cpu_percent(interval=0.3, percpu=True)
+        return total, cores
+
+    cpu_total, cpu_cores = await asyncio.to_thread(_read_cpu)
     cpu_count = psutil.cpu_count(logical=True)
     cpu_count_phys = psutil.cpu_count(logical=False)
     try:
