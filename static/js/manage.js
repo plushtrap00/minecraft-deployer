@@ -241,6 +241,9 @@ function renderModpacks(packs) {
 }
 
 function selectModpack(name) {
+  if (currentModpack && currentModpack !== name) {
+    cancelFetchesMatching('/api/modpacks/' + encodeURIComponent(currentModpack));
+  }
   currentModpack = name;
   document.querySelectorAll('.modpack-card').forEach(function(c) {
     c.classList.toggle('selected', c.dataset.name === name);

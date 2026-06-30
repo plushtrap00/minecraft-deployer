@@ -6,15 +6,39 @@ function authHeaders() {
   return authToken ? { 'Authorization': 'Bearer ' + authToken } : {};
 }
 
+var _pendingFetches = {};
+
 function apiFetch(url, opts) {
   opts = opts || {};
   opts.headers = Object.assign({}, opts.headers || {}, authHeaders());
+
+  // GET requests: cancel any previous in-flight request to the same URL
+  var key = (opts.method || 'GET') + ':' + url;
+  if ((opts.method || 'GET') === 'GET') {
+    if (_pendingFetches[key]) _pendingFetches[key].abort();
+    var ctrl = new AbortController();
+    _pendingFetches[key] = ctrl;
+    opts.signal = ctrl.signal;
+  }
+
   return fetch(url, opts).then(function(r) {
-    if (r.status === 401) {
-      logout();
-      throw new Error('Sesión expirada');
-    }
+    delete _pendingFetches[key];
+    if (r.status === 401) { logout(); throw new Error('Sesión expirada'); }
     return r;
+  }).catch(function(e) {
+    delete _pendingFetches[key];
+    // Aborted requests die silently — no error UI
+    if (e.name === 'AbortError') return new Promise(function() {});
+    throw e;
+  });
+}
+
+function cancelFetchesMatching(prefix) {
+  Object.keys(_pendingFetches).forEach(function(k) {
+    if (k.indexOf(prefix) !== -1) {
+      _pendingFetches[k].abort();
+      delete _pendingFetches[k];
+    }
   });
 }
 
