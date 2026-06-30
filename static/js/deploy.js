@@ -163,7 +163,6 @@ document.getElementById('deploy-btn').addEventListener('click', function() {
       return r.json().then(function(d) { return { ok: r.ok, d: d }; });
     })
     .then(function(res) {
-      clearInterval(timer);
       fill.style.width = '100%';
       if (res.ok && res.d.success) {
         fill.classList.add('done');
@@ -188,6 +187,7 @@ document.getElementById('deploy-btn').addEventListener('click', function() {
       showResult('error', 'Error de red', e.message, []);
     })
     .finally(function() {
+      clearInterval(timer);
       btn.disabled = false;
     });
 });

@@ -20,6 +20,9 @@ from config import DEFAULT_SERVERS_PATH, CONFIG_EXTENSIONS
 
 KUBEJS_EXTENSIONS = {".js", ".ts", ".json", ".yaml", ".yml", ".txt", ".md"}
 
+_configs_cache: dict = {}   # modpack -> (dir_mtime, result)
+_kubejs_cache: dict = {}    # modpack -> (dir_mtime, result)
+
 
 def get_system_ram_gb() -> float | None:
     """Devuelve la RAM total del sistema en GB leyendo /proc/meminfo."""
@@ -50,10 +53,21 @@ def get_mod_configs(modpack_name: str) -> dict:
     Devuelve un dict {mod_key: [lista de rutas relativas]} con los archivos
     de configuración de un modpack, agrupados por subcarpeta bajo config/.
     Los archivos en la raíz de config/ se agrupan bajo '__root__'.
+    Resultado cacheado por mtime del directorio config/.
     """
     config_dir = DEFAULT_SERVERS_PATH / modpack_name / "config"
     if not config_dir.exists():
         return {}
+
+    try:
+        mtime = config_dir.stat().st_mtime
+    except Exception:
+        mtime = None
+
+    if modpack_name in _configs_cache:
+        cached_mtime, cached_result = _configs_cache[modpack_name]
+        if cached_mtime == mtime:
+            return cached_result
 
     mods: dict = {}
     for path in sorted(config_dir.rglob("*")):
@@ -66,6 +80,7 @@ def get_mod_configs(modpack_name: str) -> dict:
         mod_key = "__root__" if len(parts) == 1 else parts[0]
         mods.setdefault(mod_key, []).append(str(rel))
 
+    _configs_cache[modpack_name] = (mtime, mods)
     return mods
 
 
@@ -73,10 +88,21 @@ def get_kubejs_files(modpack_name: str) -> dict:
     """
     Devuelve un dict {grupo: [lista de rutas relativas]} con los archivos
     KubeJS de un modpack, agrupados por subcarpeta bajo kubejs/.
+    Resultado cacheado por mtime del directorio kubejs/.
     """
     kubejs_dir = DEFAULT_SERVERS_PATH / modpack_name / "kubejs"
     if not kubejs_dir.exists():
         return {}
+
+    try:
+        mtime = kubejs_dir.stat().st_mtime
+    except Exception:
+        mtime = None
+
+    if modpack_name in _kubejs_cache:
+        cached_mtime, cached_result = _kubejs_cache[modpack_name]
+        if cached_mtime == mtime:
+            return cached_result
 
     groups: dict = {}
     for path in sorted(kubejs_dir.rglob("*")):
@@ -89,6 +115,7 @@ def get_kubejs_files(modpack_name: str) -> dict:
         group = parts[0] if len(parts) > 1 else "__root__"
         groups.setdefault(group, []).append(str(rel))
 
+    _kubejs_cache[modpack_name] = (mtime, groups)
     return groups
 
 

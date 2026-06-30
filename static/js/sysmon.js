@@ -13,7 +13,7 @@ document.getElementById('btn-sysmon').addEventListener('click', function() {
     panel.classList.add('open');
     this.classList.add('active');
     fetchSysmon();
-    if (!sysmonTimer) sysmonTimer = setInterval(fetchSysmon, 3000);
+    if (!sysmonTimer) sysmonTimer = setInterval(fetchSysmon, 10000);
   } else {
     panel.classList.remove('open');
     this.classList.remove('active');

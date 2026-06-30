@@ -229,7 +229,8 @@ function appendLine(line) {
   }
   div.textContent = clean;
   el.appendChild(div);
-  while (el.children.length > 800) el.removeChild(el.firstChild);
+  var excess = el.children.length - 800;
+  for (var i = 0; i < excess; i++) el.removeChild(el.firstChild);
   el.scrollTop = el.scrollHeight;
 }
 

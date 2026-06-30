@@ -45,12 +45,32 @@ def mc_from_forge(ver: str) -> str | None:
     return None
 
 
+_version_cache: dict = {}  # modpack_name -> (dir_mtime, result)
+
+
 def detect_modpack_version(modpack: str) -> dict:
     """
     Detecta la versión de MC y el modloader de un modpack.
     Orden de prioridad: variables.txt > jar filenames > server.properties (vanilla).
+    Resultado cacheado por mtime del directorio.
     """
     base = DEFAULT_SERVERS_PATH / modpack
+    try:
+        mtime = base.stat().st_mtime
+    except Exception:
+        mtime = None
+
+    if modpack in _version_cache:
+        cached_mtime, cached_result = _version_cache[modpack]
+        if cached_mtime == mtime:
+            return cached_result
+
+    result = _detect_modpack_version_impl(base)
+    _version_cache[modpack] = (mtime, result)
+    return result
+
+
+def _detect_modpack_version_impl(base: Path) -> dict:
     result = {"mc_version": None, "modloader": None, "modloader_version": None}
 
     # 1. variables.txt

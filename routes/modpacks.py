@@ -23,6 +23,7 @@ import re
 import json
 import gzip
 import shutil
+import asyncio
 from fastapi import APIRouter, File, UploadFile, Form, HTTPException
 from fastapi.responses import JSONResponse
 
@@ -157,12 +158,13 @@ async def upload_and_extract(
     dest = DEFAULT_SERVERS_PATH / folder_name.strip()
     temp_file = TEMP_DIR / file.filename
     try:
-        import shutil as _shutil
-        with open(temp_file, "wb") as buffer:
-            _shutil.copyfileobj(file.file, buffer)
+        def _write_temp():
+            with open(temp_file, "wb") as buffer:
+                shutil.copyfileobj(file.file, buffer)
 
+        await asyncio.to_thread(_write_temp)
         file_size_mb = temp_file.stat().st_size / (1024 * 1024)
-        result = extract_archive(temp_file, dest)
+        result = await asyncio.to_thread(extract_archive, temp_file, dest)
 
         jvm_configured = None
         if configure_ram == "1" and ram_min and ram_max:
@@ -336,7 +338,9 @@ async def download_world(modpack: str, world_name: str):
     tmp_dir = tempfile.mkdtemp()
     try:
         archive_base = os.path.join(tmp_dir, world_name)
-        archive_path = shutil.make_archive(archive_base, "zip", root_dir=str(base), base_dir=world_name)
+        archive_path = await asyncio.to_thread(
+            lambda: shutil.make_archive(archive_base, "zip", root_dir=str(base), base_dir=world_name)
+        )
     except Exception as e:
         shutil.rmtree(tmp_dir, ignore_errors=True)
         raise HTTPException(status_code=500, detail=str(e))
@@ -407,10 +411,12 @@ async def get_log_file(modpack: str, filename: str):
     if file_path is None:
         raise HTTPException(status_code=404, detail="Archivo no encontrado")
     if filename.endswith(".gz"):
-        with gzip.open(file_path, "rt", encoding="utf-8", errors="replace") as f:
-            raw = f.read()
+        def _read_gz():
+            with gzip.open(file_path, "rt", encoding="utf-8", errors="replace") as f:
+                return f.read()
+        raw = await asyncio.to_thread(_read_gz)
     else:
-        raw = file_path.read_text(encoding="utf-8", errors="replace")
+        raw = await asyncio.to_thread(file_path.read_text, encoding="utf-8", errors="replace")
     culprits = analyze_crash(raw, modpack)
     return JSONResponse({"content": raw, "culprits": culprits, "filename": filename})
 
@@ -431,18 +437,18 @@ async def set_firewall(mode: str = Form(...)):
     if mode not in ("lan", "public"):
         raise HTTPException(status_code=400, detail="mode debe ser 'lan' o 'public'")
 
-    def run(cmd: list) -> tuple[int, str]:
-        r = subprocess.run(["sudo"] + cmd, capture_output=True, text=True)
+    async def run(cmd: list) -> tuple[int, str]:
+        r = await asyncio.to_thread(subprocess.run, ["sudo"] + cmd, capture_output=True, text=True)
         return r.returncode, r.stdout + r.stderr
 
     # Primero limpiar reglas existentes del 25565
-    run(["ufw", "delete", "allow", "25565"])
-    run(["ufw", "delete", "allow", "from", "192.168.1.0/24", "to", "any", "port", "25565"])
+    await run(["ufw", "delete", "allow", "25565"])
+    await run(["ufw", "delete", "allow", "from", "192.168.1.0/24", "to", "any", "port", "25565"])
 
     if mode == "public":
-        code, out = run(["ufw", "allow", "25565"])
+        code, out = await run(["ufw", "allow", "25565"])
     else:
-        code, out = run(["ufw", "allow", "from", "192.168.1.0/24", "to", "any", "port", "25565"])
+        code, out = await run(["ufw", "allow", "from", "192.168.1.0/24", "to", "any", "port", "25565"])
 
     if code != 0:
         raise HTTPException(status_code=500, detail=f"Error ejecutando ufw: {out}")
@@ -454,7 +460,7 @@ async def set_firewall(mode: str = Form(...)):
 async def firewall_status():
     """Devuelve el modo actual del firewall para el puerto 25565."""
     import subprocess
-    r = subprocess.run(["sudo", "ufw", "status"], capture_output=True, text=True)
+    r = await asyncio.to_thread(subprocess.run, ["sudo", "ufw", "status"], capture_output=True, text=True)
     output = r.stdout
 
     # Detectar si hay regla pública (ALLOW Anywhere en 25565)

@@ -10,6 +10,7 @@ Contiene:
 """
 import os
 import threading
+from collections import deque
 from pathlib import Path
 
 from config import DEFAULT_SERVERS_PATH, MAX_LOG_LINES
@@ -18,7 +19,7 @@ from config import DEFAULT_SERVERS_PATH, MAX_LOG_LINES
 mc_process = None
 mc_process_lock = threading.Lock()
 
-mc_output_lines: list = []
+mc_output_lines: deque = deque(maxlen=MAX_LOG_LINES)
 mc_output_lock = threading.Lock()
 
 mc_sse_clients: set = set()
@@ -32,8 +33,6 @@ def _broadcast(line: str):
     """Añade una línea al buffer de logs y la envía a todos los clientes SSE activos."""
     with mc_output_lock:
         mc_output_lines.append(line)
-        if len(mc_output_lines) > MAX_LOG_LINES:
-            mc_output_lines.pop(0)
     with mc_sse_lock:
         dead = set()
         for q in mc_sse_clients:

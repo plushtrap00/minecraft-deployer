@@ -248,9 +248,6 @@ function selectModpack(name) {
   document.getElementById('mgmt-title').textContent = name;
   document.getElementById('mgmt-panel').classList.add('show');
   activateMgmtTab('props');
-  loadServerProps();
-  loadModConfigs();
-  loadKubejs();
   loadWorlds();
 }
 

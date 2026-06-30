@@ -21,6 +21,8 @@ from services.utils import get_modpacks
 GLOBAL_DIR = DEFAULT_SERVERS_PATH / ".global"
 PLAYER_FILES = ["ops.json", "whitelist.json", "banned-players.json", "banned-ips.json"]
 
+_global_dir_initialized = False
+
 
 def ensure_global_dir():
     """
@@ -28,6 +30,9 @@ def ensure_global_dir():
     Si un modpack ya tiene datos para ese archivo, los importa como estado inicial
     para no perder información existente.
     """
+    global _global_dir_initialized
+    if _global_dir_initialized and GLOBAL_DIR.exists():
+        return
     GLOBAL_DIR.mkdir(exist_ok=True)
     for fname in PLAYER_FILES:
         fpath = GLOBAL_DIR / fname
@@ -48,6 +53,7 @@ def ensure_global_dir():
                     pass
         if not imported:
             fpath.write_text("[]", encoding="utf-8")
+    _global_dir_initialized = True
 
 
 def read_global_file(fname: str) -> list:

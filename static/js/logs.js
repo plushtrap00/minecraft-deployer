@@ -131,8 +131,12 @@ function renderLog() {
   }
 }
 
+var _logSearchTimer = null;
 document.getElementById('log-search').addEventListener('input', function() {
-  if (rawLogContent) renderLog();
+  clearTimeout(_logSearchTimer);
+  _logSearchTimer = setTimeout(function() {
+    if (rawLogContent) renderLog();
+  }, 200);
 });
 
 document.getElementById('log-filter').addEventListener('change', function() {
