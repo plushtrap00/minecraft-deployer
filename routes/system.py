@@ -120,13 +120,8 @@ async def system_stats_stream():
     )
 
 
-async def _get_system_stats_light() -> dict:
-    """CPU total, RAM y temperaturas: lo único que renderiza el panel flotante."""
-    import psutil, asyncio
-
-    cpu_total = await asyncio.to_thread(psutil.cpu_percent, 0.3)
-    mem = psutil.virtual_memory()
-
+def _read_temps_raw() -> dict:
+    import psutil
     temps_out = {}
     try:
         for chip, entries in psutil.sensors_temperatures().items():
@@ -141,40 +136,85 @@ async def _get_system_stats_light() -> dict:
             ]
     except Exception:
         pass
+    return temps_out
+
+
+def _avg_cpu_gpu_temp(temps_raw: dict):
+    """
+    Reduce el desglose por sensor a dos medias (CPU/GPU), clasificando por
+    nombre de chip. Es la misma heurística que antes vivía en sysmon.js.
+    """
+    cpu_vals = []
+    gpu_vals = []
+    for chip, entries in temps_raw.items():
+        chip_low = chip.lower()
+        is_gpu = any(k in chip_low for k in ("gpu", "amdgpu", "radeon", "nouveau", "nvidia"))
+        bucket = gpu_vals if is_gpu else cpu_vals
+        bucket.extend(e["current"] for e in entries)
+    cpu_temp = round(sum(cpu_vals) / len(cpu_vals), 1) if cpu_vals else None
+    gpu_temp = round(sum(gpu_vals) / len(gpu_vals), 1) if gpu_vals else None
+    return cpu_temp, gpu_temp
+
+
+async def _get_system_stats_light() -> dict:
+    """CPU total, RAM y temperatura media CPU/GPU: lo único que renderiza el panel flotante."""
+    import psutil, asyncio
+
+    cpu_total = await asyncio.to_thread(psutil.cpu_percent, 0.3)
+    mem = psutil.virtual_memory()
+    cpu_temp, gpu_temp = _avg_cpu_gpu_temp(_read_temps_raw())
 
     return {
         "cpu": {"total_percent": cpu_total},
         "ram": {
             "total_gb": round(mem.total / 1024**3, 1),
             "used_gb": round(mem.used / 1024**3, 1),
-            "available_gb": round(mem.available / 1024**3, 1),
             "percent": mem.percent,
         },
-        "temps": temps_out,
+        "cpu_temp": cpu_temp,
+        "gpu_temp": gpu_temp,
     }
 
 
 async def _get_system_stats_full() -> dict:
-    """Todo lo de _get_system_stats_light() más cores, swap, discos, red y top procesos."""
+    """CPU (total + por core), RAM, swap, temperaturas por sensor, discos, red y top procesos."""
     import psutil, asyncio
 
-    stats = await _get_system_stats_light()
+    def _read_cpu():
+        total = psutil.cpu_percent(interval=0.3)
+        cores = psutil.cpu_percent(interval=0.3, percpu=True)
+        return total, cores
 
-    cpu_cores = await asyncio.to_thread(psutil.cpu_percent, 0.3, True)
-    stats["cpu"]["cores"] = cpu_cores
-    stats["cpu"]["logical_count"] = psutil.cpu_count(logical=True)
-    stats["cpu"]["physical_count"] = psutil.cpu_count(logical=False)
+    cpu_total, cpu_cores = await asyncio.to_thread(_read_cpu)
     try:
         cpu_freq = psutil.cpu_freq()
-        stats["cpu"]["freq_mhz"] = round(cpu_freq.current) if cpu_freq else None
+        cpu_freq_mhz = round(cpu_freq.current) if cpu_freq else None
     except Exception:
-        stats["cpu"]["freq_mhz"] = None
+        cpu_freq_mhz = None
 
+    mem = psutil.virtual_memory()
     swap = psutil.swap_memory()
-    stats["swap"] = {
-        "total_gb": round(swap.total / 1024**3, 1),
-        "used_gb": round(swap.used / 1024**3, 1),
-        "percent": swap.percent,
+
+    stats = {
+        "cpu": {
+            "total_percent": cpu_total,
+            "cores": cpu_cores,
+            "logical_count": psutil.cpu_count(logical=True),
+            "physical_count": psutil.cpu_count(logical=False),
+            "freq_mhz": cpu_freq_mhz,
+        },
+        "ram": {
+            "total_gb": round(mem.total / 1024**3, 1),
+            "used_gb": round(mem.used / 1024**3, 1),
+            "available_gb": round(mem.available / 1024**3, 1),
+            "percent": mem.percent,
+        },
+        "swap": {
+            "total_gb": round(swap.total / 1024**3, 1),
+            "used_gb": round(swap.used / 1024**3, 1),
+            "percent": swap.percent,
+        },
+        "temps": _read_temps_raw(),
     }
 
     # Discos (solo particiones reales)

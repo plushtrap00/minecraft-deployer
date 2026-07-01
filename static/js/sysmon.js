@@ -103,40 +103,16 @@ function renderSysmon(stats) {
 
   html += '<div class="sysmon-section">';
   html += '<div class="sysmon-section-title">🌡️ Temperatura</div>';
-  var cpuTemps = [];
-  var gpuTemps = [];
-  if (stats.temps) {
-    Object.keys(stats.temps).forEach(function(chip) {
-      var entries = stats.temps[chip] || [];
-      var chipLow = chip.toLowerCase();
-      var isCpu = chipLow.includes('cpu') || chipLow.includes('core') || chipLow.includes('k10')
-        || chipLow.includes('coretemp') || chipLow.includes('acpi') || chipLow.includes('pch');
-      var isGpu = chipLow.includes('gpu') || chipLow.includes('amdgpu') || chipLow.includes('radeon')
-        || chipLow.includes('nouveau') || chipLow.includes('nvidia');
-      entries.forEach(function(tempEntry) {
-        if (isGpu) {
-          gpuTemps.push(tempEntry.current);
-        } else if (isCpu) {
-          cpuTemps.push(tempEntry.current);
-        } else {
-          cpuTemps.push(tempEntry.current);
-        }
-      });
-    });
-  }
-  var hasAny = cpuTemps.length || gpuTemps.length;
-  if (hasAny) {
-    if (cpuTemps.length) {
-      var avgCpu = cpuTemps.reduce(function(acc, val) { return acc + val; }, 0) / cpuTemps.length;
-      html += sysBar('CPU', avgCpu, avgCpu.toFixed(1) + '°C');
-    }
-    if (gpuTemps.length) {
-      var avgGpu = gpuTemps.reduce(function(acc, val) { return acc + val; }, 0) / gpuTemps.length;
-      html += sysBar('GPU', avgGpu, avgGpu.toFixed(1) + '°C');
-    }
-  } else {
+  if (stats.cpu_temp === null && stats.gpu_temp === null) {
     html += '<span class="sysmon-no-temps">Sin sensores detectados. '
       + 'Instala: <code>sudo apt install lm-sensors && sudo sensors-detect --auto</code></span>';
+  } else {
+    if (stats.cpu_temp !== null) {
+      html += sysBar('CPU', stats.cpu_temp, stats.cpu_temp.toFixed(1) + '°C');
+    }
+    if (stats.gpu_temp !== null) {
+      html += sysBar('GPU', stats.gpu_temp, stats.gpu_temp.toFixed(1) + '°C');
+    }
   }
   html += '</div>';
 
