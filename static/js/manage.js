@@ -294,6 +294,7 @@ function selectModpack(name) {
   document.getElementById('mgmt-panel').classList.add('show');
   activateMgmtTab('props');
   loadWorlds();
+  loadKubejs();
 }
 
 ['props', 'configs', 'kubejs', 'logs', 'mods'].forEach(function(name) {
