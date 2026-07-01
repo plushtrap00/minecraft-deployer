@@ -78,14 +78,14 @@ def _parse_metrics_line(line: str):
             mc_metrics["tps"] = float(tps_m2.group(1))
             mc_metrics["mspt"] = float(tps_m2.group(2))
 
-    # Salida real de "/forge tps" y "/neoforge tps":
-    # "Overall: Mean tick time: 2.749 ms. Mean TPS: 20.0" (ms antes que TPS)
+    # Salida real de "/forge tps" y "/neoforge tps" (usa coma decimal si el JVM
+    # corre en un locale europeo): "Overall: 20,000 TPS (1,459 ms/tick)"
     forge_tps_m = re.search(
-        r'Overall:\s*Mean tick time:\s*([\d.]+)\s*ms\.?\s*Mean TPS:\s*([\d.]+)', line, re.IGNORECASE
+        r'Overall:\s*([\d.,]+)\s*TPS\s*\(([\d.,]+)\s*ms/tick\)', line, re.IGNORECASE
     )
     if forge_tps_m:
-        mc_metrics["mspt"] = float(forge_tps_m.group(1))
-        mc_metrics["tps"] = float(forge_tps_m.group(2))
+        mc_metrics["tps"] = float(forge_tps_m.group(1).replace(",", "."))
+        mc_metrics["mspt"] = float(forge_tps_m.group(2).replace(",", "."))
 
     # Fabric/Carpet: "TPS: 20.0, MSPT: 49.7"
     tps_fab = re.search(r'TPS[:\s]+([\d.]+).*?MSPT[:\s]+([\d.]+)', line, re.IGNORECASE)
@@ -98,8 +98,9 @@ def _parse_metrics_line(line: str):
     if tps_v:
         mc_metrics["tps"] = float(tps_v.group(1))
 
-    # Fallback genérico
-    tps_gen = re.search(r'([\d.]+)\s*tps.*?([\d.]+)\s*ms', line, re.IGNORECASE)
+    # Fallback genérico. El lookbehind evita cortar por la mitad números con coma
+    # decimal (ej. matchear "000" de "20,000") de formatos ya cubiertos arriba.
+    tps_gen = re.search(r'(?<![\d,])([\d.]+)\s*tps.*?([\d.]+)\s*ms', line, re.IGNORECASE)
     if tps_gen and mc_metrics["tps"] is None:
         mc_metrics["tps"] = float(tps_gen.group(1))
         mc_metrics["mspt"] = float(tps_gen.group(2))
