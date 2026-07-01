@@ -1,6 +1,6 @@
 // ── Monitor de sistema ────────────────────────────────────────────────────────
 var sysmonOpen = false;
-var sysmonTimer = null;
+var sysmonSSE = null;
 
 document.getElementById('btn-logout').addEventListener('click', function() {
   if (confirm('¿Cerrar sesión?')) {
@@ -14,17 +14,11 @@ document.getElementById('btn-sysmon').addEventListener('click', function() {
   if (sysmonOpen) {
     panel.classList.add('open');
     this.classList.add('active');
-    fetchSysmon();
-    if (!sysmonTimer) {
-      sysmonTimer = setInterval(fetchSysmon, 10000);
-    }
+    startSysmonStream();
   } else {
     panel.classList.remove('open');
     this.classList.remove('active');
-    if (sysmonTimer) {
-      clearInterval(sysmonTimer);
-      sysmonTimer = null;
-    }
+    stopSysmonStream();
   }
 });
 
@@ -32,34 +26,41 @@ document.getElementById('sysmon-close-btn').addEventListener('click', function()
   sysmonOpen = false;
   document.getElementById('sysmon-panel').classList.remove('open');
   document.getElementById('btn-sysmon').classList.remove('active');
-  if (sysmonTimer) {
-    clearInterval(sysmonTimer);
-    sysmonTimer = null;
-  }
+  stopSysmonStream();
 });
 
-document.getElementById('sysmon-refresh-btn').addEventListener('click', fetchSysmon);
+document.getElementById('sysmon-refresh-btn').addEventListener('click', function() {
+  stopSysmonStream();
+  startSysmonStream();
+});
 
-function fetchSysmon() {
-  apiFetch('/api/system-stats')
-    .then(function(response) {
-      return response.json().then(function(data) {
-        return { ok: response.ok, data: data };
-      });
-    })
-    .then(function(result) {
-      if (!result.ok || !result.data || !result.data.cpu) {
-        var errorMsg = (result.data && result.data.detail) ? result.data.detail : 'Respuesta inesperada del servidor';
-        document.getElementById('sysmon-body').innerHTML =
-          '<p style="color:var(--red);font-size:.82rem">Error: ' + escHtml(errorMsg) + '</p>';
-        return;
-      }
-      renderSysmon(result.data);
-    })
-    .catch(function(error) {
+function startSysmonStream() {
+  if (sysmonSSE) {
+    return;
+  }
+  document.getElementById('sysmon-body').innerHTML = '<p style="color:var(--muted);font-size:.82rem">Cargando...</p>';
+  sysmonSSE = new EventSource('/api/system-stats/stream?token=' + encodeURIComponent(authToken));
+  sysmonSSE.onmessage = function(event) {
+    var data;
+    try {
+      data = JSON.parse(event.data);
+    } catch (e) {
+      return;
+    }
+    if (data.error || !data.cpu) {
       document.getElementById('sysmon-body').innerHTML =
-        '<p style="color:var(--red);font-size:.82rem">Error de red: ' + escHtml(error.message) + '</p>';
-    });
+        '<p style="color:var(--red);font-size:.82rem">Error: ' + escHtml(data.error || 'Respuesta inesperada del servidor') + '</p>';
+      return;
+    }
+    renderSysmon(data);
+  };
+}
+
+function stopSysmonStream() {
+  if (sysmonSSE) {
+    sysmonSSE.close();
+    sysmonSSE = null;
+  }
 }
 
 function sysColor(pct) {

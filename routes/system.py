@@ -6,11 +6,13 @@ Rutas:
 - GET  /api/system-info         → RAM total del sistema
 - GET  /api/disk-usage          → uso de disco
 - GET  /api/modpacks            → lista de modpacks con metadata
+- GET  /api/system-stats        → estadísticas del sistema (snapshot único)
+- GET  /api/system-stats/stream → SSE: estadísticas del sistema cada ~3s
 """
 import shutil
 from pathlib import Path
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 
 from config import DEFAULT_SERVERS_PATH, MC_DOMAIN
 from services.utils import get_system_ram_gb, get_modpacks
@@ -80,19 +82,44 @@ async def list_modpacks():
 @router.get("/api/system-stats")
 async def system_stats():
     """
-    Estadísticas completas del sistema en tiempo real via psutil.
+    Estadísticas completas del sistema en tiempo real via psutil (snapshot único).
     Incluye CPU, RAM, swap, temperaturas, discos, red y top procesos.
     """
-    import psutil, time, traceback
+    import traceback
     try:
-        return await _system_stats_inner()
+        return JSONResponse(await _get_system_stats())
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error leyendo stats del sistema: {e}")
 
 
-async def _system_stats_inner():
-    import psutil, time, asyncio
+@router.get("/api/system-stats/stream")
+async def system_stats_stream():
+    """
+    SSE: empuja las mismas estadísticas que /api/system-stats cada ~3s, para que
+    el front no tenga que hacer polling manual desde el navegador.
+    """
+    import asyncio, json, traceback
+
+    async def event_stream():
+        while True:
+            try:
+                stats = await _get_system_stats()
+                yield f"data: {json.dumps(stats)}\n\n"
+            except Exception as e:
+                traceback.print_exc()
+                yield f"data: {json.dumps({'error': str(e)})}\n\n"
+            await asyncio.sleep(2)
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+async def _get_system_stats() -> dict:
+    import psutil, asyncio
 
     # CPU — llamadas bloqueantes en thread para no congelar el event loop
     def _read_cpu():
@@ -161,7 +188,7 @@ async def _system_stats_inner():
             pass
     top_procs = sorted(top_procs, key=lambda x: x.get("memory_percent") or 0, reverse=True)[:8]
 
-    return JSONResponse({
+    return {
         "cpu": {
             "total_percent": cpu_total,
             "cores": cpu_cores,
@@ -187,4 +214,4 @@ async def _system_stats_inner():
             "recv_mb": round(net.bytes_recv / 1024**2, 1),
         },
         "top_procs": top_procs,
-    })
+    }
