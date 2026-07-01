@@ -82,12 +82,12 @@ async def list_modpacks():
 @router.get("/api/system-stats")
 async def system_stats():
     """
-    Estadísticas completas del sistema en tiempo real via psutil (snapshot único).
+    Estadísticas completas del sistema via psutil (snapshot único).
     Incluye CPU, RAM, swap, temperaturas, discos, red y top procesos.
     """
     import traceback
     try:
-        return JSONResponse(await _get_system_stats())
+        return JSONResponse(await _get_system_stats_full())
     except Exception as e:
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Error leyendo stats del sistema: {e}")
@@ -96,15 +96,17 @@ async def system_stats():
 @router.get("/api/system-stats/stream")
 async def system_stats_stream():
     """
-    SSE: empuja las mismas estadísticas que /api/system-stats cada ~3s, para que
-    el front no tenga que hacer polling manual desde el navegador.
+    SSE: empuja cada ~2s solo lo que pinta el panel flotante (CPU total, RAM,
+    temperaturas). Se omite a propósito lo que ese panel no usa (cores por
+    separado, discos, red, swap, top procesos) para no recalcularlo ni
+    mandarlo por la red en cada ciclo.
     """
     import asyncio, json, traceback
 
     async def event_stream():
         while True:
             try:
-                stats = await _get_system_stats()
+                stats = await _get_system_stats_light()
                 yield f"data: {json.dumps(stats)}\n\n"
             except Exception as e:
                 traceback.print_exc()
@@ -118,33 +120,16 @@ async def system_stats_stream():
     )
 
 
-async def _get_system_stats() -> dict:
+async def _get_system_stats_light() -> dict:
+    """CPU total, RAM y temperaturas: lo único que renderiza el panel flotante."""
     import psutil, asyncio
 
-    # CPU — llamadas bloqueantes en thread para no congelar el event loop
-    def _read_cpu():
-        total = psutil.cpu_percent(interval=0.3)
-        cores = psutil.cpu_percent(interval=0.3, percpu=True)
-        return total, cores
-
-    cpu_total, cpu_cores = await asyncio.to_thread(_read_cpu)
-    cpu_count = psutil.cpu_count(logical=True)
-    cpu_count_phys = psutil.cpu_count(logical=False)
-    try:
-        cpu_freq = psutil.cpu_freq()
-        cpu_freq_mhz = round(cpu_freq.current) if cpu_freq else None
-    except Exception:
-        cpu_freq_mhz = None
-
-    # RAM
+    cpu_total = await asyncio.to_thread(psutil.cpu_percent, 0.3)
     mem = psutil.virtual_memory()
-    swap = psutil.swap_memory()
 
-    # Temperaturas
     temps_out = {}
     try:
-        temps = psutil.sensors_temperatures()
-        for chip, entries in temps.items():
+        for chip, entries in psutil.sensors_temperatures().items():
             temps_out[chip] = [
                 {
                     "label": e.label or chip,
@@ -156,6 +141,41 @@ async def _get_system_stats() -> dict:
             ]
     except Exception:
         pass
+
+    return {
+        "cpu": {"total_percent": cpu_total},
+        "ram": {
+            "total_gb": round(mem.total / 1024**3, 1),
+            "used_gb": round(mem.used / 1024**3, 1),
+            "available_gb": round(mem.available / 1024**3, 1),
+            "percent": mem.percent,
+        },
+        "temps": temps_out,
+    }
+
+
+async def _get_system_stats_full() -> dict:
+    """Todo lo de _get_system_stats_light() más cores, swap, discos, red y top procesos."""
+    import psutil, asyncio
+
+    stats = await _get_system_stats_light()
+
+    cpu_cores = await asyncio.to_thread(psutil.cpu_percent, 0.3, True)
+    stats["cpu"]["cores"] = cpu_cores
+    stats["cpu"]["logical_count"] = psutil.cpu_count(logical=True)
+    stats["cpu"]["physical_count"] = psutil.cpu_count(logical=False)
+    try:
+        cpu_freq = psutil.cpu_freq()
+        stats["cpu"]["freq_mhz"] = round(cpu_freq.current) if cpu_freq else None
+    except Exception:
+        stats["cpu"]["freq_mhz"] = None
+
+    swap = psutil.swap_memory()
+    stats["swap"] = {
+        "total_gb": round(swap.total / 1024**3, 1),
+        "used_gb": round(swap.used / 1024**3, 1),
+        "percent": swap.percent,
+    }
 
     # Discos (solo particiones reales)
     disks = []
@@ -175,9 +195,14 @@ async def _get_system_stats() -> dict:
             })
         except Exception:
             pass
+    stats["disks"] = disks
 
     # Red
     net = psutil.net_io_counters()
+    stats["net"] = {
+        "sent_mb": round(net.bytes_sent / 1024**2, 1),
+        "recv_mb": round(net.bytes_recv / 1024**2, 1),
+    }
 
     # Top 8 procesos por RAM
     top_procs = []
@@ -186,32 +211,6 @@ async def _get_system_stats() -> dict:
             top_procs.append(p.info)
         except Exception:
             pass
-    top_procs = sorted(top_procs, key=lambda x: x.get("memory_percent") or 0, reverse=True)[:8]
+    stats["top_procs"] = sorted(top_procs, key=lambda x: x.get("memory_percent") or 0, reverse=True)[:8]
 
-    return {
-        "cpu": {
-            "total_percent": cpu_total,
-            "cores": cpu_cores,
-            "logical_count": cpu_count,
-            "physical_count": cpu_count_phys,
-            "freq_mhz": cpu_freq_mhz,
-        },
-        "ram": {
-            "total_gb": round(mem.total / 1024**3, 1),
-            "used_gb": round(mem.used / 1024**3, 1),
-            "available_gb": round(mem.available / 1024**3, 1),
-            "percent": mem.percent,
-        },
-        "swap": {
-            "total_gb": round(swap.total / 1024**3, 1),
-            "used_gb": round(swap.used / 1024**3, 1),
-            "percent": swap.percent,
-        },
-        "temps": temps_out,
-        "disks": disks,
-        "net": {
-            "sent_mb": round(net.bytes_sent / 1024**2, 1),
-            "recv_mb": round(net.bytes_recv / 1024**2, 1),
-        },
-        "top_procs": top_procs,
-    }
+    return stats
