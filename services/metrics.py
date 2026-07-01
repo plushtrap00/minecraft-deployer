@@ -78,6 +78,15 @@ def _parse_metrics_line(line: str):
             mc_metrics["tps"] = float(tps_m2.group(1))
             mc_metrics["mspt"] = float(tps_m2.group(2))
 
+    # Salida real de "/forge tps" y "/neoforge tps":
+    # "Overall: Mean tick time: 2.749 ms. Mean TPS: 20.0" (ms antes que TPS)
+    forge_tps_m = re.search(
+        r'Overall:\s*Mean tick time:\s*([\d.]+)\s*ms\.?\s*Mean TPS:\s*([\d.]+)', line, re.IGNORECASE
+    )
+    if forge_tps_m:
+        mc_metrics["mspt"] = float(forge_tps_m.group(1))
+        mc_metrics["tps"] = float(forge_tps_m.group(2))
+
     # Fabric/Carpet: "TPS: 20.0, MSPT: 49.7"
     tps_fab = re.search(r'TPS[:\s]+([\d.]+).*?MSPT[:\s]+([\d.]+)', line, re.IGNORECASE)
     if tps_fab:

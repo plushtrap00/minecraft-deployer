@@ -7,7 +7,7 @@ Rutas:
 - POST /api/server/stop            → parar servidor
 - POST /api/server/command         → enviar comando a la consola
 - GET  /api/server/metrics         → métricas actuales (TPS, RAM, jugadores...)
-- POST /api/server/metrics/refresh → refrescar métricas (list, spark tps por RCON)
+- POST /api/server/metrics/refresh → refrescar métricas (list, forge/neoforge tps por RCON)
 - GET  /api/server/logs            → SSE stream de logs en tiempo real
 """
 import os
@@ -29,7 +29,7 @@ from services.process import (
 )
 from services import metrics as metrics_module
 from services.metrics import mc_metrics, read_proc_ram, _parse_metrics_line
-from services.modpack import ensure_rcon_enabled
+from services.modpack import ensure_rcon_enabled, detect_modpack_version
 from services.rcon import RconConnection, RconError
 import datetime
 
@@ -94,6 +94,8 @@ async def server_start(modpack: str = Form(...)):
             proc_module.mc_rcon_port = None
             proc_module.mc_rcon_password = None
             proc_module.mc_rcon_conn = None
+
+        proc_module.mc_modloader = detect_modpack_version(modpack).get("modloader")
 
         proc = subprocess.Popen(
             ["bash", patched_script],
@@ -164,12 +166,29 @@ async def get_metrics():
     })
 
 
-def _refresh_via_rcon(conn: RconConnection):
-    """Ejecuta list/spark tps por RCON (no por stdin) para no llenar la consola en vivo."""
+# spark tps devuelve respuesta vacía por RCON en muchas versiones (bug conocido:
+# https://github.com/lucko/spark/issues/119), así que para TPS/MSPT se prioriza el
+# comando propio del modloader, que sí responde bien por RCON.
+TPS_COMMANDS_BY_LOADER = {
+    "NeoForge": ["neoforge tps", "forge tps"],
+    "Forge": ["forge tps"],
+}
+
+
+def _refresh_via_rcon(conn: RconConnection, modloader: str | None):
+    """Ejecuta list + tps del modloader (y spark tps si está) por RCON, no por stdin."""
     try:
         resp = conn.command("list")
         for line in resp.splitlines():
             _parse_metrics_line(line)
+
+        for cmd in TPS_COMMANDS_BY_LOADER.get(modloader, []):
+            resp = conn.command(cmd)
+            if resp.strip():
+                for line in resp.splitlines():
+                    _parse_metrics_line(line)
+                break
+
         if mc_metrics.get("spark_available"):
             resp = conn.command("spark tps")
             for line in resp.splitlines():
@@ -186,15 +205,16 @@ def _refresh_via_rcon(conn: RconConnection):
 
 @router.post("/metrics/refresh")
 async def refresh_metrics():
-    """Refresca métricas (list, spark tps) por RCON, y lee RAM desde /proc."""
+    """Refresca métricas (list, tps) por RCON, y lee RAM desde /proc."""
     with mc_process_lock:
         proc = proc_module.mc_process
         if proc is None or proc.poll() is not None:
             raise HTTPException(status_code=400, detail="Servidor no activo")
         conn = proc_module.mc_rcon_conn
+        modloader = proc_module.mc_modloader
 
     if conn is not None:
-        await asyncio.to_thread(_refresh_via_rcon, conn)
+        await asyncio.to_thread(_refresh_via_rcon, conn, modloader)
     else:
         mc_metrics["rcon_status"] = "no configurado (reinicia el servidor desde el panel)"
     read_proc_ram(proc.pid)
