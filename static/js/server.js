@@ -394,6 +394,14 @@ function updateMetricsUI(data) {
     sparkBadge.style.display = 'none';
   }
 
+  var rconWarning = document.getElementById('rcon-warning');
+  if (data.rcon_status && data.rcon_status !== 'ok') {
+    rconWarning.textContent = '⚠️ RCON: ' + data.rcon_status;
+    rconWarning.style.display = 'block';
+  } else {
+    rconWarning.style.display = 'none';
+  }
+
   window._metricsLastFetch = Date.now();
 }
 

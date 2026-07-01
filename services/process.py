@@ -101,6 +101,7 @@ def _reader_thread(proc, temp_script: str | None = None):
     mc_metrics["tps"] = None
     mc_metrics["mspt"] = None
     mc_metrics["ram_used_mb"] = None
+    mc_metrics["rcon_status"] = None
 
     # Detectar spark al arrancar
     if mc_running_modpack:

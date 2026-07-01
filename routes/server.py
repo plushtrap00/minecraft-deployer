@@ -27,7 +27,8 @@ from services.process import (
     mc_process, mc_process_lock, mc_output_lines, mc_output_lock,
     mc_sse_clients, mc_sse_lock, _reader_thread,
 )
-from services.metrics import mc_metrics, mc_start_time, read_proc_ram, _parse_metrics_line
+from services import metrics as metrics_module
+from services.metrics import mc_metrics, read_proc_ram, _parse_metrics_line
 from services.modpack import ensure_rcon_enabled
 from services.rcon import rcon_command, RconError
 import datetime
@@ -137,8 +138,8 @@ async def server_command(cmd: str = Form(...)):
 async def get_metrics():
     import datetime as dt
     uptime = None
-    if mc_start_time:
-        uptime = int((dt.datetime.utcnow() - mc_start_time).total_seconds())
+    if metrics_module.mc_start_time:
+        uptime = int((dt.datetime.utcnow() - metrics_module.mc_start_time).total_seconds())
 
     with mc_process_lock:
         proc = proc_module.mc_process
@@ -163,8 +164,11 @@ def _refresh_via_rcon(port: int, password: str):
             resp = rcon_command("127.0.0.1", port, password, "spark tps")
             for line in resp.splitlines():
                 _parse_metrics_line(line)
-    except (RconError, OSError):
-        pass
+        mc_metrics["rcon_status"] = "ok"
+    except RconError as e:
+        mc_metrics["rcon_status"] = f"error: {e}"
+    except OSError as e:
+        mc_metrics["rcon_status"] = f"sin conexión ({e})"
 
 
 @router.post("/metrics/refresh")
@@ -179,6 +183,8 @@ async def refresh_metrics():
 
     if port and password:
         await asyncio.to_thread(_refresh_via_rcon, port, password)
+    else:
+        mc_metrics["rcon_status"] = "no configurado (reinicia el servidor desde el panel)"
     read_proc_ram(proc.pid)
     return JSONResponse({"success": True})
 

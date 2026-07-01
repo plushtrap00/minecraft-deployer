@@ -343,25 +343,14 @@
             </div>
           </div>
 
-          <!-- RCON -->
+          <!-- Query -->
           <div class="props-section">
             <div class="props-section-header" data-section="rcon">
-              <span>🔌 RCON y Query</span><span class="ps-arrow">▾</span>
+              <span>🔍 Query</span><span class="ps-arrow">▾</span>
             </div>
             <div class="props-section-body" id="ps-rcon">
+              <div class="info-box" style="margin-bottom:12px">RCON se activa y configura automáticamente al arrancar el servidor (necesario para refrescar métricas sin llenar la consola), por eso no aparece aquí.</div>
               <div class="props-grid">
-                <div class="prop-field">
-                  <label class="prop-label">Activar RCON</label>
-                  <div class="prop-toggle-wrap"><div class="toggle-track" data-key="enable-rcon"><div class="toggle-thumb"></div></div></div>
-                </div>
-                <div class="prop-field">
-                  <label class="prop-label">Puerto RCON</label>
-                  <input type="number" class="prop-input" data-key="rcon.port" placeholder="25575">
-                </div>
-                <div class="prop-field">
-                  <label class="prop-label">Contraseña RCON</label>
-                  <input type="text" class="prop-input" data-key="rcon.password" placeholder="">
-                </div>
                 <div class="prop-field">
                   <label class="prop-label">Activar Query</label>
                   <div class="prop-toggle-wrap"><div class="toggle-track" data-key="enable-query"><div class="toggle-thumb"></div></div></div>
@@ -369,10 +358,6 @@
                 <div class="prop-field">
                   <label class="prop-label">Puerto Query</label>
                   <input type="number" class="prop-input" data-key="query.port" placeholder="25565">
-                </div>
-                <div class="prop-field">
-                  <label class="prop-label">Mostrar RCON a ops</label>
-                  <div class="prop-toggle-wrap"><div class="toggle-track" data-key="broadcast-rcon-to-ops"><div class="toggle-thumb"></div></div></div>
                 </div>
               </div>
             </div>
@@ -586,6 +571,7 @@
       </div>
     </div>
     <div id="spark-badge" class="spark-badge" style="display:none">⚡ Métricas avanzadas via spark</div>
+    <div id="rcon-warning" class="warn-box" style="display:none;margin-top:8px"></div>
     <div id="metrics-players-row" style="display:none">
       <div class="metrics-players-label">Jugadores conectados:</div>
       <div class="players-list" id="metrics-players-list"></div>
