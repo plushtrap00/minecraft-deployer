@@ -313,7 +313,9 @@ def ensure_rcon_enabled(modpack: str) -> dict | None:
     Genera una contraseña aleatoria si no hay una configurada, y desactiva
     broadcast-rcon-to-ops para que el feedback de los comandos ejecutados por
     RCON (ej. spark tps para refrescar métricas) no llene la consola/log.
-    Devuelve {"port": int, "password": str} o None si server.properties no existe aún.
+    Devuelve {"host": str, "port": int, "password": str} o None si server.properties
+    no existe aún. "host" es el valor de server-ip (127.0.0.1 si está vacío), porque
+    Minecraft solo escucha RCON en esa dirección cuando server-ip está fijado.
     """
     props_file = DEFAULT_SERVERS_PATH / modpack / "server.properties"
     if not props_file.exists():
@@ -337,7 +339,9 @@ def ensure_rcon_enabled(modpack: str) -> dict | None:
     if props.get("broadcast-rcon-to-ops") != "false":
         save_server_property(modpack, "broadcast-rcon-to-ops", "false")
 
-    return {"port": port, "password": password}
+    host = props.get("server-ip", "").strip() or "127.0.0.1"
+
+    return {"host": host, "port": port, "password": password}
 
 
 # ── Gestión de mundos ──────────────────────────────────────────────────────────

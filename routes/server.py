@@ -82,6 +82,7 @@ async def server_start(modpack: str = Form(...)):
             mc_output_lines.clear()
 
         rcon_info = ensure_rcon_enabled(modpack)
+        proc_module.mc_rcon_host = rcon_info["host"] if rcon_info else None
         proc_module.mc_rcon_port = rcon_info["port"] if rcon_info else None
         proc_module.mc_rcon_password = rcon_info["password"] if rcon_info else None
 
@@ -154,14 +155,14 @@ async def get_metrics():
     })
 
 
-def _refresh_via_rcon(port: int, password: str):
+def _refresh_via_rcon(host: str, port: int, password: str):
     """Ejecuta list/spark tps por RCON (no por stdin) para no llenar la consola en vivo."""
     try:
-        resp = rcon_command("127.0.0.1", port, password, "list")
+        resp = rcon_command(host, port, password, "list")
         for line in resp.splitlines():
             _parse_metrics_line(line)
         if mc_metrics.get("spark_available"):
-            resp = rcon_command("127.0.0.1", port, password, "spark tps")
+            resp = rcon_command(host, port, password, "spark tps")
             for line in resp.splitlines():
                 _parse_metrics_line(line)
         mc_metrics["rcon_status"] = "ok"
@@ -178,11 +179,12 @@ async def refresh_metrics():
         proc = proc_module.mc_process
         if proc is None or proc.poll() is not None:
             raise HTTPException(status_code=400, detail="Servidor no activo")
+        host = proc_module.mc_rcon_host
         port = proc_module.mc_rcon_port
         password = proc_module.mc_rcon_password
 
-    if port and password:
-        await asyncio.to_thread(_refresh_via_rcon, port, password)
+    if host and port and password:
+        await asyncio.to_thread(_refresh_via_rcon, host, port, password)
     else:
         mc_metrics["rcon_status"] = "no configurado (reinicia el servidor desde el panel)"
     read_proc_ram(proc.pid)
