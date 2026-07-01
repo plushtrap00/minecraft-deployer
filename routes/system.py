@@ -102,16 +102,20 @@ async def system_stats_stream():
     mandarlo por la red en cada ciclo.
     """
     import asyncio, json, traceback
+    from services.lifecycle import shutdown_event
 
     async def event_stream():
-        while True:
+        while not shutdown_event.is_set():
             try:
                 stats = await _get_system_stats_light()
                 yield f"data: {json.dumps(stats)}\n\n"
             except Exception as e:
                 traceback.print_exc()
                 yield f"data: {json.dumps({'error': str(e)})}\n\n"
-            await asyncio.sleep(2)
+            try:
+                await asyncio.wait_for(shutdown_event.wait(), timeout=2)
+            except asyncio.TimeoutError:
+                pass
 
     return StreamingResponse(
         event_stream(),

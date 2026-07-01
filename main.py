@@ -28,6 +28,8 @@ from routes.players import router as players_router
 from routes.server import router as server_router
 from routes.auth import router as auth_router, verify_token
 from routes.users import router as users_router
+from services.lifecycle import shutdown_event
+from services.process import notify_app_shutdown
 
 # ── Middleware de autenticación ────────────────────────────────────────────────
 
@@ -75,6 +77,17 @@ app.include_router(upload_router)
 app.include_router(firewall_router)
 app.include_router(players_router)
 app.include_router(server_router)
+
+
+@app.on_event("shutdown")
+async def _on_shutdown():
+    """
+    Corta los streams SSE (consola, panel de sistema) en cuanto systemd manda
+    la señal de parada, para que `systemctl restart` no tenga que esperar a que
+    salte el timeout y fuerce un SIGKILL.
+    """
+    shutdown_event.set()
+    notify_app_shutdown()
 
 
 # ── Limpieza al arrancar ───────────────────────────────────────────────────────
@@ -220,4 +233,4 @@ if __name__ == "__main__":
     print(f"Carpeta por defecto: {DEFAULT_SERVERS_PATH}")
     print("Accede desde tu red local en: http://<IP-DE-ESTE-EQUIPO>:8000")
 
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=False)
+    uvicorn.run(app, host="0.0.0.0", port=8000, reload=False, timeout_graceful_shutdown=5)

@@ -254,6 +254,8 @@ async def server_logs():
             while True:
                 try:
                     line = await loop.run_in_executor(None, lambda: q.get(timeout=15))
+                    if line == "__APP_SHUTDOWN__":
+                        break
                     yield "data: " + line + "\n\n"
                     if line == "__STOPPED__":
                         break

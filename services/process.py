@@ -8,6 +8,7 @@ Contiene:
 - _accept_eula(): aceptar EULA automáticamente
 - _reader_thread(): lee stdout del proceso y alimenta SSE + métricas
 - _notify_stopped(): notifica a clientes que el servidor paró
+- notify_app_shutdown(): desbloquea las colas SSE para que la app pueda salir rápido
 """
 import os
 import threading
@@ -33,6 +34,21 @@ mc_rcon_port: int | None = None
 mc_rcon_password: str | None = None
 mc_rcon_conn = None  # services.rcon.RconConnection, creada al arrancar el servidor
 mc_modloader: str | None = None
+
+
+# ── Apagado de la app ──────────────────────────────────────────────────────────
+def notify_app_shutdown():
+    """
+    Empuja un centinela a todas las colas SSE conectadas para desbloquear el
+    q.get(timeout=...) al instante, en vez de esperar hasta 15s por cliente
+    antes de que la app pueda terminar de cerrarse.
+    """
+    with mc_sse_lock:
+        for q in mc_sse_clients:
+            try:
+                q.put_nowait("__APP_SHUTDOWN__")
+            except Exception:
+                pass
 
 
 # ── Broadcast ──────────────────────────────────────────────────────────────────
