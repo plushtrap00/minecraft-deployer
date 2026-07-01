@@ -551,26 +551,16 @@
       <span class="metrics-title">📊 Métricas en tiempo real</span>
       <span class="metrics-updated" id="metrics-updated"></span>
     </div>
-    <!-- Solo métricas spark -->
-    <div class="metrics-grid" id="metrics-grid-spark" style="display:none;margin-top:10px">
+    <div class="metrics-grid" id="metrics-grid-tps" style="margin-top:10px">
       <div class="metric-card" id="mc-tps">
         <div class="mv" id="mv-tps">—</div>
-        <div class="ml">TPS (5s)</div>
+        <div class="ml">TPS</div>
       </div>
       <div class="metric-card" id="mc-mspt">
         <div class="mv" id="mv-mspt">—</div>
-        <div class="ml">MSPT (mediana)</div>
-      </div>
-      <div class="metric-card" id="mc-cpu-proc">
-        <div class="mv" id="mv-cpu-proc">—</div>
-        <div class="ml">CPU proceso</div>
-      </div>
-      <div class="metric-card" id="mc-cpu-sys">
-        <div class="mv" id="mv-cpu-sys">—</div>
-        <div class="ml">CPU sistema</div>
+        <div class="ml">MSPT</div>
       </div>
     </div>
-    <div id="spark-badge" class="spark-badge" style="display:none">⚡ Métricas avanzadas via spark</div>
     <div id="rcon-warning" class="warn-box" style="display:none;margin-top:8px"></div>
     <div id="metrics-players-row" style="display:none">
       <div class="metrics-players-label">Jugadores conectados:</div>
@@ -578,7 +568,7 @@
     </div>
     <div class="metrics-footer">
       <button class="btn-secondary btn-xs" id="btn-refresh-metrics">↻ Actualizar ahora</button>
-      <span class="metrics-note">Auto-actualización cada 60s · Requiere mod <code>spark</code> instalado</span>
+      <span class="metrics-note">Auto-actualización cada 60s · TPS/MSPT vía RCON (Forge/NeoForge). El uso de CPU está en el monitor del sistema.</span>
     </div>
   </div>
 

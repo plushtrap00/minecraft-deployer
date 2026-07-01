@@ -166,9 +166,9 @@ async def get_metrics():
     })
 
 
-# spark tps devuelve respuesta vacía por RCON en muchas versiones (bug conocido:
-# https://github.com/lucko/spark/issues/119), así que para TPS/MSPT se prioriza el
-# comando propio del modloader, que sí responde bien por RCON.
+# El comando propio del modloader responde bien por RCON (a diferencia de
+# "spark tps", que devuelve respuesta vacía por RCON: bug conocido en
+# https://github.com/lucko/spark/issues/119).
 TPS_COMMANDS_BY_LOADER = {
     "NeoForge": ["neoforge tps", "forge tps"],
     "Forge": ["forge tps"],
@@ -176,7 +176,7 @@ TPS_COMMANDS_BY_LOADER = {
 
 
 def _refresh_via_rcon(conn: RconConnection, modloader: str | None):
-    """Ejecuta list + tps del modloader (y spark tps si está) por RCON, no por stdin."""
+    """Ejecuta list + tps del modloader por RCON (no por stdin)."""
     try:
         resp = conn.command("list")
         for line in resp.splitlines():
@@ -189,13 +189,6 @@ def _refresh_via_rcon(conn: RconConnection, modloader: str | None):
                     _parse_metrics_line(line)
                 break
 
-        if mc_metrics.get("spark_available"):
-            resp = conn.command("spark tps")
-            for line in resp.splitlines():
-                _parse_metrics_line(line)
-            # Debug temporal: texto crudo devuelto por RCON, para poder ajustar el
-            # parseo si el formato difiere del que se ve al ejecutar en consola.
-            mc_metrics["spark_raw_debug"] = resp[:500]
         mc_metrics["rcon_status"] = "ok"
     except RconError as e:
         mc_metrics["rcon_status"] = f"error: {e}"

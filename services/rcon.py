@@ -1,10 +1,10 @@
 """
 services/rcon.py - Cliente RCON minimalista (protocolo Source RCON usado por Minecraft).
 
-Se usa para refrescar métricas (list, spark tps) sin escribir esos comandos en el
+Se usa para refrescar métricas (list, tps) sin escribir esos comandos en el
 stdin de la consola interactiva: la respuesta de un comando ejecutado por RCON
-viaja solo por este socket, así que no llena la consola en vivo con el reporte
-de spark cada vez que se refrescan las métricas.
+viaja solo por este socket, así que no llena la consola en vivo cada vez que
+se refrescan las métricas.
 
 RconConnection mantiene un único socket autenticado reutilizado entre comandos
 (en vez de abrir/cerrar uno por comando), porque Minecraft loguea una línea por

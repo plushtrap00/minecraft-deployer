@@ -46,7 +46,7 @@
 
 .metrics-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 12px;
   margin-bottom: 16px;
 }
@@ -101,12 +101,6 @@
 .metrics-updated {
   font-size: .72rem;
   color: var(--muted);
-}
-
-.spark-badge {
-  font-size: .72rem;
-  color: var(--yellow);
-  margin-top: 6px;
 }
 
 .metrics-footer {

@@ -292,23 +292,19 @@ function fetchMetrics() {
     .then(function(response) { return response.json(); })
     .then(function(data) {
       updateMetricsUI(data);
-      if (data.spark_available) {
-        apiFetch('/api/server/metrics/refresh', { method: 'POST' }).catch(function() {});
-      }
+      apiFetch('/api/server/metrics/refresh', { method: 'POST' }).catch(function() {});
     })
     .catch(function() {});
 }
 
 function resetMetrics() {
-  ['mv-tps', 'mv-mspt', 'mv-cpu-proc', 'mv-cpu-sys'].forEach(function(id) {
+  ['mv-tps', 'mv-mspt'].forEach(function(id) {
     document.getElementById(id).textContent = '—';
   });
   document.getElementById('metrics-updated').textContent = '';
   window._metricsLastFetch = null;
   document.getElementById('metrics-players-row').style.display = 'none';
-  document.getElementById('metrics-grid-spark').style.display = 'none';
-  document.getElementById('spark-badge').style.display = 'none';
-  ['mc-tps', 'mc-mspt', 'mc-cpu-proc', 'mc-cpu-sys'].forEach(function(id) {
+  ['mc-tps', 'mc-mspt'].forEach(function(id) {
     document.getElementById(id).className = 'metric-card';
   });
 }
@@ -325,73 +321,38 @@ function updateMetricsUI(data) {
     playersRow.style.display = 'none';
   }
 
-  var sparkGrid = document.getElementById('metrics-grid-spark');
-  var sparkBadge = document.getElementById('spark-badge');
-  if (data.spark_available) {
-    sparkGrid.style.display = '';
-    sparkBadge.style.display = 'block';
-
-    var tps = data.tps;
-    var tpsEl = document.getElementById('mv-tps');
-    var tpsCard = document.getElementById('mc-tps');
-    if (tps !== null && tps !== undefined) {
-      tpsEl.textContent = tps.toFixed(1);
-      if (tps >= 19) {
-        tpsCard.className = 'metric-card good';
-      } else if (tps >= 15) {
-        tpsCard.className = 'metric-card warn';
-      } else {
-        tpsCard.className = 'metric-card bad';
-      }
+  var tps = data.tps;
+  var tpsEl = document.getElementById('mv-tps');
+  var tpsCard = document.getElementById('mc-tps');
+  if (tps !== null && tps !== undefined) {
+    tpsEl.textContent = tps.toFixed(1);
+    if (tps >= 19) {
+      tpsCard.className = 'metric-card good';
+    } else if (tps >= 15) {
+      tpsCard.className = 'metric-card warn';
     } else {
-      tpsEl.textContent = '—';
-      tpsCard.className = 'metric-card';
-    }
-
-    var mspt = data.mspt;
-    var msptEl = document.getElementById('mv-mspt');
-    var msptCard = document.getElementById('mc-mspt');
-    if (mspt !== null && mspt !== undefined) {
-      msptEl.textContent = mspt.toFixed(1);
-      if (mspt <= 50) {
-        msptCard.className = 'metric-card good';
-      } else if (mspt <= 100) {
-        msptCard.className = 'metric-card warn';
-      } else {
-        msptCard.className = 'metric-card bad';
-      }
-    } else {
-      msptEl.textContent = '—';
-      msptCard.className = 'metric-card';
-    }
-
-    var cpuProc = data.cpu_process;
-    var cpuProcEl = document.getElementById('mv-cpu-proc');
-    var cpuProcCard = document.getElementById('mc-cpu-proc');
-    if (cpuProc !== null && cpuProc !== undefined) {
-      cpuProcEl.textContent = cpuProc + '%';
-      if (cpuProc < 50) {
-        cpuProcCard.className = 'metric-card good';
-      } else if (cpuProc < 80) {
-        cpuProcCard.className = 'metric-card warn';
-      } else {
-        cpuProcCard.className = 'metric-card bad';
-      }
-    } else {
-      cpuProcEl.textContent = '—';
-      cpuProcCard.className = 'metric-card';
-    }
-
-    var cpuSys = data.cpu_system;
-    var cpuSysEl = document.getElementById('mv-cpu-sys');
-    if (cpuSys !== null && cpuSys !== undefined) {
-      cpuSysEl.textContent = cpuSys + '%';
-    } else {
-      cpuSysEl.textContent = '—';
+      tpsCard.className = 'metric-card bad';
     }
   } else {
-    sparkGrid.style.display = 'none';
-    sparkBadge.style.display = 'none';
+    tpsEl.textContent = '—';
+    tpsCard.className = 'metric-card';
+  }
+
+  var mspt = data.mspt;
+  var msptEl = document.getElementById('mv-mspt');
+  var msptCard = document.getElementById('mc-mspt');
+  if (mspt !== null && mspt !== undefined) {
+    msptEl.textContent = mspt.toFixed(1);
+    if (mspt <= 50) {
+      msptCard.className = 'metric-card good';
+    } else if (mspt <= 100) {
+      msptCard.className = 'metric-card warn';
+    } else {
+      msptCard.className = 'metric-card bad';
+    }
+  } else {
+    msptEl.textContent = '—';
+    msptCard.className = 'metric-card';
   }
 
   var rconWarning = document.getElementById('rcon-warning');

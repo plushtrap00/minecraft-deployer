@@ -111,15 +111,6 @@ def _reader_thread(proc, temp_script: str | None = None):
     mc_metrics["ram_used_mb"] = None
     mc_metrics["rcon_status"] = None
 
-    # Detectar spark al arrancar
-    if mc_running_modpack:
-        mods_dir = DEFAULT_SERVERS_PATH / mc_running_modpack / "mods"
-        spark_found = any(
-            "spark" in f.name.lower() and f.suffix.lower() == ".jar"
-            for f in mods_dir.iterdir()
-        ) if mods_dir.exists() else False
-        mc_metrics["spark_available"] = spark_found
-
     # Actualizar start_time en el módulo de métricas
     from services import metrics as _m
     _m.mc_start_time = datetime.datetime.utcnow()
@@ -145,7 +136,4 @@ def _reader_thread(proc, temp_script: str | None = None):
         _m.mc_start_time = None
         mc_metrics["players_online"] = []
         mc_metrics["tps"] = None
-        mc_metrics["spark_available"] = False
-        mc_metrics["cpu_process"] = None
-        mc_metrics["cpu_system"] = None
         _notify_stopped()

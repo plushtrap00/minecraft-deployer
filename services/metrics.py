@@ -2,7 +2,7 @@
 services/metrics.py - Métricas en tiempo real del servidor Minecraft.
 
 Contiene:
-- mc_metrics: dict con el estado actual (TPS, RAM, jugadores, CPU...)
+- mc_metrics: dict con el estado actual (TPS, RAM, jugadores...)
 - mc_start_time: momento de arranque del servidor
 - _parse_metrics_line(): parsea una línea de consola y actualiza mc_metrics
 - read_proc_ram(): lee la RAM del proceso desde /proc/<pid>/status
@@ -17,15 +17,11 @@ mc_metrics: dict = {
     "players_max": 20,
     "tps": None,
     "mspt": None,
-    "cpu_process": None,
-    "cpu_system": None,
     "ram_used_mb": None,
     "ram_max_mb": None,
     "uptime_seconds": 0,
     "last_updated": None,
-    "spark_available": False,
     "rcon_status": None,
-    "spark_raw_debug": None,
 }
 
 mc_start_time: datetime.datetime | None = None
@@ -48,24 +44,6 @@ def _parse_metrics_line(line: str):
         name = leave.group(1)
         if name in mc_metrics["players_online"]:
             mc_metrics["players_online"].remove(name)
-
-    # Spark TPS (líneas con ⚡)
-    if mc_metrics["spark_available"] and '[⚡]' in line:
-        tps_spark = re.search(r'\[⚡\]\s*\*?([\d.]+),\s*\*?([\d.]+)', line)
-        if tps_spark and 'TPS from' not in line and 'Tick' not in line and 'CPU' not in line:
-            mc_metrics["tps"] = float(tps_spark.group(1))
-
-        mspt_spark = re.search(r'\[⚡\]\s*[\d.]+/([\d.]+)/[\d.]+/[\d.]+;', line)
-        if mspt_spark:
-            mc_metrics["mspt"] = float(mspt_spark.group(1))
-
-        cpu_sys = re.search(r'\[⚡\]\s*(\d+)%.*\(system\)', line)
-        if cpu_sys:
-            mc_metrics["cpu_system"] = int(cpu_sys.group(1))
-
-        cpu_proc = re.search(r'\[⚡\]\s*(\d+)%.*\(process\)', line)
-        if cpu_proc:
-            mc_metrics["cpu_process"] = int(cpu_proc.group(1))
 
     # NeoForge/Forge: "Overall: 20.00 TPS, 49.78 MSPT"
     tps_m = re.search(r'Overall[:\s]+([\d.]+)\s*TPS.*?([\d.]+)\s*MSPT', line, re.IGNORECASE)
