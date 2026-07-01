@@ -25,6 +25,7 @@ mc_metrics: dict = {
     "last_updated": None,
     "spark_available": False,
     "rcon_status": None,
+    "spark_raw_debug": None,
 }
 
 mc_start_time: datetime.datetime | None = None

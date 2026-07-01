@@ -31,6 +31,7 @@ mc_running_modpack: str | None = None
 mc_rcon_host: str | None = None
 mc_rcon_port: int | None = None
 mc_rcon_password: str | None = None
+mc_rcon_conn = None  # services.rcon.RconConnection, creada al arrancar el servidor
 
 
 # ── Broadcast ──────────────────────────────────────────────────────────────────
@@ -65,13 +66,16 @@ def _accept_eula(server_dir: Path) -> bool:
 # ── Notify stopped ─────────────────────────────────────────────────────────────
 def _notify_stopped():
     """Limpia el estado global y notifica a los clientes SSE que el servidor paró."""
-    global mc_process, mc_running_modpack, mc_rcon_host, mc_rcon_port, mc_rcon_password
+    global mc_process, mc_running_modpack, mc_rcon_host, mc_rcon_port, mc_rcon_password, mc_rcon_conn
     with mc_process_lock:
         mc_process = None
         mc_running_modpack = None
         mc_rcon_host = None
         mc_rcon_port = None
         mc_rcon_password = None
+        if mc_rcon_conn is not None:
+            mc_rcon_conn.close()
+            mc_rcon_conn = None
     line = "\x1b[33m[Deployer] Servidor detenido.\x1b[0m"
     with mc_output_lock:
         mc_output_lines.append(line)

@@ -30,7 +30,7 @@ from services.process import (
 from services import metrics as metrics_module
 from services.metrics import mc_metrics, read_proc_ram, _parse_metrics_line
 from services.modpack import ensure_rcon_enabled
-from services.rcon import rcon_command, RconError
+from services.rcon import RconConnection, RconError
 import datetime
 
 router = APIRouter(prefix="/api/server", tags=["server"])
@@ -82,9 +82,18 @@ async def server_start(modpack: str = Form(...)):
             mc_output_lines.clear()
 
         rcon_info = ensure_rcon_enabled(modpack)
-        proc_module.mc_rcon_host = rcon_info["host"] if rcon_info else None
-        proc_module.mc_rcon_port = rcon_info["port"] if rcon_info else None
-        proc_module.mc_rcon_password = rcon_info["password"] if rcon_info else None
+        if rcon_info:
+            proc_module.mc_rcon_host = rcon_info["host"]
+            proc_module.mc_rcon_port = rcon_info["port"]
+            proc_module.mc_rcon_password = rcon_info["password"]
+            proc_module.mc_rcon_conn = RconConnection(
+                rcon_info["host"], rcon_info["port"], rcon_info["password"]
+            )
+        else:
+            proc_module.mc_rcon_host = None
+            proc_module.mc_rcon_port = None
+            proc_module.mc_rcon_password = None
+            proc_module.mc_rcon_conn = None
 
         proc = subprocess.Popen(
             ["bash", patched_script],
@@ -155,16 +164,19 @@ async def get_metrics():
     })
 
 
-def _refresh_via_rcon(host: str, port: int, password: str):
+def _refresh_via_rcon(conn: RconConnection):
     """Ejecuta list/spark tps por RCON (no por stdin) para no llenar la consola en vivo."""
     try:
-        resp = rcon_command(host, port, password, "list")
+        resp = conn.command("list")
         for line in resp.splitlines():
             _parse_metrics_line(line)
         if mc_metrics.get("spark_available"):
-            resp = rcon_command(host, port, password, "spark tps")
+            resp = conn.command("spark tps")
             for line in resp.splitlines():
                 _parse_metrics_line(line)
+            # Debug temporal: texto crudo devuelto por RCON, para poder ajustar el
+            # parseo si el formato difiere del que se ve al ejecutar en consola.
+            mc_metrics["spark_raw_debug"] = resp[:500]
         mc_metrics["rcon_status"] = "ok"
     except RconError as e:
         mc_metrics["rcon_status"] = f"error: {e}"
@@ -179,12 +191,10 @@ async def refresh_metrics():
         proc = proc_module.mc_process
         if proc is None or proc.poll() is not None:
             raise HTTPException(status_code=400, detail="Servidor no activo")
-        host = proc_module.mc_rcon_host
-        port = proc_module.mc_rcon_port
-        password = proc_module.mc_rcon_password
+        conn = proc_module.mc_rcon_conn
 
-    if host and port and password:
-        await asyncio.to_thread(_refresh_via_rcon, host, port, password)
+    if conn is not None:
+        await asyncio.to_thread(_refresh_via_rcon, conn)
     else:
         mc_metrics["rcon_status"] = "no configurado (reinicia el servidor desde el panel)"
     read_proc_ram(proc.pid)
