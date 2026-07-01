@@ -3,6 +3,7 @@ services/process.py - Estado del proceso Minecraft y gestión del ciclo de vida.
 
 Contiene:
 - Estado global del proceso (mc_process, locks, buffer de logs)
+- Estado de conexión RCON del proceso activo (mc_rcon_port, mc_rcon_password)
 - _broadcast(): fanout a SSE clients
 - _accept_eula(): aceptar EULA automáticamente
 - _reader_thread(): lee stdout del proceso y alimenta SSE + métricas
@@ -26,6 +27,9 @@ mc_sse_clients: set = set()
 mc_sse_lock = threading.Lock()
 
 mc_running_modpack: str | None = None
+
+mc_rcon_port: int | None = None
+mc_rcon_password: str | None = None
 
 
 # ── Broadcast ──────────────────────────────────────────────────────────────────
@@ -60,10 +64,12 @@ def _accept_eula(server_dir: Path) -> bool:
 # ── Notify stopped ─────────────────────────────────────────────────────────────
 def _notify_stopped():
     """Limpia el estado global y notifica a los clientes SSE que el servidor paró."""
-    global mc_process, mc_running_modpack
+    global mc_process, mc_running_modpack, mc_rcon_port, mc_rcon_password
     with mc_process_lock:
         mc_process = None
         mc_running_modpack = None
+        mc_rcon_port = None
+        mc_rcon_password = None
     line = "\x1b[33m[Deployer] Servidor detenido.\x1b[0m"
     with mc_output_lock:
         mc_output_lines.append(line)

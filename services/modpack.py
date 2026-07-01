@@ -7,6 +7,7 @@ Contiene:
 - Comprobación de compatibilidad de versión
 - Detección de mods instalados
 - Parseo y guardado de server.properties
+- Activación forzada de RCON antes de arrancar (ensure_rcon_enabled)
 - Gestión de mundos (listar, activar, crear, borrar)
 - Análisis de crash reports
 """
@@ -14,6 +15,7 @@ import re
 import json
 import zipfile
 import io
+import secrets
 from pathlib import Path
 
 from config import DEFAULT_SERVERS_PATH
@@ -303,6 +305,39 @@ def save_server_property(modpack: str, key: str, value: str) -> bool:
         new_lines.append(f"{key}={value}\n")
     props_file.write_text("".join(new_lines), encoding="utf-8")
     return True
+
+
+def ensure_rcon_enabled(modpack: str) -> dict | None:
+    """
+    Fuerza RCON activado en server.properties antes de arrancar el servidor.
+    Genera una contraseña aleatoria si no hay una configurada, y desactiva
+    broadcast-rcon-to-ops para que el feedback de los comandos ejecutados por
+    RCON (ej. spark tps para refrescar métricas) no llene la consola/log.
+    Devuelve {"port": int, "password": str} o None si server.properties no existe aún.
+    """
+    props_file = DEFAULT_SERVERS_PATH / modpack / "server.properties"
+    if not props_file.exists():
+        return None
+
+    props = parse_server_properties(modpack)
+
+    if props.get("enable-rcon") != "true":
+        save_server_property(modpack, "enable-rcon", "true")
+
+    password = props.get("rcon.password", "").strip()
+    if not password:
+        password = secrets.token_urlsafe(18)
+        save_server_property(modpack, "rcon.password", password)
+
+    port_str = props.get("rcon.port", "").strip()
+    port = int(port_str) if port_str.isdigit() else 25575
+    if not port_str:
+        save_server_property(modpack, "rcon.port", str(port))
+
+    if props.get("broadcast-rcon-to-ops") != "false":
+        save_server_property(modpack, "broadcast-rcon-to-ops", "false")
+
+    return {"port": port, "password": password}
 
 
 # ── Gestión de mundos ──────────────────────────────────────────────────────────

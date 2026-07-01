@@ -7,7 +7,7 @@ Rutas:
 - POST /api/server/stop            → parar servidor
 - POST /api/server/command         → enviar comando a la consola
 - GET  /api/server/metrics         → métricas actuales (TPS, RAM, jugadores...)
-- POST /api/server/metrics/refresh → refrescar métricas (envía /list, spark tps)
+- POST /api/server/metrics/refresh → refrescar métricas (list, spark tps por RCON)
 - GET  /api/server/logs            → SSE stream de logs en tiempo real
 """
 import os
@@ -27,7 +27,9 @@ from services.process import (
     mc_process, mc_process_lock, mc_output_lines, mc_output_lock,
     mc_sse_clients, mc_sse_lock, _reader_thread,
 )
-from services.metrics import mc_metrics, mc_start_time, read_proc_ram
+from services.metrics import mc_metrics, mc_start_time, read_proc_ram, _parse_metrics_line
+from services.modpack import ensure_rcon_enabled
+from services.rcon import rcon_command, RconError
 import datetime
 
 router = APIRouter(prefix="/api/server", tags=["server"])
@@ -77,6 +79,10 @@ async def server_start(modpack: str = Form(...)):
 
         with mc_output_lock:
             mc_output_lines.clear()
+
+        rcon_info = ensure_rcon_enabled(modpack)
+        proc_module.mc_rcon_port = rcon_info["port"] if rcon_info else None
+        proc_module.mc_rcon_password = rcon_info["password"] if rcon_info else None
 
         proc = subprocess.Popen(
             ["bash", patched_script],
@@ -147,21 +153,33 @@ async def get_metrics():
     })
 
 
+def _refresh_via_rcon(port: int, password: str):
+    """Ejecuta list/spark tps por RCON (no por stdin) para no llenar la consola en vivo."""
+    try:
+        resp = rcon_command("127.0.0.1", port, password, "list")
+        for line in resp.splitlines():
+            _parse_metrics_line(line)
+        if mc_metrics.get("spark_available"):
+            resp = rcon_command("127.0.0.1", port, password, "spark tps")
+            for line in resp.splitlines():
+                _parse_metrics_line(line)
+    except (RconError, OSError):
+        pass
+
+
 @router.post("/metrics/refresh")
 async def refresh_metrics():
-    """Envía /list y spark tps al servidor, y lee RAM desde /proc."""
+    """Refresca métricas (list, spark tps) por RCON, y lee RAM desde /proc."""
     with mc_process_lock:
         proc = proc_module.mc_process
         if proc is None or proc.poll() is not None:
             raise HTTPException(status_code=400, detail="Servidor no activo")
-        try:
-            proc.stdin.write(b"list\n")
-            if mc_metrics.get("spark_available"):
-                proc.stdin.write(b"spark tps\n")
-            proc.stdin.flush()
-        except Exception:
-            pass
-        read_proc_ram(proc.pid)
+        port = proc_module.mc_rcon_port
+        password = proc_module.mc_rcon_password
+
+    if port and password:
+        await asyncio.to_thread(_refresh_via_rcon, port, password)
+    read_proc_ram(proc.pid)
     return JSONResponse({"success": True})
 
 
