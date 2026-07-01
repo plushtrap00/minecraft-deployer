@@ -112,7 +112,27 @@ async def server_start(modpack: str = Form(...)):
         t = threading.Thread(target=_reader_thread, args=(proc, patched_script), daemon=True)
         t.start()
 
+        if proc_module.mc_rcon_conn is not None:
+            threading.Thread(
+                target=_rcon_warmup, args=(proc_module.mc_rcon_conn, proc), daemon=True
+            ).start()
+
     return JSONResponse({"success": True, "modpack": modpack})
+
+
+def _rcon_warmup(conn: RconConnection, proc: subprocess.Popen):
+    """
+    Autentica el RCON en segundo plano en cuanto el puerto esté disponible, en vez
+    de esperar a que llegue el primer refresco de métricas desde el front (que
+    podría tardar hasta 60s, o no llegar si nadie tiene la página abierta).
+    """
+    import time
+    while proc.poll() is None:
+        try:
+            conn.command("list")
+            return
+        except (RconError, OSError):
+            time.sleep(5)
 
 
 @router.post("/stop")
