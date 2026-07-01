@@ -28,7 +28,7 @@ from fastapi import APIRouter, File, UploadFile, Form, HTTPException
 from fastapi.responses import JSONResponse
 
 from config import DEFAULT_SERVERS_PATH, TEMP_DIR
-from services.utils import get_mod_configs, get_kubejs_files, extract_archive, configure_jvm_ram
+from services.utils import get_mod_configs, get_kubejs_files, extract_archive, configure_jvm_ram, invalidate_kubejs_cache
 from services.modpack import (
     detect_modpack_version, read_mod_metadata, mc_version_compatible,
     detect_installed_mods, has_mod_keyword,
@@ -124,6 +124,37 @@ async def get_kubejs_file(modpack: str, path: str):
     if not full_path.exists():
         raise HTTPException(status_code=404, detail="Archivo no encontrado")
     return JSONResponse({"content": full_path.read_text(encoding="utf-8", errors="replace"), "path": path})
+
+
+@router.post("/{modpack}/kubejs-new")
+async def create_kubejs_file(
+    modpack: str,
+    subfolder: str = Form(...),
+    filename: str = Form(...),
+):
+    kjs_dir = DEFAULT_SERVERS_PATH / modpack / "kubejs"
+    if not kjs_dir.exists():
+        raise HTTPException(status_code=404, detail="Este modpack no tiene carpeta kubejs/")
+    if not re.match(r'^[\w.\-]+$', filename):
+        raise HTTPException(status_code=400, detail="Nombre de archivo inválido (solo letras, números, _, -, .)")
+    if subfolder == '__root__':
+        rel_path = filename
+    else:
+        if not re.match(r'^[\w\-/]+$', subfolder):
+            raise HTTPException(status_code=400, detail="Ruta de carpeta inválida")
+        rel_path = subfolder.strip('/') + '/' + filename
+    full_path = DEFAULT_SERVERS_PATH / modpack / "kubejs" / rel_path
+    base = (DEFAULT_SERVERS_PATH / modpack / "kubejs").resolve()
+    try:
+        full_path.resolve().relative_to(base)
+    except ValueError:
+        raise HTTPException(status_code=403, detail="Ruta no permitida")
+    if full_path.exists():
+        raise HTTPException(status_code=400, detail=f"{filename} ya existe en esa carpeta")
+    full_path.parent.mkdir(parents=True, exist_ok=True)
+    full_path.write_text('', encoding='utf-8')
+    invalidate_kubejs_cache(modpack)
+    return JSONResponse({"success": True, "path": rel_path.replace('\\', '/')})
 
 
 @router.post("/{modpack}/kubejs-file")

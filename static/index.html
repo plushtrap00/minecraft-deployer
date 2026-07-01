@@ -415,10 +415,41 @@
       <div class="card">
         <div class="info-box">Scripts de KubeJS para modificar el comportamiento del modpack mediante código.</div>
         <div class="config-sidebar">
-          <div class="config-search"><input type="text" id="kubejs-search" placeholder="🔍 Buscar script..."></div>
+          <div class="config-search kjs-search-row">
+            <input type="text" id="kubejs-search" placeholder="🔍 Buscar script...">
+            <button class="btn-sm" id="btn-new-kjs-file" title="Crear nuevo script">+ Nuevo</button>
+          </div>
           <div class="mod-tree-body" id="kubejs-tree"><p class="empty-msg" style="padding:12px">Cargando KubeJS...</p></div>
           <div class="pagination" id="kubejs-pagination" style="display:none">
             <button id="kpg-prev">◀</button><span id="kpg-info"></span><button id="kpg-next">▶</button>
+          </div>
+        </div>
+        <div id="kjs-new-file-form" class="new-world-form" style="display:none;margin-top:12px">
+          <div style="font-size:.85rem;font-weight:600;margin-bottom:12px">➕ Nuevo script KubeJS</div>
+          <div class="props-grid" style="margin-bottom:12px">
+            <div class="prop-field">
+              <label class="prop-label">Carpeta <span class="req">*</span></label>
+              <select id="kjs-subfolder">
+                <option value="startup_scripts">startup_scripts/</option>
+                <option value="server_scripts">server_scripts/</option>
+                <option value="client_scripts">client_scripts/</option>
+                <option value="__root__">Raíz (kubejs/)</option>
+                <option value="__custom__">Personalizado...</option>
+              </select>
+            </div>
+            <div class="prop-field" id="kjs-custom-folder-field" style="display:none">
+              <label class="prop-label">Ruta personalizada</label>
+              <input type="text" id="kjs-custom-folder" placeholder="ej: assets, data/mymod...">
+            </div>
+            <div class="prop-field">
+              <label class="prop-label">Nombre del archivo <span class="req">*</span></label>
+              <input type="text" id="kjs-new-filename" placeholder="ej: recipes.js, startup.js...">
+              <span class="hint">Se añade .js si no tiene extensión</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;justify-content:flex-end">
+            <button class="btn-secondary" id="kjs-cancel-new">Cancelar</button>
+            <button id="kjs-confirm-new">📄 Crear script</button>
           </div>
         </div>
         <p class="hint" style="margin-top:10px">Haz clic en cualquier archivo para editarlo</p>

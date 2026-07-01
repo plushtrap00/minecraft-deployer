@@ -119,6 +119,10 @@ def get_kubejs_files(modpack_name: str) -> dict:
     return groups
 
 
+def invalidate_kubejs_cache(modpack_name: str) -> None:
+    _kubejs_cache.pop(modpack_name, None)
+
+
 def extract_archive(archive_path: Path, dest_path: Path) -> dict:
     """
     Descomprime un archivo en dest_path.

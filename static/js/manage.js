@@ -799,3 +799,74 @@ ta.addEventListener('input', syncLines);
 ta.addEventListener('click', syncLines);
 ta.addEventListener('keyup', syncLines);
 ta.addEventListener('scroll', function() { ln.scrollTop = ta.scrollTop; });
+
+
+// -- KubeJS: nuevo archivo ----------------------------------------------------
+document.getElementById('btn-new-kjs-file').addEventListener('click', function() {
+  document.getElementById('kjs-new-file-form').style.display = 'block';
+  document.getElementById('kjs-new-filename').focus();
+});
+
+document.getElementById('kjs-cancel-new').addEventListener('click', function() {
+  document.getElementById('kjs-new-file-form').style.display = 'none';
+  document.getElementById('kjs-new-filename').value = '';
+  document.getElementById('kjs-subfolder').value = 'startup_scripts';
+  document.getElementById('kjs-custom-folder').value = '';
+  document.getElementById('kjs-custom-folder-field').style.display = 'none';
+});
+
+document.getElementById('kjs-subfolder').addEventListener('change', function() {
+  document.getElementById('kjs-custom-folder-field').style.display =
+    this.value === '__custom__' ? '' : 'none';
+});
+
+document.getElementById('kjs-confirm-new').addEventListener('click', function() {
+  var subfolderSel = document.getElementById('kjs-subfolder').value;
+  var subfolder = subfolderSel;
+  if (subfolderSel === '__custom__') {
+    subfolder = document.getElementById('kjs-custom-folder').value.trim().replace(/\\/g, '/');
+    if (!subfolder) {
+      showToast('Escribe una ruta de carpeta', 'error');
+      return;
+    }
+  }
+  var filename = document.getElementById('kjs-new-filename').value.trim();
+  if (!filename) {
+    showToast('Escribe un nombre de archivo', 'error');
+    return;
+  }
+  if (!filename.includes('.')) {
+    filename += '.js';
+  }
+  var form = new FormData();
+  form.append('subfolder', subfolder);
+  form.append('filename', filename);
+  apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/kubejs-new', {
+    method: 'POST',
+    body: form
+  })
+    .then(function(r) {
+      if (!r.ok) {
+        return r.json().then(function(err) { throw new Error(err.detail || 'Error al crear'); });
+      }
+      return r.json();
+    })
+    .then(function(data) {
+      document.getElementById('kjs-new-file-form').style.display = 'none';
+      document.getElementById('kjs-new-filename').value = '';
+      showToast('✅ Archivo creado', 'success');
+      apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/kubejs')
+        .then(function(r) { return r.json(); })
+        .then(function(kdata) {
+          if (kdata.exists) {
+            kubejsFiles = kdata.groups;
+            filteredKjsKeys = sortedKeys(kubejsFiles, activeKjsFilter);
+            renderTreePage('kjs');
+            openFile(data.path, 'kjs');
+          }
+        });
+    })
+    .catch(function(err) {
+      showToast('❌ ' + err.message, 'error');
+    });
+});

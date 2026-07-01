@@ -116,6 +116,17 @@
   width: 100%;
 }
 
+.kjs-search-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.kjs-search-row input {
+  width: auto;
+  flex: 1;
+}
+
 .mod-tree-body {
   max-height: 520px;
   overflow-y: auto;
