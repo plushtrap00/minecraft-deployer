@@ -323,11 +323,13 @@ def get_worlds(modpack: str) -> dict:
             if not d.is_dir():
                 continue
             if (d / "region").exists() or (d / "level.dat").exists():
+                size_mb = sum(f.stat().st_size for f in d.rglob("*") if f.is_file()) / (1024 * 1024)
                 worlds.append({
                     "name": d.name,
                     "active": d.name == active,
                     "has_nether": (d / "DIM-1" / "region").exists(),
                     "has_end": (d / "DIM1" / "region").exists(),
+                    "size_mb": round(size_mb, 1),
                 })
 
     return {"active_world": active, "worlds": worlds}

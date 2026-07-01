@@ -16,6 +16,8 @@ Rutas:
 - POST      /api/modpacks/{modpack}/worlds/activate
 - POST      /api/modpacks/{modpack}/worlds/create
 - DELETE    /api/modpacks/{modpack}/worlds/{world_name}
+- GET       /api/modpacks/{modpack}/world-files
+- GET/POST  /api/modpacks/{modpack}/world-file
 - GET       /api/modpacks/{modpack}/logs
 - GET       /api/modpacks/{modpack}/logs/{filename}
 """
@@ -28,7 +30,7 @@ from fastapi import APIRouter, File, UploadFile, Form, HTTPException
 from fastapi.responses import JSONResponse
 
 from config import DEFAULT_SERVERS_PATH, TEMP_DIR
-from services.utils import get_mod_configs, get_kubejs_files, extract_archive, configure_jvm_ram, invalidate_kubejs_cache
+from services.utils import get_mod_configs, get_kubejs_files, get_world_files, extract_archive, configure_jvm_ram, invalidate_kubejs_cache
 from services.modpack import (
     detect_modpack_version, read_mod_metadata, mc_version_compatible,
     detect_installed_mods, has_mod_keyword,
@@ -389,6 +391,60 @@ async def download_world(modpack: str, world_name: str):
         media_type="application/zip",
         headers={"Content-Disposition": f'attachment; filename="{world_name}.zip"'},
     )
+
+
+@router.get("/{modpack}/world-files")
+async def get_world_file_list(modpack: str, world_name: str):
+    base = DEFAULT_SERVERS_PATH / modpack
+    world_dir = base / world_name
+    try:
+        world_dir.resolve().relative_to(base.resolve())
+    except ValueError:
+        raise HTTPException(status_code=403, detail="Ruta no permitida")
+    if not world_dir.exists():
+        raise HTTPException(status_code=404, detail="El mundo no existe")
+    return JSONResponse({"groups": get_world_files(modpack, world_name)})
+
+
+@router.get("/{modpack}/world-file")
+async def get_world_file(modpack: str, world_name: str, path: str):
+    base = DEFAULT_SERVERS_PATH / modpack
+    world_dir = base / world_name
+    try:
+        world_dir.resolve().relative_to(base.resolve())
+    except ValueError:
+        raise HTTPException(status_code=403, detail="Ruta no permitida")
+    if not world_dir.exists():
+        raise HTTPException(status_code=404, detail="El mundo no existe")
+    full_path = world_dir / path
+    try:
+        full_path.resolve().relative_to(world_dir.resolve())
+    except ValueError:
+        raise HTTPException(status_code=403, detail="Ruta no permitida")
+    if not full_path.exists():
+        raise HTTPException(status_code=404, detail="Archivo no encontrado")
+    return JSONResponse({"content": full_path.read_text(encoding="utf-8", errors="replace"), "path": path})
+
+
+@router.post("/{modpack}/world-file")
+async def save_world_file(modpack: str, world_name: str = Form(...), path: str = Form(...), content: str = Form(...)):
+    base = DEFAULT_SERVERS_PATH / modpack
+    world_dir = base / world_name
+    try:
+        world_dir.resolve().relative_to(base.resolve())
+    except ValueError:
+        raise HTTPException(status_code=403, detail="Ruta no permitida")
+    if not world_dir.exists():
+        raise HTTPException(status_code=404, detail="El mundo no existe")
+    full_path = world_dir / path
+    try:
+        full_path.resolve().relative_to(world_dir.resolve())
+    except ValueError:
+        raise HTTPException(status_code=403, detail="Ruta no permitida")
+    if not full_path.exists():
+        raise HTTPException(status_code=404, detail="Archivo no encontrado")
+    full_path.write_text(content, encoding="utf-8")
+    return JSONResponse({"success": True})
 
 
 @router.delete("/{modpack}/worlds/{world_name}")

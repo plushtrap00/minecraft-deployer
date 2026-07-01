@@ -137,6 +137,7 @@
         <button class="mgmt-tab active" id="mtab-props">📄 server.properties</button>
         <button class="mgmt-tab" id="mtab-configs">🔧 Config de mods</button>
         <button class="mgmt-tab" id="mtab-kubejs">📜 KubeJS</button>
+        <button class="mgmt-tab" id="mtab-worldfiles">🗺️ Archivos de mundo</button>
         <button class="mgmt-tab" id="mtab-logs">📋 Logs</button>
         <button class="mgmt-tab" id="mtab-mods">🧩 Mods</button>
       </div>
@@ -450,6 +451,26 @@
           <div style="display:flex;gap:8px;justify-content:flex-end">
             <button class="btn-secondary" id="kjs-cancel-new">Cancelar</button>
             <button id="kjs-confirm-new">📄 Crear script</button>
+          </div>
+        </div>
+        <p class="hint" style="margin-top:10px">Haz clic en cualquier archivo para editarlo</p>
+      </div>
+    </div>
+
+    <!-- Archivos de mundo -->
+    <div class="mgmt-content" id="mgmt-worldfiles">
+      <div class="card">
+        <div class="info-box">Archivos de texto editables de cada mundo: estadísticas, logros y datapacks. Los binarios (level.dat, region/, playerdata) no se muestran.</div>
+        <div class="config-sidebar">
+          <div class="config-search">
+            <select id="wf-world-select" style="width:100%;margin-bottom:8px">
+              <option value="">Selecciona un mundo...</option>
+            </select>
+            <input type="text" id="wf-search" placeholder="🔍 Buscar archivo...">
+          </div>
+          <div class="mod-tree-body" id="wf-tree"><p class="empty-msg" style="padding:12px">Selecciona un mundo</p></div>
+          <div class="pagination" id="wf-pagination" style="display:none">
+            <button id="wfpg-prev">◀</button><span id="wfpg-info"></span><button id="wfpg-next">▶</button>
           </div>
         </div>
         <p class="hint" style="margin-top:10px">Haz clic en cualquier archivo para editarlo</p>

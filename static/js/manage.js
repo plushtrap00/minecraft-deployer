@@ -297,7 +297,7 @@ function selectModpack(name) {
   loadKubejs();
 }
 
-['props', 'configs', 'kubejs', 'logs', 'mods'].forEach(function(name) {
+['props', 'configs', 'kubejs', 'worldfiles', 'logs', 'mods'].forEach(function(name) {
   document.getElementById('mtab-' + name).addEventListener('click', function() {
     activateMgmtTab(name);
   });
@@ -324,6 +324,9 @@ function activateMgmtTab(name) {
   }
   if (name === 'kubejs') {
     loadKubejs();
+  }
+  if (name === 'worldfiles') {
+    loadWorldFilesTab();
   }
   if (name === 'props') {
     loadServerProps();
@@ -696,7 +699,8 @@ function openFile(path, type) {
   document.querySelectorAll('.mod-file-item').forEach(function(el) {
     el.classList.toggle('selected', el.dataset.path === path && el.dataset.type === type);
   });
-  document.getElementById('modal-path').textContent = (type === 'kjs' ? 'kubejs/' : 'config/') + path;
+  var pathPrefix = type === 'kjs' ? 'kubejs/' : (type === 'wf' ? selectedWfWorld + '/' : 'config/');
+  document.getElementById('modal-path').textContent = pathPrefix + path;
   document.getElementById('config-editor').value = 'Cargando...';
   cfgParsed = null;
   cfgRawText = '';
@@ -715,8 +719,9 @@ function openFile(path, type) {
     setCfgMode('form');
   }
   document.getElementById('editor-modal').classList.add('show');
-  var endpoint = type === 'kjs' ? '/kubejs-file' : '/config-file';
-  apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + endpoint + '?path=' + encodeURIComponent(path))
+  var endpoint = type === 'kjs' ? '/kubejs-file' : (type === 'wf' ? '/world-file' : '/config-file');
+  var extraQuery = type === 'wf' ? '&world_name=' + encodeURIComponent(selectedWfWorld) : '';
+  apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + endpoint + '?path=' + encodeURIComponent(path) + extraQuery)
     .then(function(response) { return response.json(); })
     .then(function(data) {
       cfgRawText = data.content;
@@ -765,7 +770,10 @@ document.getElementById('modal-save-btn').addEventListener('click', function() {
   var form = new FormData();
   form.append('path', path);
   form.append('content', textToSave);
-  var endpoint = type === 'kjs' ? '/kubejs-file' : '/config-file';
+  if (type === 'wf') {
+    form.append('world_name', selectedWfWorld);
+  }
+  var endpoint = type === 'kjs' ? '/kubejs-file' : (type === 'wf' ? '/world-file' : '/config-file');
   apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + endpoint, {
     method: 'POST',
     body: form

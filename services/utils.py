@@ -6,6 +6,7 @@ Contiene:
 - get_modpacks(): lista de modpacks instalados
 - get_mod_configs(): árbol de archivos de config de un modpack
 - get_kubejs_files(): árbol de archivos KubeJS
+- get_world_files(): árbol de archivos de texto editables de un mundo
 - extract_archive(): descomprimir ZIP/TAR/RAR
 - configure_jvm_ram(): modificar RAM en user_jvm_args.txt / variables.txt
 """
@@ -19,9 +20,11 @@ from fastapi import HTTPException
 from config import DEFAULT_SERVERS_PATH, CONFIG_EXTENSIONS
 
 KUBEJS_EXTENSIONS = {".js", ".ts", ".json", ".yaml", ".yml", ".txt", ".md"}
+WORLD_EXTENSIONS = {".json", ".txt", ".mcfunction", ".yaml", ".yml", ".mcmeta"}
 
-_configs_cache: dict = {}   # modpack -> (dir_mtime, result)
-_kubejs_cache: dict = {}    # modpack -> (dir_mtime, result)
+_configs_cache: dict = {}      # modpack -> (dir_mtime, result)
+_kubejs_cache: dict = {}       # modpack -> (dir_mtime, result)
+_world_files_cache: dict = {}  # (modpack, world_name) -> (dir_mtime, result)
 
 
 def get_system_ram_gb() -> float | None:
@@ -121,6 +124,43 @@ def get_kubejs_files(modpack_name: str) -> dict:
 
 def invalidate_kubejs_cache(modpack_name: str) -> None:
     _kubejs_cache.pop(modpack_name, None)
+
+
+def get_world_files(modpack_name: str, world_name: str) -> dict:
+    """
+    Devuelve un dict {carpeta: [lista de rutas relativas]} con los archivos de
+    texto editables de un mundo (stats/, advancements/, datapacks/...).
+    Excluye binarios como level.dat, region/*.mca y playerdata/*.dat.
+    Resultado cacheado por mtime de la carpeta del mundo.
+    """
+    world_dir = DEFAULT_SERVERS_PATH / modpack_name / world_name
+    if not world_dir.exists():
+        return {}
+
+    try:
+        mtime = world_dir.stat().st_mtime
+    except Exception:
+        mtime = None
+
+    cache_key = (modpack_name, world_name)
+    if cache_key in _world_files_cache:
+        cached_mtime, cached_result = _world_files_cache[cache_key]
+        if cached_mtime == mtime:
+            return cached_result
+
+    groups: dict = {}
+    for path in sorted(world_dir.rglob("*")):
+        if not path.is_file():
+            continue
+        if path.suffix.lower() not in WORLD_EXTENSIONS:
+            continue
+        rel = path.relative_to(world_dir)
+        parts = rel.parts
+        group = parts[0] if len(parts) > 1 else "__root__"
+        groups.setdefault(group, []).append(str(rel))
+
+    _world_files_cache[cache_key] = (mtime, groups)
+    return groups
 
 
 def extract_archive(archive_path: Path, dest_path: Path) -> dict:

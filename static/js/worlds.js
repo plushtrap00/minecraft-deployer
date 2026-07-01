@@ -228,3 +228,172 @@ function updateTypeDesc() {
     document.getElementById('nw-type-custom').style.display = 'none';
   }
 }
+
+
+// -- Archivos de mundo ---------------------------------------------------------
+var worldFiles = {};
+var filteredWfKeys = [];
+var wfPage = 0;
+var activeWfFilter = '';
+var selectedWfWorld = null;
+
+function loadWorldFilesTab() {
+  var select = document.getElementById('wf-world-select');
+  apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/worlds')
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      var worlds = data.worlds || [];
+      var prev = select.value;
+      select.innerHTML = '<option value="">Selecciona un mundo...</option>' + worlds.map(function(w) {
+        return '<option value="' + w.name + '">' + w.name + (w.active ? ' (activo)' : '') + '</option>';
+      }).join('');
+      var keepPrev = worlds.some(function(w) { return w.name === prev; });
+      if (keepPrev) {
+        select.value = prev;
+      } else if (worlds.length) {
+        select.value = data.active_world || worlds[0].name;
+      }
+      if (select.value) {
+        loadWorldFiles(select.value);
+      } else {
+        document.getElementById('wf-tree').innerHTML = '<p class="empty-msg" style="padding:12px">No hay mundos detectados</p>';
+        document.getElementById('wf-pagination').style.display = 'none';
+      }
+    })
+    .catch(function() {
+      document.getElementById('wf-tree').innerHTML = '<p class="empty-msg" style="padding:12px;color:var(--red)">Error al cargar mundos</p>';
+    });
+}
+
+document.getElementById('wf-world-select').addEventListener('change', function() {
+  if (this.value) {
+    loadWorldFiles(this.value);
+  }
+});
+
+function loadWorldFiles(worldName) {
+  selectedWfWorld = worldName;
+  document.getElementById('wf-tree').innerHTML = '<p class="empty-msg" style="padding:12px">Cargando...</p>';
+  apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/world-files?world_name=' + encodeURIComponent(worldName))
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      worldFiles = data.groups;
+      filteredWfKeys = wfSortedKeys(activeWfFilter);
+      wfPage = 0;
+      renderWfTreePage();
+    })
+    .catch(function() {
+      document.getElementById('wf-tree').innerHTML = '<p class="empty-msg" style="padding:12px;color:var(--red)">Error al cargar archivos</p>';
+    });
+}
+
+document.getElementById('wf-search').addEventListener('input', function() {
+  activeWfFilter = this.value;
+  filteredWfKeys = wfSortedKeys(activeWfFilter);
+  wfPage = 0;
+  renderWfTreePage();
+});
+
+document.getElementById('wfpg-prev').addEventListener('click', function() {
+  wfPage--;
+  renderWfTreePage();
+});
+
+document.getElementById('wfpg-next').addEventListener('click', function() {
+  wfPage++;
+  renderWfTreePage();
+});
+
+function wfSortedKeys(filter) {
+  var keys = Object.keys(worldFiles).sort(function(a, b) {
+    if (a === '__root__') {
+      return -1;
+    }
+    if (b === '__root__') {
+      return 1;
+    }
+    return a.localeCompare(b);
+  });
+  if (filter) {
+    var filterLower = filter.toLowerCase();
+    keys = keys.filter(function(key) {
+      if (key === '__root__') {
+        return worldFiles[key].some(function(f) { return f.toLowerCase().indexOf(filterLower) !== -1; });
+      }
+      return key.toLowerCase().indexOf(filterLower) !== -1
+        || worldFiles[key].some(function(f) { return f.toLowerCase().indexOf(filterLower) !== -1; });
+    });
+  }
+  return keys;
+}
+
+function wfGetFilteredFiles(files, groupKey, filter) {
+  if (!filter) {
+    return files;
+  }
+  var filterLower = filter.toLowerCase();
+  if (groupKey !== '__root__' && groupKey.toLowerCase().indexOf(filterLower) !== -1) {
+    return files;
+  }
+  return files.filter(function(f) { return f.toLowerCase().indexOf(filterLower) !== -1; });
+}
+
+function renderWfTreePage() {
+  var tree = document.getElementById('wf-tree');
+  var pg = document.getElementById('wf-pagination');
+  var total = filteredWfKeys.length;
+  if (!total) {
+    tree.innerHTML = '<p class="empty-msg" style="padding:12px">Sin resultados</p>';
+    pg.style.display = 'none';
+    return;
+  }
+  var hasFilter = activeWfFilter.length > 0;
+  var start = wfPage * PAGE_SIZE;
+  var end = Math.min(start + PAGE_SIZE, total);
+  var html = '';
+  filteredWfKeys.slice(start, end).forEach(function(key) {
+    var label = key === '__root__' ? '📄 Raíz del mundo' : '📁 ' + key;
+    var allFiles = worldFiles[key];
+    var files = wfGetFilteredFiles(allFiles, key, activeWfFilter);
+    var openClass = hasFilter ? ' open' : '';
+    html += '<div class="mod-group">'
+      + '<div class="mod-group-header' + openClass + '"><span>' + label
+      + ' <span style="color:var(--muted);font-weight:400">(' + files.length
+      + (allFiles.length !== files.length ? '/' + allFiles.length : '') + ')</span></span>'
+      + '<span class="mg-arrow">▶</span></div>'
+      + '<div class="mod-file-list' + openClass + '">';
+    files.forEach(function(filePath) {
+      var fname = filePath.split('/').pop();
+      var display = fname;
+      if (hasFilter) {
+        var filterLower = activeWfFilter.toLowerCase();
+        var matchIndex = fname.toLowerCase().indexOf(filterLower);
+        if (matchIndex !== -1) {
+          display = fname.substring(0, matchIndex)
+            + '<mark style="background:rgba(210,153,34,.35);color:var(--text);border-radius:2px">'
+            + fname.substring(matchIndex, matchIndex + activeWfFilter.length) + '</mark>'
+            + fname.substring(matchIndex + activeWfFilter.length);
+        }
+      }
+      html += '<div class="cfg-file-item mod-file-item" data-path="' + filePath + '" data-type="wf">'
+        + display + '</div>';
+    });
+    html += '</div></div>';
+  });
+  tree.innerHTML = html;
+  tree.querySelectorAll('.mod-group-header').forEach(function(header) {
+    header.addEventListener('click', function() {
+      this.classList.toggle('open');
+      this.nextElementSibling.classList.toggle('open');
+    });
+  });
+  var totalPages = Math.ceil(total / PAGE_SIZE);
+  pg.style.display = 'flex';
+  if (totalPages > 1) {
+    document.getElementById('wfpg-info').textContent = 'Pág.' + (wfPage + 1) + '/' + totalPages + ' (' + total + ')';
+  } else {
+    document.getElementById('wfpg-info').textContent = total + ' archivos';
+  }
+  document.getElementById('wfpg-prev').disabled = wfPage === 0;
+  document.getElementById('wfpg-next').disabled = wfPage >= totalPages - 1;
+}
