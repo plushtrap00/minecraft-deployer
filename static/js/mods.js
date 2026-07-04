@@ -76,7 +76,8 @@ function renderModsList(mods) {
     var disabledLabel = mod.enabled ? '' : '<span style="font-size:.72rem;color:var(--muted)">desactivado</span>';
     html += '<div class="mod-list-item"' + opacityStyle + '>'
       + '<span class="mod-icon">' + icon + '</span>'
-      + '<div class="mod-info"><div class="mod-display">' + escHtml(mod.name) + '</div></div>'
+      + '<div class="mod-info"><div class="mod-display">' + escHtml(mod.name) + '</div>'
+      + '<div class="mod-file">' + escHtml(mod.filename) + '</div></div>'
       + disabledLabel
       + '<button type="button" class="btn-danger mod-delete" title="Borrar mod" data-filename="' + escHtml(mod.filename) + '" style="opacity:1;font-size:.78rem;padding:4px 8px;flex-shrink:0">🗑</button>'
       + '</div>';
