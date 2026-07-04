@@ -147,6 +147,22 @@ def _detect_modpack_version_impl(base: Path) -> dict:
 _NO_METADATA_ERROR = "No se encontró metadata de mod (mods.toml / fabric.mod.json)"
 
 
+def _mods_block(text: str) -> str:
+    """
+    Recorta el texto del mods.toml a la (primera) tabla [[mods]]. Sin esto, un
+    re.search("modId=...") suelto puede matchear el modId de un bloque
+    [[dependencies.X]] (que también tiene su propio "modId=") si ese bloque
+    aparece antes que [[mods]] en el archivo, confundiendo el modId del propio
+    mod con el de una de sus dependencias.
+    """
+    m = re.search(r'\[\[\s*mods\s*\]\]', text, re.IGNORECASE)
+    if not m:
+        return text
+    rest = text[m.end():]
+    end = re.search(r'\n\s*\[', rest)
+    return rest[:end.start()] if end else rest
+
+
 def _toml_dep_version_ranges(text: str, mod_id: str | None, dep_modid: str) -> list:
     """
     Extrae el/los versionRange del bloque [[dependencies.<mod_id>]] cuyo modId
@@ -211,14 +227,15 @@ def read_mod_metadata(jar_bytes: bytes) -> dict:
 
             if toml_file:
                 text = zf.read(toml_file).decode("utf-8", errors="replace")
-                m = re.search(r'modId\s*=\s*[\'"]([^\'"]+)[\'"]', text)
+                mods_block = _mods_block(text)
+                m = re.search(r'modId\s*=\s*[\'"]([^\'"]+)[\'"]', mods_block)
                 if m:
                     result["mod_id"] = m.group(1)
-                m = re.search(r'^[ \t]*version\s*=\s*[\'"]([^\'"]+)[\'"]', text, re.MULTILINE)
+                m = re.search(r'^[ \t]*version\s*=\s*[\'"]([^\'"]+)[\'"]', mods_block, re.MULTILINE)
                 if m:
                     result["mod_version"] = m.group(1)
                 if result["mod_version"] and "${" in result["mod_version"]:
-                    result["mod_version"] = _manifest_implementation_version(zf) or result["mod_version"]
+                    result["mod_version"] = _manifest_implementation_version(zf)
                 result["mc_versions"] = _toml_dep_version_ranges(text, result["mod_id"], "minecraft")
                 for loader_key in ("neoforge", "forge"):
                     ranges = _toml_dep_version_ranges(text, result["mod_id"], loader_key)
@@ -233,7 +250,7 @@ def read_mod_metadata(jar_bytes: bytes) -> dict:
                 result["mod_id"] = data.get("id")
                 result["mod_version"] = data.get("version")
                 if result["mod_version"] and "${" in result["mod_version"]:
-                    result["mod_version"] = _manifest_implementation_version(zf) or result["mod_version"]
+                    result["mod_version"] = _manifest_implementation_version(zf)
                 depends = data.get("depends", {})
                 mc = depends.get("minecraft")
                 if mc:
@@ -251,7 +268,7 @@ def read_mod_metadata(jar_bytes: bytes) -> dict:
                 result["mod_id"] = meta.get("id")
                 result["mod_version"] = meta.get("version")
                 if result["mod_version"] and "${" in result["mod_version"]:
-                    result["mod_version"] = _manifest_implementation_version(zf) or result["mod_version"]
+                    result["mod_version"] = _manifest_implementation_version(zf)
                 for dep in meta.get("depends", []):
                     if not isinstance(dep, dict):
                         continue
