@@ -339,6 +339,31 @@ function modErrorHtml(msg) {
     + escHtml(msg) + '</div>';
 }
 
+function xhrPostFormData(url, form, onProgress) {
+  return new Promise(function(resolve, reject) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', url);
+    var headers = authHeaders();
+    Object.keys(headers).forEach(function(k) { xhr.setRequestHeader(k, headers[k]); });
+    if (onProgress) {
+      xhr.upload.onprogress = function(event) { onProgress(event.loaded); };
+    }
+    xhr.onload = function() {
+      var data;
+      try {
+        data = JSON.parse(xhr.responseText);
+      } catch (e) {
+        data = {};
+      }
+      resolve({ ok: xhr.status >= 200 && xhr.status < 300, data: data });
+    };
+    xhr.onerror = function() {
+      reject(new Error('Error de red'));
+    };
+    xhr.send(form);
+  });
+}
+
 function uploadModsBulk(fileList) {
   var files = Array.prototype.slice.call(fileList).filter(function(f) {
     return f.name.toLowerCase().endsWith('.jar') || f.name.toLowerCase().endsWith('.zip');
@@ -353,15 +378,33 @@ function uploadModsBulk(fileList) {
   var form = new FormData();
   files.forEach(function(f) { form.append('files', f); });
 
-  apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/upload-bulk', {
-    method: 'POST',
-    body: form
-  })
-    .then(function(response) {
-      return response.json().then(function(data) {
-        return { ok: response.ok, data: data };
-      });
-    })
+  var isZip = files.length === 1 && files[0].name.toLowerCase().endsWith('.zip');
+  var cumulative = [];
+  var totalBytes = 0;
+  files.forEach(function(f) {
+    totalBytes += f.size;
+    cumulative.push(totalBytes);
+  });
+  totalBytes = totalBytes || 1;
+
+  xhrPostFormData(
+    '/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/upload-bulk',
+    form,
+    function(loaded) {
+      if (isZip) {
+        var pct = Math.min(100, Math.round((loaded / totalBytes) * 100));
+        setModUploadModalBody(modUploadProgressHtml('Subiendo ' + files[0].name + '... ' + pct + '%'));
+        return;
+      }
+      var idx = cumulative.findIndex(function(threshold) { return loaded <= threshold; });
+      if (idx === -1) {
+        idx = files.length - 1;
+      }
+      setModUploadModalBody(modUploadProgressHtml(
+        'Enviando mod ' + (idx + 1) + ' de ' + files.length + ': ' + files[idx].name + '...'
+      ));
+    }
+  )
     .then(function(result) {
       modFileInput.value = '';
       if (result.ok && result.data.success) {
