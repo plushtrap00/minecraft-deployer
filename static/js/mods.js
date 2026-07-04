@@ -135,6 +135,39 @@ var modFileInput = document.getElementById('mod-file-input');
 var modFolderInput = document.getElementById('mod-folder-input');
 var modFolderBtn = document.getElementById('mod-folder-btn');
 
+// -- Ventana flotante de subida/verificación -----------------------------------
+var modUploadModal = document.getElementById('mod-upload-modal');
+var modUploadModalBody = document.getElementById('mod-upload-modal-body');
+var modUploadModalCloseBtn = document.getElementById('mod-upload-modal-close');
+
+function openModUploadModal(html) {
+  modUploadModalBody.innerHTML = html;
+  modUploadModal.classList.add('show');
+  updateModUploadModalLock();
+}
+
+function setModUploadModalBody(html) {
+  modUploadModalBody.innerHTML = html;
+}
+
+function closeModUploadModal() {
+  if (modOperationBusy) {
+    return;
+  }
+  modUploadModal.classList.remove('show');
+}
+
+function updateModUploadModalLock() {
+  modUploadModalCloseBtn.style.display = modOperationBusy ? 'none' : '';
+}
+
+modUploadModalCloseBtn.addEventListener('click', closeModUploadModal);
+modUploadModal.addEventListener('click', function(event) {
+  if (event.target === this) {
+    closeModUploadModal();
+  }
+});
+
 // -- Aviso de "no salir" mientras se sube/verifica/instala algo en disco -------
 var modOperationBusy = false;
 
@@ -143,6 +176,7 @@ function setModOperationBusy(busy) {
   modFileInput.disabled = busy;
   modFolderBtn.disabled = busy;
   modUploadZone.classList.toggle('busy', busy);
+  updateModUploadModalLock();
 }
 
 window.addEventListener('beforeunload', function(event) {
@@ -223,10 +257,8 @@ function uploadMod(file) {
     showAlert('Solo se aceptan archivos .jar o .zip');
     return;
   }
-  var resultEl = document.getElementById('mod-upload-result');
-  resultEl.style.display = 'block';
-  resultEl.innerHTML = modUploadProgressHtml('Subiendo y verificando ' + file.name + '...');
   setModOperationBusy(true);
+  openModUploadModal(modUploadProgressHtml('Subiendo y verificando ' + file.name + '...'));
 
   var form = new FormData();
   form.append('file', file);
@@ -259,19 +291,19 @@ function uploadMod(file) {
             + 'Se reemplazó ' + escHtml(result.data.replaced_filename)
             + ' (v' + escHtml(result.data.previous_version) + ' → v' + escHtml(result.data.mod_version) + ')</div>';
         }
-        resultEl.innerHTML = '<div style="background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.3);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--green)">✅ Mod instalado: '
-          + escHtml(result.data.filename) + info + '</div>' + replacedMsg;
+        setModUploadModalBody('<div style="background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.3);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--green)">✅ Mod instalado: '
+          + escHtml(result.data.filename) + info + '</div>' + replacedMsg);
         loadModsList();
-        setTimeout(function() { resultEl.style.display = 'none'; }, 4000);
+        setTimeout(closeModUploadModal, 3500);
       } else {
-        resultEl.innerHTML = '<div style="background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.3);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--red)">❌ '
-          + escHtml(result.data.detail || 'Error desconocido') + '</div>';
+        setModUploadModalBody('<div style="background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.3);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--red)">❌ '
+          + escHtml(result.data.detail || 'Error desconocido') + '</div>');
       }
     })
     .catch(function(error) {
       setModOperationBusy(false);
       modFileInput.value = '';
-      resultEl.innerHTML = '<div style="color:var(--red);font-size:.82rem">❌ Error de red: ' + escHtml(error.message) + '</div>';
+      setModUploadModalBody('<div style="color:var(--red);font-size:.82rem">❌ Error de red: ' + escHtml(error.message) + '</div>');
     });
 }
 
@@ -311,10 +343,8 @@ function uploadModsBulk(fileList) {
     showAlert('No se encontraron archivos .jar o .zip');
     return;
   }
-  var resultEl = document.getElementById('mod-upload-result');
-  resultEl.style.display = 'block';
-  resultEl.innerHTML = modUploadProgressHtml('Subiendo y verificando ' + files.length + ' archivo(s)...');
   setModOperationBusy(true);
+  openModUploadModal(modUploadProgressHtml('Subiendo y verificando ' + files.length + ' archivo(s)...'));
 
   var form = new FormData();
   files.forEach(function(f) { form.append('files', f); });
@@ -335,19 +365,18 @@ function uploadModsBulk(fileList) {
         renderBulkResult(result.data);
         loadModsList();
       } else {
-        resultEl.innerHTML = '<div style="background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.3);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--red)">❌ '
-          + escHtml(result.data.detail || 'Error desconocido') + '</div>';
+        setModUploadModalBody('<div style="background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.3);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--red)">❌ '
+          + escHtml(result.data.detail || 'Error desconocido') + '</div>');
       }
     })
     .catch(function(error) {
       setModOperationBusy(false);
-      resultEl.innerHTML = '<div style="color:var(--red);font-size:.82rem">❌ Error de red: ' + escHtml(error.message) + '</div>';
+      setModUploadModalBody('<div style="color:var(--red);font-size:.82rem">❌ Error de red: ' + escHtml(error.message) + '</div>');
     });
 }
 
 function renderBulkResult(data) {
   lastBulkData = data;
-  var resultEl = document.getElementById('mod-upload-result');
   var rows = BULK_CATEGORIES.map(function(cat) {
     var items = data[cat.key] || [];
     if (!items.length) {
@@ -370,10 +399,15 @@ function renderBulkResult(data) {
       + '<span class="bulk-result-icon">' + cat.icon + '</span><span>' + escHtml(cat.many(items.length)) + '</span></div>';
   }).join('');
 
-  resultEl.innerHTML = rows || '<div class="bulk-result-row" style="color:var(--muted)">No se procesó ningún mod.</div>';
+  setModUploadModalBody(rows || '<div class="bulk-result-row" style="color:var(--muted)">No se procesó ningún mod.</div>');
+
+  var needsAttention = (data.needs_confirmation || []).length || (data.errors || []).length;
+  if (!needsAttention) {
+    setTimeout(closeModUploadModal, 4000);
+  }
 }
 
-document.getElementById('mod-upload-result').addEventListener('click', function(event) {
+modUploadModalBody.addEventListener('click', function(event) {
   var row = event.target.closest('[data-bulk-cat]');
   if (!row || !lastBulkData) {
     return;
@@ -523,10 +557,13 @@ document.getElementById('mod-downgrade-reject-all').addEventListener('click', fu
 });
 
 document.getElementById('mod-downgrade-modal-close').addEventListener('click', function() {
+  if (modOperationBusy) {
+    return;
+  }
   document.getElementById('mod-downgrade-modal').classList.remove('show');
 });
 document.getElementById('mod-downgrade-modal').addEventListener('click', function(event) {
-  if (event.target === this) {
+  if (event.target === this && !modOperationBusy) {
     this.classList.remove('show');
   }
 });
