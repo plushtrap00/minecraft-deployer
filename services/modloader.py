@@ -272,8 +272,11 @@ async def install_loader_stream(modpack: str, loader_key: str, mc_version: str, 
         )
         async for raw in proc.stdout:
             line = raw.decode("utf-8", errors="replace").rstrip()
-            if line:
-                yield {"type": "log", "message": line}
+            if not line:
+                continue
+            if len(line) > 500:
+                line = line[:500] + "… [línea truncada]"
+            yield {"type": "log", "message": line}
         returncode = await proc.wait()
 
         if returncode != 0:

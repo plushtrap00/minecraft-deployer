@@ -115,11 +115,28 @@ document.getElementById('modloader-install-btn').addEventListener('click', funct
   );
 });
 
+var MODLOADER_LOG_MAX_LINES = 300;
+var MODLOADER_LOG_MAX_LINE_LENGTH = 500;
+var MODLOADER_LOG_RENDER_THROTTLE_MS = 200;
+
 function startModloaderInstall(version) {
   var loaderDisplay = modloaderInfo.loader_display;
   var installLogLines = [];
+  var headerHtml = modUploadProgressHtml('Instalando ' + loaderDisplay + ' ' + version + '...');
+  var renderTimer = null;
 
-  function renderInstallLog(headerHtml) {
+  function pushLogLine(message) {
+    if (message.length > MODLOADER_LOG_MAX_LINE_LENGTH) {
+      message = message.slice(0, MODLOADER_LOG_MAX_LINE_LENGTH) + '… [línea truncada]';
+    }
+    installLogLines.push(message);
+    if (installLogLines.length > MODLOADER_LOG_MAX_LINES) {
+      installLogLines.splice(0, installLogLines.length - MODLOADER_LOG_MAX_LINES);
+    }
+  }
+
+  function renderInstallLogNow() {
+    renderTimer = null;
     var logHtml = installLogLines.length
       ? '<div class="log-viewer" id="modloader-install-log" style="height:220px;margin-top:10px;font-size:.74rem">'
         + installLogLines.map(escHtml).join('\n') + '</div>'
@@ -131,10 +148,29 @@ function startModloaderInstall(version) {
     }
   }
 
+  // El instalador puede imprimir cientos de líneas muy seguido (descarga de
+  // librerías); reconstruir todo el log y el DOM en cada una congelaba la
+  // pestaña y disparaba el uso de memoria. Se agrupan los renders cada
+  // MODLOADER_LOG_RENDER_THROTTLE_MS en vez de uno por línea.
+  function scheduleRender() {
+    if (renderTimer === null) {
+      renderTimer = setTimeout(renderInstallLogNow, MODLOADER_LOG_RENDER_THROTTLE_MS);
+    }
+  }
+
+  function finish(finalHeaderHtml) {
+    if (renderTimer !== null) {
+      clearTimeout(renderTimer);
+      renderTimer = null;
+    }
+    headerHtml = finalHeaderHtml;
+    renderInstallLogNow();
+  }
+
   document.getElementById('modloader-modal').classList.remove('show');
   setModOperationBusy(true);
   openModUploadModal('', 'Cambio de modloader', '🔧');
-  renderInstallLog(modUploadProgressHtml('Instalando ' + loaderDisplay + ' ' + version + '...'));
+  renderInstallLogNow();
 
   var url = '/api/modpacks/' + encodeURIComponent(currentModpack) + '/modloader/install/stream'
     + '?version=' + encodeURIComponent(version) + '&token=' + encodeURIComponent(authToken);
@@ -148,8 +184,8 @@ function startModloaderInstall(version) {
       return;
     }
     if (data.type === 'log') {
-      installLogLines.push(data.message);
-      renderInstallLog(modUploadProgressHtml('Instalando ' + loaderDisplay + ' ' + version + '...'));
+      pushLogLine(data.message);
+      scheduleRender();
     } else if (data.type === 'done') {
       source.close();
       setModOperationBusy(false);
@@ -157,21 +193,21 @@ function startModloaderInstall(version) {
         ? '<div style="background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.3);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--green)">'
           + '✅ Modloader actualizado a ' + escHtml(data.version) + '.</div>'
         : modErrorHtml(data.detail || 'Error desconocido');
-      renderInstallLog(resultHtml);
+      finish(resultHtml);
       if (data.success) {
         loadModpackVersion();
       }
     } else if (data.type === 'error') {
       source.close();
       setModOperationBusy(false);
-      renderInstallLog(modErrorHtml(data.detail || 'Error desconocido'));
+      finish(modErrorHtml(data.detail || 'Error desconocido'));
     }
   };
 
   source.onerror = function() {
     source.close();
     setModOperationBusy(false);
-    renderInstallLog(modErrorHtml('Se perdió la conexión durante la instalación. Revisa el estado del servidor manualmente.'));
+    finish(modErrorHtml('Se perdió la conexión durante la instalación. Revisa el estado del servidor manualmente.'));
   };
 }
 
