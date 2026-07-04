@@ -11,6 +11,8 @@ Rutas:
 - GET       /api/modpacks/{modpack}/version
 - GET       /api/modpacks/{modpack}/mods
 - POST      /api/modpacks/{modpack}/mods/upload
+- POST      /api/modpacks/{modpack}/mods/upload-bulk
+- POST      /api/modpacks/{modpack}/mods/upload-bulk/confirm
 - DELETE    /api/modpacks/{modpack}/mods/{filename}
 - GET       /api/modpacks/{modpack}/detected-mods
 - GET       /api/modpacks/{modpack}/worlds
@@ -23,18 +25,25 @@ Rutas:
 - GET       /api/modpacks/{modpack}/logs/{filename}
 """
 import re
+import io
 import json
 import gzip
 import shutil
+import secrets
+import time
+import zipfile
 import asyncio
+from pathlib import Path
+from typing import List
 from fastapi import APIRouter, File, UploadFile, Form, HTTPException
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 
 from config import DEFAULT_SERVERS_PATH, TEMP_DIR
 from services.utils import get_mod_configs, get_kubejs_files, get_world_files, extract_archive, configure_jvm_ram, invalidate_kubejs_cache
 from services.modpack import (
-    detect_modpack_version, read_mod_metadata, mc_version_compatible,
-    compare_mod_versions, find_installed_mod_by_id,
+    detect_modpack_version, find_installed_mod_by_id,
+    mod_display_name, process_mod_jar,
     detect_installed_mods, has_mod_keyword,
     parse_server_properties, save_server_property,
     get_worlds, analyze_crash,
@@ -258,11 +267,7 @@ async def list_mods(modpack: str):
         low = f.name.lower()
         if not (low.endswith(".jar") or low.endswith(".zip") or low.endswith(".jar.disabled")):
             continue
-        stem = f.stem if not f.name.endswith(".disabled") else f.stem.replace(".jar", "").replace(".zip", "")
-        clean = re.sub(r'[-_+][0-9].*$', '', stem)
-        clean = re.sub(r'[-_](forge|fabric|neoforge|mc|minecraft).*$', '', clean, flags=re.IGNORECASE)
-        clean = clean.replace("-", " ").replace("_", " ").strip()
-        mods.append({"name": clean or stem, "filename": f.name, "enabled": not f.name.endswith(".disabled")})
+        mods.append({"name": mod_display_name(f.name), "filename": f.name, "enabled": not f.name.endswith(".disabled")})
     return JSONResponse({"mods": mods, "exists": True, "count": len(mods)})
 
 
@@ -277,55 +282,155 @@ async def upload_mod(modpack: str, file: UploadFile = File(...)):
     jar_bytes = await file.read()
     server_info = detect_modpack_version(modpack)
     server_mc = server_info.get("mc_version")
-    meta = read_mod_metadata(jar_bytes)
+    filename = Path(file.filename).name
 
-    if server_mc and meta["mc_versions"]:
-        if not mc_version_compatible(server_mc, meta["mc_versions"]):
-            raise HTTPException(
-                status_code=409,
-                detail=f"Incompatible: el mod requiere MC {', '.join(meta['mc_versions'])} pero el servidor es {server_mc}"
-            )
+    result = process_mod_jar(mods_dir, filename, jar_bytes, server_mc)
+    if result["status"] in ("incompatible", "invalid"):
+        raise HTTPException(status_code=409 if result["status"] == "incompatible" else 400, detail=result["detail"])
+    if result["status"] == "needs_confirmation":
+        raise HTTPException(status_code=409, detail=result["detail"] + ". No se reemplazó nada.")
+    if result["status"] == "already_installed":
+        raise HTTPException(status_code=409, detail=result["detail"] + f" en {result['existing_filename']}.")
 
-    existing_path, existing_meta = find_installed_mod_by_id(mods_dir, meta.get("mod_id"))
-    replaced_filename = None
-    previous_version = None
-
-    if existing_path:
-        cmp = compare_mod_versions(meta.get("mod_version"), existing_meta.get("mod_version"))
-        if cmp < 0:
-            raise HTTPException(
-                status_code=409,
-                detail=f"La versión subida (v{meta.get('mod_version')}) es más antigua que la instalada "
-                       f"(v{existing_meta.get('mod_version')} en {existing_path.name}). No se reemplazó nada."
-            )
-        if cmp == 0:
-            raise HTTPException(
-                status_code=409,
-                detail=f"Ya está instalada la misma versión (v{meta.get('mod_version')}) en {existing_path.name}."
-            )
-        # cmp > 0: versión más reciente, se reemplaza la instalada
-        was_disabled = existing_path.name.endswith(".disabled")
-        previous_version = existing_meta.get("mod_version")
-        replaced_filename = existing_path.name
-        existing_path.unlink()
-        dest = mods_dir / (file.filename + ".disabled" if was_disabled else file.filename)
-    else:
-        dest = mods_dir / file.filename
-        if dest.exists():
-            raise HTTPException(status_code=400, detail=f"{file.filename} ya existe en mods/")
-
-    dest.write_bytes(jar_bytes)
     return JSONResponse({
         "success": True,
-        "filename": dest.name,
-        "mod_id": meta.get("mod_id"),
-        "mod_version": meta.get("mod_version"),
-        "mod_mc_versions": meta.get("mc_versions"),
+        "filename": result["filename"],
+        "mod_id": result.get("mod_id"),
+        "mod_version": result.get("mod_version"),
         "server_mc": server_mc,
         "size_kb": round(len(jar_bytes) / 1024, 1),
-        "replaced_filename": replaced_filename,
-        "previous_version": previous_version,
+        "replaced_filename": result.get("replaced_filename"),
+        "previous_version": result.get("previous_version"),
     })
+
+
+# ── Subida masiva de mods (zip / carpeta) ──────────────────────────────────────
+
+BATCH_ROOT = TEMP_DIR / "mod-batches"
+BATCH_ROOT.mkdir(parents=True, exist_ok=True)
+_BATCH_MAX_AGE_SECONDS = 2 * 60 * 60
+_BATCH_ID_RE = re.compile(r'^[0-9a-f]{8,64}$')
+
+
+def _cleanup_stale_batches():
+    now = time.time()
+    for d in BATCH_ROOT.iterdir():
+        if d.is_dir() and now - d.stat().st_mtime > _BATCH_MAX_AGE_SECONDS:
+            shutil.rmtree(d, ignore_errors=True)
+
+
+class BulkConfirmBody(BaseModel):
+    batch_id: str
+    accept: List[str] = []
+
+
+@router.post("/{modpack}/mods/upload-bulk")
+async def upload_mods_bulk(modpack: str, files: List[UploadFile] = File(...)):
+    mods_dir = DEFAULT_SERVERS_PATH / modpack / "mods"
+    if not mods_dir.exists():
+        raise HTTPException(status_code=404, detail="Carpeta mods/ no encontrada en este modpack")
+
+    _cleanup_stale_batches()
+
+    jars = []
+    if len(files) == 1 and files[0].filename.lower().endswith(".zip"):
+        zip_bytes = await files[0].read()
+        try:
+            with zipfile.ZipFile(io.BytesIO(zip_bytes)) as zf:
+                for info in zf.infolist():
+                    if info.is_dir():
+                        continue
+                    name = Path(info.filename).name
+                    if name.lower().endswith(".jar"):
+                        jars.append((name, zf.read(info)))
+        except zipfile.BadZipFile:
+            raise HTTPException(status_code=400, detail="El archivo .zip no es válido")
+        if not jars:
+            raise HTTPException(status_code=400, detail="El .zip no contiene archivos .jar")
+    else:
+        for f in files:
+            name = Path(f.filename).name
+            if name.lower().endswith(".jar"):
+                jars.append((name, await f.read()))
+        if not jars:
+            raise HTTPException(status_code=400, detail="No se encontraron archivos .jar")
+
+    server_info = detect_modpack_version(modpack)
+    server_mc = server_info.get("mc_version")
+
+    added, already_installed, needs_confirmation, errors = [], [], [], []
+    pending_bytes = {}
+
+    for filename, jar_bytes in jars:
+        result = process_mod_jar(mods_dir, filename, jar_bytes, server_mc)
+        status = result["status"]
+        if status == "added":
+            added.append(result)
+        elif status == "already_installed":
+            already_installed.append(result)
+        elif status == "needs_confirmation":
+            needs_confirmation.append(result)
+            pending_bytes[filename] = jar_bytes
+        else:
+            errors.append(result)
+
+    batch_id = None
+    if needs_confirmation:
+        batch_id = secrets.token_hex(8)
+        batch_dir = BATCH_ROOT / batch_id
+        batch_dir.mkdir(parents=True)
+        for item in needs_confirmation:
+            (batch_dir / item["filename"]).write_bytes(pending_bytes[item["filename"]])
+        (batch_dir / "manifest.json").write_text(json.dumps(needs_confirmation), encoding="utf-8")
+
+    return JSONResponse({
+        "success": True,
+        "batch_id": batch_id,
+        "added": added,
+        "already_installed": already_installed,
+        "needs_confirmation": needs_confirmation,
+        "errors": errors,
+        "total": len(jars),
+    })
+
+
+@router.post("/{modpack}/mods/upload-bulk/confirm")
+async def confirm_mods_bulk(modpack: str, body: BulkConfirmBody):
+    if not _BATCH_ID_RE.match(body.batch_id):
+        raise HTTPException(status_code=400, detail="batch_id inválido")
+    mods_dir = DEFAULT_SERVERS_PATH / modpack / "mods"
+    batch_dir = BATCH_ROOT / body.batch_id
+    try:
+        batch_dir.resolve().relative_to(BATCH_ROOT.resolve())
+    except ValueError:
+        raise HTTPException(status_code=403, detail="Ruta no permitida")
+    if not batch_dir.exists():
+        raise HTTPException(status_code=404, detail="El lote ya no existe o expiró")
+
+    manifest_path = batch_dir / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8")) if manifest_path.exists() else []
+    accept_set = set(body.accept)
+
+    applied, skipped = [], []
+    for item in manifest:
+        filename = item["filename"]
+        jar_path = batch_dir / filename
+        if filename not in accept_set or not jar_path.exists():
+            skipped.append(item)
+            continue
+        jar_bytes = jar_path.read_bytes()
+        existing_path, existing_meta = find_installed_mod_by_id(mods_dir, item.get("mod_id"))
+        if existing_path:
+            was_disabled = existing_path.name.endswith(".disabled")
+            existing_path.unlink()
+            dest = mods_dir / (filename + ".disabled" if was_disabled else filename)
+        else:
+            dest = mods_dir / filename
+        dest.write_bytes(jar_bytes)
+        applied.append({**item, "filename": dest.name})
+
+    shutil.rmtree(batch_dir, ignore_errors=True)
+    return JSONResponse({"success": True, "applied": applied, "skipped": skipped})
 
 
 @router.delete("/{modpack}/mods/{filename}")

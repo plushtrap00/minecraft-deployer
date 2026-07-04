@@ -120,3 +120,59 @@
 #mods-search {
   margin-bottom: 12px;
 }
+
+.bulk-result-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  font-size: .83rem;
+}
+
+.bulk-result-row.clickable {
+  cursor: pointer;
+}
+
+.bulk-result-row.clickable:hover {
+  text-decoration: underline;
+}
+
+.bulk-result-icon {
+  flex-shrink: 0;
+}
+
+.mod-modal-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 4px;
+  border-bottom: 1px solid var(--border);
+  font-size: .85rem;
+}
+
+.mod-modal-item:last-child {
+  border-bottom: none;
+}
+
+.mod-modal-item .mod-modal-detail {
+  font-size: .74rem;
+  color: var(--muted);
+}
+
+.mod-modal-pagination {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: .8rem;
+  color: var(--muted);
+}
+
+.mod-modal-pagination button {
+  padding: 3px 9px;
+  font-size: .78rem;
+}
+
+.mod-modal-pagination button:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}

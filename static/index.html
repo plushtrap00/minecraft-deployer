@@ -520,11 +520,13 @@
 
         <!-- Upload zone -->
         <div class="mod-upload-zone" id="mod-upload-zone">
-          <input type="file" id="mod-file-input" accept=".jar">
+          <input type="file" id="mod-file-input" accept=".jar,.zip">
           <div class="muz-icon">📦</div>
-          <div class="muz-text">Arrastra un <strong>.jar</strong> aquí o <span class="muz-link">haz clic</span> para añadir un mod</div>
+          <div class="muz-text">Arrastra un <strong>.jar</strong> o un <strong>.zip</strong> con varios mods aquí, o <span class="muz-link">haz clic</span> para elegir archivo</div>
           <div class="muz-hint">Se verificará compatibilidad con la versión del servidor</div>
         </div>
+        <input type="file" id="mod-folder-input" webkitdirectory directory multiple style="display:none">
+        <button type="button" class="btn-secondary btn-sm" id="mod-folder-btn" style="margin:8px 0">📁 Subir carpeta de mods</button>
         <div id="mod-upload-result" style="display:none;margin-bottom:10px"></div>
 
         <input type="text" id="mods-search" placeholder="🔍 Buscar mod por nombre..." class="w-full">
@@ -625,6 +627,47 @@
       <div class="modal-footer-actions">
         <button class="btn-secondary" id="modal-close-btn2">Cerrar</button>
         <button id="modal-save-btn">💾 Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: lista de mods de una subida masiva -->
+<div class="modal-overlay" id="mod-list-modal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <span id="mod-list-modal-icon">📦</span>
+      <span class="modal-path" id="mod-list-modal-title"></span>
+      <button class="modal-close" id="mod-list-modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-scroll" id="mod-list-modal-body"></div>
+    </div>
+    <div class="modal-footer">
+      <div class="mod-modal-pagination" id="mod-list-modal-pagination"></div>
+      <div class="modal-footer-actions">
+        <button class="btn-secondary" id="mod-list-modal-close2">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: confirmar degradado de versión de mods -->
+<div class="modal-overlay" id="mod-downgrade-modal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <span>⚠️</span>
+      <span class="modal-path">Mods con versión más antigua que la instalada</span>
+      <button class="modal-close" id="mod-downgrade-modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-scroll" id="mod-downgrade-modal-body"></div>
+    </div>
+    <div class="modal-footer">
+      <div class="mod-modal-pagination" id="mod-downgrade-modal-pagination"></div>
+      <div class="modal-footer-actions">
+        <button class="btn-secondary" id="mod-downgrade-reject-all">Rechazar todos</button>
+        <button id="mod-downgrade-confirm">Confirmar seleccionados</button>
       </div>
     </div>
   </div>

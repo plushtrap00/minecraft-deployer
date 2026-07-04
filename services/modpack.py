@@ -246,6 +246,93 @@ def find_installed_mod_by_id(mods_dir: Path, mod_id: str):
     return None, None
 
 
+def mod_display_name(filename: str) -> str:
+    """Deriva un nombre legible a partir del nombre de archivo de un mod."""
+    p = Path(filename)
+    stem = p.stem if not p.name.endswith(".disabled") else p.stem.replace(".jar", "").replace(".zip", "")
+    clean = re.sub(r'[-_+][0-9].*$', '', stem)
+    clean = re.sub(r'[-_](forge|fabric|neoforge|mc|minecraft).*$', '', clean, flags=re.IGNORECASE)
+    clean = clean.replace("-", " ").replace("_", " ").strip()
+    return clean or stem
+
+
+def process_mod_jar(mods_dir: Path, filename: str, jar_bytes: bytes, server_mc: str) -> dict:
+    """
+    Evalúa un .jar de mod contra los mods ya instalados en mods_dir y, si corresponde,
+    lo instala. Usado tanto por la subida individual como por la subida masiva (zip/carpeta).
+
+    Si status == "needs_confirmation" NO se escribe nada en disco: quien llama decide
+    qué hacer con jar_bytes (p.ej. guardarlos a la espera de que el usuario confirme
+    si quiere degradar la versión instalada).
+
+    Devuelve dict con: status, filename, display_name, mod_id, mod_version, detail,
+    y según el caso: existing_filename, existing_version, replaced_filename, previous_version.
+    status: "added" | "already_installed" | "needs_confirmation" | "incompatible" | "invalid"
+    """
+    display_name = mod_display_name(filename)
+    meta = read_mod_metadata(jar_bytes)
+
+    if not meta.get("mod_id") and meta.get("error"):
+        return {
+            "status": "invalid", "filename": filename, "display_name": display_name,
+            "mod_id": None, "mod_version": None,
+            "detail": meta["error"],
+        }
+
+    if server_mc and meta["mc_versions"] and not mc_version_compatible(server_mc, meta["mc_versions"]):
+        return {
+            "status": "incompatible", "filename": filename, "display_name": display_name,
+            "mod_id": meta.get("mod_id"), "mod_version": meta.get("mod_version"),
+            "detail": f"Incompatible: requiere MC {', '.join(meta['mc_versions'])} pero el servidor es {server_mc}",
+        }
+
+    existing_path, existing_meta = find_installed_mod_by_id(mods_dir, meta.get("mod_id"))
+
+    if existing_path:
+        cmp = compare_mod_versions(meta.get("mod_version"), existing_meta.get("mod_version"))
+        if cmp < 0:
+            return {
+                "status": "needs_confirmation", "filename": filename, "display_name": display_name,
+                "mod_id": meta.get("mod_id"), "mod_version": meta.get("mod_version"),
+                "existing_filename": existing_path.name, "existing_version": existing_meta.get("mod_version"),
+                "detail": f"Versión más antigua (v{meta.get('mod_version')}) que la instalada "
+                          f"(v{existing_meta.get('mod_version')} en {existing_path.name})",
+            }
+        if cmp == 0:
+            return {
+                "status": "already_installed", "filename": filename, "display_name": display_name,
+                "mod_id": meta.get("mod_id"), "mod_version": meta.get("mod_version"),
+                "existing_filename": existing_path.name,
+                "detail": f"Ya está instalada la misma versión (v{meta.get('mod_version')})",
+            }
+        was_disabled = existing_path.name.endswith(".disabled")
+        replaced_filename = existing_path.name
+        previous_version = existing_meta.get("mod_version")
+        existing_path.unlink()
+        dest = mods_dir / (filename + ".disabled" if was_disabled else filename)
+        dest.write_bytes(jar_bytes)
+        return {
+            "status": "added", "filename": dest.name, "display_name": display_name,
+            "mod_id": meta.get("mod_id"), "mod_version": meta.get("mod_version"),
+            "replaced_filename": replaced_filename, "previous_version": previous_version,
+            "detail": f"Actualizado desde v{previous_version}",
+        }
+
+    dest = mods_dir / filename
+    if dest.exists():
+        return {
+            "status": "invalid", "filename": filename, "display_name": display_name,
+            "mod_id": meta.get("mod_id"), "mod_version": meta.get("mod_version"),
+            "detail": f"{filename} ya existe en mods/",
+        }
+    dest.write_bytes(jar_bytes)
+    return {
+        "status": "added", "filename": filename, "display_name": display_name,
+        "mod_id": meta.get("mod_id"), "mod_version": meta.get("mod_version"),
+        "detail": None,
+    }
+
+
 def mc_version_compatible(server_mc: str, mod_versions: list) -> bool:
     """
     Comprueba si la versión del servidor es compatible con los rangos de versión del mod.
