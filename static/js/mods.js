@@ -78,10 +78,42 @@ function renderModsList(mods) {
       + '<span class="mod-icon">' + icon + '</span>'
       + '<div class="mod-info"><div class="mod-display">' + escHtml(mod.name) + '</div></div>'
       + disabledLabel
+      + '<button type="button" class="btn-danger mod-delete" title="Borrar mod" data-filename="' + escHtml(mod.filename) + '" style="opacity:1;font-size:.78rem;padding:4px 8px;flex-shrink:0">🗑</button>'
       + '</div>';
   });
   html += '</div>';
   list.innerHTML = html;
+}
+
+document.getElementById('mods-list').addEventListener('click', function(event) {
+  var deleteBtn = event.target.closest('.mod-delete');
+  if (deleteBtn) {
+    deleteMod(deleteBtn.dataset.filename);
+  }
+});
+
+function deleteMod(filename) {
+  showConfirm(
+    'Borrar "' + filename + '"',
+    'Esta acción no se puede deshacer.',
+    function() { doDeleteMod(filename); }
+  );
+}
+
+function doDeleteMod(filename) {
+  apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/' + encodeURIComponent(filename), {
+    method: 'DELETE'
+  })
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      if (data.success) {
+        showToast('Mod borrado', 'success');
+        loadModsList();
+      } else {
+        showToast(data.detail || 'Error al borrar', 'error');
+      }
+    })
+    .catch(function() { showToast('Error de red', 'error'); });
 }
 
 document.getElementById('mods-search').addEventListener('input', function() {
@@ -157,8 +189,14 @@ function uploadMod(file) {
         if (result.data.size_kb) {
           info += ' · ' + result.data.size_kb + ' KB';
         }
+        var replacedMsg = '';
+        if (result.data.replaced_filename) {
+          replacedMsg = '<div style="color:var(--muted);font-size:.78rem;margin-top:2px">'
+            + 'Se reemplazó ' + escHtml(result.data.replaced_filename)
+            + ' (v' + escHtml(result.data.previous_version) + ' → v' + escHtml(result.data.mod_version) + ')</div>';
+        }
         resultEl.innerHTML = '<div style="background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.3);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--green)">✅ Mod instalado: '
-          + escHtml(result.data.filename) + info + '</div>';
+          + escHtml(result.data.filename) + info + '</div>' + replacedMsg;
         loadModsList();
         setTimeout(function() { resultEl.style.display = 'none'; }, 4000);
       } else {

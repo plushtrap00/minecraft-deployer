@@ -11,6 +11,7 @@ Rutas:
 - GET       /api/modpacks/{modpack}/version
 - GET       /api/modpacks/{modpack}/mods
 - POST      /api/modpacks/{modpack}/mods/upload
+- DELETE    /api/modpacks/{modpack}/mods/{filename}
 - GET       /api/modpacks/{modpack}/detected-mods
 - GET       /api/modpacks/{modpack}/worlds
 - POST      /api/modpacks/{modpack}/worlds/activate
@@ -33,6 +34,7 @@ from config import DEFAULT_SERVERS_PATH, TEMP_DIR
 from services.utils import get_mod_configs, get_kubejs_files, get_world_files, extract_archive, configure_jvm_ram, invalidate_kubejs_cache
 from services.modpack import (
     detect_modpack_version, read_mod_metadata, mc_version_compatible,
+    compare_mod_versions, find_installed_mod_by_id,
     detect_installed_mods, has_mod_keyword,
     parse_server_properties, save_server_property,
     get_worlds, analyze_crash,
@@ -260,7 +262,7 @@ async def list_mods(modpack: str):
         clean = re.sub(r'[-_+][0-9].*$', '', stem)
         clean = re.sub(r'[-_](forge|fabric|neoforge|mc|minecraft).*$', '', clean, flags=re.IGNORECASE)
         clean = clean.replace("-", " ").replace("_", " ").strip()
-        mods.append({"name": clean or stem, "enabled": not f.name.endswith(".disabled")})
+        mods.append({"name": clean or stem, "filename": f.name, "enabled": not f.name.endswith(".disabled")})
     return JSONResponse({"mods": mods, "exists": True, "count": len(mods)})
 
 
@@ -271,9 +273,6 @@ async def upload_mod(modpack: str, file: UploadFile = File(...)):
     mods_dir = DEFAULT_SERVERS_PATH / modpack / "mods"
     if not mods_dir.exists():
         raise HTTPException(status_code=404, detail="Carpeta mods/ no encontrada en este modpack")
-    dest = mods_dir / file.filename
-    if dest.exists():
-        raise HTTPException(status_code=400, detail=f"{file.filename} ya existe en mods/")
 
     jar_bytes = await file.read()
     server_info = detect_modpack_version(modpack)
@@ -287,16 +286,60 @@ async def upload_mod(modpack: str, file: UploadFile = File(...)):
                 detail=f"Incompatible: el mod requiere MC {', '.join(meta['mc_versions'])} pero el servidor es {server_mc}"
             )
 
+    existing_path, existing_meta = find_installed_mod_by_id(mods_dir, meta.get("mod_id"))
+    replaced_filename = None
+    previous_version = None
+
+    if existing_path:
+        cmp = compare_mod_versions(meta.get("mod_version"), existing_meta.get("mod_version"))
+        if cmp < 0:
+            raise HTTPException(
+                status_code=409,
+                detail=f"La versión subida (v{meta.get('mod_version')}) es más antigua que la instalada "
+                       f"(v{existing_meta.get('mod_version')} en {existing_path.name}). No se reemplazó nada."
+            )
+        if cmp == 0:
+            raise HTTPException(
+                status_code=409,
+                detail=f"Ya está instalada la misma versión (v{meta.get('mod_version')}) en {existing_path.name}."
+            )
+        # cmp > 0: versión más reciente, se reemplaza la instalada
+        was_disabled = existing_path.name.endswith(".disabled")
+        previous_version = existing_meta.get("mod_version")
+        replaced_filename = existing_path.name
+        existing_path.unlink()
+        dest = mods_dir / (file.filename + ".disabled" if was_disabled else file.filename)
+    else:
+        dest = mods_dir / file.filename
+        if dest.exists():
+            raise HTTPException(status_code=400, detail=f"{file.filename} ya existe en mods/")
+
     dest.write_bytes(jar_bytes)
     return JSONResponse({
         "success": True,
-        "filename": file.filename,
+        "filename": dest.name,
         "mod_id": meta.get("mod_id"),
         "mod_version": meta.get("mod_version"),
         "mod_mc_versions": meta.get("mc_versions"),
         "server_mc": server_mc,
         "size_kb": round(len(jar_bytes) / 1024, 1),
+        "replaced_filename": replaced_filename,
+        "previous_version": previous_version,
     })
+
+
+@router.delete("/{modpack}/mods/{filename}")
+async def delete_mod(modpack: str, filename: str):
+    mods_dir = DEFAULT_SERVERS_PATH / modpack / "mods"
+    mod_path = mods_dir / filename
+    try:
+        mod_path.resolve().relative_to(mods_dir.resolve())
+    except ValueError:
+        raise HTTPException(status_code=403, detail="Ruta no permitida")
+    if not mod_path.exists() or not mod_path.is_file():
+        raise HTTPException(status_code=404, detail="El mod no existe")
+    mod_path.unlink()
+    return JSONResponse({"success": True, "filename": filename})
 
 
 @router.get("/{modpack}/detected-mods")

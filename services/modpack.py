@@ -16,6 +16,7 @@ import json
 import zipfile
 import io
 import secrets
+from itertools import zip_longest
 from pathlib import Path
 
 from config import DEFAULT_SERVERS_PATH
@@ -207,6 +208,42 @@ def read_mod_metadata(jar_bytes: bytes) -> dict:
         result["error"] = str(e)
 
     return result
+
+
+def compare_mod_versions(v1: str, v2: str) -> int:
+    """
+    Compara dos versiones de mod comparando sus segmentos numéricos (ignora sufijos
+    como '+build' o '-forge'). Devuelve -1 si v1 < v2, 1 si v1 > v2, 0 si son iguales.
+    """
+    def parts(v):
+        return [int(x) for x in re.findall(r'\d+', v or '')]
+
+    for a, b in zip_longest(parts(v1), parts(v2), fillvalue=0):
+        if a != b:
+            return -1 if a < b else 1
+    return 0
+
+
+def find_installed_mod_by_id(mods_dir: Path, mod_id: str):
+    """
+    Busca en mods_dir un jar ya instalado cuyo mod_id coincida con el dado.
+    Devuelve (Path, meta dict) o (None, None) si no hay coincidencia.
+    """
+    if not mod_id:
+        return None, None
+    for f in mods_dir.iterdir():
+        if not f.is_file():
+            continue
+        low = f.name.lower()
+        if not (low.endswith(".jar") or low.endswith(".jar.disabled")):
+            continue
+        try:
+            existing_meta = read_mod_metadata(f.read_bytes())
+        except Exception:
+            continue
+        if existing_meta.get("mod_id") and existing_meta["mod_id"] == mod_id:
+            return f, existing_meta
+    return None, None
 
 
 def mc_version_compatible(server_mc: str, mod_versions: list) -> bool:
