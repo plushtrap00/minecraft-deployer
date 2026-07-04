@@ -144,6 +144,31 @@ def _detect_modpack_version_impl(base: Path) -> dict:
 
 # ── Metadatos de mods ──────────────────────────────────────────────────────────
 
+_NO_METADATA_ERROR = "No se encontró metadata de mod (mods.toml / fabric.mod.json)"
+
+
+def _mc_versions_from_toml(text: str, mod_id: str | None) -> list:
+    """
+    Extrae el/los versionRange del bloque [[dependencies.<mod_id>]] cuyo modId
+    sea "minecraft". Un mods.toml también declara ahí el rango del propio loader
+    (neoforge/forge) y, si el jar empaqueta varios mods, bloques de otros modIds;
+    hay que anclarse al bloque de ESTE mod para no confundir un rango con otro.
+    """
+    if not mod_id:
+        return []
+    versions = []
+    header_re = re.compile(r'\[\[\s*dependencies\.["\']?' + re.escape(mod_id) + r'["\']?\s*\]\]', re.IGNORECASE)
+    blocks = header_re.split(text)[1:]
+    for block in blocks:
+        end = re.search(r'\n\s*\[', block)
+        block_text = block[:end.start()] if end else block
+        if re.search(r'modId\s*=\s*[\'"]minecraft[\'"]', block_text, re.IGNORECASE):
+            vm = re.search(r'versionRange\s*=\s*[\'"]([^\'"]+)[\'"]', block_text)
+            if vm:
+                versions.append(vm.group(1))
+    return versions
+
+
 def read_mod_metadata(jar_bytes: bytes) -> dict:
     """
     Lee los metadatos de un mod desde sus bytes JAR.
@@ -166,14 +191,13 @@ def read_mod_metadata(jar_bytes: bytes) -> dict:
 
             if toml_file:
                 text = zf.read(toml_file).decode("utf-8", errors="replace")
-                m = re.search(r'modId\s*=\s*"([^"]+)"', text)
+                m = re.search(r'modId\s*=\s*[\'"]([^\'"]+)[\'"]', text)
                 if m:
                     result["mod_id"] = m.group(1)
-                m = re.search(r'^version\s*=\s*"([^"]+)"', text, re.MULTILINE)
+                m = re.search(r'^version\s*=\s*[\'"]([^\'"]+)[\'"]', text, re.MULTILINE)
                 if m:
                     result["mod_version"] = m.group(1)
-                mc_versions = re.findall(r'minecraft.*?versionRange\s*=\s*"([^"]+)"', text, re.IGNORECASE | re.DOTALL)
-                result["mc_versions"] = mc_versions
+                result["mc_versions"] = _mc_versions_from_toml(text, result["mod_id"])
                 return result
 
             # Fabric
@@ -202,7 +226,7 @@ def read_mod_metadata(jar_bytes: bytes) -> dict:
                             result["mc_versions"] = [v] if isinstance(v, str) else v
                 return result
 
-            result["error"] = "No se encontró metadata de mod (mods.toml / fabric.mod.json)"
+            result["error"] = _NO_METADATA_ERROR
 
     except Exception as e:
         result["error"] = str(e)
@@ -272,7 +296,10 @@ def process_mod_jar(mods_dir: Path, filename: str, jar_bytes: bytes, server_mc: 
     display_name = mod_display_name(filename)
     meta = read_mod_metadata(jar_bytes)
 
-    if not meta.get("mod_id") and meta.get("error"):
+    # Un jar sin mods.toml/fabric.mod.json/quilt.mod.json reconocible no es
+    # necesariamente inválido: puede ser una librería/módulo de carga temprana
+    # (p.ej. Kotlin for Forge, Drippy) que legítimamente no declara esa metadata.
+    if meta.get("error") and meta["error"] != _NO_METADATA_ERROR:
         return {
             "status": "invalid", "filename": filename, "display_name": display_name,
             "mod_id": None, "mod_version": None,
@@ -320,9 +347,12 @@ def process_mod_jar(mods_dir: Path, filename: str, jar_bytes: bytes, server_mc: 
 
     dest = mods_dir / filename
     if dest.exists():
+        # No pudimos identificar el mod_id (sin metadata reconocible), pero ya hay
+        # un archivo con el mismo nombre: lo más probable es que sea el mismo mod.
         return {
-            "status": "invalid", "filename": filename, "display_name": display_name,
+            "status": "already_installed", "filename": filename, "display_name": display_name,
             "mod_id": meta.get("mod_id"), "mod_version": meta.get("mod_version"),
+            "existing_filename": filename,
             "detail": f"{filename} ya existe en mods/",
         }
     dest.write_bytes(jar_bytes)
@@ -337,6 +367,14 @@ def mc_version_compatible(server_mc: str, mod_versions: list) -> bool:
     """
     Comprueba si la versión del servidor es compatible con los rangos de versión del mod.
     Soporta: exacto, wildcard (1.21.x), rangos Maven ([1.21,1.22)).
+
+    El límite superior de un rango se trata como inclusivo aunque esté escrito con
+    paréntesis ')': en la práctica muchísimos mods declaran p.ej. "[1.21,1.21.1)"
+    para una versión con la que en verdad sí son compatibles (la propia NeoForge
+    no aplica este campo de forma estricta), así que ser laxos aquí evita bloquear
+    instalaciones válidas. Rangos que no podemos interpretar (p.ej. variables de
+    plantilla sin resolver como "${minecraft_version_range}") se ignoran en vez de
+    contar como incompatibilidad.
     """
     if not server_mc or not mod_versions:
         return True
@@ -344,33 +382,46 @@ def mc_version_compatible(server_mc: str, mod_versions: list) -> bool:
     def ver_tuple(v: str):
         return tuple(int(x) for x in v.split('.') if x.isdigit())
 
+    recognized_any = False
     for vrange in mod_versions:
         vrange = vrange.strip()
+        if not vrange or '$' in vrange or '{' in vrange:
+            continue
         if vrange == server_mc:
             return True
+        # Versión "pelada" sin rango, p.ej. "1.21": se toma como prefijo (equivale a "1.21.x")
+        if re.match(r'^\d+(\.\d+)*$', vrange):
+            recognized_any = True
+            if server_mc == vrange or server_mc.startswith(vrange + '.'):
+                return True
+            continue
         if re.match(r'^[\d.]+[.*x]$', vrange):
+            recognized_any = True
             prefix = re.sub(r'[.*x]+$', '', vrange).rstrip('.')
             if server_mc.startswith(prefix):
                 return True
+            continue
         # Rango Maven de valor único: [1.21.1] significa exactamente 1.21.1
         m_exact = re.match(r'^\[([\d.]+)\]$', vrange)
         if m_exact:
+            recognized_any = True
             if ver_tuple(server_mc) == ver_tuple(m_exact.group(1)):
                 return True
             continue
         m = re.match(r'^[\[\(]([\d.]*),\s*([\d.]*)[\]\)]$', vrange)
         if m:
+            recognized_any = True
             lo, hi = m.group(1), m.group(2)
             sv = ver_tuple(server_mc)
             ok = True
             if lo:
                 ok = ok and (sv >= ver_tuple(lo) if vrange[0] == '[' else sv > ver_tuple(lo))
             if hi:
-                ok = ok and (sv < ver_tuple(hi) if vrange[-1] == ')' else sv <= ver_tuple(hi))
+                ok = ok and sv <= ver_tuple(hi)
             if ok:
                 return True
 
-    return False
+    return not recognized_any
 
 
 # ── Mods instalados ────────────────────────────────────────────────────────────
