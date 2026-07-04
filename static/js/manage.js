@@ -283,6 +283,9 @@ function renderModpacks(packs) {
 }
 
 function selectModpack(name) {
+  if (guardModOperationNav()) {
+    return;
+  }
   if (currentModpack && currentModpack !== name) {
     cancelFetchesMatching('/api/modpacks/' + encodeURIComponent(currentModpack));
   }
@@ -299,6 +302,9 @@ function selectModpack(name) {
 
 ['props', 'configs', 'kubejs', 'worldfiles', 'logs', 'mods'].forEach(function(name) {
   document.getElementById('mtab-' + name).addEventListener('click', function() {
+    if (name !== 'mods' && guardModOperationNav()) {
+      return;
+    }
     activateMgmtTab(name);
   });
 });

@@ -1,6 +1,9 @@
 //  Navegación
 ['deploy', 'manage', 'server', 'players', 'users'].forEach(function(name) {
   document.getElementById('tab-' + name).addEventListener('click', function() {
+    if (guardModOperationNav()) {
+      return;
+    }
     document.querySelectorAll('.page').forEach(function(page) {
       page.classList.remove('active');
     });

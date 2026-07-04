@@ -152,6 +152,16 @@ window.addEventListener('beforeunload', function(event) {
   }
 });
 
+// Usado por main.js y manage.js para bloquear la navegación mientras se
+// suben/verifican/instalan mods, evitando dejar una operación a medias.
+function guardModOperationNav() {
+  if (modOperationBusy) {
+    showToast('Espera a que termine la operación con los mods antes de salir de esta sección', 'error');
+    return true;
+  }
+  return false;
+}
+
 function modUploadProgressHtml(text) {
   return '<div class="mod-upload-progress">'
     + '<div class="mod-upload-spinner"></div>'
