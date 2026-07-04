@@ -262,7 +262,10 @@ async def install_loader_stream(modpack: str, loader_key: str, mc_version: str, 
 
         yield {"type": "log", "message": "Ejecutando instalador..."}
         proc = await asyncio.create_subprocess_exec(
-            "java", "-jar", str(installer_path), *install_args,
+            # El instalador corre con cwd=server_dir, así que installer_path
+            # tiene que ser absoluto (TEMP_DIR es una ruta relativa al directorio
+            # desde el que arrancó la app, no al del modpack).
+            "java", "-jar", str(installer_path.resolve()), *install_args,
             cwd=str(server_dir),
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT,
