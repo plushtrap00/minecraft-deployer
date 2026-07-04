@@ -135,9 +135,36 @@ var modFileInput = document.getElementById('mod-file-input');
 var modFolderInput = document.getElementById('mod-folder-input');
 var modFolderBtn = document.getElementById('mod-folder-btn');
 
+// -- Aviso de "no salir" mientras se sube/verifica/instala algo en disco -------
+var modOperationBusy = false;
+
+function setModOperationBusy(busy) {
+  modOperationBusy = busy;
+  modFileInput.disabled = busy;
+  modFolderBtn.disabled = busy;
+  modUploadZone.classList.toggle('busy', busy);
+}
+
+window.addEventListener('beforeunload', function(event) {
+  if (modOperationBusy) {
+    event.preventDefault();
+    event.returnValue = '';
+  }
+});
+
+function modUploadProgressHtml(text) {
+  return '<div class="mod-upload-progress">'
+    + '<div class="mod-upload-spinner"></div>'
+    + '<div><div style="font-weight:600">' + escHtml(text) + '</div>'
+    + '<div style="font-size:.78rem;color:var(--yellow);margin-top:2px">⚠️ No cierres ni recargues esta pestaña hasta que termine.</div></div>'
+    + '</div>';
+}
+
 modUploadZone.addEventListener('dragover', function(event) {
   event.preventDefault();
-  this.classList.add('drag-over');
+  if (!modOperationBusy) {
+    this.classList.add('drag-over');
+  }
 });
 
 modUploadZone.addEventListener('dragleave', function() {
@@ -147,6 +174,10 @@ modUploadZone.addEventListener('dragleave', function() {
 modUploadZone.addEventListener('drop', function(event) {
   event.preventDefault();
   this.classList.remove('drag-over');
+  if (modOperationBusy) {
+    showToast('Espera a que termine la operación actual', 'error');
+    return;
+  }
   if (event.dataTransfer.files[0]) {
     handleModFileSelected(event.dataTransfer.files[0]);
   }
@@ -184,7 +215,8 @@ function uploadMod(file) {
   }
   var resultEl = document.getElementById('mod-upload-result');
   resultEl.style.display = 'block';
-  resultEl.innerHTML = '<div style="color:var(--muted);font-size:.83rem">Subiendo y verificando ' + escHtml(file.name) + '...</div>';
+  resultEl.innerHTML = modUploadProgressHtml('Subiendo y verificando ' + file.name + '...');
+  setModOperationBusy(true);
 
   var form = new FormData();
   form.append('file', file);
@@ -198,6 +230,7 @@ function uploadMod(file) {
       });
     })
     .then(function(result) {
+      setModOperationBusy(false);
       modFileInput.value = '';
       if (result.ok && result.data.success) {
         var info = '';
@@ -226,6 +259,7 @@ function uploadMod(file) {
       }
     })
     .catch(function(error) {
+      setModOperationBusy(false);
       modFileInput.value = '';
       resultEl.innerHTML = '<div style="color:var(--red);font-size:.82rem">❌ Error de red: ' + escHtml(error.message) + '</div>';
     });
@@ -269,7 +303,8 @@ function uploadModsBulk(fileList) {
   }
   var resultEl = document.getElementById('mod-upload-result');
   resultEl.style.display = 'block';
-  resultEl.innerHTML = '<div style="color:var(--muted);font-size:.83rem">Subiendo y verificando ' + files.length + ' archivo(s)...</div>';
+  resultEl.innerHTML = modUploadProgressHtml('Subiendo y verificando ' + files.length + ' archivo(s)...');
+  setModOperationBusy(true);
 
   var form = new FormData();
   files.forEach(function(f) { form.append('files', f); });
@@ -284,6 +319,7 @@ function uploadModsBulk(fileList) {
       });
     })
     .then(function(result) {
+      setModOperationBusy(false);
       modFileInput.value = '';
       if (result.ok && result.data.success) {
         renderBulkResult(result.data);
@@ -294,6 +330,7 @@ function uploadModsBulk(fileList) {
       }
     })
     .catch(function(error) {
+      setModOperationBusy(false);
       resultEl.innerHTML = '<div style="color:var(--red);font-size:.82rem">❌ Error de red: ' + escHtml(error.message) + '</div>';
     });
 }
@@ -439,6 +476,9 @@ function renderDowngradeModalPage() {
 }
 
 function submitDowngradeDecision(acceptFilenames) {
+  setModOperationBusy(true);
+  document.getElementById('mod-downgrade-confirm').disabled = true;
+  document.getElementById('mod-downgrade-reject-all').disabled = true;
   apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/upload-bulk/confirm', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -455,7 +495,12 @@ function submitDowngradeDecision(acceptFilenames) {
         showToast(data.detail || 'Error al confirmar', 'error');
       }
     })
-    .catch(function() { showToast('Error de red', 'error'); });
+    .catch(function() { showToast('Error de red', 'error'); })
+    .then(function() {
+      setModOperationBusy(false);
+      document.getElementById('mod-downgrade-confirm').disabled = false;
+      document.getElementById('mod-downgrade-reject-all').disabled = false;
+    });
 }
 
 document.getElementById('mod-downgrade-confirm').addEventListener('click', function() {

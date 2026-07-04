@@ -24,6 +24,36 @@
   height: 100%;
 }
 
+.mod-upload-zone.busy {
+  opacity: .5;
+  pointer-events: none;
+}
+
+.mod-upload-progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--accent);
+  background: rgba(88, 166, 255, .08);
+  border-radius: 8px;
+  font-size: .85rem;
+}
+
+.mod-upload-spinner {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: mod-spin .8s linear infinite;
+}
+
+@keyframes mod-spin {
+  to { transform: rotate(360deg); }
+}
+
 .muz-icon {
   font-size: 1.3rem;
   margin-bottom: 4px;
