@@ -12,6 +12,7 @@ Rutas:
 - GET       /api/modpacks/{modpack}/mods
 - POST      /api/modpacks/{modpack}/mods/upload
 - POST      /api/modpacks/{modpack}/mods/upload-bulk
+- GET       /api/modpacks/{modpack}/mods/upload-bulk/stream/{job_id}
 - POST      /api/modpacks/{modpack}/mods/upload-bulk/confirm
 - DELETE    /api/modpacks/{modpack}/mods/{filename}
 - GET       /api/modpacks/{modpack}/detected-mods
@@ -36,7 +37,7 @@ import asyncio
 from pathlib import Path
 from typing import List
 from fastapi import APIRouter, File, UploadFile, Form, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 
 from config import DEFAULT_SERVERS_PATH, TEMP_DIR
@@ -305,17 +306,26 @@ async def upload_mod(modpack: str, file: UploadFile = File(...)):
 
 
 # ── Subida masiva de mods (zip / carpeta) ──────────────────────────────────────
+#
+# Flujo en dos pasos para poder reportar progreso "mod i de N" mientras se procesa:
+# 1. POST /upload-bulk sube los archivos (o extrae el .zip) y los guarda en un
+#    directorio de trabajo temporal, devolviendo un job_id sin procesar nada aún.
+# 2. GET /upload-bulk/stream/{job_id} (SSE) procesa cada .jar uno a uno, emitiendo
+#    un evento de progreso por mod y un evento final con el resultado categorizado.
 
 BATCH_ROOT = TEMP_DIR / "mod-batches"
 BATCH_ROOT.mkdir(parents=True, exist_ok=True)
-_BATCH_MAX_AGE_SECONDS = 2 * 60 * 60
+UPLOAD_JOBS_ROOT = TEMP_DIR / "mod-upload-jobs"
+UPLOAD_JOBS_ROOT.mkdir(parents=True, exist_ok=True)
+_TEMP_DIR_MAX_AGE_SECONDS = 2 * 60 * 60
 _BATCH_ID_RE = re.compile(r'^[0-9a-f]{8,64}$')
+_JOB_ID_RE = re.compile(r'^[0-9a-f]{8,64}$')
 
 
-def _cleanup_stale_batches():
+def _cleanup_stale_dirs(root: Path):
     now = time.time()
-    for d in BATCH_ROOT.iterdir():
-        if d.is_dir() and now - d.stat().st_mtime > _BATCH_MAX_AGE_SECONDS:
+    for d in root.iterdir():
+        if d.is_dir() and now - d.stat().st_mtime > _TEMP_DIR_MAX_AGE_SECONDS:
             shutil.rmtree(d, ignore_errors=True)
 
 
@@ -325,12 +335,13 @@ class BulkConfirmBody(BaseModel):
 
 
 @router.post("/{modpack}/mods/upload-bulk")
-async def upload_mods_bulk(modpack: str, files: List[UploadFile] = File(...)):
+async def prepare_mods_bulk(modpack: str, files: List[UploadFile] = File(...)):
     mods_dir = DEFAULT_SERVERS_PATH / modpack / "mods"
     if not mods_dir.exists():
         raise HTTPException(status_code=404, detail="Carpeta mods/ no encontrada en este modpack")
 
-    _cleanup_stale_batches()
+    _cleanup_stale_dirs(BATCH_ROOT)
+    _cleanup_stale_dirs(UPLOAD_JOBS_ROOT)
 
     jars = []
     if len(files) == 1 and files[0].filename.lower().endswith(".zip"):
@@ -355,43 +366,89 @@ async def upload_mods_bulk(modpack: str, files: List[UploadFile] = File(...)):
         if not jars:
             raise HTTPException(status_code=400, detail="No se encontraron archivos .jar")
 
-    server_info = detect_modpack_version(modpack)
-    server_mc = server_info.get("mc_version")
+    job_id = secrets.token_hex(8)
+    job_dir = UPLOAD_JOBS_ROOT / job_id
+    job_dir.mkdir(parents=True)
+    manifest = []
+    for i, (name, jar_bytes) in enumerate(jars):
+        stored_name = f"{i:04d}_{name}"
+        (job_dir / stored_name).write_bytes(jar_bytes)
+        manifest.append({"stored_name": stored_name, "filename": name})
+    (job_dir / "manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
 
-    added, already_installed, needs_confirmation, errors = [], [], [], []
-    pending_bytes = {}
+    return JSONResponse({"success": True, "job_id": job_id, "total": len(jars)})
 
-    for filename, jar_bytes in jars:
-        result = process_mod_jar(mods_dir, filename, jar_bytes, server_mc)
-        status = result["status"]
-        if status == "added":
-            added.append(result)
-        elif status == "already_installed":
-            already_installed.append(result)
-        elif status == "needs_confirmation":
-            needs_confirmation.append(result)
-            pending_bytes[filename] = jar_bytes
-        else:
-            errors.append(result)
 
-    batch_id = None
-    if needs_confirmation:
-        batch_id = secrets.token_hex(8)
-        batch_dir = BATCH_ROOT / batch_id
-        batch_dir.mkdir(parents=True)
-        for item in needs_confirmation:
-            (batch_dir / item["filename"]).write_bytes(pending_bytes[item["filename"]])
-        (batch_dir / "manifest.json").write_text(json.dumps(needs_confirmation), encoding="utf-8")
+@router.get("/{modpack}/mods/upload-bulk/stream/{job_id}")
+async def stream_mods_bulk(modpack: str, job_id: str):
+    if not _JOB_ID_RE.match(job_id):
+        raise HTTPException(status_code=400, detail="job_id inválido")
+    mods_dir = DEFAULT_SERVERS_PATH / modpack / "mods"
+    job_dir = UPLOAD_JOBS_ROOT / job_id
+    try:
+        job_dir.resolve().relative_to(UPLOAD_JOBS_ROOT.resolve())
+    except ValueError:
+        raise HTTPException(status_code=403, detail="Ruta no permitida")
+    if not job_dir.exists():
+        raise HTTPException(status_code=404, detail="La subida ya no existe o expiró")
 
-    return JSONResponse({
-        "success": True,
-        "batch_id": batch_id,
-        "added": added,
-        "already_installed": already_installed,
-        "needs_confirmation": needs_confirmation,
-        "errors": errors,
-        "total": len(jars),
-    })
+    manifest_path = job_dir / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8")) if manifest_path.exists() else []
+
+    async def event_stream():
+        server_info = detect_modpack_version(modpack)
+        server_mc = server_info.get("mc_version")
+        total = len(manifest)
+        added, already_installed, needs_confirmation, errors = [], [], [], []
+        pending_bytes = {}
+
+        try:
+            for i, item in enumerate(manifest, start=1):
+                filename = item["filename"]
+                jar_bytes = (job_dir / item["stored_name"]).read_bytes()
+                result = process_mod_jar(mods_dir, filename, jar_bytes, server_mc)
+                status = result["status"]
+                if status == "added":
+                    added.append(result)
+                elif status == "already_installed":
+                    already_installed.append(result)
+                elif status == "needs_confirmation":
+                    needs_confirmation.append(result)
+                    pending_bytes[filename] = jar_bytes
+                else:
+                    errors.append(result)
+
+                yield "data: " + json.dumps({
+                    "type": "progress", "current": i, "total": total,
+                    "filename": filename, "display_name": result.get("display_name"),
+                }) + "\n\n"
+                await asyncio.sleep(0)
+
+            batch_id = None
+            if needs_confirmation:
+                batch_id = secrets.token_hex(8)
+                batch_dir = BATCH_ROOT / batch_id
+                batch_dir.mkdir(parents=True)
+                for it in needs_confirmation:
+                    (batch_dir / it["filename"]).write_bytes(pending_bytes[it["filename"]])
+                (batch_dir / "manifest.json").write_text(json.dumps(needs_confirmation), encoding="utf-8")
+
+            yield "data: " + json.dumps({
+                "type": "done", "success": True, "batch_id": batch_id,
+                "added": added, "already_installed": already_installed,
+                "needs_confirmation": needs_confirmation, "errors": errors,
+                "total": total,
+            }) + "\n\n"
+        except Exception as e:
+            yield "data: " + json.dumps({"type": "error", "detail": str(e)}) + "\n\n"
+        finally:
+            shutil.rmtree(job_dir, ignore_errors=True)
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @router.post("/{modpack}/mods/upload-bulk/confirm")

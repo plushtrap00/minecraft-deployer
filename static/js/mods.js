@@ -335,6 +335,11 @@ var BULK_CATEGORIES = [
   }
 ];
 
+function modErrorHtml(msg) {
+  return '<div style="background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.3);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--red)">❌ '
+    + escHtml(msg) + '</div>';
+}
+
 function uploadModsBulk(fileList) {
   var files = Array.prototype.slice.call(fileList).filter(function(f) {
     return f.name.toLowerCase().endsWith('.jar') || f.name.toLowerCase().endsWith('.zip');
@@ -344,7 +349,7 @@ function uploadModsBulk(fileList) {
     return;
   }
   setModOperationBusy(true);
-  openModUploadModal(modUploadProgressHtml('Subiendo y verificando ' + files.length + ' archivo(s)...'));
+  openModUploadModal(modUploadProgressHtml('Subiendo ' + files.length + ' archivo(s)...'));
 
   var form = new FormData();
   files.forEach(function(f) { form.append('files', f); });
@@ -359,20 +364,53 @@ function uploadModsBulk(fileList) {
       });
     })
     .then(function(result) {
-      setModOperationBusy(false);
       modFileInput.value = '';
       if (result.ok && result.data.success) {
-        renderBulkResult(result.data);
-        loadModsList();
+        streamModsBulkProgress(result.data.job_id);
       } else {
-        setModUploadModalBody('<div style="background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.3);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--red)">❌ '
-          + escHtml(result.data.detail || 'Error desconocido') + '</div>');
+        setModOperationBusy(false);
+        setModUploadModalBody(modErrorHtml(result.data.detail || 'Error desconocido'));
       }
     })
     .catch(function(error) {
       setModOperationBusy(false);
-      setModUploadModalBody('<div style="color:var(--red);font-size:.82rem">❌ Error de red: ' + escHtml(error.message) + '</div>');
+      setModUploadModalBody(modErrorHtml('Error de red: ' + error.message));
     });
+}
+
+function streamModsBulkProgress(jobId) {
+  var url = '/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/upload-bulk/stream/' + encodeURIComponent(jobId)
+    + '?token=' + encodeURIComponent(authToken);
+  var source = new EventSource(url);
+
+  source.onmessage = function(event) {
+    var data;
+    try {
+      data = JSON.parse(event.data);
+    } catch (e) {
+      return;
+    }
+    if (data.type === 'progress') {
+      setModUploadModalBody(modUploadProgressHtml(
+        'Verificando mod ' + data.current + ' de ' + data.total + ': ' + (data.display_name || data.filename) + '...'
+      ));
+    } else if (data.type === 'done') {
+      source.close();
+      setModOperationBusy(false);
+      renderBulkResult(data);
+      loadModsList();
+    } else if (data.type === 'error') {
+      source.close();
+      setModOperationBusy(false);
+      setModUploadModalBody(modErrorHtml(data.detail || 'Error desconocido'));
+    }
+  };
+
+  source.onerror = function() {
+    source.close();
+    setModOperationBusy(false);
+    setModUploadModalBody(modErrorHtml('Se perdió la conexión mientras se verificaban los mods'));
+  };
 }
 
 function renderBulkResult(data) {
