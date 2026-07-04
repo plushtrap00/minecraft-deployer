@@ -170,6 +170,22 @@ def _toml_dep_version_ranges(text: str, mod_id: str | None, dep_modid: str) -> l
     return versions
 
 
+def _manifest_implementation_version(zf: zipfile.ZipFile) -> str | None:
+    """
+    mods.toml admite "${file.jarVersion}" como valor de version: no es un
+    string real, es un token que NeoForge/Forge resuelve en tiempo de
+    ejecución leyendo Implementation-Version del MANIFEST.MF del propio jar.
+    Como nosotros no somos el loader, tenemos que resolverlo igual a mano.
+    """
+    if "META-INF/MANIFEST.MF" not in zf.namelist():
+        return None
+    text = zf.read("META-INF/MANIFEST.MF").decode("utf-8", errors="replace")
+    m = re.search(r'^Implementation-Version:\s*(.+)$', text, re.MULTILINE)
+    if not m:
+        return None
+    return m.group(1).strip() or None
+
+
 def read_mod_metadata(jar_bytes: bytes) -> dict:
     """
     Lee los metadatos de un mod desde sus bytes JAR.
@@ -201,6 +217,8 @@ def read_mod_metadata(jar_bytes: bytes) -> dict:
                 m = re.search(r'^[ \t]*version\s*=\s*[\'"]([^\'"]+)[\'"]', text, re.MULTILINE)
                 if m:
                     result["mod_version"] = m.group(1)
+                if result["mod_version"] and "${" in result["mod_version"]:
+                    result["mod_version"] = _manifest_implementation_version(zf) or result["mod_version"]
                 result["mc_versions"] = _toml_dep_version_ranges(text, result["mod_id"], "minecraft")
                 for loader_key in ("neoforge", "forge"):
                     ranges = _toml_dep_version_ranges(text, result["mod_id"], loader_key)
@@ -214,6 +232,8 @@ def read_mod_metadata(jar_bytes: bytes) -> dict:
                 data = json.loads(zf.read("fabric.mod.json").decode("utf-8", errors="replace"))
                 result["mod_id"] = data.get("id")
                 result["mod_version"] = data.get("version")
+                if result["mod_version"] and "${" in result["mod_version"]:
+                    result["mod_version"] = _manifest_implementation_version(zf) or result["mod_version"]
                 depends = data.get("depends", {})
                 mc = depends.get("minecraft")
                 if mc:
@@ -230,6 +250,8 @@ def read_mod_metadata(jar_bytes: bytes) -> dict:
                 meta = data.get("quilt_loader", {})
                 result["mod_id"] = meta.get("id")
                 result["mod_version"] = meta.get("version")
+                if result["mod_version"] and "${" in result["mod_version"]:
+                    result["mod_version"] = _manifest_implementation_version(zf) or result["mod_version"]
                 for dep in meta.get("depends", []):
                     if not isinstance(dep, dict):
                         continue
