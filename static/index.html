@@ -514,6 +514,7 @@
       <div class="card">
         <div class="mods-header">
           <span id="modpack-version-badge" style="display:none"></span>
+          <button type="button" class="btn-secondary btn-sm" id="modloader-change-btn">🔧 Cambiar versión de modloader</button>
           <div class="flex-1"></div>
           <span id="mods-count" class="mods-count"></span>
         </div>
@@ -631,12 +632,12 @@
   </div>
 </div>
 
-<!-- Modal: progreso y resultado de la subida de mods -->
+<!-- Modal: progreso y resultado de operaciones sobre mods/modloader -->
 <div class="modal-overlay" id="mod-upload-modal">
   <div class="modal modal-sm">
     <div class="modal-header">
-      <span>📦</span>
-      <span class="modal-path">Subida de mods</span>
+      <span id="mod-upload-modal-icon">📦</span>
+      <span class="modal-path" id="mod-upload-modal-title">Subida de mods</span>
       <button class="modal-close" id="mod-upload-modal-close">✕</button>
     </div>
     <div class="modal-body">
@@ -681,6 +682,27 @@
       <div class="modal-footer-actions">
         <button class="btn-secondary" id="mod-downgrade-reject-all">Rechazar todos</button>
         <button id="mod-downgrade-confirm">Confirmar seleccionados</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: cambiar versión de modloader -->
+<div class="modal-overlay" id="modloader-modal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <span>🔧</span>
+      <span class="modal-path">Cambiar versión de modloader</span>
+      <button class="modal-close" id="modloader-modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-scroll" id="modloader-modal-body"></div>
+    </div>
+    <div class="modal-footer">
+      <div></div>
+      <div class="modal-footer-actions">
+        <button class="btn-secondary" id="modloader-verify-btn">Verificar compatibilidad</button>
+        <button id="modloader-install-btn" disabled>Instalar</button>
       </div>
     </div>
   </div>
@@ -811,6 +833,7 @@
 <script src="/static/js/worlds.js"></script>
 <script src="/static/js/logs.js"></script>
 <script src="/static/js/mods.js"></script>
+<script src="/static/js/modloader.js"></script>
 <script src="/static/js/players.js"></script>
 <script src="/static/js/server.js"></script>
 <script src="/static/js/users.js"></script>

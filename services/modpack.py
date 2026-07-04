@@ -147,12 +147,13 @@ def _detect_modpack_version_impl(base: Path) -> dict:
 _NO_METADATA_ERROR = "No se encontró metadata de mod (mods.toml / fabric.mod.json)"
 
 
-def _mc_versions_from_toml(text: str, mod_id: str | None) -> list:
+def _toml_dep_version_ranges(text: str, mod_id: str | None, dep_modid: str) -> list:
     """
     Extrae el/los versionRange del bloque [[dependencies.<mod_id>]] cuyo modId
-    sea "minecraft". Un mods.toml también declara ahí el rango del propio loader
-    (neoforge/forge) y, si el jar empaqueta varios mods, bloques de otros modIds;
-    hay que anclarse al bloque de ESTE mod para no confundir un rango con otro.
+    sea dep_modid (p.ej. "minecraft", "neoforge" o "forge"). Un mods.toml declara
+    ahí tanto el rango de MC como el del propio loader y, si el jar empaqueta
+    varios mods, bloques de otros modIds; hay que anclarse al bloque de ESTE mod
+    para no confundir un rango con otro.
     """
     if not mod_id:
         return []
@@ -162,7 +163,7 @@ def _mc_versions_from_toml(text: str, mod_id: str | None) -> list:
     for block in blocks:
         end = re.search(r'\n\s*\[', block)
         block_text = block[:end.start()] if end else block
-        if re.search(r'modId\s*=\s*[\'"]minecraft[\'"]', block_text, re.IGNORECASE):
+        if re.search(r'modId\s*=\s*[\'"]' + re.escape(dep_modid) + r'[\'"]', block_text, re.IGNORECASE):
             vm = re.search(r'versionRange\s*=\s*[\'"]([^\'"]+)[\'"]', block_text)
             if vm:
                 versions.append(vm.group(1))
@@ -175,7 +176,10 @@ def read_mod_metadata(jar_bytes: bytes) -> dict:
     Soporta NeoForge/Forge (mods.toml), Fabric (fabric.mod.json) y Quilt.
     Devuelve: {mc_versions, modloader, mod_id, mod_version, error}
     """
-    result = {"mc_versions": [], "modloader": None, "mod_id": None, "mod_version": None, "error": None}
+    result = {
+        "mc_versions": [], "loader_versions": {}, "modloader": None,
+        "mod_id": None, "mod_version": None, "error": None,
+    }
     try:
         with zipfile.ZipFile(io.BytesIO(jar_bytes)) as zf:
             names = zf.namelist()
@@ -197,7 +201,11 @@ def read_mod_metadata(jar_bytes: bytes) -> dict:
                 m = re.search(r'^[ \t]*version\s*=\s*[\'"]([^\'"]+)[\'"]', text, re.MULTILINE)
                 if m:
                     result["mod_version"] = m.group(1)
-                result["mc_versions"] = _mc_versions_from_toml(text, result["mod_id"])
+                result["mc_versions"] = _toml_dep_version_ranges(text, result["mod_id"], "minecraft")
+                for loader_key in ("neoforge", "forge"):
+                    ranges = _toml_dep_version_ranges(text, result["mod_id"], loader_key)
+                    if ranges:
+                        result["loader_versions"][loader_key] = ranges
                 return result
 
             # Fabric
@@ -207,9 +215,12 @@ def read_mod_metadata(jar_bytes: bytes) -> dict:
                 result["mod_id"] = data.get("id")
                 result["mod_version"] = data.get("version")
                 depends = data.get("depends", {})
-                mc = depends.get("minecraft") or depends.get("fabricloader")
+                mc = depends.get("minecraft")
                 if mc:
                     result["mc_versions"] = [mc] if isinstance(mc, str) else mc
+                loader_ver = depends.get("fabricloader")
+                if loader_ver:
+                    result["loader_versions"]["fabric"] = [loader_ver] if isinstance(loader_ver, str) else loader_ver
                 return result
 
             # Quilt
@@ -220,10 +231,17 @@ def read_mod_metadata(jar_bytes: bytes) -> dict:
                 result["mod_id"] = meta.get("id")
                 result["mod_version"] = meta.get("version")
                 for dep in meta.get("depends", []):
-                    if isinstance(dep, dict) and dep.get("id") == "minecraft":
-                        v = dep.get("versions")
-                        if v:
-                            result["mc_versions"] = [v] if isinstance(v, str) else v
+                    if not isinstance(dep, dict):
+                        continue
+                    dep_id = dep.get("id")
+                    v = dep.get("versions")
+                    if not v:
+                        continue
+                    v = [v] if isinstance(v, str) else v
+                    if dep_id == "minecraft":
+                        result["mc_versions"] = v
+                    elif dep_id in ("quilt_loader", "fabricloader"):
+                        result["loader_versions"]["quilt"] = v
                 return result
 
             result["error"] = _NO_METADATA_ERROR

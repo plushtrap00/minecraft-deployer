@@ -140,7 +140,9 @@ var modUploadModal = document.getElementById('mod-upload-modal');
 var modUploadModalBody = document.getElementById('mod-upload-modal-body');
 var modUploadModalCloseBtn = document.getElementById('mod-upload-modal-close');
 
-function openModUploadModal(html) {
+function openModUploadModal(html, title, icon) {
+  document.getElementById('mod-upload-modal-title').textContent = title || 'Subida de mods';
+  document.getElementById('mod-upload-modal-icon').textContent = icon || '📦';
   modUploadModalBody.innerHTML = html;
   modUploadModal.classList.add('show');
   updateModUploadModalLock();

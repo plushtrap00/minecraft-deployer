@@ -24,6 +24,7 @@ load_dotenv(_ENV_PATH, override=True)
 
 from routes.system import router as system_router
 from routes.modpacks import router as modpacks_router, upload_router, firewall_router
+from routes.modloader import router as modloader_router
 from routes.players import router as players_router
 from routes.server import router as server_router
 from routes.auth import router as auth_router, verify_token
@@ -73,6 +74,7 @@ app.include_router(auth_router)
 app.include_router(users_router)
 app.include_router(system_router)
 app.include_router(modpacks_router)
+app.include_router(modloader_router)
 app.include_router(upload_router)
 app.include_router(firewall_router)
 app.include_router(players_router)
