@@ -334,13 +334,45 @@ def compare_mod_versions(v1: str, v2: str) -> int:
     return 0
 
 
-def find_installed_mod_by_id(mods_dir: Path, mod_id: str):
+def build_mod_id_index(mods_dir: Path) -> dict:
+    """
+    Escanea mods_dir UNA sola vez y arma un índice mod_id -> (Path, meta).
+
+    Sin esto, procesar un lote de N mods contra M ya instalados llamaba a
+    find_installed_mod_by_id() N veces, y cada llamada volvía a leer y
+    parsear los M jars instalados desde cero (O(N×M): con 300+ mods en ambos
+    lados eso son decenas de miles de aperturas de zip). Con el índice armado
+    una vez, cada búsqueda es O(1) y el costo total baja a O(N+M).
+    """
+    index = {}
+    for f in mods_dir.iterdir():
+        if not f.is_file():
+            continue
+        low = f.name.lower()
+        if not (low.endswith(".jar") or low.endswith(".jar.disabled")):
+            continue
+        try:
+            meta = read_mod_metadata(f.read_bytes())
+        except Exception:
+            continue
+        mod_id = meta.get("mod_id")
+        if mod_id:
+            index[mod_id] = (f, meta)
+    return index
+
+
+def find_installed_mod_by_id(mods_dir: Path, mod_id: str, index: dict | None = None):
     """
     Busca en mods_dir un jar ya instalado cuyo mod_id coincida con el dado.
     Devuelve (Path, meta dict) o (None, None) si no hay coincidencia.
+
+    Si se pasa `index` (de build_mod_id_index), la búsqueda es O(1) y no
+    vuelve a leer nada de disco; si no, escanea mods_dir como antes.
     """
     if not mod_id:
         return None, None
+    if index is not None:
+        return index.get(mod_id, (None, None))
     for f in mods_dir.iterdir():
         if not f.is_file():
             continue
@@ -370,7 +402,7 @@ def _fmt_ver(v: str | None) -> str:
     return f"v{v}" if v else "versión desconocida"
 
 
-def process_mod_jar(mods_dir: Path, filename: str, jar_bytes: bytes, server_mc: str) -> dict:
+def process_mod_jar(mods_dir: Path, filename: str, jar_bytes: bytes, server_mc: str, mod_index: dict | None = None) -> dict:
     """
     Evalúa un .jar de mod contra los mods ya instalados en mods_dir y, si corresponde,
     lo instala. Usado tanto por la subida individual como por la subida masiva (zip/carpeta).
@@ -378,6 +410,11 @@ def process_mod_jar(mods_dir: Path, filename: str, jar_bytes: bytes, server_mc: 
     Si status == "needs_confirmation" NO se escribe nada en disco: quien llama decide
     qué hacer con jar_bytes (p.ej. guardarlos a la espera de que el usuario confirme
     si quiere degradar la versión instalada).
+
+    mod_index (de build_mod_id_index): si se pasa, se usa para no reescanear
+    mods_dir en cada llamada, y se actualiza in-place cuando este mod queda
+    instalado/reemplazado, para que el resto del lote lo vea sin volver a leer
+    nada de disco.
 
     Devuelve dict con: status, filename, display_name, mod_id, mod_version, detail,
     y según el caso: existing_filename, existing_version, replaced_filename, previous_version.
@@ -403,7 +440,7 @@ def process_mod_jar(mods_dir: Path, filename: str, jar_bytes: bytes, server_mc: 
             "detail": f"Incompatible: requiere MC {', '.join(meta['mc_versions'])} pero el servidor es {server_mc}",
         }
 
-    existing_path, existing_meta = find_installed_mod_by_id(mods_dir, meta.get("mod_id"))
+    existing_path, existing_meta = find_installed_mod_by_id(mods_dir, meta.get("mod_id"), mod_index)
 
     if existing_path:
         cmp = compare_mod_versions(meta.get("mod_version"), existing_meta.get("mod_version"))
@@ -428,6 +465,8 @@ def process_mod_jar(mods_dir: Path, filename: str, jar_bytes: bytes, server_mc: 
         existing_path.unlink()
         dest = mods_dir / (filename + ".disabled" if was_disabled else filename)
         dest.write_bytes(jar_bytes)
+        if mod_index is not None and meta.get("mod_id"):
+            mod_index[meta["mod_id"]] = (dest, meta)
         return {
             "status": "added", "filename": dest.name, "display_name": display_name,
             "mod_id": meta.get("mod_id"), "mod_version": meta.get("mod_version"),
@@ -446,6 +485,8 @@ def process_mod_jar(mods_dir: Path, filename: str, jar_bytes: bytes, server_mc: 
             "detail": f"{filename} ya existe en mods/",
         }
     dest.write_bytes(jar_bytes)
+    if mod_index is not None and meta.get("mod_id"):
+        mod_index[meta["mod_id"]] = (dest, meta)
     return {
         "status": "added", "filename": filename, "display_name": display_name,
         "mod_id": meta.get("mod_id"), "mod_version": meta.get("mod_version"),

@@ -43,7 +43,7 @@ from pydantic import BaseModel
 from config import DEFAULT_SERVERS_PATH, TEMP_DIR
 from services.utils import get_mod_configs, get_kubejs_files, get_world_files, extract_archive, configure_jvm_ram, invalidate_kubejs_cache
 from services.modpack import (
-    detect_modpack_version, find_installed_mod_by_id,
+    detect_modpack_version, find_installed_mod_by_id, build_mod_id_index,
     mod_display_name, process_mod_jar,
     detect_installed_mods, has_mod_keyword,
     parse_server_properties, save_server_property,
@@ -419,10 +419,15 @@ async def stream_mods_bulk(modpack: str, job_id: str):
         pending_bytes = {}
 
         try:
+            # Se arma una sola vez el índice mod_id -> (Path, meta) de lo ya
+            # instalado; si no, process_mod_jar tendría que releer y reparsear
+            # todos los mods instalados en CADA iteración (O(N×M)).
+            mod_index = await asyncio.to_thread(build_mod_id_index, mods_dir)
+
             for i, item in enumerate(manifest, start=1):
                 filename = item["filename"]
                 jar_bytes = (job_dir / item["stored_name"]).read_bytes()
-                result = process_mod_jar(mods_dir, filename, jar_bytes, server_mc)
+                result = process_mod_jar(mods_dir, filename, jar_bytes, server_mc, mod_index)
                 status = result["status"]
                 if status == "added":
                     added.append(result)
