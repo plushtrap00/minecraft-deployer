@@ -288,10 +288,26 @@ async def upload_mod(modpack: str, file: UploadFile = File(...)):
     result = process_mod_jar(mods_dir, filename, jar_bytes, server_mc)
     if result["status"] in ("incompatible", "invalid"):
         raise HTTPException(status_code=409 if result["status"] == "incompatible" else 400, detail=result["detail"])
-    if result["status"] == "needs_confirmation":
-        raise HTTPException(status_code=409, detail=result["detail"] + ". No se reemplazó nada.")
     if result["status"] == "already_installed":
         raise HTTPException(status_code=409, detail=result["detail"] + f" en {result['existing_filename']}.")
+    if result["status"] == "needs_confirmation":
+        # Versión más antigua que la instalada: no se rechaza directamente, se
+        # arma un lote de un solo mod para que el usuario decida (mismo flujo
+        # de confirmación que la subida masiva).
+        batch_id = secrets.token_hex(8)
+        batch_dir = BATCH_ROOT / batch_id
+        batch_dir.mkdir(parents=True)
+        (batch_dir / result["filename"]).write_bytes(jar_bytes)
+        (batch_dir / "manifest.json").write_text(json.dumps([result]), encoding="utf-8")
+        return JSONResponse({
+            "success": True,
+            "batch_id": batch_id,
+            "added": [],
+            "already_installed": [],
+            "needs_confirmation": [result],
+            "errors": [],
+            "total": 1,
+        })
 
     return JSONResponse({
         "success": True,

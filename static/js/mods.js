@@ -276,7 +276,10 @@ function uploadMod(file) {
     .then(function(result) {
       setModOperationBusy(false);
       modFileInput.value = '';
-      if (result.ok && result.data.success) {
+      if (result.ok && result.data.success && result.data.needs_confirmation && result.data.needs_confirmation.length) {
+        // Versión más antigua que la instalada: mismo flujo de confirmación que la subida masiva.
+        renderBulkResult(result.data);
+      } else if (result.ok && result.data.success) {
         var info = '';
         if (result.data.mod_id) {
           info += ' · ID: ' + escHtml(result.data.mod_id);
