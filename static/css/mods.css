@@ -161,10 +161,32 @@
 
 .bulk-result-row.clickable {
   cursor: pointer;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: rgba(88, 166, 255, .07);
+  border: 1px solid rgba(88, 166, 255, .3);
+  transition: background .15s, border-color .15s;
 }
 
 .bulk-result-row.clickable:hover {
+  background: rgba(88, 166, 255, .14);
+  border-color: rgba(88, 166, 255, .5);
+}
+
+.bulk-result-row.clickable::after {
+  content: 'Ver detalle →';
+  margin-left: auto;
+  padding-left: 10px;
+  color: var(--accent);
+  font-weight: 700;
+  font-size: .78rem;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.bulk-result-link {
   text-decoration: underline;
+  font-weight: 600;
 }
 
 .bulk-result-icon {

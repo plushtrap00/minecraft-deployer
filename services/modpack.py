@@ -194,7 +194,7 @@ def read_mod_metadata(jar_bytes: bytes) -> dict:
                 m = re.search(r'modId\s*=\s*[\'"]([^\'"]+)[\'"]', text)
                 if m:
                     result["mod_id"] = m.group(1)
-                m = re.search(r'^version\s*=\s*[\'"]([^\'"]+)[\'"]', text, re.MULTILINE)
+                m = re.search(r'^[ \t]*version\s*=\s*[\'"]([^\'"]+)[\'"]', text, re.MULTILINE)
                 if m:
                     result["mod_version"] = m.group(1)
                 result["mc_versions"] = _mc_versions_from_toml(text, result["mod_id"])
@@ -280,6 +280,10 @@ def mod_display_name(filename: str) -> str:
     return clean or stem
 
 
+def _fmt_ver(v: str | None) -> str:
+    return f"v{v}" if v else "versión desconocida"
+
+
 def process_mod_jar(mods_dir: Path, filename: str, jar_bytes: bytes, server_mc: str) -> dict:
     """
     Evalúa un .jar de mod contra los mods ya instalados en mods_dir y, si corresponde,
@@ -322,15 +326,15 @@ def process_mod_jar(mods_dir: Path, filename: str, jar_bytes: bytes, server_mc: 
                 "status": "needs_confirmation", "filename": filename, "display_name": display_name,
                 "mod_id": meta.get("mod_id"), "mod_version": meta.get("mod_version"),
                 "existing_filename": existing_path.name, "existing_version": existing_meta.get("mod_version"),
-                "detail": f"Versión más antigua (v{meta.get('mod_version')}) que la instalada "
-                          f"(v{existing_meta.get('mod_version')} en {existing_path.name})",
+                "detail": f"Versión más antigua ({_fmt_ver(meta.get('mod_version'))}) que la instalada "
+                          f"({_fmt_ver(existing_meta.get('mod_version'))} en {existing_path.name})",
             }
         if cmp == 0:
             return {
                 "status": "already_installed", "filename": filename, "display_name": display_name,
                 "mod_id": meta.get("mod_id"), "mod_version": meta.get("mod_version"),
                 "existing_filename": existing_path.name,
-                "detail": f"Ya está instalada la misma versión (v{meta.get('mod_version')})",
+                "detail": f"Ya está instalado ({_fmt_ver(meta.get('mod_version'))})",
             }
         was_disabled = existing_path.name.endswith(".disabled")
         replaced_filename = existing_path.name
@@ -342,7 +346,7 @@ def process_mod_jar(mods_dir: Path, filename: str, jar_bytes: bytes, server_mc: 
             "status": "added", "filename": dest.name, "display_name": display_name,
             "mod_id": meta.get("mod_id"), "mod_version": meta.get("mod_version"),
             "replaced_filename": replaced_filename, "previous_version": previous_version,
-            "detail": f"Actualizado desde v{previous_version}",
+            "detail": f"Actualizado desde {_fmt_ver(previous_version)}",
         }
 
     dest = mods_dir / filename

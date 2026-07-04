@@ -430,10 +430,10 @@ function renderBulkResult(data) {
       // needs_confirmation con pocos mods: texto clicable que abre el mismo formulario
       return '<div class="bulk-result-row clickable" style="color:' + cat.color + '" data-bulk-cat="' + cat.key + '">'
         + '<span class="bulk-result-icon">' + cat.icon + '</span>'
-        + '<span>' + escHtml(cat.fewPrefix) + '<b>' + names.map(escHtml).join('</b>, <b>') + '</b></span></div>';
+        + '<span class="bulk-result-link">' + escHtml(cat.fewPrefix) + '<b>' + names.map(escHtml).join('</b>, <b>') + '</b></span></div>';
     }
     return '<div class="bulk-result-row clickable" style="color:' + cat.color + '" data-bulk-cat="' + cat.key + '">'
-      + '<span class="bulk-result-icon">' + cat.icon + '</span><span>' + escHtml(cat.many(items.length)) + '</span></div>';
+      + '<span class="bulk-result-icon">' + cat.icon + '</span><span class="bulk-result-link">' + escHtml(cat.many(items.length)) + '</span></div>';
   }).join('');
 
   setModUploadModalBody(rows || '<div class="bulk-result-row" style="color:var(--muted)">No se procesó ningún mod.</div>');
