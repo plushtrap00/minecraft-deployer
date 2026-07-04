@@ -211,6 +211,14 @@
   color: var(--muted);
 }
 
+.mod-downgrade-check {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
 .mod-modal-pagination {
   display: flex;
   align-items: center;

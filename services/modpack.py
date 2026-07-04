@@ -291,13 +291,42 @@ def read_mod_metadata(jar_bytes: bytes) -> dict:
     return result
 
 
+_PRERELEASE_MARKER_RE = re.compile(r'alpha|beta|rc|pre|snapshot|dev', re.IGNORECASE)
+
+
 def compare_mod_versions(v1: str, v2: str) -> int:
     """
-    Compara dos versiones de mod comparando sus segmentos numéricos (ignora sufijos
-    como '+build' o '-forge'). Devuelve -1 si v1 < v2, 1 si v1 > v2, 0 si son iguales.
+    Compara dos versiones de mod comparando sus segmentos numéricos. Devuelve
+    -1 si v1 < v2, 1 si v1 > v2, 0 si son iguales.
+
+    Antes de comparar, separa un posible marcador de pre-release (alpha/beta/
+    rc/pre/snapshot/dev): a igual número base, una versión SIN ese marcador
+    es más nueva que una CON él (p.ej. "6.0.0" es más nueva que
+    "6.0.0-beta.83", aunque "83" sea numéricamente más grande que nada). Si
+    ambas tienen o ambas no tienen marcador, se comparan todos los segmentos
+    numéricos completos (incluido el del propio marcador) para no perder el
+    orden dentro de esa franja (p.ej. beta.83 vs beta.90).
     """
     def parts(v):
         return [int(x) for x in re.findall(r'\d+', v or '')]
+
+    def split_prerelease(v):
+        v = v or ''
+        m = _PRERELEASE_MARKER_RE.search(v)
+        return (v[:m.start()], True) if m else (v, False)
+
+    core1, pre1 = split_prerelease(v1)
+    core2, pre2 = split_prerelease(v2)
+
+    core_cmp = 0
+    for a, b in zip_longest(parts(core1), parts(core2), fillvalue=0):
+        if a != b:
+            core_cmp = -1 if a < b else 1
+            break
+    if core_cmp != 0:
+        return core_cmp
+    if pre1 != pre2:
+        return 1 if pre2 else -1
 
     for a, b in zip_longest(parts(v1), parts(v2), fillvalue=0):
         if a != b:
