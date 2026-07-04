@@ -294,7 +294,6 @@ function uploadMod(file) {
         setModUploadModalBody('<div style="background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.3);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--green)">✅ Mod instalado: '
           + escHtml(result.data.filename) + info + '</div>' + replacedMsg);
         loadModsList();
-        setTimeout(closeModUploadModal, 3500);
       } else {
         setModUploadModalBody('<div style="background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.3);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--red)">❌ '
           + escHtml(result.data.detail || 'Error desconocido') + '</div>');
@@ -438,11 +437,6 @@ function renderBulkResult(data) {
   }).join('');
 
   setModUploadModalBody(rows || '<div class="bulk-result-row" style="color:var(--muted)">No se procesó ningún mod.</div>');
-
-  var needsAttention = (data.needs_confirmation || []).length || (data.errors || []).length;
-  if (!needsAttention) {
-    setTimeout(closeModUploadModal, 4000);
-  }
 }
 
 modUploadModalBody.addEventListener('click', function(event) {
@@ -561,6 +555,9 @@ function submitDowngradeDecision(acceptFilenames) {
   setModOperationBusy(true);
   document.getElementById('mod-downgrade-confirm').disabled = true;
   document.getElementById('mod-downgrade-reject-all').disabled = true;
+  document.getElementById('mod-downgrade-modal-pagination').innerHTML = '';
+  document.getElementById('mod-downgrade-modal-body').innerHTML = modUploadProgressHtml('Aplicando cambios...');
+
   apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/upload-bulk/confirm', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -568,21 +565,38 @@ function submitDowngradeDecision(acceptFilenames) {
   })
     .then(function(response) { return response.json(); })
     .then(function(data) {
-      document.getElementById('mod-downgrade-modal').classList.remove('show');
       if (data.success) {
-        var n = data.applied.length;
-        showToast(n ? (n + ' mod(s) degradados a versión anterior') : 'No se aplicaron cambios', 'success');
+        renderDowngradeResult(data);
         loadModsList();
       } else {
-        showToast(data.detail || 'Error al confirmar', 'error');
+        document.getElementById('mod-downgrade-modal-body').innerHTML = modErrorHtml(data.detail || 'Error al confirmar');
+        document.getElementById('mod-downgrade-confirm').disabled = false;
+        document.getElementById('mod-downgrade-reject-all').disabled = false;
       }
     })
-    .catch(function() { showToast('Error de red', 'error'); })
-    .then(function() {
-      setModOperationBusy(false);
+    .catch(function() {
+      document.getElementById('mod-downgrade-modal-body').innerHTML = modErrorHtml('Error de red');
       document.getElementById('mod-downgrade-confirm').disabled = false;
       document.getElementById('mod-downgrade-reject-all').disabled = false;
+    })
+    .then(function() {
+      setModOperationBusy(false);
     });
+}
+
+function renderDowngradeResult(data) {
+  var applied = data.applied || [];
+  var skipped = data.skipped || [];
+  var html = '';
+  if (applied.length) {
+    html += '<div class="bulk-result-row" style="color:var(--green)"><span class="bulk-result-icon">✅</span>'
+      + '<span>Degradados a versión anterior: <b>' + applied.map(function(it) { return escHtml(it.display_name); }).join('</b>, <b>') + '</b></span></div>';
+  }
+  if (skipped.length) {
+    html += '<div class="bulk-result-row" style="color:var(--muted)"><span class="bulk-result-icon">⏭️</span>'
+      + '<span>Sin cambios (no aceptados): <b>' + skipped.map(function(it) { return escHtml(it.display_name); }).join('</b>, <b>') + '</b></span></div>';
+  }
+  document.getElementById('mod-downgrade-modal-body').innerHTML = html || '<div class="bulk-result-row" style="color:var(--muted)">No se aplicó ningún cambio.</div>';
 }
 
 document.getElementById('mod-downgrade-confirm').addEventListener('click', function() {
