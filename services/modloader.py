@@ -146,7 +146,7 @@ def check_mod_compatibility(modpack: str, loader_key: str, target_version: str) 
         ranges = meta.get("loader_versions", {}).get(loader_key)
         if not ranges:
             continue
-        if not mc_version_compatible(target_version, ranges):
+        if not mc_version_compatible(target_version, ranges, bare_as_minimum=True):
             incompatible.append({
                 "filename": f.name,
                 "display_name": mod_display_name(f.name),

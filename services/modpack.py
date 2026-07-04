@@ -453,7 +453,7 @@ def process_mod_jar(mods_dir: Path, filename: str, jar_bytes: bytes, server_mc: 
     }
 
 
-def mc_version_compatible(server_mc: str, mod_versions: list) -> bool:
+def mc_version_compatible(server_mc: str, mod_versions: list, bare_as_minimum: bool = False) -> bool:
     """
     Comprueba si la versión del servidor es compatible con los rangos de versión del mod.
     Soporta: exacto, wildcard (1.21.x), rangos Maven ([1.21,1.22)).
@@ -465,6 +465,14 @@ def mc_version_compatible(server_mc: str, mod_versions: list) -> bool:
     instalaciones válidas. Rangos que no podemos interpretar (p.ej. variables de
     plantilla sin resolver como "${minecraft_version_range}") se ignoran en vez de
     contar como incompatibilidad.
+
+    bare_as_minimum: una versión "pelada" sin rango (p.ej. "21.1.228") se
+    interpreta por defecto como prefijo/wildcard (equivale a "21.1.228.x"),
+    que tiene sentido para versiones de Minecraft ("1.21" ~ "1.21.x"). Para
+    versiones de LOADER (neoforge/forge/...) esa misma forma casi siempre
+    significa "mínimo requerido", así que el chequeo de compatibilidad de
+    modloader pasa bare_as_minimum=True para tratarla como ">=" en vez de
+    exigir que el prefijo calce literalmente.
     """
     if not server_mc or not mod_versions:
         return True
@@ -479,10 +487,13 @@ def mc_version_compatible(server_mc: str, mod_versions: list) -> bool:
             continue
         if vrange == server_mc:
             return True
-        # Versión "pelada" sin rango, p.ej. "1.21": se toma como prefijo (equivale a "1.21.x")
+        # Versión "pelada" sin rango, p.ej. "1.21"
         if re.match(r'^\d+(\.\d+)*$', vrange):
             recognized_any = True
-            if server_mc == vrange or server_mc.startswith(vrange + '.'):
+            if bare_as_minimum:
+                if ver_tuple(server_mc) >= ver_tuple(vrange):
+                    return True
+            elif server_mc == vrange or server_mc.startswith(vrange + '.'):
                 return True
             continue
         if re.match(r'^[\d.]+[.*x]$', vrange):
