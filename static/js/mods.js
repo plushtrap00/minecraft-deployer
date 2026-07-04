@@ -110,6 +110,9 @@ function doDeleteMod(filename) {
       if (data.success) {
         showToast('Mod borrado', 'success');
         loadModsList();
+        if (document.getElementById('mod-duplicates-modal').classList.contains('show')) {
+          openDuplicatesModal();
+        }
       } else {
         showToast(data.detail || 'Error al borrar', 'error');
       }
@@ -665,6 +668,70 @@ document.getElementById('mod-downgrade-modal-close').addEventListener('click', f
 });
 document.getElementById('mod-downgrade-modal').addEventListener('click', function(event) {
   if (event.target === this && !modOperationBusy) {
+    this.classList.remove('show');
+  }
+});
+
+
+// -- Posibles mods duplicados ---------------------------------------------------
+var DUPLICATE_CONFIDENCE_LABEL = {
+  high: { icon: '🔴', text: 'Mismo ID interno' },
+  medium: { icon: '🟡', text: 'Nombre muy parecido' }
+};
+
+document.getElementById('mod-duplicates-btn').addEventListener('click', openDuplicatesModal);
+
+function openDuplicatesModal() {
+  if (!currentModpack) {
+    return;
+  }
+  document.getElementById('mod-duplicates-modal-body').innerHTML = '<p class="empty-msg">Buscando posibles duplicados...</p>';
+  document.getElementById('mod-duplicates-modal').classList.add('show');
+
+  apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/duplicates')
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      renderDuplicatesModal(data.groups || []);
+    })
+    .catch(function(error) {
+      document.getElementById('mod-duplicates-modal-body').innerHTML = modErrorHtml('Error de red: ' + error.message);
+    });
+}
+
+function renderDuplicatesModal(groups) {
+  var body = document.getElementById('mod-duplicates-modal-body');
+  if (!groups.length) {
+    body.innerHTML = '<p class="empty-msg">No se encontraron posibles duplicados.</p>';
+    return;
+  }
+  body.innerHTML = groups.map(function(group) {
+    var conf = DUPLICATE_CONFIDENCE_LABEL[group.confidence] || { icon: '⚠️', text: group.confidence };
+    var modsHtml = group.mods.map(function(mod) {
+      return '<div class="mod-modal-item">'
+        + '<div class="mod-info"><div class="mod-display">' + escHtml(mod.display_name) + '</div>'
+        + '<div class="mod-modal-detail">' + escHtml(mod.filename) + (mod.mod_version ? ' · v' + escHtml(mod.mod_version) : '') + '</div></div>'
+        + '<button type="button" class="btn-danger mod-delete" title="Borrar mod" data-filename="' + escHtml(mod.filename) + '" style="opacity:1;font-size:.78rem;padding:4px 8px;flex-shrink:0">🗑</button>'
+        + '</div>';
+    }).join('');
+    return '<div style="border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:12px">'
+      + '<div style="font-size:.8rem;color:var(--muted);margin-bottom:6px">' + conf.icon + ' <b>' + escHtml(conf.text) + '</b> — ' + escHtml(group.reason) + '</div>'
+      + modsHtml
+      + '</div>';
+  }).join('');
+}
+
+document.getElementById('mod-duplicates-modal-body').addEventListener('click', function(event) {
+  var deleteBtn = event.target.closest('.mod-delete');
+  if (deleteBtn) {
+    deleteMod(deleteBtn.dataset.filename);
+  }
+});
+
+document.getElementById('mod-duplicates-modal-close').addEventListener('click', function() {
+  document.getElementById('mod-duplicates-modal').classList.remove('show');
+});
+document.getElementById('mod-duplicates-modal').addEventListener('click', function(event) {
+  if (event.target === this) {
     this.classList.remove('show');
   }
 });

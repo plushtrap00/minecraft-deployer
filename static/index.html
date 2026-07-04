@@ -529,7 +529,10 @@
         <input type="file" id="mod-folder-input" webkitdirectory directory multiple style="display:none">
         <button type="button" class="btn-secondary btn-sm" id="mod-folder-btn" style="margin:8px 0">📁 Subir carpeta de mods</button>
 
-        <input type="text" id="mods-search" placeholder="🔍 Buscar mod por nombre..." class="w-full">
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="text" id="mods-search" placeholder="🔍 Buscar mod por nombre..." class="w-full">
+          <button type="button" class="btn-secondary btn-sm" id="mod-duplicates-btn" style="flex-shrink:0;white-space:nowrap">⚠️ Ver posibles duplicados</button>
+        </div>
         <div id="mods-list"><p class="empty-msg">Cargando...</p></div>
       </div>
     </div>
@@ -704,6 +707,20 @@
         <button class="btn-secondary" id="modloader-verify-btn">Verificar compatibilidad</button>
         <button id="modloader-install-btn" disabled>Instalar</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: posibles mods duplicados -->
+<div class="modal-overlay" id="mod-duplicates-modal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <span>⚠️</span>
+      <span class="modal-path">Posibles mods duplicados</span>
+      <button class="modal-close" id="mod-duplicates-modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-scroll" id="mod-duplicates-modal-body"></div>
     </div>
   </div>
 </div>

@@ -10,6 +10,7 @@ Rutas:
 - POST      /api/upload-and-extract
 - GET       /api/modpacks/{modpack}/version
 - GET       /api/modpacks/{modpack}/mods
+- GET       /api/modpacks/{modpack}/mods/duplicates
 - POST      /api/modpacks/{modpack}/mods/upload
 - POST      /api/modpacks/{modpack}/mods/upload-bulk
 - GET       /api/modpacks/{modpack}/mods/upload-bulk/stream/{job_id}
@@ -44,7 +45,7 @@ from config import DEFAULT_SERVERS_PATH, TEMP_DIR
 from services.utils import get_mod_configs, get_kubejs_files, get_world_files, extract_archive, configure_jvm_ram, invalidate_kubejs_cache
 from services.modpack import (
     detect_modpack_version, find_installed_mod_by_id, build_mod_id_index,
-    mod_display_name, process_mod_jar,
+    mod_display_name, process_mod_jar, find_possible_duplicate_mods,
     detect_installed_mods, has_mod_keyword,
     parse_server_properties, save_server_property,
     get_worlds, analyze_crash,
@@ -270,6 +271,13 @@ async def list_mods(modpack: str):
             continue
         mods.append({"name": mod_display_name(f.name), "filename": f.name, "enabled": not f.name.endswith(".disabled")})
     return JSONResponse({"mods": mods, "exists": True, "count": len(mods)})
+
+
+@router.get("/{modpack}/mods/duplicates")
+async def mods_duplicates(modpack: str):
+    mods_dir = DEFAULT_SERVERS_PATH / modpack / "mods"
+    groups = await asyncio.to_thread(find_possible_duplicate_mods, mods_dir)
+    return JSONResponse({"groups": groups})
 
 
 @router.post("/{modpack}/mods/upload")

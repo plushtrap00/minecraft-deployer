@@ -16,6 +16,7 @@ import json
 import zipfile
 import io
 import secrets
+from collections import defaultdict
 from itertools import zip_longest
 from pathlib import Path
 
@@ -400,6 +401,97 @@ def mod_display_name(filename: str) -> str:
 
 def _fmt_ver(v: str | None) -> str:
     return f"v{v}" if v else "versión desconocida"
+
+
+_DEDUP_CUT_RE = re.compile(
+    r'[-_\s]+\d|\b(?:forge|fabric|neoforge|quilt|mc|minecraft)\b',
+    re.IGNORECASE,
+)
+
+
+def _dedup_fingerprint(filename: str) -> str:
+    """
+    Huella agresiva para agrupar por parecido de nombre: todo lo que viene
+    antes del primer número de versión o palabra de loader/MC, en minúsculas
+    y sin separadores. A diferencia de mod_display_name (pensado para verse
+    bien), acá el separador antes de la palabra de loader puede ser un
+    espacio ("Custom Nether Portals - Neoforge - MC 1.21.1- 2.0.0" también
+    calza con "custom_nether_portals-neoforge-1.21.1-1.0.0").
+    """
+    p = Path(filename)
+    stem = p.stem if not p.name.endswith(".disabled") else p.stem.replace(".jar", "").replace(".zip", "")
+    m = _DEDUP_CUT_RE.search(stem)
+    core = stem[:m.start()] if m else stem
+    return re.sub(r'[^a-z0-9]', '', core.lower())
+
+
+def find_possible_duplicate_mods(mods_dir: Path) -> list:
+    """
+    Agrupa los mods instalados en posibles duplicados. No se puede confiar del
+    todo en el mod_id (un mod puede cambiar el suyo entre versiones, como pasó
+    con Custom Nether Portals 1.0.0 -> 2.0.0: "custom_nether_portals" pasó a
+    ser "customnetherportals"), así que se buscan dos señales por separado:
+
+    - "high": dos o más archivos con el MISMO mod_id (debería ser raro si
+      todo se instaló por la app, pero puede pasar con archivos puestos a mano).
+    - "medium": mismo nombre "normalizado" (sin espacios/guiones/mayúsculas)
+      pero mod_id distinto — heurística por parecido de nombre, no 100%
+      confiable, así que se marca con confianza menor.
+
+    Devuelve una lista de grupos: [{"confidence", "reason", "mods": [...]}]
+    """
+    if not mods_dir.exists():
+        return []
+
+    entries = []
+    for f in sorted(mods_dir.iterdir(), key=lambda x: x.name.lower()):
+        if not f.is_file():
+            continue
+        low = f.name.lower()
+        if not (low.endswith(".jar") or low.endswith(".jar.disabled")):
+            continue
+        try:
+            meta = read_mod_metadata(f.read_bytes())
+        except Exception:
+            continue
+        entries.append({
+            "filename": f.name,
+            "mod_id": meta.get("mod_id"),
+            "mod_version": meta.get("mod_version"),
+            "display_name": mod_display_name(f.name),
+            "fingerprint": _dedup_fingerprint(f.name),
+        })
+
+    groups = []
+    seen_files = set()
+
+    by_mod_id = defaultdict(list)
+    for e in entries:
+        if e["mod_id"]:
+            by_mod_id[e["mod_id"]].append(e)
+    for mod_id, group in by_mod_id.items():
+        if len(group) > 1:
+            groups.append({
+                "confidence": "high",
+                "reason": f'mismo mod_id ("{mod_id}")',
+                "mods": [{"filename": g["filename"], "display_name": g["display_name"], "mod_version": g["mod_version"]} for g in group],
+            })
+            seen_files.update(g["filename"] for g in group)
+
+    by_fingerprint = defaultdict(list)
+    for e in entries:
+        if e["filename"] in seen_files or len(e["fingerprint"]) < 4:
+            continue
+        by_fingerprint[e["fingerprint"]].append(e)
+    for fingerprint, group in by_fingerprint.items():
+        if len(group) > 1:
+            groups.append({
+                "confidence": "medium",
+                "reason": "nombre muy parecido",
+                "mods": [{"filename": g["filename"], "display_name": g["display_name"], "mod_version": g["mod_version"]} for g in group],
+            })
+
+    return groups
 
 
 def process_mod_jar(mods_dir: Path, filename: str, jar_bytes: bytes, server_mc: str, mod_index: dict | None = None) -> dict:
