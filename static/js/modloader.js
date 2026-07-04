@@ -117,12 +117,24 @@ document.getElementById('modloader-install-btn').addEventListener('click', funct
 
 function startModloaderInstall(version) {
   var loaderDisplay = modloaderInfo.loader_display;
+  var installLogLines = [];
+
+  function renderInstallLog(headerHtml) {
+    var logHtml = installLogLines.length
+      ? '<div class="log-viewer" id="modloader-install-log" style="height:220px;margin-top:10px;font-size:.74rem">'
+        + installLogLines.map(escHtml).join('\n') + '</div>'
+      : '';
+    setModUploadModalBody(headerHtml + logHtml);
+    var logEl = document.getElementById('modloader-install-log');
+    if (logEl) {
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+  }
+
   document.getElementById('modloader-modal').classList.remove('show');
   setModOperationBusy(true);
-  openModUploadModal(
-    modUploadProgressHtml('Instalando ' + loaderDisplay + ' ' + version + '...'),
-    'Cambio de modloader', '🔧'
-  );
+  openModUploadModal('', 'Cambio de modloader', '🔧');
+  renderInstallLog(modUploadProgressHtml('Instalando ' + loaderDisplay + ' ' + version + '...'));
 
   var url = '/api/modpacks/' + encodeURIComponent(currentModpack) + '/modloader/install/stream'
     + '?version=' + encodeURIComponent(version) + '&token=' + encodeURIComponent(authToken);
@@ -136,28 +148,30 @@ function startModloaderInstall(version) {
       return;
     }
     if (data.type === 'log') {
-      setModUploadModalBody(modUploadProgressHtml(data.message));
+      installLogLines.push(data.message);
+      renderInstallLog(modUploadProgressHtml('Instalando ' + loaderDisplay + ' ' + version + '...'));
     } else if (data.type === 'done') {
       source.close();
       setModOperationBusy(false);
+      var resultHtml = data.success
+        ? '<div style="background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.3);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--green)">'
+          + '✅ Modloader actualizado a ' + escHtml(data.version) + '.</div>'
+        : modErrorHtml(data.detail || 'Error desconocido');
+      renderInstallLog(resultHtml);
       if (data.success) {
-        setModUploadModalBody('<div style="background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.3);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--green)">'
-          + '✅ Modloader actualizado a ' + escHtml(data.version) + '.</div>');
         loadModpackVersion();
-      } else {
-        setModUploadModalBody(modErrorHtml(data.detail || 'Error desconocido'));
       }
     } else if (data.type === 'error') {
       source.close();
       setModOperationBusy(false);
-      setModUploadModalBody(modErrorHtml(data.detail || 'Error desconocido'));
+      renderInstallLog(modErrorHtml(data.detail || 'Error desconocido'));
     }
   };
 
   source.onerror = function() {
     source.close();
     setModOperationBusy(false);
-    setModUploadModalBody(modErrorHtml('Se perdió la conexión durante la instalación. Revisa el estado del servidor manualmente.'));
+    renderInstallLog(modErrorHtml('Se perdió la conexión durante la instalación. Revisa el estado del servidor manualmente.'));
   };
 }
 
