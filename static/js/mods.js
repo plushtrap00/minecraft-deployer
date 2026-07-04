@@ -156,6 +156,31 @@ function setModUploadModalBody(html) {
   modUploadModalBody.innerHTML = html;
 }
 
+// Actualiza solo el texto del progreso sin tocar el spinner: reemplazar todo
+// el innerHTML en cada actualización recreaba el div del spinner cada vez,
+// reiniciando su animación CSS antes de completar una vuelta (se veía
+// tildado/reiniciándose todo el rato). Si el spinner ya está en el DOM, solo
+// se cambia el texto; si no, recién ahí se arma el HTML completo.
+function setModUploadProgressText(text) {
+  var textEl = document.getElementById('mod-upload-progress-text');
+  if (textEl) {
+    textEl.textContent = text;
+  } else {
+    setModUploadModalBody(modUploadProgressHtml(text));
+  }
+}
+
+// Igual que arriba pero para contenido adicional (p.ej. el log de instalación
+// del modloader) que crece aparte del texto de progreso, sin tocar el spinner.
+function setModUploadExtraHtml(html) {
+  var extraEl = document.getElementById('mod-upload-extra');
+  if (extraEl) {
+    extraEl.innerHTML = html;
+  } else {
+    setModUploadModalBody(html);
+  }
+}
+
 function closeModUploadModal() {
   if (modOperationBusy) {
     return;
@@ -205,9 +230,10 @@ function guardModOperationNav() {
 function modUploadProgressHtml(text) {
   return '<div class="mod-upload-progress">'
     + '<div class="mod-upload-spinner"></div>'
-    + '<div><div style="font-weight:600">' + escHtml(text) + '</div>'
+    + '<div><div id="mod-upload-progress-text" style="font-weight:600">' + escHtml(text) + '</div>'
     + '<div style="font-size:.78rem;color:var(--yellow);margin-top:2px">⚠️ No cierres ni recargues esta pestaña hasta que termine.</div></div>'
-    + '</div>';
+    + '</div>'
+    + '<div id="mod-upload-extra"></div>';
 }
 
 modUploadZone.addEventListener('dragover', function(event) {
@@ -402,16 +428,14 @@ function uploadModsBulk(fileList) {
     function(loaded) {
       if (isZip) {
         var pct = Math.min(100, Math.round((loaded / totalBytes) * 100));
-        setModUploadModalBody(modUploadProgressHtml('Subiendo ' + files[0].name + '... ' + pct + '%'));
+        setModUploadProgressText('Subiendo ' + files[0].name + '... ' + pct + '%');
         return;
       }
       var idx = cumulative.findIndex(function(threshold) { return loaded <= threshold; });
       if (idx === -1) {
         idx = files.length - 1;
       }
-      setModUploadModalBody(modUploadProgressHtml(
-        'Enviando mod ' + (idx + 1) + ' de ' + files.length + ': ' + files[idx].name + '...'
-      ));
+      setModUploadProgressText('Enviando mod ' + (idx + 1) + ' de ' + files.length + ': ' + files[idx].name + '...');
     }
   )
     .then(function(result) {
@@ -442,9 +466,7 @@ function streamModsBulkProgress(jobId) {
       return;
     }
     if (data.type === 'progress') {
-      setModUploadModalBody(modUploadProgressHtml(
-        'Verificando mod ' + data.current + ' de ' + data.total + ': ' + (data.display_name || data.filename) + '...'
-      ));
+      setModUploadProgressText('Verificando mod ' + data.current + ' de ' + data.total + ': ' + (data.display_name || data.filename) + '...');
     } else if (data.type === 'done') {
       source.close();
       setModOperationBusy(false);

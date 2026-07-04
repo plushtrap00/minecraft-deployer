@@ -122,7 +122,6 @@ var MODLOADER_LOG_RENDER_THROTTLE_MS = 200;
 function startModloaderInstall(version) {
   var loaderDisplay = modloaderInfo.loader_display;
   var installLogLines = [];
-  var headerHtml = modUploadProgressHtml('Instalando ' + loaderDisplay + ' ' + version + '...');
   var renderTimer = null;
 
   function pushLogLine(message) {
@@ -135,13 +134,19 @@ function startModloaderInstall(version) {
     }
   }
 
-  function renderInstallLogNow() {
-    renderTimer = null;
-    var logHtml = installLogLines.length
+  function logHtml() {
+    return installLogLines.length
       ? '<div class="log-viewer" id="modloader-install-log" style="height:220px;margin-top:10px;font-size:.74rem">'
         + installLogLines.map(escHtml).join('\n') + '</div>'
       : '';
-    setModUploadModalBody(headerHtml + logHtml);
+  }
+
+  // Solo se toca el contenedor del log (setModUploadExtraHtml), nunca el del
+  // spinner/encabezado: reconstruirlo entero en cada línea reiniciaba la
+  // animación del spinner (se veía tildado/reiniciándose todo el rato).
+  function renderLogNow() {
+    renderTimer = null;
+    setModUploadExtraHtml(logHtml());
     var logEl = document.getElementById('modloader-install-log');
     if (logEl) {
       logEl.scrollTop = logEl.scrollHeight;
@@ -154,23 +159,28 @@ function startModloaderInstall(version) {
   // MODLOADER_LOG_RENDER_THROTTLE_MS en vez de uno por línea.
   function scheduleRender() {
     if (renderTimer === null) {
-      renderTimer = setTimeout(renderInstallLogNow, MODLOADER_LOG_RENDER_THROTTLE_MS);
+      renderTimer = setTimeout(renderLogNow, MODLOADER_LOG_RENDER_THROTTLE_MS);
     }
   }
 
-  function finish(finalHeaderHtml) {
+  function finish(resultHtml) {
     if (renderTimer !== null) {
       clearTimeout(renderTimer);
       renderTimer = null;
     }
-    headerHtml = finalHeaderHtml;
-    renderInstallLogNow();
+    setModUploadModalBody(resultHtml + logHtml());
+    var logEl = document.getElementById('modloader-install-log');
+    if (logEl) {
+      logEl.scrollTop = logEl.scrollHeight;
+    }
   }
 
   document.getElementById('modloader-modal').classList.remove('show');
   setModOperationBusy(true);
-  openModUploadModal('', 'Cambio de modloader', '🔧');
-  renderInstallLogNow();
+  openModUploadModal(
+    modUploadProgressHtml('Instalando ' + loaderDisplay + ' ' + version + '...'),
+    'Cambio de modloader', '🔧'
+  );
 
   var url = '/api/modpacks/' + encodeURIComponent(currentModpack) + '/modloader/install/stream'
     + '?version=' + encodeURIComponent(version) + '&token=' + encodeURIComponent(authToken);
