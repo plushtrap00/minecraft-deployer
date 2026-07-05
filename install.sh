@@ -270,6 +270,30 @@ if [[ "$ALREADY_INSTALLED" == "false" ]] || [[ ! -f ".env" ]]; then
         info "CurseForge deshabilitado (puedes añadirlo luego editando .env)"
     fi
 
+    sep "Auto-actualización (opcional)"
+    echo "  La app puede revisar sola cada tanto si hay una versión nueva en GitHub"
+    echo "  y actualizarse + reiniciarse sola — pero SOLO cuando no haya ningún"
+    echo "  servidor de Minecraft corriendo ni ninguna subida/instalación en curso;"
+    echo "  si hay algo de eso, pospone la actualización al siguiente chequeo."
+    echo ""
+    prompt "  ¿Habilitar auto-actualización? [s/N]: "
+    read -r AUTO_UPDATE_ANSWER
+    if [[ "${AUTO_UPDATE_ANSWER,,}" == "s" ]]; then
+        AUTO_UPDATE_ENABLED="true"
+        while true; do
+            prompt "  Revisar cada cuántos segundos [300]: "
+            read -r AUTO_UPDATE_INTERVAL_SECONDS
+            AUTO_UPDATE_INTERVAL_SECONDS="${AUTO_UPDATE_INTERVAL_SECONDS:-300}"
+            [[ "$AUTO_UPDATE_INTERVAL_SECONDS" =~ ^[0-9]+$ ]] && (( AUTO_UPDATE_INTERVAL_SECONDS >= 30 )) && break
+            warn "Introduce un número de segundos (mínimo 30)."
+        done
+        ok "Auto-actualización habilitada, revisando cada ${AUTO_UPDATE_INTERVAL_SECONDS}s"
+    else
+        AUTO_UPDATE_ENABLED="false"
+        AUTO_UPDATE_INTERVAL_SECONDS="300"
+        info "Auto-actualización deshabilitada (puedes activarla luego editando .env)"
+    fi
+
     sep "Versión de Java"
     echo "    21 → Minecraft 1.20.5 o superior  (NeoForge, Fabric moderno)"
     echo "    17 → Minecraft 1.17 – 1.20.4"
@@ -300,6 +324,8 @@ WEB_PORT=${WEB_PORT}
 JAVA_VER=${JAVA_VER}
 MC_DOMAIN=${MC_DOMAIN}
 CURSEFORGE_API_KEY=${CURSEFORGE_API_KEY}
+AUTO_UPDATE_ENABLED=${AUTO_UPDATE_ENABLED}
+AUTO_UPDATE_INTERVAL_SECONDS=${AUTO_UPDATE_INTERVAL_SECONDS}
 EOF
     ok ".env generado"
 

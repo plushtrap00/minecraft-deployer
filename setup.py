@@ -123,9 +123,24 @@ def configure_curseforge() -> str:
     return input("  API key de CurseForge [déjalo vacío para saltar]: ").strip()
 
 
+def configure_auto_update() -> tuple[bool, int]:
+    print("  La app puede revisar sola cada tanto si hay una versión nueva en GitHub")
+    print("  y actualizarse + reiniciarse sola — pero SOLO cuando no haya ningún")
+    print("  servidor de Minecraft corriendo ni ninguna subida/instalación en curso;")
+    print("  si hay algo de eso, pospone la actualización al siguiente chequeo.\n")
+    answer = input("  ¿Habilitar auto-actualización? [s/N]: ").strip().lower()
+    if answer not in ("s", "si", "sí", "y", "yes"):
+        return False, 300
+    interval = ask_int("  Revisar cada cuántos segundos", default=300, min_val=30, max_val=86400)
+    return True, interval
+
+
 # ── Generadores de archivos ────────────────────────────────────────────────────
 
-def generate_env(username: str, password: str, mc_domain: str, curseforge_key: str) -> str:
+def generate_env(
+    username: str, password: str, mc_domain: str, curseforge_key: str,
+    auto_update_enabled: bool, auto_update_interval: int,
+) -> str:
     password_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
     jwt_secret = secrets.token_hex(32)
 
@@ -142,6 +157,8 @@ def generate_env(username: str, password: str, mc_domain: str, curseforge_key: s
         f"JWT_SECRET={jwt_secret}\n"
         f"MC_DOMAIN={mc_domain}\n"
         f"CURSEFORGE_API_KEY={curseforge_key}\n"
+        f"AUTO_UPDATE_ENABLED={'true' if auto_update_enabled else 'false'}\n"
+        f"AUTO_UPDATE_INTERVAL_SECONDS={auto_update_interval}\n"
     )
 
 
@@ -189,34 +206,39 @@ def main():
     print("docker-compose.yml listos para arrancar la app.\n")
 
     separator()
-    print("1/6  CREDENCIALES DE ACCESO")
+    print("1/7  CREDENCIALES DE ACCESO")
     separator()
     username, password = configure_credentials()
 
     separator()
-    print("2/6  PUERTOS")
+    print("2/7  PUERTOS")
     separator()
     web_port, mc_port = configure_ports()
 
     separator()
-    print("3/6  VERSIÓN DE JAVA")
+    print("3/7  VERSIÓN DE JAVA")
     separator()
     java_version = configure_java()
 
     separator()
-    print("4/6  ALMACENAMIENTO DE SERVIDORES")
+    print("4/7  ALMACENAMIENTO DE SERVIDORES")
     separator()
     servers_path, is_host_path = configure_servers_path()
 
     separator()
-    print("5/6  DOMINIO PÚBLICO (opcional)")
+    print("5/7  DOMINIO PÚBLICO (opcional)")
     separator()
     mc_domain = configure_domain()
 
     separator()
-    print("6/6  CURSEFORGE (opcional)")
+    print("6/7  CURSEFORGE (opcional)")
     separator()
     curseforge_key = configure_curseforge()
+
+    separator()
+    print("7/7  AUTO-ACTUALIZACIÓN (opcional)")
+    separator()
+    auto_update_enabled, auto_update_interval = configure_auto_update()
 
     # ── Resumen ────────────────────────────────────────────────────────────────
     separator()
@@ -231,6 +253,10 @@ def main():
         print(f"  Servidores:      volumen Docker '{servers_path}'")
     print(f"  Dominio:         {mc_domain or 'no configurado'}")
     print(f"  CurseForge:      {'configurado' if curseforge_key else 'no configurado'}")
+    if auto_update_enabled:
+        print(f"  Auto-update:     habilitado, cada {auto_update_interval}s")
+    else:
+        print(f"  Auto-update:     deshabilitado")
     separator()
 
     confirm = input("  ¿Aplicar esta configuración? [S/n]: ").strip().lower()
@@ -239,7 +265,10 @@ def main():
         sys.exit(0)
 
     # ── Escribir archivos ──────────────────────────────────────────────────────
-    ENV_FILE.write_text(generate_env(username, password, mc_domain, curseforge_key))
+    ENV_FILE.write_text(generate_env(
+        username, password, mc_domain, curseforge_key,
+        auto_update_enabled, auto_update_interval,
+    ))
     COMPOSE_FILE.write_text(generate_compose(web_port, mc_port, java_version, servers_path, is_host_path))
 
     print("\n  ✓ .env generado")
