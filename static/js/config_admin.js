@@ -4,6 +4,24 @@ var CFG_ENV_TEXT_KEYS = [
   'MC_DOMAIN', 'CURSEFORGE_API_KEY', 'AUTO_UPDATE_INTERVAL_SECONDS',
 ];
 
+// -- Sub-pestañas: Variables de entorno / Constantes de la app / Aplicar cambios --
+['env', 'constants', 'restart'].forEach(function(name) {
+  document.getElementById('cfgtab-' + name).addEventListener('click', function() {
+    activateCfgTab(name);
+  });
+});
+
+function activateCfgTab(name) {
+  document.querySelectorAll('#cfg-tabs .mgmt-tab').forEach(function(tab) {
+    tab.classList.remove('active');
+  });
+  document.querySelectorAll('.cfg-tab-content').forEach(function(content) {
+    content.classList.remove('active');
+  });
+  document.getElementById('cfgtab-' + name).classList.add('active');
+  document.getElementById('cfg-content-' + name).classList.add('active');
+}
+
 function loadAdminConfig() {
   apiFetch('/api/admin/env')
     .then(function(response) { return response.json(); })
@@ -37,11 +55,11 @@ function populateEnvForm(data) {
 
 function renderConstantsForm(data) {
   var container = document.getElementById('config-constants-form');
-  var html = '<div class="users-form">';
+  var html = '<div class="props-grid">';
   Object.keys(data).forEach(function(key) {
     var entry = data[key];
-    html += '<div>'
-      + '<label class="field-label">' + escHtml(key) + '</label>'
+    html += '<div class="prop-field">'
+      + '<label class="prop-label">' + escHtml(key) + '</label>'
       + '<input type="number" class="w-full cfg-constant-input" data-key="' + escHtml(key) + '" value="' + escHtml(String(entry.value)) + '">'
       + '<div class="field-hint">' + escHtml(entry.description) + '</div>'
       + '</div>';

@@ -40,6 +40,20 @@ body {
   margin-top: 20px;
 }
 
+/* Sub-pestañas de "Configuración" (⚙️ Variables de entorno / 🔧 Constantes /
+   🔄 Aplicar cambios): nombre propio en vez de reusar .mgmt-content porque
+   ese ya se togglea sin acotar (querySelectorAll('.mgmt-content') en
+   manage.js) para las sub-pestañas de "Gestión de modpacks" -- compartir la
+   clase haría que abrir una pestaña de esta página escondiera sin querer
+   las de la otra, y viceversa. */
+.cfg-tab-content {
+  display: none;
+}
+
+.cfg-tab-content.active {
+  display: block;
+}
+
 .card {
   background: var(--card);
   border: 1px solid var(--border);
