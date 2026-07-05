@@ -95,7 +95,7 @@ function updateSysmonBadge() {
     return;
   }
   var status = lastAutoUpdateStatus;
-  var hasUpdate = !!(status && status.enabled && status.commits_behind > 0);
+  var hasUpdate = !autoUpdateRestarting && !!(status && status.enabled && status.commits_behind > 0);
   badge.style.display = hasUpdate ? '' : 'none';
 }
 
@@ -107,6 +107,8 @@ document.getElementById('sysmon-body').addEventListener('click', function(event)
     applyAutoUpdate();
   }
 });
+
+var autoUpdateRestarting = false;
 
 function applyAutoUpdate() {
   var btn = document.getElementById('auto-update-apply-btn');
@@ -120,7 +122,8 @@ function applyAutoUpdate() {
     })
     .then(function(result) {
       if (result.ok) {
-        showToast(result.data.message || 'Actualización aplicada. La app se está reiniciando...', 'success');
+        showToast('Actualización aplicada. Reiniciando la app...', 'success');
+        beginRestartWatch();
       } else {
         showToast(result.data.detail || 'No se pudo actualizar', 'error');
         if (btn) {
@@ -130,10 +133,60 @@ function applyAutoUpdate() {
       }
     })
     .catch(function() {
-      // Es esperable que la conexión se corte apenas la app se reinicia --
-      // no se trata como un error real.
-      showToast('Actualización enviada, la app se está reiniciando...', 'success');
+      // La conexión cortándose acá es justo la señal esperada de que la app
+      // ya está reiniciando -- no se trata como un error real.
+      showToast('Actualización enviada. Reiniciando la app...', 'success');
+      beginRestartWatch();
     });
+}
+
+var RESTART_POLL_INTERVAL_MS = 1500;
+var RESTART_POLL_MAX_ATTEMPTS = 60; // ~90s de margen antes de rendirse
+
+// Sin esto, tras pedir la actualización no había ninguna señal de si ya
+// terminó de bajar y reiniciarse o seguía en el aire -- ahora se sondea el
+// propio estado hasta que la app vuelve a responder, y ahí sí se recarga la
+// página sola para que quede visualmente claro que ya está lista.
+function beginRestartWatch() {
+  autoUpdateRestarting = true;
+  updateSysmonBadge();
+  if (lastSysmonStats) {
+    renderSysmon(lastSysmonStats);
+  }
+
+  var attempts = 0;
+
+  function poll() {
+    attempts++;
+    apiFetch('/api/auto-update/status')
+      .then(function(response) {
+        if (!response.ok) {
+          throw new Error('todavía no');
+        }
+        return response.json();
+      })
+      .then(function() {
+        autoUpdateRestarting = false;
+        showToast('✅ Actualizado. Recargando la página...', 'success');
+        setTimeout(function() { window.location.reload(); }, 800);
+      })
+      .catch(function() {
+        if (attempts >= RESTART_POLL_MAX_ATTEMPTS) {
+          autoUpdateRestarting = false;
+          showToast('La app está tardando en volver a responder. Recargá la página a mano en unos segundos.', 'error');
+          if (lastSysmonStats) {
+            renderSysmon(lastSysmonStats);
+          }
+          return;
+        }
+        setTimeout(poll, RESTART_POLL_INTERVAL_MS);
+      });
+  }
+
+  // Pequeño margen inicial: la app todavía está terminando de mandar esta
+  // misma respuesta y programando su propio reinicio (ver schedule_restart
+  // en services/auto_update.py) antes de que el proceso realmente muera.
+  setTimeout(poll, RESTART_POLL_INTERVAL_MS);
 }
 
 function sysColor(pct) {
@@ -206,6 +259,11 @@ function renderAutoUpdateSection() {
   var status = lastAutoUpdateStatus;
   var html = '<div class="sysmon-section">';
   html += '<div class="sysmon-section-title">🔄 Auto-actualización</div>';
+
+  if (autoUpdateRestarting) {
+    html += '<span class="sysmon-no-temps">⏳ Actualización aplicada, esperando a que la app vuelva a responder...</span></div>';
+    return html;
+  }
 
   if (!status) {
     html += '<span class="sysmon-no-temps">Cargando...</span></div>';
