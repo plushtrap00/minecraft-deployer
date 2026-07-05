@@ -19,7 +19,6 @@ function loadAdminConfig() {
         '<p class="empty-msg" style="color:var(--red)">Error al cargar</p>';
     });
 
-  document.getElementById('cfg-restart-body').innerHTML = '';
   var restartBtn = document.getElementById('cfg-restart-btn');
   restartBtn.disabled = false;
   restartBtn.textContent = '🔄 Reiniciar la app ahora';
@@ -132,6 +131,10 @@ document.getElementById('cfg-save-constants-btn').addEventListener('click', func
     });
 });
 
+// El reinicio en sí se sigue con el mismo poll compartido de sysmon.js
+// (beginRestartWatch), que ya corre siempre en segundo plano: así este botón
+// bloquea la app con el mismo overlay global en vez de tener su propio poll
+// y su propio texto de estado duplicados.
 document.getElementById('cfg-restart-btn').addEventListener('click', function() {
   var btn = this;
   btn.disabled = true;
@@ -143,7 +146,7 @@ document.getElementById('cfg-restart-btn').addEventListener('click', function() 
     .then(function(result) {
       if (result.ok) {
         showToast('Reiniciando la app...', 'success');
-        watchConfigRestart();
+        beginRestartWatch('Aplicando los cambios de configuración...', 'Esto puede tardar unos segundos. No cierres esta pestaña.');
       } else {
         showToast(result.data.detail || 'No se pudo reiniciar', 'error');
         btn.disabled = false;
@@ -154,38 +157,6 @@ document.getElementById('cfg-restart-btn').addEventListener('click', function() 
       // La conexión cortándose aquí es justo la señal esperada de que la app
       // ya está reiniciando -- no se trata como un error real.
       showToast('Reiniciando la app...', 'success');
-      watchConfigRestart();
+      beginRestartWatch('Aplicando los cambios de configuración...', 'Esto puede tardar unos segundos. No cierres esta pestaña.');
     });
 });
-
-var CFG_RESTART_POLL_MS = 2000;
-var CFG_RESTART_MAX_WAIT_MS = 120000; // ~2 minutos de margen antes de rendirse
-
-function watchConfigRestart() {
-  var startedAt = Date.now();
-  document.getElementById('cfg-restart-body').innerHTML = '<p class="empty-msg">⏳ Esperando a que la app vuelva a responder...</p>';
-
-  function poll() {
-    apiFetch('/api/auto-update/status')
-      .then(function(response) {
-        if (!response.ok) {
-          throw new Error('todavía no');
-        }
-        return response.json();
-      })
-      .then(function() {
-        document.getElementById('cfg-restart-body').innerHTML = '<p style="color:var(--green)">✅ La app volvió a responder. Recargando la página...</p>';
-        setTimeout(function() { window.location.reload(); }, 800);
-      })
-      .catch(function() {
-        if (Date.now() - startedAt > CFG_RESTART_MAX_WAIT_MS) {
-          document.getElementById('cfg-restart-body').innerHTML =
-            '<p style="color:var(--red)">La app está tardando en volver a responder. Recarga la página a mano en unos segundos.</p>';
-          return;
-        }
-        setTimeout(poll, CFG_RESTART_POLL_MS);
-      });
-  }
-
-  setTimeout(poll, CFG_RESTART_POLL_MS);
-}

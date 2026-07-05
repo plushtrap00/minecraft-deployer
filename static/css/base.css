@@ -339,6 +339,59 @@ code {
   display: flex;
 }
 
+/* Por encima de TODO, incluida la pantalla de login (z-index: 9999, ver
+   auth.css): mientras se reinicia la app no debe quedar nada clicable, ni
+   modales abiertos ni el propio login si justo se estaba mostrando. */
+.restart-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 20000;
+  background: rgba(0, 0, 0, .75);
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(2px);
+}
+
+.restart-overlay.show {
+  display: flex;
+}
+
+.restart-overlay-box {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 32px 40px;
+  text-align: center;
+  max-width: 360px;
+}
+
+.restart-overlay-spinner {
+  width: 40px;
+  height: 40px;
+  margin: 0 auto 16px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: restart-overlay-spin .8s linear infinite;
+}
+
+@keyframes restart-overlay-spin {
+  to { transform: rotate(360deg); }
+}
+
+.restart-overlay-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.restart-overlay-sub {
+  font-size: .82rem;
+  color: var(--muted);
+}
+
 .modal {
   background: var(--card);
   border: 1px solid var(--border);

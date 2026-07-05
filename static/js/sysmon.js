@@ -103,6 +103,7 @@ function loadAutoUpdateStatus() {
         // entera para que quede visualmente claro que ya terminó, en vez de
         // solo refrescar el panel.
         autoUpdateRestarting = false;
+        hideRestartOverlay();
         showToast('✅ Actualizado. Recargando la página...', 'success');
         setTimeout(function() { window.location.reload(); }, 800);
         return;
@@ -113,10 +114,23 @@ function loadAutoUpdateStatus() {
       }
       scheduleNextAutoUpdatePoll();
     })
-    .catch(function() {
-      if (wasRestarting && autoUpdateRestartStartedAt !== null
+    .catch(function(error) {
+      if (error && error.message === 'Sesión expirada') {
+        return; // apiFetch ya llamó a logout(); no es un reinicio, no hay nada más que hacer acá
+      }
+      if (!wasRestarting) {
+        // Esta pestaña no pidió ningún reinicio, pero de golpe la app dejó de
+        // responder -- probablemente otra sesión disparó uno (auto-actualización
+        // o el panel de Configuración). Se trata igual que uno propio: bloquear
+        // la interacción hasta que vuelva a responder, en vez de dejar que el
+        // usuario siga tocando botones contra un servidor que se está reiniciando.
+        beginRestartWatch();
+        return;
+      }
+      if (autoUpdateRestartStartedAt !== null
           && Date.now() - autoUpdateRestartStartedAt > AUTO_UPDATE_RESTART_MAX_WAIT_MS) {
         autoUpdateRestarting = false;
+        hideRestartOverlay();
         showToast('La app está tardando en volver a responder. Recarga la página a mano en unos segundos.', 'error');
         if (lastSysmonStats) {
           renderSysmon(lastSysmonStats);
@@ -160,7 +174,7 @@ function applyAutoUpdate() {
     .then(function(result) {
       if (result.ok) {
         showToast('Actualización aplicada. Reiniciando la app...', 'success');
-        beginRestartWatch();
+        beginRestartWatch('Aplicando la actualización...', 'Esto puede tardar unos segundos. No cierres esta pestaña.');
       } else {
         showToast(result.data.detail || 'No se pudo actualizar', 'error');
         if (btn) {
@@ -173,13 +187,14 @@ function applyAutoUpdate() {
       // La conexión cortándose aquí es justo la señal esperada de que la app
       // ya está reiniciando -- no se trata como un error real.
       showToast('Actualización enviada. Reiniciando la app...', 'success');
-      beginRestartWatch();
+      beginRestartWatch('Aplicando la actualización...', 'Esto puede tardar unos segundos. No cierres esta pestaña.');
     });
 }
 
-function beginRestartWatch() {
+function beginRestartWatch(title, sub) {
   autoUpdateRestarting = true;
   autoUpdateRestartStartedAt = Date.now();
+  showRestartOverlay(title, sub);
   updateSysmonBadge();
   if (lastSysmonStats) {
     renderSysmon(lastSysmonStats);

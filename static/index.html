@@ -1132,7 +1132,6 @@
   <div class="card">
     <h2>🔄 Aplicar cambios</h2>
     <div class="info-box">Ni el .env ni las constantes se aplican hasta reiniciar la app. Se bloquea si hay un servidor de Minecraft en marcha o una operación en curso.</div>
-    <div id="cfg-restart-body"></div>
     <button id="cfg-restart-btn" class="add-user-btn">🔄 Reiniciar la app ahora</button>
   </div>
 </div>
@@ -1153,6 +1152,20 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- Bloquea toda la app (por encima de modales, paneles y hasta la propia
+     pantalla de login) mientras se aplica un reinicio, sea porque lo disparó
+     este mismo navegador (auto-actualización o el panel de Configuración) o
+     porque se detectó que la app dejó de responder de golpe sin haberlo
+     pedido acá -- probablemente otra sesión disparó un reinicio. No tiene
+     botón de cerrar a propósito: se oculta sola cuando la app vuelve a
+     responder y la página se recarga. -->
+<div class="restart-overlay" id="restart-overlay">
+  <div class="restart-overlay-box">
+    <div class="restart-overlay-spinner"></div>
+    <div class="restart-overlay-title" id="restart-overlay-title">La app se está reiniciando...</div>
+    <div class="restart-overlay-sub" id="restart-overlay-sub">Esto puede tardar unos segundos. No cierres esta pestaña.</div>
+  </div>
+</div>
 
 <!-- ══ PANEL SISTEMA ════════════════════════════════════ -->
 <div id="sysmon-panel">
