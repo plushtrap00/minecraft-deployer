@@ -16,6 +16,9 @@ Rutas:
 - GET       /api/modpacks/{modpack}/mods/upload-bulk/stream/{job_id}
 - POST      /api/modpacks/{modpack}/mods/upload-bulk/confirm
 - DELETE    /api/modpacks/{modpack}/mods/{filename}
+- POST      /api/modpacks/{modpack}/mods/{filename}/toggle
+- POST      /api/modpacks/{modpack}/mods/delete-disabled
+- GET       /api/modpacks/{modpack}/mods/client-only
 - GET       /api/modpacks/{modpack}/detected-mods
 - GET       /api/modpacks/{modpack}/worlds
 - POST      /api/modpacks/{modpack}/worlds/activate
@@ -636,6 +639,65 @@ async def delete_mod(modpack: str, filename: str):
         raise HTTPException(status_code=404, detail="El mod no existe")
     mod_path.unlink()
     return JSONResponse({"success": True, "filename": filename})
+
+
+@router.post("/{modpack}/mods/{filename}/toggle")
+async def toggle_mod(modpack: str, filename: str):
+    """
+    Deshabilita/habilita un mod renombrando el .jar con/sin el sufijo
+    ".disabled" — no es una convención propia de Forge/NeoForge/Fabric/Quilt,
+    funciona igual en los 4 porque el loader simplemente ignora cualquier
+    archivo que no termine en .jar dentro de mods/.
+    """
+    mods_dir = DEFAULT_SERVERS_PATH / modpack / "mods"
+    mod_path = mods_dir / filename
+    try:
+        mod_path.resolve().relative_to(mods_dir.resolve())
+    except ValueError:
+        raise HTTPException(status_code=403, detail="Ruta no permitida")
+    if not mod_path.exists() or not mod_path.is_file():
+        raise HTTPException(status_code=404, detail="El mod no existe")
+
+    if filename.endswith(".disabled"):
+        new_path = mods_dir / filename[: -len(".disabled")]
+        new_enabled = True
+    else:
+        new_path = mods_dir / (filename + ".disabled")
+        new_enabled = False
+
+    if new_path.exists():
+        raise HTTPException(status_code=400, detail=f"Ya existe un archivo en {new_path.name}")
+
+    mod_path.rename(new_path)
+    return JSONResponse({"success": True, "filename": new_path.name, "enabled": new_enabled})
+
+
+class DeleteDisabledModsBody(BaseModel):
+    filenames: List[str]
+
+
+@router.post("/{modpack}/mods/delete-disabled")
+async def delete_disabled_mods(modpack: str, body: DeleteDisabledModsBody):
+    """Borra en lote los mods deshabilitados que el usuario seleccionó a mano en el modal."""
+    mods_dir = DEFAULT_SERVERS_PATH / modpack / "mods"
+    deleted = []
+    errors = []
+    for filename in body.filenames:
+        if not filename.endswith(".disabled"):
+            errors.append({"filename": filename, "detail": "Solo se pueden borrar mods deshabilitados con este endpoint"})
+            continue
+        mod_path = mods_dir / filename
+        try:
+            mod_path.resolve().relative_to(mods_dir.resolve())
+        except ValueError:
+            errors.append({"filename": filename, "detail": "Ruta no permitida"})
+            continue
+        if not mod_path.exists() or not mod_path.is_file():
+            errors.append({"filename": filename, "detail": "No encontrado"})
+            continue
+        mod_path.unlink()
+        deleted.append(filename)
+    return JSONResponse({"success": True, "deleted": deleted, "errors": errors})
 
 
 @router.get("/{modpack}/detected-mods")

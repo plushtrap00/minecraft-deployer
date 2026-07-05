@@ -602,8 +602,14 @@
 
         <div style="display:flex;gap:8px;align-items:center">
           <input type="text" id="mods-search" placeholder="🔍 Buscar mod por nombre..." class="w-full">
+          <select id="mods-status-filter" class="btn-secondary btn-sm" style="flex-shrink:0">
+            <option value="all">Mostrar todos</option>
+            <option value="hide-disabled">Ocultar deshabilitados</option>
+            <option value="only-disabled">Solo deshabilitados</option>
+          </select>
           <button type="button" class="btn-secondary btn-sm" id="mod-duplicates-btn" style="flex-shrink:0;white-space:nowrap">⚠️ Ver posibles duplicados</button>
           <button type="button" class="btn-secondary btn-sm" id="mod-client-only-btn" style="flex-shrink:0;white-space:nowrap">🖥️ Mods solo-cliente</button>
+          <button type="button" class="btn-secondary btn-sm" id="mod-delete-disabled-btn" style="flex-shrink:0;white-space:nowrap">🗑 Borrar deshabilitados</button>
         </div>
         <div id="mods-list"><p class="empty-msg">Cargando...</p></div>
       </div>
@@ -837,6 +843,28 @@
     <div class="modal-body">
       <div class="info-box">Los mods marcados como "solo cliente" no necesitan estar en la carpeta mods/ del servidor — no es un error que falten aquí, es lo esperado. La detección se basa en metadata que el propio mod declara, así que "sin detectar" no significa necesariamente que haga falta en el servidor.</div>
       <div class="modal-scroll" id="mod-client-only-modal-body"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: borrar mods deshabilitados -->
+<div class="modal-overlay" id="mod-delete-disabled-modal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <span>🗑</span>
+      <span class="modal-path">Borrar mods deshabilitados</span>
+      <button class="modal-close" id="mod-delete-disabled-modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-box">Elegí cuáles de los mods deshabilitados querés borrar de verdad. Esta acción no se puede deshacer.</div>
+      <div class="modal-scroll" id="mod-delete-disabled-modal-body"></div>
+    </div>
+    <div class="modal-footer">
+      <span class="line-info" id="mod-delete-disabled-count">0 seleccionados</span>
+      <div class="modal-footer-actions">
+        <button class="btn-secondary" id="mod-delete-disabled-cancel">Cancelar</button>
+        <button class="btn-danger" id="mod-delete-disabled-confirm">🗑 Borrar seleccionados</button>
+      </div>
     </div>
   </div>
 </div>

@@ -49,7 +49,7 @@ function loadModsList() {
         list.innerHTML = '<p class="empty-msg">No se encontró carpeta <code>mods/</code> en este modpack.</p>';
         return;
       }
-      renderModsList(allMods);
+      applyModsFilters();
     })
     .catch(function() {
       list.innerHTML = '<p class="empty-msg" style="color:var(--red)">Error al cargar mods</p>';
@@ -74,11 +74,14 @@ function renderModsList(mods) {
     var icon = mod.enabled ? '🧩' : '⬜';
     var opacityStyle = mod.enabled ? '' : ' style="opacity:.45"';
     var disabledLabel = mod.enabled ? '' : '<span style="font-size:.72rem;color:var(--muted)">desactivado</span>';
+    var toggleTitle = mod.enabled ? 'Deshabilitar mod' : 'Habilitar mod';
+    var toggleIcon = mod.enabled ? '⏸' : '▶';
     html += '<div class="mod-list-item"' + opacityStyle + '>'
       + '<span class="mod-icon">' + icon + '</span>'
       + '<div class="mod-info"><div class="mod-display">' + escHtml(mod.name) + '</div>'
       + '<div class="mod-file">' + escHtml(mod.filename) + '</div></div>'
       + disabledLabel
+      + '<button type="button" class="btn-secondary mod-toggle" title="' + toggleTitle + '" data-filename="' + escHtml(mod.filename) + '" style="font-size:.78rem;padding:4px 8px;flex-shrink:0">' + toggleIcon + '</button>'
       + '<button type="button" class="btn-danger mod-delete" title="Borrar mod" data-filename="' + escHtml(mod.filename) + '" style="opacity:1;font-size:.78rem;padding:4px 8px;flex-shrink:0">🗑</button>'
       + '</div>';
   });
@@ -90,6 +93,104 @@ document.getElementById('mods-list').addEventListener('click', function(event) {
   var deleteBtn = event.target.closest('.mod-delete');
   if (deleteBtn) {
     deleteMod(deleteBtn.dataset.filename);
+    return;
+  }
+  var toggleBtn = event.target.closest('.mod-toggle');
+  if (toggleBtn) {
+    toggleMod(toggleBtn.dataset.filename);
+  }
+});
+
+function toggleMod(filename) {
+  apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/' + encodeURIComponent(filename) + '/toggle', {
+    method: 'POST'
+  })
+    .then(function(response) {
+      return response.json().then(function(data) { return { ok: response.ok, data: data }; });
+    })
+    .then(function(result) {
+      if (result.ok && result.data.success) {
+        showToast(result.data.enabled ? 'Mod habilitado' : 'Mod deshabilitado', 'success');
+        loadModsList();
+      } else {
+        showToast(result.data.detail || 'Error al cambiar el estado del mod', 'error');
+      }
+    })
+    .catch(function() { showToast('Error de red', 'error'); });
+}
+
+
+// -- Borrar mods deshabilitados en lote (con confirmación individual) ---------
+document.getElementById('mod-delete-disabled-btn').addEventListener('click', openDeleteDisabledModal);
+
+function openDeleteDisabledModal() {
+  var disabled = allMods.filter(function(mod) { return !mod.enabled; });
+  var body = document.getElementById('mod-delete-disabled-modal-body');
+
+  if (!disabled.length) {
+    body.innerHTML = '<p class="empty-msg" style="padding:8px 4px">No hay mods deshabilitados.</p>';
+  } else {
+    body.innerHTML = disabled.map(function(mod) {
+      return '<label class="mod-list-item" style="cursor:pointer">'
+        + '<input type="checkbox" class="mod-delete-disabled-check" data-filename="' + escHtml(mod.filename) + '" checked style="flex-shrink:0;width:16px;height:16px">'
+        + '<div class="mod-info"><div class="mod-display">' + escHtml(mod.name) + '</div>'
+        + '<div class="mod-file">' + escHtml(mod.filename) + '</div></div>'
+        + '</label>';
+    }).join('');
+  }
+
+  document.getElementById('mod-delete-disabled-confirm').disabled = !disabled.length;
+  updateDeleteDisabledCount();
+  document.getElementById('mod-delete-disabled-modal').classList.add('show');
+}
+
+function updateDeleteDisabledCount() {
+  var checks = document.querySelectorAll('.mod-delete-disabled-check');
+  var checked = document.querySelectorAll('.mod-delete-disabled-check:checked');
+  document.getElementById('mod-delete-disabled-count').textContent = checked.length + ' / ' + checks.length + ' seleccionados';
+}
+
+document.getElementById('mod-delete-disabled-modal-body').addEventListener('change', function(event) {
+  if (event.target.classList.contains('mod-delete-disabled-check')) {
+    updateDeleteDisabledCount();
+  }
+});
+
+document.getElementById('mod-delete-disabled-confirm').addEventListener('click', function() {
+  var checked = document.querySelectorAll('.mod-delete-disabled-check:checked');
+  var filenames = Array.prototype.map.call(checked, function(el) { return el.dataset.filename; });
+  if (!filenames.length) {
+    showToast('No hay ningún mod seleccionado', 'error');
+    return;
+  }
+
+  apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/delete-disabled', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ filenames: filenames })
+  })
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      document.getElementById('mod-delete-disabled-modal').classList.remove('show');
+      if (data.errors && data.errors.length) {
+        showToast(data.deleted.length + ' borrado(s), ' + data.errors.length + ' con error', 'error');
+      } else {
+        showToast(data.deleted.length + ' mod(s) borrado(s)', 'success');
+      }
+      loadModsList();
+    })
+    .catch(function() { showToast('Error de red', 'error'); });
+});
+
+document.getElementById('mod-delete-disabled-cancel').addEventListener('click', function() {
+  document.getElementById('mod-delete-disabled-modal').classList.remove('show');
+});
+document.getElementById('mod-delete-disabled-modal-close').addEventListener('click', function() {
+  document.getElementById('mod-delete-disabled-modal').classList.remove('show');
+});
+document.getElementById('mod-delete-disabled-modal').addEventListener('click', function(event) {
+  if (event.target === this) {
+    this.classList.remove('show');
   }
 });
 
@@ -120,17 +221,27 @@ function doDeleteMod(filename) {
     .catch(function() { showToast('Error de red', 'error'); });
 }
 
-document.getElementById('mods-search').addEventListener('input', function() {
-  var query = this.value.toLowerCase().trim();
-  if (!query) {
-    renderModsList(allMods);
-    return;
-  }
+function applyModsFilters() {
+  var query = document.getElementById('mods-search').value.toLowerCase().trim();
+  var statusFilter = document.getElementById('mods-status-filter').value;
+
   var filtered = allMods.filter(function(mod) {
-    return mod.name.toLowerCase().indexOf(query) !== -1;
+    if (statusFilter === 'hide-disabled' && !mod.enabled) {
+      return false;
+    }
+    if (statusFilter === 'only-disabled' && mod.enabled) {
+      return false;
+    }
+    if (query && mod.name.toLowerCase().indexOf(query) === -1) {
+      return false;
+    }
+    return true;
   });
   renderModsList(filtered);
-});
+}
+
+document.getElementById('mods-search').addEventListener('input', applyModsFilters);
+document.getElementById('mods-status-filter').addEventListener('change', applyModsFilters);
 
 
 // -- Mod upload ---------------------------------------------------------------
