@@ -10,6 +10,11 @@ DEFAULT_SERVERS_PATH = Path(os.environ.get("SERVERS_PATH", str(Path.home() / "se
 MC_DOMAIN = os.environ.get("MC_DOMAIN", "")
 DEFAULT_SERVERS_PATH.mkdir(parents=True, exist_ok=True)
 
+# Puerto de la interfaz web. install.sh/setup.py ya preguntan por este valor
+# y lo guardan en .env; antes la app ignoraba la respuesta y siempre escuchaba
+# en el 8000 fijo, así que elegir otro puerto en instalación nativa no hacía nada.
+WEB_PORT = int(os.environ.get("WEB_PORT", "8000"))
+
 # API key gratuita para buscar mods en CurseForge (console.curseforge.com/#/api-keys).
 # Sin esta variable, la búsqueda en CurseForge queda deshabilitada pero Modrinth
 # (que no requiere key) sigue funcionando normalmente.

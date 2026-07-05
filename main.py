@@ -270,17 +270,17 @@ def clean_orphan_locks() -> list:
 
 if __name__ == "__main__":
     import uvicorn
-    from config import DEFAULT_SERVERS_PATH
+    from config import DEFAULT_SERVERS_PATH, WEB_PORT
 
     print("Minecraft Server Deployer arrancando...")
 
-    print("Liberando puerto 8000 si está ocupado...")
-    web_killed = kill_port(8000)
+    print(f"Liberando puerto {WEB_PORT} si está ocupado...")
+    web_killed = kill_port(WEB_PORT)
     if web_killed:
-        print(f"  Eliminados {len(web_killed)} proceso(s) en el puerto 8000: {web_killed}")
+        print(f"  Eliminados {len(web_killed)} proceso(s) en el puerto {WEB_PORT}: {web_killed}")
         time.sleep(1)
     else:
-        print("  Puerto 8000 libre.")
+        print(f"  Puerto {WEB_PORT} libre.")
 
     # Antes del kill duro por puerto: intenta un apagado limpio (save-all +
     # stop por RCON) de cualquier server huérfano, para no arriesgar el mundo
@@ -313,6 +313,6 @@ if __name__ == "__main__":
         print("  No se encontraron session.lock abandonados.")
 
     print(f"Carpeta por defecto: {DEFAULT_SERVERS_PATH}")
-    print("Accede desde tu red local en: http://<IP-DE-ESTE-EQUIPO>:8000")
+    print(f"Accede desde tu red local en: http://<IP-DE-ESTE-EQUIPO>:{WEB_PORT}")
 
-    uvicorn.run(app, host="0.0.0.0", port=8000, reload=False, timeout_graceful_shutdown=5)
+    uvicorn.run(app, host="0.0.0.0", port=WEB_PORT, reload=False, timeout_graceful_shutdown=5)

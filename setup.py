@@ -109,9 +109,23 @@ def configure_servers_path() -> tuple[str, bool]:
     return raw, True              # ruta absoluta en el host
 
 
+def configure_domain() -> str:
+    print("  Dominio con el que los jugadores se conectarán al servidor Minecraft.")
+    print("  Solo informativo (se muestra en la interfaz); déjalo vacío si no")
+    print("  tienes uno (se mostrará la IP pública).\n")
+    return input("  Dominio Minecraft [ej: mc.tudominio.com]: ").strip()
+
+
+def configure_curseforge() -> str:
+    print("  Habilita buscar e instalar mods desde CurseForge además de Modrinth")
+    print("  (Modrinth funciona sin esto). Se consigue gratis en:")
+    print("  https://console.curseforge.com/#/api-keys\n")
+    return input("  API key de CurseForge [déjalo vacío para saltar]: ").strip()
+
+
 # ── Generadores de archivos ────────────────────────────────────────────────────
 
-def generate_env(username: str, password: str) -> str:
+def generate_env(username: str, password: str, mc_domain: str, curseforge_key: str) -> str:
     password_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
     jwt_secret = secrets.token_hex(32)
 
@@ -126,6 +140,8 @@ def generate_env(username: str, password: str) -> str:
         f"APP_USERNAME={username}\n"
         f"APP_PASSWORD_HASH={password_hash}\n"
         f"JWT_SECRET={jwt_secret}\n"
+        f"MC_DOMAIN={mc_domain}\n"
+        f"CURSEFORGE_API_KEY={curseforge_key}\n"
     )
 
 
@@ -173,24 +189,34 @@ def main():
     print("docker-compose.yml listos para arrancar la app.\n")
 
     separator()
-    print("1/4  CREDENCIALES DE ACCESO")
+    print("1/6  CREDENCIALES DE ACCESO")
     separator()
     username, password = configure_credentials()
 
     separator()
-    print("2/4  PUERTOS")
+    print("2/6  PUERTOS")
     separator()
     web_port, mc_port = configure_ports()
 
     separator()
-    print("3/4  VERSIÓN DE JAVA")
+    print("3/6  VERSIÓN DE JAVA")
     separator()
     java_version = configure_java()
 
     separator()
-    print("4/4  ALMACENAMIENTO DE SERVIDORES")
+    print("4/6  ALMACENAMIENTO DE SERVIDORES")
     separator()
     servers_path, is_host_path = configure_servers_path()
+
+    separator()
+    print("5/6  DOMINIO PÚBLICO (opcional)")
+    separator()
+    mc_domain = configure_domain()
+
+    separator()
+    print("6/6  CURSEFORGE (opcional)")
+    separator()
+    curseforge_key = configure_curseforge()
 
     # ── Resumen ────────────────────────────────────────────────────────────────
     separator()
@@ -203,6 +229,8 @@ def main():
         print(f"  Servidores:      {servers_path} (ruta del host)")
     else:
         print(f"  Servidores:      volumen Docker '{servers_path}'")
+    print(f"  Dominio:         {mc_domain or 'no configurado'}")
+    print(f"  CurseForge:      {'configurado' if curseforge_key else 'no configurado'}")
     separator()
 
     confirm = input("  ¿Aplicar esta configuración? [S/n]: ").strip().lower()
@@ -211,7 +239,7 @@ def main():
         sys.exit(0)
 
     # ── Escribir archivos ──────────────────────────────────────────────────────
-    ENV_FILE.write_text(generate_env(username, password))
+    ENV_FILE.write_text(generate_env(username, password, mc_domain, curseforge_key))
     COMPOSE_FILE.write_text(generate_compose(web_port, mc_port, java_version, servers_path, is_host_path))
 
     print("\n  ✓ .env generado")

@@ -257,6 +257,19 @@ if [[ "$ALREADY_INSTALLED" == "false" ]] || [[ ! -f ".env" ]]; then
     read -r MC_DOMAIN
     ok "Dominio: ${MC_DOMAIN:-no configurado}"
 
+    sep "CurseForge (opcional)"
+    echo "  Habilita buscar e instalar mods desde CurseForge además de Modrinth"
+    echo "  (Modrinth funciona sin esto). Se consigue gratis en:"
+    echo "  https://console.curseforge.com/#/api-keys"
+    echo ""
+    prompt "  API key de CurseForge [déjalo vacío para saltar]: "
+    read -r CURSEFORGE_API_KEY
+    if [[ -n "$CURSEFORGE_API_KEY" ]]; then
+        ok "CurseForge configurado"
+    else
+        info "CurseForge deshabilitado (puedes añadirlo luego editando .env)"
+    fi
+
     sep "Versión de Java"
     echo "    21 → Minecraft 1.20.5 o superior  (NeoForge, Fabric moderno)"
     echo "    17 → Minecraft 1.17 – 1.20.4"
@@ -286,6 +299,7 @@ JWT_SECRET=${JWT_SECRET}
 WEB_PORT=${WEB_PORT}
 JAVA_VER=${JAVA_VER}
 MC_DOMAIN=${MC_DOMAIN}
+CURSEFORGE_API_KEY=${CURSEFORGE_API_KEY}
 EOF
     ok ".env generado"
 
