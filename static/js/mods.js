@@ -836,12 +836,13 @@ document.getElementById('mod-search-tabs').addEventListener('click', function(ev
 });
 
 // -- Filtro de categorías: panel con checkboxes y subcategorías expandibles ---
-var modSearchCategoryPanelHeader = document.getElementById('mod-search-category-panel-header');
 var modSearchCategoryPanelToggle = document.getElementById('mod-search-category-panel-toggle');
 var modSearchCategoryPanelBody = document.getElementById('mod-search-category-panel-body');
 
-// Colapsa/expande el panel entero (checkboxes + subcategorías), no toca la selección.
-modSearchCategoryPanelHeader.addEventListener('click', function() {
+// Colapsa/expande el panel entero (checkboxes + subcategorías), no toca la
+// selección. Solo la flechita es clicable a propósito: el título y la lista
+// no deben sentirse como parte de un botón gigante.
+modSearchCategoryPanelToggle.addEventListener('click', function() {
   var collapsed = modSearchCategoryPanelBody.classList.toggle('collapsed');
   modSearchCategoryPanelToggle.textContent = collapsed ? '▼' : '▲';
 });

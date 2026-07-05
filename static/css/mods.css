@@ -254,8 +254,18 @@
 
 /* Panel de categorías: colapsable como un todo (header con flecha) y con
    checkboxes de subcategorías expandibles por separado (icono +/−), igual
-   que el filtro lateral de curseforge.com. */
+   que el filtro lateral de curseforge.com.
+
+   flex-shrink: 0 es necesario porque el panel vive junto a .modal-scroll
+   (flex:1) dentro de .modal-body (flex-column): al tener overflow propio,
+   el navegador considera su min-height "auto" como 0 y lo puede comprimir
+   por debajo de su contenido cuando compite por espacio, cortando filas a
+   la mitad o dejando un residuo raro al colapsar. Fijar flex-shrink:0 lo
+   obliga a respetar siempre su alto natural (header + hasta 220px de
+   cuerpo con su propio scroll), sin robarle ni cederle espacio a la lista
+   de resultados. */
 .mod-search-category-panel {
+  flex-shrink: 0;
   border: 1px solid var(--border);
   border-radius: 8px;
   margin-bottom: 10px;
@@ -273,7 +283,6 @@
   font-weight: 600;
   color: var(--text);
   background: var(--card);
-  cursor: pointer;
   user-select: none;
 }
 
@@ -297,10 +306,13 @@
   display: none;
 }
 
+/* .mod-search-category-row solo aporta el layout horizontal (opción + "+"
+   cuando existe); el padding/hover vive en .mod-search-category-option
+   porque las subcategorías se renderizan como opciones sueltas, sin row. */
 .mod-search-category-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 .mod-search-category-option {
@@ -312,7 +324,6 @@
   font-size: .82rem;
   color: var(--text);
   cursor: pointer;
-  flex: 1;
   min-width: 0;
 }
 
@@ -332,27 +343,25 @@
   color: var(--muted);
 }
 
+/* Icono "+"/"−" sutil junto al nombre, sin fondo ni borde de botón (igual
+   que el filtro de categorías real de curseforge.com). */
 .mod-search-category-expand {
   flex-shrink: 0;
-  width: 20px;
-  height: 20px;
-  border: 1px solid var(--border);
-  border-radius: 4px;
+  border: none;
   background: none;
   color: var(--muted);
-  font-size: .82rem;
+  font-size: .95rem;
   line-height: 1;
+  padding: 0 2px;
   cursor: pointer;
 }
 
 .mod-search-category-expand:hover {
   color: var(--text);
-  border-color: var(--accent);
 }
 
 .mod-search-category-expand.open {
   color: var(--accent);
-  border-color: var(--accent);
 }
 
 .mod-search-subcategory-list {
