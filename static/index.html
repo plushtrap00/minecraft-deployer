@@ -60,6 +60,7 @@
   <div class="mgmt-tabs" style="margin-bottom:16px">
     <button class="mgmt-tab active" id="deploy-mode-import">📦 Importar modpack existente</button>
     <button class="mgmt-tab" id="deploy-mode-create">🆕 Crear servidor nuevo</button>
+    <button class="mgmt-tab" id="deploy-mode-download">🌐 Descargar modpack</button>
   </div>
 
   <div id="deploy-import-section">
@@ -187,6 +188,62 @@
       <h2>4 · Crear servidor</h2>
       <div id="create-progress-body"></div>
       <button class="deploy-btn" id="create-server-btn">🆕 Crear servidor</button>
+    </div>
+  </div>
+
+  <div id="deploy-download-section" style="display:none">
+    <div class="card">
+      <h2>1 · Buscar modpack <span class="req">*</span></h2>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+        <select id="dl-source" class="btn-secondary btn-sm" style="flex-shrink:0">
+          <option value="modrinth">Modrinth</option>
+          <option value="curseforge">CurseForge</option>
+        </select>
+        <input type="text" id="dl-search-input" placeholder="🔍 Nombre del modpack..." class="w-full">
+        <button type="button" class="btn-secondary btn-sm" id="dl-search-btn" style="flex-shrink:0">Buscar</button>
+      </div>
+      <div id="dl-search-results"><p class="empty-msg">Buscá un modpack para empezar.</p></div>
+    </div>
+
+    <div class="card" id="dl-version-card" style="display:none">
+      <h2>2 · Versión y nombre del servidor <span class="req">*</span></h2>
+      <div id="dl-selected-pack" style="margin-bottom:12px"></div>
+      <div class="props-grid">
+        <div class="prop-field">
+          <label class="prop-label">Versión del modpack</label>
+          <select id="dl-version-select" class="w-full"></select>
+        </div>
+        <div class="prop-field">
+          <label class="prop-label">Nombre del servidor</label>
+          <input type="text" id="dl-server-name" placeholder="ej: atm10, prominence2..." class="w-full">
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="dl-ram-card" style="display:none">
+      <h2>3 · Configuración de RAM <span class="req">*</span></h2>
+      <div class="ram-grid">
+        <div>
+          <label class="field-label">RAM mínima <span style="color:var(--accent)">(-Xms)</span></label>
+          <div class="input-row">
+            <input type="number" id="dl-ram-min-val" value="4" min="1">
+            <select id="dl-ram-min-unit"><option value="G">GB</option><option value="M">MB</option></select>
+          </div>
+        </div>
+        <div>
+          <label class="field-label">RAM máxima <span style="color:var(--accent)">(-Xmx)</span></label>
+          <div class="input-row">
+            <input type="number" id="dl-ram-max-val" value="8" min="1">
+            <select id="dl-ram-max-unit"><option value="G">GB</option><option value="M">MB</option></select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="dl-install-card" style="display:none">
+      <h2>4 · Instalar modpack</h2>
+      <div id="dl-progress-body"></div>
+      <button class="deploy-btn" id="dl-install-btn">🌐 Descargar e instalar</button>
     </div>
   </div>
 </div>
@@ -1035,6 +1092,7 @@
 <script src="/static/js/mods.js"></script>
 <script src="/static/js/modloader.js"></script>
 <script src="/static/js/create_server.js"></script>
+<script src="/static/js/modpack_install.js"></script>
 <script src="/static/js/players.js"></script>
 <script src="/static/js/server.js"></script>
 <script src="/static/js/users.js"></script>

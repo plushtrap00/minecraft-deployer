@@ -1,19 +1,31 @@
-// -- Crear servidor nuevo desde cero --------------------------------------------
+// -- Cambio entre las 3 sub-pestañas de la página de despliegue ----------------
+var DEPLOY_MODE_TABS = [
+  { tab: 'deploy-mode-import', section: 'deploy-import-section' },
+  { tab: 'deploy-mode-create', section: 'deploy-create-section' },
+  { tab: 'deploy-mode-download', section: 'deploy-download-section' },
+];
+
+function switchDeployMode(activeTabId) {
+  DEPLOY_MODE_TABS.forEach(function(entry) {
+    var isActive = entry.tab === activeTabId;
+    document.getElementById(entry.tab).classList.toggle('active', isActive);
+    document.getElementById(entry.section).style.display = isActive ? '' : 'none';
+  });
+}
+
 document.getElementById('deploy-mode-import').addEventListener('click', function() {
-  this.classList.add('active');
-  document.getElementById('deploy-mode-create').classList.remove('active');
-  document.getElementById('deploy-import-section').style.display = '';
-  document.getElementById('deploy-create-section').style.display = 'none';
+  switchDeployMode('deploy-mode-import');
 });
 
 document.getElementById('deploy-mode-create').addEventListener('click', function() {
-  this.classList.add('active');
-  document.getElementById('deploy-mode-import').classList.remove('active');
-  document.getElementById('deploy-import-section').style.display = 'none';
-  document.getElementById('deploy-create-section').style.display = '';
+  switchDeployMode('deploy-mode-create');
   if (!createMcVersionsLoaded) {
     loadCreateMcVersions();
   }
+});
+
+document.getElementById('deploy-mode-download').addEventListener('click', function() {
+  switchDeployMode('deploy-mode-download');
 });
 
 var createMcVersionsLoaded = false;

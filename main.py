@@ -26,6 +26,7 @@ from routes.system import router as system_router
 from routes.modpacks import router as modpacks_router, upload_router, firewall_router
 from routes.modloader import router as modloader_router
 from routes.create_server import router as create_server_router
+from routes.modpack_install import router as modpack_install_router
 from routes.mod_search import router as mod_search_router
 from routes.players import router as players_router
 from routes.server import router as server_router
@@ -78,6 +79,7 @@ app.include_router(system_router)
 app.include_router(modpacks_router)
 app.include_router(modloader_router)
 app.include_router(create_server_router)
+app.include_router(modpack_install_router)
 app.include_router(mod_search_router)
 app.include_router(upload_router)
 app.include_router(firewall_router)
