@@ -664,9 +664,14 @@
             <option value="hide-disabled">Ocultar deshabilitados</option>
             <option value="only-disabled">Solo deshabilitados</option>
           </select>
-          <button type="button" class="btn-secondary btn-sm" id="mod-duplicates-btn" style="flex-shrink:0;white-space:nowrap">⚠️ Ver posibles duplicados</button>
-          <button type="button" class="btn-secondary btn-sm" id="mod-client-only-btn" style="flex-shrink:0;white-space:nowrap">🖥️ Mods solo-cliente</button>
-          <button type="button" class="btn-secondary btn-sm" id="mod-delete-disabled-btn" style="flex-shrink:0;white-space:nowrap">🗑 Borrar deshabilitados</button>
+          <div class="mods-menu" id="mods-menu">
+            <button type="button" class="btn-secondary btn-sm" id="mods-menu-btn" title="Más acciones" aria-haspopup="true" aria-expanded="false">⋮</button>
+            <div class="mods-menu-dropdown" id="mods-menu-dropdown">
+              <button type="button" class="mods-menu-item" id="mod-duplicates-btn">⚠️ Ver posibles duplicados</button>
+              <button type="button" class="mods-menu-item" id="mod-client-only-btn">🖥️ Mods solo-cliente</button>
+              <button type="button" class="mods-menu-item" id="mod-delete-disabled-btn">🗑 Borrar deshabilitados</button>
+            </div>
+          </div>
         </div>
         <div id="mods-list"><p class="empty-msg">Cargando...</p></div>
       </div>

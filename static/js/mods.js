@@ -2,6 +2,31 @@
 var allMods = [];
 var currentModpackVersion = {};
 
+// -- Menú "⋮" de acciones (duplicados / solo-cliente / borrar deshabilitados) --
+// Los botones mantienen los mismos id que antes (mod-duplicates-btn, etc.),
+// solo cambia dónde viven visualmente, así que sus propios listeners (más
+// abajo en este archivo) no necesitan tocarse.
+document.getElementById('mods-menu-btn').addEventListener('click', function(event) {
+  event.stopPropagation();
+  var isOpen = document.getElementById('mods-menu-dropdown').classList.toggle('show');
+  this.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+});
+
+document.getElementById('mods-menu-dropdown').addEventListener('click', function(event) {
+  if (event.target.closest('.mods-menu-item')) {
+    this.classList.remove('show');
+    document.getElementById('mods-menu-btn').setAttribute('aria-expanded', 'false');
+  }
+});
+
+document.addEventListener('click', function(event) {
+  var menu = document.getElementById('mods-menu');
+  if (menu && !menu.contains(event.target)) {
+    document.getElementById('mods-menu-dropdown').classList.remove('show');
+    document.getElementById('mods-menu-btn').setAttribute('aria-expanded', 'false');
+  }
+});
+
 function loadModpackVersion() {
   if (!currentModpack) {
     return;

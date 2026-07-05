@@ -520,3 +520,53 @@
   align-items: center;
   text-align: right;
 }
+
+/* -- Menú "⋮" de acciones de mods (duplicados / solo-cliente / borrar deshabilitados) -- */
+.mods-menu {
+  position: relative;
+  flex-shrink: 0;
+}
+
+#mods-menu-btn {
+  padding: 6px 12px;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.mods-menu-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 220px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .35);
+  padding: 6px;
+  z-index: 30;
+}
+
+.mods-menu-dropdown.show {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mods-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: .84rem;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.mods-menu-item:hover {
+  background: var(--border);
+}
