@@ -404,6 +404,7 @@
           <div class="config-search kjs-search-row">
             <input type="text" id="kubejs-search" placeholder="🔍 Buscar script...">
             <button class="btn-sm" id="btn-new-kjs-file" title="Crear nuevo script">+ Nuevo</button>
+            <a class="btn-secondary btn-sm" id="btn-download-kjs" style="text-decoration:none" title="Descargar carpeta kubejs/ como zip">⬇ Descargar</a>
           </div>
           <div class="mod-tree-body" id="kubejs-tree"><p class="empty-msg" style="padding:12px">Cargando KubeJS...</p></div>
           <div class="pagination" id="kubejs-pagination" style="display:none">
@@ -627,10 +628,39 @@
           <textarea class="modal-textarea" id="config-editor" spellcheck="false"></textarea>
         </div>
       </div>
+      <div id="kjs-move-form" class="new-world-form" style="display:none;margin-top:12px">
+        <div style="font-size:.85rem;font-weight:600;margin-bottom:12px">📂 Mover / renombrar script</div>
+        <div class="props-grid" style="margin-bottom:12px">
+          <div class="prop-field">
+            <label class="prop-label">Carpeta destino <span class="req">*</span></label>
+            <select id="kjs-move-subfolder">
+              <option value="startup_scripts">startup_scripts/</option>
+              <option value="server_scripts">server_scripts/</option>
+              <option value="client_scripts">client_scripts/</option>
+              <option value="__root__">Raíz (kubejs/)</option>
+              <option value="__custom__">Personalizado...</option>
+            </select>
+          </div>
+          <div class="prop-field" id="kjs-move-custom-folder-field" style="display:none">
+            <label class="prop-label">Ruta personalizada</label>
+            <input type="text" id="kjs-move-custom-folder" placeholder="ej: assets, data/mymod...">
+          </div>
+          <div class="prop-field">
+            <label class="prop-label">Nombre del archivo <span class="req">*</span></label>
+            <input type="text" id="kjs-move-filename">
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button class="btn-secondary" id="kjs-move-cancel">Cancelar</button>
+          <button id="kjs-move-confirm">📂 Mover / renombrar</button>
+        </div>
+      </div>
     </div>
     <div class="modal-footer">
       <span class="line-info" id="line-info">Línea 1</span>
       <div class="modal-footer-actions">
+        <button class="btn-danger" id="modal-kjs-delete-btn" style="display:none">🗑 Borrar</button>
+        <button class="btn-secondary" id="modal-kjs-move-btn" style="display:none">📂 Mover/Renombrar</button>
         <button class="btn-secondary" id="modal-close-btn2">Cerrar</button>
         <button id="modal-save-btn">💾 Guardar cambios</button>
       </div>

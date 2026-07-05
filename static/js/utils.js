@@ -15,6 +15,65 @@ function escRegex(str) {
 }
 
 
+// -- Tab en editores de código: inserta indentación en vez de mover el foco ----
+// Reutilizable en cualquier textarea de edición de código/config (config-editor,
+// props-raw-editor, y cualquier otro que se agregue) sin repetir la lógica.
+function enableCodeEditorTab(textarea) {
+  textarea.addEventListener('keydown', function(event) {
+    if (event.key !== 'Tab') {
+      return;
+    }
+    event.preventDefault();
+
+    var value = this.value;
+    var start = this.selectionStart;
+    var end = this.selectionEnd;
+    var multiLine = value.substring(start, end).indexOf('\n') !== -1;
+
+    if (!multiLine) {
+      if (event.shiftKey) {
+        var lineStart = value.lastIndexOf('\n', start - 1) + 1;
+        var lineText = value.substring(lineStart, start);
+        var match = lineText.match(/^\t|^ {1,2}/);
+        var removed = match ? match[0].length : 0;
+        if (removed > 0) {
+          this.value = value.substring(0, lineStart) + value.substring(lineStart + removed);
+          this.selectionStart = this.selectionEnd = start - removed;
+        }
+      } else {
+        this.value = value.substring(0, start) + '\t' + value.substring(end);
+        this.selectionStart = this.selectionEnd = start + 1;
+      }
+    } else {
+      // Selección multi-línea: indenta/desindenta cada línea completa del
+      // bloque (como en un editor de código real) y deja el bloque entero
+      // seleccionado.
+      var blockStart = value.lastIndexOf('\n', start - 1) + 1;
+      var nextNewline = value.indexOf('\n', end);
+      var blockEnd = nextNewline === -1 ? value.length : nextNewline;
+      var lines = value.substring(blockStart, blockEnd).split('\n');
+
+      var newLines = event.shiftKey
+        ? lines.map(function(line) {
+            var m = line.match(/^\t|^ {1,2}/);
+            return m ? line.substring(m[0].length) : line;
+          })
+        : lines.map(function(line) { return '\t' + line; });
+
+      var newBlock = newLines.join('\n');
+      this.value = value.substring(0, blockStart) + newBlock + value.substring(blockEnd);
+      this.selectionStart = blockStart;
+      this.selectionEnd = blockStart + newBlock.length;
+    }
+
+    // Mutar .value a mano no dispara 'input' de forma nativa; se despacha uno
+    // sintético para que listeners ya existentes (ej. el gutter de números de
+    // línea) se refresquen solos, sin que este helper necesite saber de ellos.
+    this.dispatchEvent(new Event('input'));
+  });
+}
+
+
 // -- Dialog (alert / confirm) -------------------------------------------------
 function showAlert(msg, icon) {
   var overlay = document.getElementById('dialog-overlay');

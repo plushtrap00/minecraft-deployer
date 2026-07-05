@@ -187,6 +187,98 @@ async def save_kubejs_file(modpack: str, path: str = Form(...), content: str = F
     return JSONResponse({"success": True})
 
 
+@router.delete("/{modpack}/kubejs-file")
+async def delete_kubejs_file(modpack: str, path: str):
+    kjs_dir = DEFAULT_SERVERS_PATH / modpack / "kubejs"
+    if not kjs_dir.exists():
+        raise HTTPException(status_code=404, detail="Este modpack no tiene carpeta kubejs/")
+    base = kjs_dir.resolve()
+    full_path = kjs_dir / path
+    try:
+        full_path.resolve().relative_to(base)
+    except ValueError:
+        raise HTTPException(status_code=403, detail="Ruta no permitida")
+    if not full_path.exists() or not full_path.is_file():
+        raise HTTPException(status_code=404, detail="Archivo no encontrado")
+    full_path.unlink()
+    invalidate_kubejs_cache(modpack)
+    return JSONResponse({"success": True})
+
+
+@router.post("/{modpack}/kubejs-move")
+async def move_kubejs_file(modpack: str, from_path: str = Form(...), to_path: str = Form(...)):
+    """Mueve y/o renombra un archivo dentro de kubejs/ (mismo endpoint para ambos: un
+    renombrado es solo un move con la misma carpeta y otro nombre de archivo)."""
+    kjs_dir = DEFAULT_SERVERS_PATH / modpack / "kubejs"
+    if not kjs_dir.exists():
+        raise HTTPException(status_code=404, detail="Este modpack no tiene carpeta kubejs/")
+    base = kjs_dir.resolve()
+
+    src = kjs_dir / from_path
+    dest = kjs_dir / to_path
+    try:
+        src.resolve().relative_to(base)
+        dest.resolve().relative_to(base)
+    except ValueError:
+        raise HTTPException(status_code=403, detail="Ruta no permitida")
+
+    if not src.exists() or not src.is_file():
+        raise HTTPException(status_code=404, detail="Archivo de origen no encontrado")
+    if not re.match(r'^[\w.\-]+$', dest.name):
+        raise HTTPException(status_code=400, detail="Nombre de archivo destino inválido (solo letras, números, _, -, .)")
+    if dest.exists():
+        raise HTTPException(status_code=400, detail=f"Ya existe un archivo en {to_path}")
+
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    src.rename(dest)
+    invalidate_kubejs_cache(modpack)
+    return JSONResponse({"success": True, "path": str(dest.relative_to(kjs_dir)).replace('\\', '/')})
+
+
+@router.get("/{modpack}/kubejs/download")
+async def download_kubejs(modpack: str):
+    import os
+    import tempfile
+
+    base = DEFAULT_SERVERS_PATH / modpack
+    try:
+        base.resolve().relative_to(DEFAULT_SERVERS_PATH.resolve())
+    except ValueError:
+        raise HTTPException(status_code=403, detail="Ruta no permitida")
+
+    kjs_dir = base / "kubejs"
+    if not kjs_dir.exists():
+        raise HTTPException(status_code=404, detail="Este modpack no tiene carpeta kubejs/")
+
+    # Carpeta temporal única por request (tempfile.mkdtemp): nunca colisiona con
+    # otra descarga concurrente y se borra entera en el finally de abajo, así
+    # que no quedan zips viejos acumulándose en /tmp. Mismo patrón que ya usa
+    # la descarga de mundos (worlds/{world_name}/download).
+    tmp_dir = tempfile.mkdtemp()
+    try:
+        archive_base = os.path.join(tmp_dir, "kubejs")
+        archive_path = await asyncio.to_thread(
+            lambda: shutil.make_archive(archive_base, "zip", root_dir=str(base), base_dir="kubejs")
+        )
+    except Exception as e:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+    def iter_and_cleanup():
+        try:
+            with open(archive_path, "rb") as f:
+                while chunk := f.read(65536):
+                    yield chunk
+        finally:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+
+    return StreamingResponse(
+        iter_and_cleanup(),
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{modpack}-kubejs.zip"'},
+    )
+
+
 # ── Upload & extract ───────────────────────────────────────────────────────────
 
 upload_router = APIRouter(tags=["modpacks"])
