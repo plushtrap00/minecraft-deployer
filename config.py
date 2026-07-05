@@ -27,6 +27,11 @@ CONFIG_EXTENSIONS = {".toml", ".cfg", ".json", ".yaml", ".yml", ".properties"}
 
 MAX_LOG_LINES = 500
 
+# Cuántos logs rotados (logs/*.log.gz, sin contar latest.log/debug.log, que
+# son los "actuales" y no forman parte de la rotación) y crash reports se
+# conservan por modpack antes de borrar los más viejos.
+LOG_CRASH_RETENTION_COUNT = 5
+
 # Tiempo máximo que se espera un apagado limpio (save-all + stop) antes de
 # recurrir a SIGKILL, tanto al parar el servidor a mano como al limpiar
 # procesos huérfanos en el arranque del panel.

@@ -53,6 +53,7 @@ from services.modpack import (
     detect_installed_mods, has_mod_keyword,
     parse_server_properties, save_server_property,
     get_worlds, analyze_crash, classify_installed_mods,
+    prune_old_logs_and_crashes,
 )
 from services.players import (
     ensure_global_dir, read_global_file, write_global_file, PLAYER_FILES,
@@ -882,6 +883,7 @@ async def delete_world(modpack: str, world_name: str):
 @router.get("/{modpack}/logs")
 async def get_log_list(modpack: str):
     base = DEFAULT_SERVERS_PATH / modpack
+    await asyncio.to_thread(prune_old_logs_and_crashes, modpack)
     logs = []
     if (base / "logs").exists():
         for f in sorted((base / "logs").iterdir(), reverse=True):

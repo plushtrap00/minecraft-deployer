@@ -20,7 +20,7 @@ from collections import defaultdict
 from itertools import zip_longest
 from pathlib import Path
 
-from config import DEFAULT_SERVERS_PATH
+from config import DEFAULT_SERVERS_PATH, LOG_CRASH_RETENTION_COUNT
 
 # ── Detección de versión ───────────────────────────────────────────────────────
 
@@ -920,6 +920,48 @@ def get_worlds(modpack: str) -> dict:
                 })
 
     return {"active_world": active, "worlds": worlds}
+
+
+# ── Logs & crash reports ────────────────────────────────────────────────────────
+
+_CURRENT_LOG_FILENAMES = {"latest.log", "debug.log"}
+
+
+def prune_old_logs_and_crashes(modpack: str, keep: int = LOG_CRASH_RETENTION_COUNT) -> None:
+    """
+    Borra los logs rotados (logs/*.log.gz de sesiones anteriores) y los crash
+    reports más viejos, dejando solo los `keep` más recientes de cada carpeta.
+    latest.log y debug.log no cuentan para este límite ni se tocan nunca: son
+    los de la sesión actual, no logs rotados de sesiones pasadas.
+
+    El nombre ya trae la fecha primero (ej. "2024-01-15-1.log.gz",
+    "crash-2024-01-15_10.23.45-server.txt"), así que ordenar por nombre en
+    reversa deja los más recientes primero — mismo criterio que ya usa
+    get_log_list() para listarlos, para que "los últimos 5 que se ven" y
+    "los últimos 5 que se conservan" sean siempre los mismos.
+    """
+    base = DEFAULT_SERVERS_PATH / modpack
+
+    logs_dir = base / "logs"
+    if logs_dir.exists():
+        rotated = sorted(
+            (f for f in logs_dir.iterdir() if f.is_file() and f.name not in _CURRENT_LOG_FILENAMES),
+            reverse=True,
+        )
+        for old in rotated[keep:]:
+            try:
+                old.unlink()
+            except Exception:
+                pass
+
+    crash_dir = base / "crash-reports"
+    if crash_dir.exists():
+        crashes = sorted((f for f in crash_dir.iterdir() if f.is_file()), reverse=True)
+        for old in crashes[keep:]:
+            try:
+                old.unlink()
+            except Exception:
+                pass
 
 
 # ── Análisis de crash reports ──────────────────────────────────────────────────

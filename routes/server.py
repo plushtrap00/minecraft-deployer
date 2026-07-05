@@ -30,7 +30,7 @@ from services.process import (
 )
 from services import metrics as metrics_module
 from services.metrics import mc_metrics, read_proc_ram, _parse_metrics_line
-from services.modpack import ensure_rcon_enabled, detect_modpack_version
+from services.modpack import ensure_rcon_enabled, detect_modpack_version, prune_old_logs_and_crashes
 from services.rcon import RconConnection, RconError
 import datetime
 
@@ -86,6 +86,11 @@ async def server_start(modpack: str = Form(...)):
 
         with mc_output_lock:
             mc_output_lines.clear()
+
+        # Antes de cada sesión nueva, de paso se podan los logs rotados y
+        # crash reports viejos (se conservan los últimos LOG_CRASH_RETENTION_
+        # COUNT de cada carpeta) — se acumulaban para siempre sin esto.
+        prune_old_logs_and_crashes(modpack)
 
         rcon_info = ensure_rcon_enabled(modpack)
         if rcon_info:
