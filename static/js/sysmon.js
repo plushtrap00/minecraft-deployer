@@ -35,7 +35,6 @@ document.getElementById('sysmon-refresh-btn').addEventListener('click', function
 });
 
 var AUTO_UPDATE_STATUS_POLL_MS = 30000;
-var autoUpdateStatusTimer = null;
 var lastSysmonStats = null;
 var lastAutoUpdateStatus = null;
 
@@ -60,15 +59,6 @@ function startSysmonStream() {
     lastSysmonStats = data;
     renderSysmon(data);
   };
-
-  // El estado de auto-actualización no necesita empujarse cada ~2s como el
-  // resto del panel (cambia como mucho cada varios minutos): se pide aparte
-  // con su propio intervalo, más lento, y se cachea para que renderSysmon()
-  // lo incluya en cada re-render sin tener que volver a pedirlo.
-  loadAutoUpdateStatus();
-  if (autoUpdateStatusTimer === null) {
-    autoUpdateStatusTimer = setInterval(loadAutoUpdateStatus, AUTO_UPDATE_STATUS_POLL_MS);
-  }
 }
 
 function stopSysmonStream() {
@@ -76,22 +66,74 @@ function stopSysmonStream() {
     sysmonSSE.close();
     sysmonSSE = null;
   }
-  if (autoUpdateStatusTimer !== null) {
-    clearInterval(autoUpdateStatusTimer);
-    autoUpdateStatusTimer = null;
-  }
 }
+
+// El estado de auto-actualización se pide aparte del stream de CPU/RAM/temp,
+// y corre SIEMPRE desde que carga la página (no solo mientras el panel está
+// abierto): así el badge de notificación en la pestaña "Sistema" se puede
+// prender aunque el usuario nunca haya abierto el panel. Se cachea para que
+// renderSysmon() lo incluya en cada re-render sin tener que volver a pedirlo.
+loadAutoUpdateStatus();
+setInterval(loadAutoUpdateStatus, AUTO_UPDATE_STATUS_POLL_MS);
 
 function loadAutoUpdateStatus() {
   apiFetch('/api/auto-update/status')
     .then(function(response) { return response.json(); })
     .then(function(data) {
       lastAutoUpdateStatus = data;
+      updateSysmonBadge();
       if (lastSysmonStats) {
         renderSysmon(lastSysmonStats);
       }
     })
     .catch(function() {});
+}
+
+function updateSysmonBadge() {
+  var badge = document.getElementById('sysmon-nav-badge');
+  if (!badge) {
+    return;
+  }
+  var status = lastAutoUpdateStatus;
+  var hasUpdate = !!(status && status.enabled && status.commits_behind > 0);
+  badge.style.display = hasUpdate ? '' : 'none';
+}
+
+// El botón "Actualizar ahora" se recrea en cada render de renderAutoUpdateSection()
+// (sysmon-body se reescribe entero), así que el listener se delega en el
+// contenedor estable en vez de reengancharse a mano cada vez.
+document.getElementById('sysmon-body').addEventListener('click', function(event) {
+  if (event.target.closest('#auto-update-apply-btn')) {
+    applyAutoUpdate();
+  }
+});
+
+function applyAutoUpdate() {
+  var btn = document.getElementById('auto-update-apply-btn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Actualizando...';
+  }
+  apiFetch('/api/auto-update/apply', { method: 'POST' })
+    .then(function(response) {
+      return response.json().then(function(data) { return { ok: response.ok, data: data }; });
+    })
+    .then(function(result) {
+      if (result.ok) {
+        showToast(result.data.message || 'Actualización aplicada. La app se está reiniciando...', 'success');
+      } else {
+        showToast(result.data.detail || 'No se pudo actualizar', 'error');
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = '⬇ Actualizar ahora';
+        }
+      }
+    })
+    .catch(function() {
+      // Es esperable que la conexión se corte apenas la app se reinicia --
+      // no se trata como un error real.
+      showToast('Actualización enviada, la app se está reiniciando...', 'success');
+    });
 }
 
 function sysColor(pct) {
@@ -178,13 +220,19 @@ function renderAutoUpdateSection() {
   html += autoUpdateRow('Entorno', status.in_docker ? 'Docker' : 'Nativo (systemd)');
 
   if (status.commits_behind > 0) {
-    if (status.server_running) {
-      html += autoUpdateRow('Estado', '⏸ ' + status.commits_behind + ' pendiente(s) — servidor en marcha', 'var(--yellow)');
-    } else if (status.busy) {
-      html += autoUpdateRow('Estado', '⏸ ' + status.commits_behind + ' pendiente(s) — ' + status.busy_reasons.join(', '), 'var(--yellow)');
-    } else {
-      html += autoUpdateRow('Estado', '⬇ ' + status.commits_behind + ' pendiente(s), aplicando...', 'var(--accent)');
+    html += autoUpdateRow('Estado', '🔔 ' + status.commits_behind + ' commit(s) nuevos disponibles', 'var(--yellow)');
+
+    var blockedReason = status.server_running
+      ? 'hay un servidor de Minecraft en marcha'
+      : (status.busy ? status.busy_reasons.join(', ') : null);
+
+    html += '<div style="margin-top:6px;display:flex;flex-direction:column;gap:4px;align-items:flex-start">';
+    html += '<button type="button" class="btn-secondary btn-sm" id="auto-update-apply-btn"'
+      + (blockedReason ? ' disabled' : '') + '>⬇ Actualizar ahora</button>';
+    if (blockedReason) {
+      html += '<span class="sysmon-no-temps">Bloqueado: ' + escHtml(blockedReason) + '</span>';
     }
+    html += '</div>';
   } else {
     html += autoUpdateRow('Estado', '✅ Al día', 'var(--green)');
   }

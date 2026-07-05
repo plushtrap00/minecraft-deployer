@@ -1,17 +1,24 @@
 """
-services/auto_update.py - Auto-actualización de la app desde origin/main.
+services/auto_update.py - Detección (y aplicación manual) de actualizaciones
+de la app desde origin/main.
 
 Cada AUTO_UPDATE_INTERVAL_SECONDS comprueba si hay commits nuevos en
-origin/main. Si los hay, y NO hay ningún servidor de Minecraft corriendo NI
-ninguna subida/instalación en curso (services.busy), hace git pull y se
-reinicia sola saliendo con código de error controlado — funciona igual tanto
-si la app corre nativa bajo systemd (Restart=on-failure) como en Docker
+origin/main — pero SOLO hasta la primera vez que encuentra alguno: una vez
+detectado, deja de volver a preguntarle a GitHub (no tiene sentido seguir
+comprobando algo que ya se sabe) y se queda mostrando ese estado hasta que
+se aplique. Aplicar la actualización (git pull + reinicio) ya NO es
+automático: lo dispara el botón "Actualizar" del panel, vía apply_update(),
+que revisa de nuevo en ese momento que no haya ningún servidor de Minecraft
+corriendo ni ninguna subida/instalación en curso (services.busy) antes de
+tocar nada.
+
+El reinicio posterior sale con código de error controlado — funciona igual
+tanto si la app corre nativa bajo systemd (Restart=on-failure) como en Docker
 (restart: unless-stopped), sin necesitar llamar a systemctl/docker ni darle
 permisos de sudo extra al proceso.
 
-Deshabilitado por defecto (AUTO_UPDATE_ENABLED=false): que la app se actualice
-y reinicie sola es un cambio de comportamiento grande como para activarlo sin
-que el usuario lo pida explícitamente en su .env.
+Deshabilitado por defecto (AUTO_UPDATE_ENABLED=false): ni siquiera comprobar
+solo es algo que un usuario debería pedir a propósito en su .env.
 """
 import os
 import time
@@ -86,6 +93,12 @@ def _server_running() -> bool:
 
 
 def _check_and_update_once() -> None:
+    if _status["commits_behind"] > 0:
+        # Ya se sabe que hay una actualización pendiente: no tiene sentido
+        # seguir preguntándole a GitHub cada ciclo. Se queda así hasta que
+        # apply_update() la aplique (y con eso, la app se reinicia y este
+        # estado vuelve a arrancar en 0 de todas formas).
+        return
     try:
         behind = _commits_behind()
     except Exception as e:
@@ -96,30 +109,8 @@ def _check_and_update_once() -> None:
     _status["last_check"] = time.time()
     _status["commits_behind"] = behind
     _status["last_error"] = None
-    if behind <= 0:
-        return
-
-    if _server_running():
-        _log(f"hay {behind} commit(s) nuevos, pero hay un servidor de Minecraft en marcha — se pospone.")
-        return
-    if is_busy():
-        _log(f"hay {behind} commit(s) nuevos, pero hay una operación en curso ({', '.join(busy_reasons())}) — se pospone.")
-        return
-
-    _log(f"aplicando {behind} commit(s) nuevos...")
-    try:
-        _pull()
-    except Exception as e:
-        _status["last_error"] = str(e)
-        _log(f"git pull falló: {e}")
-        return
-
-    in_docker = running_in_docker()
-    _log(f"actualización aplicada, reiniciando ({'contenedor' if in_docker else 'servicio systemd'})...")
-    # Salir con código != 0 alcanza para los dos casos: systemd (Restart=on-
-    # failure) y Docker (restart: unless-stopped, que reinicia sin importar el
-    # código de salida) lo relanzan solos.
-    os._exit(1)
+    if behind > 0:
+        _log(f"hay {behind} commit(s) nuevos disponibles — esperando que se aplique desde el panel.")
 
 
 def _loop() -> None:
@@ -127,6 +118,36 @@ def _loop() -> None:
     while True:
         _check_and_update_once()
         time.sleep(AUTO_UPDATE_INTERVAL_SECONDS)
+
+
+def apply_update() -> None:
+    """
+    Dispara el pull + reinicio a pedido (botón "Actualizar" del panel).
+    Lanza RuntimeError con un mensaje legible si no es seguro hacerlo ahora
+    mismo. No reinicia la app ella misma: eso lo hace schedule_restart(),
+    llamado aparte por el route handler DESPUÉS de mandar la respuesta HTTP,
+    para que el cliente llegue a recibir la confirmación antes de que el
+    proceso muera.
+    """
+    if _server_running():
+        raise RuntimeError("No se puede actualizar: hay un servidor de Minecraft en marcha.")
+    if is_busy():
+        raise RuntimeError(f"No se puede actualizar: hay una operación en curso ({', '.join(busy_reasons())}).")
+
+    _log("aplicando actualización pedida desde el panel...")
+    _pull()
+    _status["commits_behind"] = 0
+    _status["last_check"] = time.time()
+    _status["last_error"] = None
+
+
+def schedule_restart(delay_seconds: float = 1.0) -> None:
+    in_docker = running_in_docker()
+    _log(f"reiniciando en {delay_seconds}s ({'contenedor' if in_docker else 'servicio systemd'})...")
+    # Salir con código != 0 alcanza para los dos casos: systemd (Restart=on-
+    # failure) y Docker (restart: unless-stopped, que reinicia sin importar el
+    # código de salida) lo relanzan solos.
+    threading.Timer(delay_seconds, lambda: os._exit(1)).start()
 
 
 def start() -> None:

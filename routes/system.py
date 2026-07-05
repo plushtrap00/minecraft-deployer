@@ -8,6 +8,8 @@ Rutas:
 - GET  /api/modpacks            → lista de modpacks con metadata
 - GET  /api/system-stats        → estadísticas del sistema (snapshot único)
 - GET  /api/system-stats/stream → SSE: estadísticas del sistema cada ~3s
+- GET  /api/auto-update/status  → estado de la auto-actualización
+- POST /api/auto-update/apply   → aplica el pull pendiente y reinicia la app
 """
 import shutil
 from pathlib import Path
@@ -83,6 +85,17 @@ async def list_modpacks():
 @router.get("/api/auto-update/status")
 async def auto_update_status():
     return JSONResponse(auto_update.get_status())
+
+
+@router.post("/api/auto-update/apply")
+async def auto_update_apply():
+    import asyncio
+    try:
+        await asyncio.to_thread(auto_update.apply_update)
+    except RuntimeError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+    auto_update.schedule_restart()
+    return JSONResponse({"success": True, "message": "Actualización aplicada. La app se está reiniciando..."})
 
 
 @router.get("/api/system-stats")

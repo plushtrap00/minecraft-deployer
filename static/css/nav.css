@@ -10,6 +10,7 @@
 }
 
 .nav-tab {
+  position: relative;
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
@@ -21,6 +22,22 @@
   border-radius: 6px 6px 0 0;
   margin-bottom: -1px;
   transition: color .15s;
+}
+
+.nav-badge {
+  position: absolute;
+  top: 3px;
+  right: 6px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3px;
+  border-radius: 999px;
+  background: var(--red);
+  color: #fff;
+  font-size: .62rem;
+  font-weight: 700;
+  line-height: 15px;
+  text-align: center;
 }
 
 .nav-tab:hover {
