@@ -37,8 +37,8 @@ async def add_user(request: Request, body: CreateUserBody):
     username = body.username.strip()
     if not _USERNAME_RE.match(username):
         raise HTTPException(status_code=400, detail="Nombre de usuario inválido: solo letras, números, _ y - (máx. 16 caracteres)")
-    if len(body.password) < 3 or not _PRINTABLE_RE.match(body.password):
-        raise HTTPException(status_code=400, detail="Contraseña inválida: mínimo 3 caracteres, sin emojis ni símbolos raros")
+    if len(body.password) < 8 or not _PRINTABLE_RE.match(body.password):
+        raise HTTPException(status_code=400, detail="Contraseña inválida: mínimo 8 caracteres, sin emojis ni símbolos raros")
     try:
         user = create_user(username, body.password)
         return JSONResponse(user, status_code=201)

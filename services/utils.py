@@ -12,6 +12,7 @@ Contiene:
 """
 import os
 import re
+import subprocess
 import zipfile
 import tarfile
 from pathlib import Path
@@ -203,8 +204,14 @@ def extract_archive(archive_path: Path, dest_path: Path) -> dict:
                 rf.extractall(dest_path)
             return {"files_extracted": total, "format": "RAR"}
         except ImportError:
-            result = os.system(f"unrar x '{archive_path}' '{dest_path}/'")
-            if result != 0:
+            # Lista de argumentos, nunca shell=True con un string interpolado:
+            # así el nombre de carpeta/archivo no puede escapar la "comilla" e
+            # inyectar comandos de shell (antes usaba os.system con f-string).
+            result = subprocess.run(
+                ["unrar", "x", str(archive_path), str(dest_path) + "/"],
+                capture_output=True,
+            )
+            if result.returncode != 0:
                 raise HTTPException(
                     status_code=500,
                     detail="Para RAR instala: pip install rarfile && sudo apt install unrar"
