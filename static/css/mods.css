@@ -240,21 +240,19 @@
 
 /* -- Buscar mods online (Modrinth / CurseForge) -------------------------- */
 
-/* .modal-scroll ya trae padding:20px (compartido por todos los modales,
-   no se toca acá); un poco más a la derecha específicamente en este modal
-   para que el contenido no quede pegado a la scrollbar nativa. */
-#mod-search-modal-body {
-  padding-right: 26px;
+/* Un poco más ancho que .modal-sm (680px): con la columna de categorías al
+   lado, la lista de resultados necesita más aire que en el layout apilado
+   anterior. */
+.mod-search-dialog {
+  max-width: 780px;
 }
 
 .mod-search-toolbar {
   display: flex;
   gap: 8px;
   /* .modal-body no trae padding propio (solo .modal-scroll lo tiene); sin
-     este margen la barra de búsqueda y el panel de categorías quedaban
-     pegados a los bordes del modal mientras los resultados de abajo (ya
-     dentro de .modal-scroll) sí respetaban 20px, dando una sensación de
-     padding inconsistente entre bloques. */
+     este margen la barra de búsqueda quedaba pegada a los bordes del modal
+     mientras el resto (ya dentro de .modal-scroll) sí respetaba 20px. */
   margin: 0 20px 10px;
   flex-wrap: wrap;
 }
@@ -264,45 +262,54 @@
   min-width: 160px;
 }
 
-/* Panel de categorías: colapsable como un todo (header con flecha) y con
-   checkboxes de subcategorías expandibles por separado (icono +/−), igual
-   que el filtro lateral de curseforge.com.
-
-   flex-shrink: 0 es necesario porque el panel vive junto a .modal-scroll
-   (flex:1) dentro de .modal-body (flex-column): al tener overflow propio,
-   el navegador considera su min-height "auto" como 0 y lo puede comprimir
-   por debajo de su contenido cuando compite por espacio, cortando filas a
-   la mitad o dejando un residuo raro al colapsar. Fijar flex-shrink:0 lo
-   obliga a respetar siempre su alto natural (header + hasta 220px de
-   cuerpo con su propio scroll), sin robarle ni cederle espacio a la lista
-   de resultados. */
-.mod-search-category-panel {
-  flex-shrink: 0;
+/* Layout de dos columnas: categorías a la izquierda, resultados a la
+   derecha, ambas ocupando el resto del alto del modal. min-height:0 es
+   necesario para que .mod-search-sidebar y .mod-search-results-col (sus
+   hijos) puedan de verdad limitar su propio overflow en vez de que el
+   navegador los infle a su alto de contenido (el mismo problema que ya
+   se corrigió antes para el panel apilado, pero en el eje del row). */
+.mod-search-columns {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  margin: 0 20px 16px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  /* Separación clara respecto a la lista de resultados: cada panel tiene
-     su propio scroll (max-height + overflow-y), así que sin un margen
-     generoso ambas scrollbars quedan pegadas una encima de la otra. Margen
-     horizontal para alinearse con la barra de búsqueda y con .modal-scroll. */
-  margin: 0 20px 16px;
-  background: var(--bg);
   overflow: hidden;
 }
 
-.mod-search-category-panel-header {
+/* Columna de categorías: colapsable como un todo (header con flecha,
+   relevante sobre todo en el layout apilado de móvil — ver responsive.css)
+   y con checkboxes de subcategorías expandibles por separado (icono +/−),
+   igual que el filtro lateral de curseforge.com. */
+.mod-search-sidebar {
+  flex: 0 0 190px;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+  background: var(--bg);
+  min-height: 0;
+}
+
+.mod-search-sidebar-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  flex-shrink: 0;
   padding: 8px 12px;
   font-size: .82rem;
   font-weight: 600;
   color: var(--text);
   background: var(--card);
+  border-bottom: 1px solid var(--border);
   user-select: none;
 }
 
+/* Solo tiene sentido colapsar el panel entero cuando compite por espacio
+   vertical con los resultados, es decir en el layout apilado de móvil. */
 .mod-search-category-panel-toggle {
+  display: none;
   background: none;
   border: none;
   color: var(--muted);
@@ -313,13 +320,29 @@
 }
 
 .mod-search-category-panel-body {
-  max-height: 220px;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 6px;
 }
 
 .mod-search-category-panel-body.collapsed {
   display: none;
+}
+
+/* Columna de resultados: la lista scrollea (reusa .modal-scroll) y la
+   paginación queda pegada abajo dentro del mismo ancho, no del modal
+   entero — por eso vive acá dentro en vez de en el .modal-footer global. */
+.mod-search-results-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.mod-search-results-col .modal-scroll {
+  padding-right: 26px;
 }
 
 /* .mod-search-category-row solo aporta el layout horizontal (opción + "+"

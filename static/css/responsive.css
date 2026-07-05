@@ -97,6 +97,25 @@
     border-radius: 12px 12px 0 0;
   }
 
+  /* Buscar mods online: la columna de categorías se apila arriba de los
+     resultados en vez de vivir al lado (no hay ancho para las dos), con
+     su propio tope de alto + scroll y la flecha de colapsar visible de
+     nuevo, ya que acá sí vuelve a competir por espacio vertical. */
+  .mod-search-columns {
+    flex-direction: column;
+  }
+
+  .mod-search-sidebar {
+    flex: 0 0 auto;
+    max-height: 180px;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .mod-search-category-panel-toggle {
+    display: block;
+  }
+
   /* Barra de comandos */
   .cmd-row {
     flex-direction: column;

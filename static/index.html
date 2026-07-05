@@ -730,7 +730,7 @@
 
 <!-- Modal: buscar e instalar mods desde Modrinth / CurseForge -->
 <div class="modal-overlay" id="mod-search-modal">
-  <div class="modal modal-sm">
+  <div class="modal mod-search-dialog">
     <div class="modal-header">
       <span>🔎</span>
       <span class="modal-path">Buscar mods online</span>
@@ -744,19 +744,25 @@
       <div class="mod-search-toolbar">
         <input type="text" id="mod-search-input" placeholder="🔍 Buscar mod por nombre..." class="w-full">
       </div>
-      <div class="mod-search-category-panel" id="mod-search-category-panel">
-        <div class="mod-search-category-panel-header" id="mod-search-category-panel-header">
-          <span>Categorías</span>
-          <button type="button" class="mod-search-category-panel-toggle" id="mod-search-category-panel-toggle" title="Colapsar/expandir categorías">▲</button>
+
+      <div class="mod-search-columns">
+        <aside class="mod-search-sidebar" id="mod-search-category-panel">
+          <div class="mod-search-sidebar-header" id="mod-search-category-panel-header">
+            <span>Categorías</span>
+            <button type="button" class="mod-search-category-panel-toggle" id="mod-search-category-panel-toggle" title="Colapsar/expandir categorías">▲</button>
+          </div>
+          <div class="mod-search-category-panel-body" id="mod-search-category-panel-body"></div>
+        </aside>
+
+        <div class="mod-search-results-col">
+          <div class="modal-scroll" id="mod-search-modal-body">
+            <p class="empty-msg">Cargando...</p>
+          </div>
+          <div class="modal-footer mod-search-results-footer">
+            <div class="mod-modal-pagination" id="mod-search-pagination"></div>
+          </div>
         </div>
-        <div class="mod-search-category-panel-body" id="mod-search-category-panel-body"></div>
       </div>
-      <div class="modal-scroll" id="mod-search-modal-body">
-        <p class="empty-msg">Cargando...</p>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <div class="mod-modal-pagination" id="mod-search-pagination"></div>
     </div>
   </div>
 </div>
