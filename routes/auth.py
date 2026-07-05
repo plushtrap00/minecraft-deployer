@@ -53,6 +53,14 @@ def verify_token(token: str) -> dict | None:
     return None
 
 
+def require_admin(request: Request) -> None:
+    """Corta con 403 si el usuario autenticado no tiene rol admin (gestión de
+    usuarios y firewall; el resto de acciones del panel son accesibles para
+    cualquier cuenta autenticada)."""
+    if getattr(request.state, "role", None) != "admin":
+        raise HTTPException(status_code=403, detail="Se requieren permisos de administrador")
+
+
 @router.post("/login")
 async def login(username: str = Form(...), password: str = Form(...)):
     role = authenticate(username, password)

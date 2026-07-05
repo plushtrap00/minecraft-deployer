@@ -20,6 +20,7 @@ from fastapi.responses import JSONResponse
 from services.players import (
     ensure_global_dir, read_global_file, write_global_file,
     find_player, sync_to_all_modpacks, send_console_if_running,
+    validate_player_name, validate_ip, sanitize_reason,
     PLAYER_FILES,
 )
 from services.process import mc_running_modpack
@@ -40,6 +41,10 @@ async def get_all_players():
 
 @router.post("/op")
 async def add_op(name: str = Form(...), uuid: str = Form(""), level: int = Form(4)):
+    try:
+        name = validate_player_name(name)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     data = read_global_file("ops.json")
     if find_player(data, name) != -1:
         raise HTTPException(status_code=400, detail=f"{name} ya es op")
@@ -52,6 +57,10 @@ async def add_op(name: str = Form(...), uuid: str = Form(""), level: int = Form(
 
 @router.delete("/op/{name}")
 async def remove_op(name: str):
+    try:
+        name = validate_player_name(name)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     data = read_global_file("ops.json")
     idx = find_player(data, name)
     if idx == -1:
@@ -65,6 +74,10 @@ async def remove_op(name: str):
 
 @router.post("/whitelist")
 async def add_whitelist(name: str = Form(...), uuid: str = Form("")):
+    try:
+        name = validate_player_name(name)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     data = read_global_file("whitelist.json")
     if find_player(data, name) != -1:
         raise HTTPException(status_code=400, detail=f"{name} ya está en la whitelist")
@@ -77,6 +90,10 @@ async def add_whitelist(name: str = Form(...), uuid: str = Form("")):
 
 @router.delete("/whitelist/{name}")
 async def remove_whitelist(name: str):
+    try:
+        name = validate_player_name(name)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     data = read_global_file("whitelist.json")
     idx = find_player(data, name)
     if idx == -1:
@@ -90,6 +107,11 @@ async def remove_whitelist(name: str):
 
 @router.post("/ban")
 async def ban_player(name: str = Form(...), uuid: str = Form(""), reason: str = Form("Banned by admin")):
+    try:
+        name = validate_player_name(name)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    reason = sanitize_reason(reason)
     data = read_global_file("banned-players.json")
     if find_player(data, name) != -1:
         raise HTTPException(status_code=400, detail=f"{name} ya está baneado")
@@ -109,6 +131,10 @@ async def ban_player(name: str = Form(...), uuid: str = Form(""), reason: str = 
 
 @router.delete("/ban/{name}")
 async def unban_player(name: str):
+    try:
+        name = validate_player_name(name)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     data = read_global_file("banned-players.json")
     idx = find_player(data, name)
     if idx == -1:
@@ -122,6 +148,11 @@ async def unban_player(name: str):
 
 @router.post("/ban-ip")
 async def ban_ip(ip: str = Form(...), reason: str = Form("Banned by admin")):
+    try:
+        ip = validate_ip(ip)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    reason = sanitize_reason(reason)
     data = read_global_file("banned-ips.json")
     if any(e.get("ip") == ip for e in data):
         raise HTTPException(status_code=400, detail=f"{ip} ya está baneada")
@@ -140,6 +171,10 @@ async def ban_ip(ip: str = Form(...), reason: str = Form("Banned by admin")):
 
 @router.delete("/ban-ip/{ip}")
 async def unban_ip(ip: str):
+    try:
+        ip = validate_ip(ip)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     data = read_global_file("banned-ips.json")
     idx = next((i for i, e in enumerate(data) if e.get("ip") == ip), -1)
     if idx == -1:

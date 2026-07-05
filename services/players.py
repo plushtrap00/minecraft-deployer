@@ -12,7 +12,9 @@ Contiene:
 - sync_to_all_modpacks(): copia los datos globales a todos los modpacks
 - send_console_if_running(): envía comandos al servidor si está activo
 """
+import ipaddress
 import json
+import re
 from pathlib import Path
 
 from config import DEFAULT_SERVERS_PATH
@@ -22,6 +24,42 @@ GLOBAL_DIR = DEFAULT_SERVERS_PATH / ".global"
 PLAYER_FILES = ["ops.json", "whitelist.json", "banned-players.json", "banned-ips.json"]
 
 _global_dir_initialized = False
+
+_PLAYER_NAME_RE = re.compile(r'^[A-Za-z0-9_]{1,16}$')
+_CONTROL_CHARS_RE = re.compile(r'[\x00-\x1f\x7f]')
+
+
+def validate_player_name(name: str) -> str:
+    """
+    Valida un nombre de jugador de Minecraft (letras, números, guion bajo,
+    máx. 16 caracteres — el formato real que acepta el juego). Sin esto, un
+    nombre con un salto de línea termina el comando de consola actual e
+    inyecta uno nuevo en la siguiente línea de stdin (ver send_console_if_running).
+    """
+    name = name.strip()
+    if not _PLAYER_NAME_RE.match(name):
+        raise ValueError("Nombre de jugador inválido: solo letras, números y _ (máx. 16 caracteres)")
+    return name
+
+
+def validate_ip(ip: str) -> str:
+    """Valida que sea una IPv4/IPv6 real (módulo estándar ipaddress), no un string arbitrario."""
+    ip = ip.strip()
+    try:
+        ipaddress.ip_address(ip)
+    except ValueError:
+        raise ValueError(f"Dirección IP inválida: {ip}")
+    return ip
+
+
+def sanitize_reason(reason: str) -> str:
+    """
+    Quita saltos de línea y otros caracteres de control de un motivo de ban
+    antes de mandarlo a la consola de Minecraft. Sin esto, un \\n en el motivo
+    inyecta un comando de consola adicional (ver send_console_if_running).
+    """
+    cleaned = _CONTROL_CHARS_RE.sub('', reason).strip()
+    return cleaned or "Sin motivo especificado"
 
 
 def ensure_global_dir():

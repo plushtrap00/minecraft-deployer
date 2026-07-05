@@ -12,16 +12,12 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from services.users import list_users, create_user, delete_user
+from routes.auth import require_admin as _require_admin
 
 _USERNAME_RE = re.compile(r'^[a-zA-Z0-9_-]{1,16}$')
 _PRINTABLE_RE = re.compile(r'^[\x20-\x7E]+$')
 
 router = APIRouter(prefix="/api/users", tags=["users"])
-
-
-def _require_admin(request: Request) -> None:
-    if getattr(request.state, "role", None) != "admin":
-        raise HTTPException(status_code=403, detail="Se requieren permisos de administrador")
 
 
 class CreateUserBody(BaseModel):

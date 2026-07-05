@@ -37,11 +37,12 @@ import zipfile
 import asyncio
 from pathlib import Path
 from typing import List
-from fastapi import APIRouter, File, UploadFile, Form, HTTPException
+from fastapi import APIRouter, File, UploadFile, Form, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 
 from config import DEFAULT_SERVERS_PATH, TEMP_DIR
+from routes.auth import require_admin
 from services.utils import get_mod_configs, get_kubejs_files, get_world_files, extract_archive, configure_jvm_ram, invalidate_kubejs_cache
 from services.modpack import (
     detect_modpack_version, find_installed_mod_by_id, build_mod_id_index,
@@ -747,12 +748,13 @@ async def get_log_file(modpack: str, filename: str):
 firewall_router = APIRouter(tags=["firewall"])
 
 @firewall_router.post("/api/firewall/set")
-async def set_firewall(mode: str = Form(...)):
+async def set_firewall(request: Request, mode: str = Form(...)):
     """
     Configura ufw para el puerto 25565.
     mode='lan'    → solo red local (192.168.1.0/24)
     mode='public' → acceso desde cualquier IP
     """
+    require_admin(request)
     import subprocess
 
     if mode not in ("lan", "public"):
@@ -778,8 +780,9 @@ async def set_firewall(mode: str = Form(...)):
 
 
 @firewall_router.get("/api/firewall/status")
-async def firewall_status():
+async def firewall_status(request: Request):
     """Devuelve el modo actual del firewall para el puerto 25565."""
+    require_admin(request)
     import subprocess
     r = await asyncio.to_thread(subprocess.run, ["sudo", "ufw", "status"], capture_output=True, text=True)
     output = r.stdout
