@@ -12,6 +12,7 @@ Contiene:
 """
 import os
 import threading
+import time
 from collections import deque
 from pathlib import Path
 
@@ -34,6 +35,21 @@ mc_rcon_port: int | None = None
 mc_rcon_password: str | None = None
 mc_rcon_conn = None  # services.rcon.RconConnection, creada al arrancar el servidor
 mc_modloader: str | None = None
+
+
+# ── Espera de apagado limpio ───────────────────────────────────────────────────
+def wait_process_exit(proc, timeout_seconds: float) -> bool:
+    """
+    Sondea proc.poll() hasta que el proceso termine o se acabe el timeout.
+    Pensado para llamarse en un hilo aparte (via asyncio.to_thread) tras pedir
+    un apagado limpio, para no bloquear el event loop mientras se espera.
+    """
+    deadline = time.monotonic() + timeout_seconds
+    while time.monotonic() < deadline:
+        if proc.poll() is not None:
+            return True
+        time.sleep(0.5)
+    return proc.poll() is not None
 
 
 # ── Apagado de la app ──────────────────────────────────────────────────────────

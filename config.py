@@ -21,3 +21,8 @@ TEMP_DIR.mkdir(exist_ok=True)
 CONFIG_EXTENSIONS = {".toml", ".cfg", ".json", ".yaml", ".yml", ".properties"}
 
 MAX_LOG_LINES = 500
+
+# Tiempo máximo que se espera un apagado limpio (save-all + stop) antes de
+# recurrir a SIGKILL, tanto al parar el servidor a mano como al limpiar
+# procesos huérfanos en el arranque del panel.
+GRACEFUL_STOP_TIMEOUT_SECONDS = 30

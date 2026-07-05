@@ -21,11 +21,11 @@ from pathlib import Path
 from fastapi import APIRouter, Form, HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
 
-from config import DEFAULT_SERVERS_PATH
+from config import DEFAULT_SERVERS_PATH, GRACEFUL_STOP_TIMEOUT_SECONDS
 from services import process as proc_module
 from services.process import (
     mc_process, mc_process_lock, mc_output_lines, mc_output_lock,
-    mc_sse_clients, mc_sse_lock, _reader_thread,
+    mc_sse_clients, mc_sse_lock, _reader_thread, wait_process_exit,
 )
 from services import metrics as metrics_module
 from services.metrics import mc_metrics, read_proc_ram, _parse_metrics_line
@@ -54,6 +54,11 @@ async def server_start(modpack: str = Form(...)):
             raise HTTPException(status_code=400, detail="Ya hay un servidor en marcha")
 
         server_dir = DEFAULT_SERVERS_PATH / modpack
+        try:
+            server_dir.resolve().relative_to(DEFAULT_SERVERS_PATH.resolve())
+        except ValueError:
+            raise HTTPException(status_code=403, detail="Ruta no permitida")
+
         script = next(
             (server_dir / s for s in ["startserver.sh", "start.sh", "run.sh"] if (server_dir / s).exists()),
             None
@@ -141,6 +146,18 @@ async def server_stop():
         proc = proc_module.mc_process
         if proc is None or proc.poll() is not None:
             raise HTTPException(status_code=400, detail="No hay servidor en marcha")
+        # Apagado limpio primero: da tiempo a guardar el mundo antes de matar
+        # el proceso. Solo se recurre a SIGKILL si no cierra solo a tiempo.
+        try:
+            proc.stdin.write(b"save-all\n")
+            proc.stdin.write(b"stop\n")
+            proc.stdin.flush()
+        except Exception:
+            pass  # si falla escribir a stdin, el fallback de abajo se encarga
+
+    stopped_gracefully = await asyncio.to_thread(wait_process_exit, proc, GRACEFUL_STOP_TIMEOUT_SECONDS)
+
+    if not stopped_gracefully and proc.poll() is None:
         try:
             import signal
             os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
@@ -149,7 +166,8 @@ async def server_stop():
                 proc.kill()
             except Exception:
                 pass
-    return JSONResponse({"success": True})
+
+    return JSONResponse({"success": True, "graceful": stopped_gracefully})
 
 
 @router.post("/command")

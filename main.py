@@ -136,8 +136,76 @@ def kill_port_25565() -> list:
     return kill_port(25565)
 
 
+def _pid_alive(pid) -> bool:
+    try:
+        os.kill(int(pid), 0)
+        return True
+    except OSError:
+        return False
+    except (ValueError, TypeError):
+        return False
+
+
+def _graceful_stop_orphan(pid: str) -> bool:
+    """
+    Intenta un apagado limpio (save-all + stop por RCON) de un proceso Java
+    huérfano antes de recurrir a SIGKILL. Al arrancar el panel de cero no hay
+    ningún Popen vivo con stdin propio para este PID (pertenecía al proceso
+    anterior), así que la única vía de apagado ordenado disponible es RCON —
+    para eso hay que averiguar de qué modpack es este proceso resolviendo su
+    directorio de trabajo real (/proc/<pid>/cwd, Linux) y leyendo su propio
+    server.properties. Devuelve True si se confirma que paró solo a tiempo.
+    """
+    from config import DEFAULT_SERVERS_PATH, GRACEFUL_STOP_TIMEOUT_SECONDS
+    from services.modpack import parse_server_properties
+    from services.rcon import RconConnection, RconError
+
+    try:
+        cwd = os.readlink(f"/proc/{pid}/cwd")
+    except OSError:
+        return False
+
+    server_dir = Path(cwd)
+    try:
+        server_dir.resolve().relative_to(DEFAULT_SERVERS_PATH.resolve())
+    except ValueError:
+        return False  # no es una carpeta de modpack conocida, no arriesgarse
+
+    props = parse_server_properties(server_dir.name)
+    if props.get("enable-rcon") != "true":
+        return False
+
+    port_str = props.get("rcon.port", "").strip()
+    password = props.get("rcon.password", "").strip()
+    if not port_str.isdigit() or not password:
+        return False
+
+    host = props.get("server-ip", "").strip() or "127.0.0.1"
+    conn = RconConnection(host, int(port_str), password)
+    try:
+        conn.command("save-all")
+        conn.command("stop")
+    except (RconError, OSError):
+        return False
+    finally:
+        conn.close()
+
+    deadline = time.time() + GRACEFUL_STOP_TIMEOUT_SECONDS
+    while time.time() < deadline:
+        if not _pid_alive(pid):
+            return True
+        time.sleep(0.5)
+    return False
+
+
 def kill_orphan_servers() -> list:
-    """Mata procesos Java residuales de ejecuciones anteriores del servidor Minecraft."""
+    """
+    Limpia procesos Java residuales de ejecuciones anteriores del servidor
+    Minecraft. Antes de matarlos con SIGKILL, intenta un apagado limpio por
+    RCON (save-all + stop) — sin esto, cada simple reinicio del panel
+    (systemctl restart, redeploy, etc.) mataba en frío cualquier partida en
+    curso, con riesgo real de corromper el mundo.
+    """
     killed = []
     mc_keywords = ["forge", "neoforge", "fabric", "quilt", "minecraft", "server.jar", "startserver", "ServerStarterJar"]
     try:
@@ -150,11 +218,14 @@ def kill_orphan_servers() -> list:
                 continue
             pid, cmdline = parts[0], parts[1]
             if any(k.lower() in cmdline.lower() for k in mc_keywords):
-                try:
-                    subprocess.run(["kill", "-9", pid], capture_output=True)
-                    killed.append(f"{pid} ({cmdline[:60]})")
-                except Exception:
-                    pass
+                stopped_gracefully = _graceful_stop_orphan(pid)
+                if not stopped_gracefully and _pid_alive(pid):
+                    try:
+                        subprocess.run(["kill", "-9", pid], capture_output=True)
+                    except Exception:
+                        pass
+                tag = "apagado limpio" if stopped_gracefully else "SIGKILL"
+                killed.append(f"{pid} ({cmdline[:60]}) [{tag}]")
     except FileNotFoundError:
         try:
             result = subprocess.run(["ps", "aux"], capture_output=True, text=True)
@@ -163,11 +234,14 @@ def kill_orphan_servers() -> list:
                     continue
                 if any(k.lower() in line.lower() for k in mc_keywords):
                     pid = line.split()[1]
-                    try:
-                        subprocess.run(["kill", "-9", pid], capture_output=True)
-                        killed.append(pid)
-                    except Exception:
-                        pass
+                    stopped_gracefully = _graceful_stop_orphan(pid)
+                    if not stopped_gracefully and _pid_alive(pid):
+                        try:
+                            subprocess.run(["kill", "-9", pid], capture_output=True)
+                        except Exception:
+                            pass
+                    tag = "apagado limpio" if stopped_gracefully else "SIGKILL"
+                    killed.append(f"{pid} [{tag}]")
         except Exception:
             pass
     return killed
@@ -208,6 +282,19 @@ if __name__ == "__main__":
     else:
         print("  Puerto 8000 libre.")
 
+    # Antes del kill duro por puerto: intenta un apagado limpio (save-all +
+    # stop por RCON) de cualquier server huérfano, para no arriesgar el mundo
+    # en cada simple reinicio del panel. kill_port_25565 de abajo queda como
+    # red de seguridad final para lo que no haya podido pararse solo.
+    print("Buscando procesos huérfanos de servidores anteriores...")
+    killed = kill_orphan_servers()
+    if killed:
+        print(f"  Procesados {len(killed)} proceso(s) huérfano(s):")
+        for k in killed:
+            print(f"    - {k}")
+    else:
+        print("  No se encontraron procesos huérfanos.")
+
     print("Liberando puerto 25565 si está ocupado...")
     port_killed = kill_port_25565()
     if port_killed:
@@ -215,15 +302,6 @@ if __name__ == "__main__":
         time.sleep(1)
     else:
         print("  Puerto 25565 libre.")
-
-    print("Buscando procesos huérfanos de servidores anteriores...")
-    killed = kill_orphan_servers()
-    if killed:
-        print(f"  Eliminados {len(killed)} proceso(s) huérfano(s):")
-        for k in killed:
-            print(f"    - {k}")
-    else:
-        print("  No se encontraron procesos huérfanos.")
 
     print("Limpiando session.lock abandonados...")
     locks = clean_orphan_locks()
