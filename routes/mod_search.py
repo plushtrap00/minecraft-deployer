@@ -37,12 +37,10 @@ def _server_context(modpack: str) -> tuple:
 
 
 @router.get("/{modpack}/mods/search")
-async def search_mods(modpack: str, query: str, source: str = "modrinth", category: str = ""):
+async def search_mods(modpack: str, query: str = "", source: str = "modrinth", category: str = ""):
     if source not in VALID_SOURCES:
         raise HTTPException(status_code=400, detail="source debe ser 'modrinth' o 'curseforge'")
     query = query.strip()
-    if not query:
-        return JSONResponse({"results": []})
 
     mc_version, loader = _server_context(modpack)
     try:

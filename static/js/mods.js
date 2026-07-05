@@ -784,13 +784,13 @@ document.getElementById('mod-search-btn').addEventListener('click', function() {
     return;
   }
   document.getElementById('mod-search-input').value = '';
-  document.getElementById('mod-search-modal-body').innerHTML = '<p class="empty-msg">Escribe el nombre de un mod y presiona Buscar.</p>';
   Array.prototype.forEach.call(document.querySelectorAll('#mod-search-tabs .mgmt-tab'), function(t) {
     t.classList.toggle('active', t.dataset.source === 'modrinth');
   });
   modSearchSource = 'modrinth';
   loadModSearchCategories(modSearchSource);
   document.getElementById('mod-search-modal').classList.add('show');
+  runModSearch('');
 });
 
 document.getElementById('mod-search-modal-close').addEventListener('click', function() {
@@ -813,10 +813,7 @@ document.getElementById('mod-search-tabs').addEventListener('click', function(ev
   tab.classList.add('active');
   modSearchSource = tab.dataset.source;
   loadModSearchCategories(modSearchSource);
-  var query = document.getElementById('mod-search-input').value.trim();
-  if (query) {
-    runModSearch(query);
-  }
+  runModSearch(document.getElementById('mod-search-input').value.trim());
 });
 
 function loadModSearchCategories(source) {
@@ -847,18 +844,12 @@ function loadModSearchCategories(source) {
 
 document.getElementById('mod-search-category').addEventListener('change', function() {
   modSearchCategory = this.value;
-  var query = document.getElementById('mod-search-input').value.trim();
-  if (query) {
-    runModSearch(query);
-  }
+  runModSearch(document.getElementById('mod-search-input').value.trim());
 });
 
 document.getElementById('mod-search-form').addEventListener('submit', function(event) {
   event.preventDefault();
-  var query = document.getElementById('mod-search-input').value.trim();
-  if (query) {
-    runModSearch(query);
-  }
+  runModSearch(document.getElementById('mod-search-input').value.trim());
 });
 
 function runModSearch(query) {

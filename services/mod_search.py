@@ -74,7 +74,13 @@ def search_modrinth(query: str, mc_version: str | None, loader: str | None, cate
         facets.append([f"categories:{loader}"])
     if category:
         facets.append([f"categories:{category}"])
-    params = {"query": query, "limit": str(limit), "facets": json.dumps(facets)}
+    params = {"limit": str(limit), "facets": json.dumps(facets)}
+    # Sin query, Modrinth devuelve resultados ordenados por popularidad (modo
+    # "explorar", igual que entrar directo a la web sin buscar nada).
+    if query:
+        params["query"] = query
+    else:
+        params["index"] = "downloads"
     url = "https://api.modrinth.com/v2/search?" + urllib.parse.urlencode(params)
     data = _http_get_json(url)
     return [
@@ -154,11 +160,14 @@ def search_curseforge(query: str, mc_version: str | None, loader: str | None, ca
     params = {
         "gameId": str(CURSEFORGE_GAME_ID),
         "classId": str(CURSEFORGE_MOD_CLASS_ID),
-        "searchFilter": query,
         "pageSize": str(limit),
         "sortField": "2",  # popularidad
         "sortOrder": "desc",
     }
+    # Sin query, CurseForge devuelve resultados ordenados por popularidad
+    # (modo "explorar"), igual que Modrinth arriba.
+    if query:
+        params["searchFilter"] = query
     if mc_version:
         params["gameVersion"] = mc_version
     if loader in CURSEFORGE_LOADER_TYPES:
