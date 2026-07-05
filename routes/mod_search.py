@@ -29,6 +29,7 @@ from routes.modpacks import BATCH_ROOT
 router = APIRouter(prefix="/api/modpacks", tags=["mod-search"])
 
 VALID_SOURCES = {"modrinth", "curseforge"}
+SEARCH_PAGE_SIZE = 20
 
 
 def _server_context(modpack: str) -> tuple:
@@ -37,24 +38,28 @@ def _server_context(modpack: str) -> tuple:
 
 
 @router.get("/{modpack}/mods/search")
-async def search_mods(modpack: str, query: str = "", source: str = "modrinth", category: str = ""):
+async def search_mods(modpack: str, query: str = "", source: str = "modrinth", category: str = "", offset: int = 0):
     if source not in VALID_SOURCES:
         raise HTTPException(status_code=400, detail="source debe ser 'modrinth' o 'curseforge'")
     query = query.strip()
+    categories = [c for c in category.split(",") if c] if category else None
 
     mc_version, loader = _server_context(modpack)
     try:
         if source == "modrinth":
-            results = search_modrinth(query, mc_version, loader, category or None)
+            results, total = search_modrinth(query, mc_version, loader, categories, limit=SEARCH_PAGE_SIZE, offset=offset)
         else:
-            results = search_curseforge(query, mc_version, loader, category or None)
+            results, total = search_curseforge(query, mc_version, loader, categories, limit=SEARCH_PAGE_SIZE, offset=offset)
     except ModSearchError as e:
         raise HTTPException(status_code=502, detail=str(e))
 
     mods_dir = DEFAULT_SERVERS_PATH / modpack / "mods"
     mark_installed(results, mods_dir)
 
-    return JSONResponse({"results": results, "mc_version": mc_version, "loader": loader})
+    return JSONResponse({
+        "results": results, "mc_version": mc_version, "loader": loader,
+        "total": total, "offset": offset, "limit": SEARCH_PAGE_SIZE,
+    })
 
 
 @router.get("/{modpack}/mods/search/categories")

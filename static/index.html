@@ -741,14 +741,19 @@
         <button type="button" class="mgmt-tab active" data-source="modrinth">Modrinth</button>
         <button type="button" class="mgmt-tab" data-source="curseforge">CurseForge</button>
       </div>
-      <form id="mod-search-form" class="mod-search-toolbar">
+      <div class="mod-search-toolbar">
         <input type="text" id="mod-search-input" placeholder="🔍 Buscar mod por nombre..." class="w-full">
-        <select id="mod-search-category"><option value="">Todas las categorías</option></select>
-        <button type="submit">Buscar</button>
-      </form>
-      <div class="modal-scroll" id="mod-search-modal-body">
-        <p class="empty-msg">Escribe el nombre de un mod y presiona Buscar.</p>
+        <div class="mod-search-category-dropdown" id="mod-search-category-dropdown">
+          <button type="button" class="btn-secondary btn-sm" id="mod-search-category-toggle">Categorías ▾</button>
+          <div class="mod-search-category-menu" id="mod-search-category-menu"></div>
+        </div>
       </div>
+      <div class="modal-scroll" id="mod-search-modal-body">
+        <p class="empty-msg">Cargando...</p>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <div class="mod-modal-pagination" id="mod-search-pagination"></div>
     </div>
   </div>
 </div>

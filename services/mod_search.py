@@ -66,15 +66,20 @@ def download_bytes(url: str) -> bytes:
 
 # ── Modrinth (api.modrinth.com/v2, sin autenticación) ──────────────────────────
 
-def search_modrinth(query: str, mc_version: str | None, loader: str | None, category: str | None = None, limit: int = 20) -> list:
+def search_modrinth(
+    query: str, mc_version: str | None, loader: str | None,
+    categories: list[str] | None = None, limit: int = 20, offset: int = 0,
+) -> tuple[list, int]:
     facets = [["project_type:mod"]]
     if mc_version:
         facets.append([f"versions:{mc_version}"])
     if loader in MODRINTH_LOADERS:
         facets.append([f"categories:{loader}"])
-    if category:
-        facets.append([f"categories:{category}"])
-    params = {"limit": str(limit), "facets": json.dumps(facets)}
+    if categories:
+        # Un solo grupo con varias categorías = OR ("adventure" o "magic"),
+        # igual que al tildar varias casillas en la web de Modrinth.
+        facets.append([f"categories:{c}" for c in categories])
+    params = {"limit": str(limit), "offset": str(offset), "facets": json.dumps(facets)}
     # Sin query, Modrinth devuelve resultados ordenados por popularidad (modo
     # "explorar", igual que entrar directo a la web sin buscar nada).
     if query:
@@ -83,7 +88,7 @@ def search_modrinth(query: str, mc_version: str | None, loader: str | None, cate
         params["index"] = "downloads"
     url = "https://api.modrinth.com/v2/search?" + urllib.parse.urlencode(params)
     data = _http_get_json(url)
-    return [
+    results = [
         {
             "source": "modrinth",
             "id": hit.get("project_id"),
@@ -97,6 +102,7 @@ def search_modrinth(query: str, mc_version: str | None, loader: str | None, cate
         }
         for hit in data.get("hits", [])
     ]
+    return results, data.get("total_hits", len(results))
 
 
 def get_modrinth_versions(project_id: str, mc_version: str | None, loader: str | None) -> list:
@@ -155,12 +161,16 @@ def _curseforge_headers() -> dict:
     return {"x-api-key": CURSEFORGE_API_KEY, "Accept": "application/json"}
 
 
-def search_curseforge(query: str, mc_version: str | None, loader: str | None, category: str | None = None, limit: int = 20) -> list:
+def search_curseforge(
+    query: str, mc_version: str | None, loader: str | None,
+    categories: list[str] | None = None, limit: int = 20, offset: int = 0,
+) -> tuple[list, int]:
     headers = _curseforge_headers()
     params = {
         "gameId": str(CURSEFORGE_GAME_ID),
         "classId": str(CURSEFORGE_MOD_CLASS_ID),
         "pageSize": str(limit),
+        "index": str(offset),
         "sortField": "2",  # popularidad
         "sortOrder": "desc",
     }
@@ -172,8 +182,10 @@ def search_curseforge(query: str, mc_version: str | None, loader: str | None, ca
         params["gameVersion"] = mc_version
     if loader in CURSEFORGE_LOADER_TYPES:
         params["modLoaderType"] = str(CURSEFORGE_LOADER_TYPES[loader])
-    if category:
-        params["categoryId"] = str(category)
+    if categories:
+        # categoryIds (plural) permite varias a la vez con semántica OR y
+        # tiene prioridad sobre categoryId; máximo 10 según la API.
+        params["categoryIds"] = json.dumps([int(c) for c in categories][:10])
     url = "https://api.curseforge.com/v1/mods/search?" + urllib.parse.urlencode(params)
     data = _http_get_json(url, headers)
 
@@ -192,21 +204,41 @@ def search_curseforge(query: str, mc_version: str | None, loader: str | None, ca
             "author": authors[0]["name"] if authors else None,
             "page_url": links.get("websiteUrl"),
         })
-    return results
+    total = (data.get("pagination") or {}).get("totalCount", len(results))
+    return results, total
+
+
+_CURSEFORGE_FILES_PAGE_SIZE = 50
+_CURSEFORGE_FILES_MAX = 300  # tope de seguridad: 6 páginas como mucho por mod
 
 
 def get_curseforge_files(mod_id, mc_version: str | None, loader: str | None) -> list:
+    """
+    Trae TODOS los archivos del mod (no solo los primeros 50): la API de
+    CurseForge pagina con index/pageSize, así que sin este loop las versiones
+    más antiguas de mods con muchos builds quedaban invisibles para siempre.
+    """
     headers = _curseforge_headers()
-    params = {"pageSize": "50"}
+    base_params = {"pageSize": str(_CURSEFORGE_FILES_PAGE_SIZE)}
     if mc_version:
-        params["gameVersion"] = mc_version
+        base_params["gameVersion"] = mc_version
     if loader in CURSEFORGE_LOADER_TYPES:
-        params["modLoaderType"] = str(CURSEFORGE_LOADER_TYPES[loader])
-    url = f"https://api.curseforge.com/v1/mods/{mod_id}/files?" + urllib.parse.urlencode(params)
-    data = _http_get_json(url, headers)
+        base_params["modLoaderType"] = str(CURSEFORGE_LOADER_TYPES[loader])
+
+    raw_files = []
+    index = 0
+    while index < _CURSEFORGE_FILES_MAX:
+        params = dict(base_params, index=str(index))
+        url = f"https://api.curseforge.com/v1/mods/{mod_id}/files?" + urllib.parse.urlencode(params)
+        data = _http_get_json(url, headers)
+        page = data.get("data", [])
+        raw_files.extend(page)
+        if len(page) < _CURSEFORGE_FILES_PAGE_SIZE:
+            break
+        index += _CURSEFORGE_FILES_PAGE_SIZE
 
     files = []
-    for f in data.get("data", []):
+    for f in raw_files:
         files.append({
             "source": "curseforge",
             "version_id": f.get("id"),
