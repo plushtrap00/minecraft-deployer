@@ -22,6 +22,7 @@ Formatos:
 """
 import io
 import json
+import time
 import shutil
 import zipfile
 import asyncio
@@ -30,7 +31,7 @@ import urllib.parse
 from pathlib import Path
 
 from config import DEFAULT_SERVERS_PATH
-from app_constants import CURSEFORGE_BULK_FILES_CHUNK
+from app_constants import CURSEFORGE_BULK_FILES_CHUNK, MOD_SEARCH_CATEGORIES_CACHE_TTL_SECONDS
 from services.mod_search import _http_get_json, download_bytes, _curseforge_headers, _HTTP_TIMEOUT, CURSEFORGE_GAME_ID
 from services.modloader import _http_get, _installer_url, LOADER_DISPLAY_NAMES
 from services.server_create import validate_new_server_name, _write_run_script, _bootstrap_common_files, _vanilla_server_jar_url
@@ -122,8 +123,13 @@ def _extract_overrides(zf: zipfile.ZipFile, server_dir: Path) -> None:
 
 # ── Modrinth ────────────────────────────────────────────────────────────────
 
-def search_modrinth_modpacks(query: str, limit: int = 20, offset: int = 0) -> tuple[list, int]:
+def search_modrinth_modpacks(
+    query: str, categories: list[str] | None = None, limit: int = 20, offset: int = 0,
+) -> tuple[list, int]:
     facets = [["project_type:modpack"]]
+    if categories:
+        # Un solo grupo con varias categorías = OR, igual que en la búsqueda de mods.
+        facets.append([f"categories:{c}" for c in categories])
     params = {"limit": str(limit), "offset": str(offset), "facets": json.dumps(facets)}
     if query:
         params["query"] = query
@@ -142,6 +148,22 @@ def search_modrinth_modpacks(query: str, limit: int = 20, offset: int = 0) -> tu
         for hit in data.get("hits", [])
     ]
     return results, data.get("total_hits", len(results))
+
+
+_modrinth_modpack_categories_cache = {"ts": 0.0, "data": []}
+
+
+def get_modrinth_modpack_categories() -> list:
+    """Igual que get_modrinth_categories() de mod_search.py, pero para project_type=modpack."""
+    now = time.time()
+    if _modrinth_modpack_categories_cache["data"] and now - _modrinth_modpack_categories_cache["ts"] < MOD_SEARCH_CATEGORIES_CACHE_TTL_SECONDS:
+        return _modrinth_modpack_categories_cache["data"]
+    data = _http_get_json("https://api.modrinth.com/v2/tag/category")
+    names = sorted({c["name"] for c in data if c.get("project_type") == "modpack" and c.get("header") == "categories"})
+    result = [{"id": name, "name": name.replace("-", " ").capitalize(), "children": []} for name in names]
+    _modrinth_modpack_categories_cache["ts"] = now
+    _modrinth_modpack_categories_cache["data"] = result
+    return result
 
 
 def get_modrinth_modpack_versions(project_id: str) -> list:
@@ -221,7 +243,9 @@ async def install_modrinth_modpack_stream(project_id: str, version_id: str, serv
 
 # ── CurseForge ──────────────────────────────────────────────────────────────
 
-def search_curseforge_modpacks(query: str, limit: int = 20, offset: int = 0) -> tuple[list, int]:
+def search_curseforge_modpacks(
+    query: str, categories: list[str] | None = None, limit: int = 20, offset: int = 0,
+) -> tuple[list, int]:
     headers = _curseforge_headers()
     params = {
         "gameId": str(CURSEFORGE_GAME_ID), "classId": str(CURSEFORGE_MODPACK_CLASS_ID),
@@ -230,6 +254,8 @@ def search_curseforge_modpacks(query: str, limit: int = 20, offset: int = 0) -> 
     }
     if query:
         params["searchFilter"] = query
+    if categories:
+        params["categoryIds"] = json.dumps([int(c) for c in categories][:10])
     url = "https://api.curseforge.com/v1/mods/search?" + urllib.parse.urlencode(params)
     data = _http_get_json(url, headers)
     results = []
@@ -246,6 +272,43 @@ def search_curseforge_modpacks(query: str, limit: int = 20, offset: int = 0) -> 
         })
     total = (data.get("pagination") or {}).get("totalCount", len(results))
     return results, total
+
+
+_curseforge_modpack_categories_cache = {"ts": 0.0, "data": []}
+
+
+def get_curseforge_modpack_categories() -> list:
+    """Igual que get_curseforge_categories() de mod_search.py, pero con classId de modpacks (4471)."""
+    now = time.time()
+    if _curseforge_modpack_categories_cache["data"] and now - _curseforge_modpack_categories_cache["ts"] < MOD_SEARCH_CATEGORIES_CACHE_TTL_SECONDS:
+        return _curseforge_modpack_categories_cache["data"]
+    headers = _curseforge_headers()
+    params = {"gameId": str(CURSEFORGE_GAME_ID), "classId": str(CURSEFORGE_MODPACK_CLASS_ID)}
+    url = "https://api.curseforge.com/v1/categories?" + urllib.parse.urlencode(params)
+    data = _http_get_json(url, headers)
+
+    all_cats = [c for c in data.get("data", []) if not c.get("isClass")]
+    children_by_parent: dict = {}
+    for c in all_cats:
+        parent_id = c.get("parentCategoryId")
+        if parent_id != CURSEFORGE_MODPACK_CLASS_ID:
+            children_by_parent.setdefault(parent_id, []).append(c)
+
+    top_level = [c for c in all_cats if c.get("parentCategoryId") == CURSEFORGE_MODPACK_CLASS_ID]
+    result = [
+        {
+            "id": c["id"],
+            "name": c["name"],
+            "children": [
+                {"id": ch["id"], "name": ch["name"], "children": []}
+                for ch in sorted(children_by_parent.get(c["id"], []), key=lambda ch: ch["name"])
+            ],
+        }
+        for c in sorted(top_level, key=lambda c: c["name"])
+    ]
+    _curseforge_modpack_categories_cache["ts"] = now
+    _curseforge_modpack_categories_cache["data"] = result
+    return result
 
 
 def get_curseforge_modpack_versions(mod_id) -> list:

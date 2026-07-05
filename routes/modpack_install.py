@@ -4,6 +4,7 @@ creando un servidor nuevo, incluyendo su RAM asignada.
 
 Endpoints:
 - GET /api/modpack-install/search
+- GET /api/modpack-install/categories
 - GET /api/modpack-install/versions
 - GET /api/modpack-install/stream   (SSE — GET porque EventSource no soporta POST)
 """
@@ -12,31 +13,46 @@ import asyncio
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
 
+from app_constants import MOD_SEARCH_PAGE_SIZE
 from services.mod_search import ModSearchError
 from services.server_create import validate_new_server_name
 from services.modpack_install import (
     search_modrinth_modpacks, get_modrinth_modpack_versions, install_modrinth_modpack_stream,
     search_curseforge_modpacks, get_curseforge_modpack_versions, install_curseforge_modpack_stream,
+    get_modrinth_modpack_categories, get_curseforge_modpack_categories,
 )
 from services.busy import BusyGuard
 
 router = APIRouter(prefix="/api/modpack-install", tags=["modpack-install"])
 
 _SOURCES = {"modrinth", "curseforge"}
+SEARCH_PAGE_SIZE = MOD_SEARCH_PAGE_SIZE
 
 
 @router.get("/search")
-async def search(source: str, query: str = "", limit: int = 20, offset: int = 0):
+async def search(source: str, query: str = "", category: str = "", offset: int = 0):
+    if source not in _SOURCES:
+        raise HTTPException(status_code=400, detail="source inválido")
+    categories = [c for c in category.split(",") if c] if category else None
+    try:
+        if source == "modrinth":
+            results, total = await asyncio.to_thread(search_modrinth_modpacks, query, categories, SEARCH_PAGE_SIZE, offset)
+        else:
+            results, total = await asyncio.to_thread(search_curseforge_modpacks, query, categories, SEARCH_PAGE_SIZE, offset)
+    except ModSearchError as e:
+        raise HTTPException(status_code=502, detail=str(e))
+    return JSONResponse({"results": results, "total": total, "offset": offset, "limit": SEARCH_PAGE_SIZE})
+
+
+@router.get("/categories")
+async def categories_endpoint(source: str):
     if source not in _SOURCES:
         raise HTTPException(status_code=400, detail="source inválido")
     try:
-        if source == "modrinth":
-            results, total = await asyncio.to_thread(search_modrinth_modpacks, query, limit, offset)
-        else:
-            results, total = await asyncio.to_thread(search_curseforge_modpacks, query, limit, offset)
+        cats = get_modrinth_modpack_categories() if source == "modrinth" else get_curseforge_modpack_categories()
     except ModSearchError as e:
         raise HTTPException(status_code=502, detail=str(e))
-    return JSONResponse({"results": results, "total": total})
+    return JSONResponse({"categories": cats})
 
 
 @router.get("/versions")

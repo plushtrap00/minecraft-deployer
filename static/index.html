@@ -195,15 +195,30 @@
   <div id="deploy-download-section" style="display:none">
     <div class="card">
       <h2>1 · Buscar modpack <span class="req">*</span></h2>
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
-        <select id="dl-source" class="btn-secondary btn-sm" style="flex-shrink:0">
-          <option value="modrinth">Modrinth</option>
-          <option value="curseforge">CurseForge</option>
-        </select>
-        <input type="text" id="dl-search-input" placeholder="🔍 Nombre del modpack..." class="w-full">
-        <button type="button" class="btn-secondary btn-sm" id="dl-search-btn" style="flex-shrink:0">Buscar</button>
+      <div class="mgmt-tabs" id="dl-source-tabs" style="margin-bottom:10px">
+        <button type="button" class="mgmt-tab active" data-source="modrinth">Modrinth</button>
+        <button type="button" class="mgmt-tab" data-source="curseforge">CurseForge</button>
       </div>
-      <div id="dl-search-results"><p class="empty-msg">Busca un modpack para empezar.</p></div>
+      <div class="mod-search-toolbar" style="margin:0 0 10px">
+        <input type="text" id="dl-search-input" placeholder="🔍 Nombre del modpack..." class="w-full">
+      </div>
+      <div class="mod-search-columns" style="margin:0;height:360px">
+        <aside class="mod-search-sidebar" id="dl-category-panel">
+          <div class="mod-search-sidebar-header" id="dl-category-panel-header">
+            <span>Categorías</span>
+            <button type="button" class="mod-search-category-panel-toggle" id="dl-category-panel-toggle" title="Colapsar/expandir categorías">▲</button>
+          </div>
+          <div class="mod-search-category-panel-body" id="dl-category-panel-body"></div>
+        </aside>
+        <div class="mod-search-results-col">
+          <div class="modal-scroll" id="dl-search-results">
+            <p class="empty-msg">Busca un modpack para empezar.</p>
+          </div>
+          <div class="modal-footer mod-search-results-footer">
+            <div class="mod-modal-pagination" id="dl-search-pagination"></div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="card" id="dl-version-card" style="display:none">

@@ -1,58 +1,228 @@
 // -- Descargar e instalar un modpack completo desde Modrinth/CurseForge -------
-var dlSelectedPack = null; // {source, id, title}
+// Mismo patrón visual/funcional que "Buscar mods online" (mods.js): pestañas
+// de fuente, panel de categorías colapsable y resultados paginados. Reusa
+// varias funciones genéricas ya definidas ahí (renderModModalPagination,
+// applyModSearchImage, formatDownloads, createModSearchLru,
+// renderModSearchCategoryOptions) en vez de duplicarlas.
+var dlSelectedPack = null; // {source, id, title, slug, author}
+var dlSearchInitialized = false;
 
-document.getElementById('dl-search-btn').addEventListener('click', searchModpacks);
-document.getElementById('dl-search-input').addEventListener('keydown', function(event) {
-  if (event.key === 'Enter') {
-    searchModpacks();
+var dlSource = 'modrinth';
+var dlCategories = [];
+var dlBusy = false;
+var dlDebounceTimer = null;
+var dlRequestToken = 0;
+
+var dlQuery = '';
+var dlOffset = 0;
+var dlLimit = 20;
+var dlTotal = 0;
+var dlSearchResultsCache = []; // última página cruda, para mapear el click por índice
+
+var dlResultsCache = createModSearchLru(30);
+var dlCategoriesCache = createModSearchLru(4); // como mucho 2 fuentes
+
+function dlResultsCacheKey(source, query, categories, offset) {
+  return source + '|' + query + '|' + categories.slice().sort().join(',') + '|' + offset;
+}
+
+// Llamado por create_server.js la primera vez que se abre "Descargar modpack".
+function initDlSearchIfNeeded() {
+  if (dlSearchInitialized) {
+    return;
   }
+  dlSearchInitialized = true;
+  loadDlCategories(dlSource);
+  runDlSearch('', 0);
+}
+
+// -- Pestañas de fuente ---------------------------------------------------------
+document.getElementById('dl-source-tabs').addEventListener('click', function(event) {
+  var tab = event.target.closest('.mgmt-tab');
+  if (!tab || dlBusy) {
+    return;
+  }
+  Array.prototype.forEach.call(this.querySelectorAll('.mgmt-tab'), function(t) { t.classList.remove('active'); });
+  tab.classList.add('active');
+  dlSource = tab.dataset.source;
+  dlCategories = [];
+  loadDlCategories(dlSource);
+  runDlSearch(document.getElementById('dl-search-input').value.trim(), 0);
 });
 
-function searchModpacks() {
-  var source = document.getElementById('dl-source').value;
-  var query = document.getElementById('dl-search-input').value.trim();
-  var results = document.getElementById('dl-search-results');
-  results.innerHTML = '<p class="empty-msg">Buscando...</p>';
+// -- Panel de categorías: checkboxes + subcategorías expandibles ---------------
+var dlCategoryPanelToggle = document.getElementById('dl-category-panel-toggle');
+var dlCategoryPanelBody = document.getElementById('dl-category-panel-body');
 
-  apiFetch('/api/modpack-install/search?source=' + encodeURIComponent(source) + '&query=' + encodeURIComponent(query))
+dlCategoryPanelToggle.addEventListener('click', function() {
+  var collapsed = dlCategoryPanelBody.classList.toggle('collapsed');
+  dlCategoryPanelToggle.textContent = collapsed ? '▼' : '▲';
+});
+
+function loadDlCategories(source) {
+  var cached = dlCategoriesCache.get(source);
+  if (cached) {
+    dlCategoryPanelBody.innerHTML = renderModSearchCategoryOptions(cached) || '<p class="empty-msg" style="padding:6px">Sin categorías</p>';
+    return;
+  }
+  dlCategoryPanelBody.innerHTML = '<p class="empty-msg" style="padding:6px">Cargando...</p>';
+  apiFetch('/api/modpack-install/categories?source=' + encodeURIComponent(source))
     .then(function(response) {
       return response.json().then(function(data) { return { ok: response.ok, data: data }; });
     })
     .then(function(result) {
       if (!result.ok) {
-        results.innerHTML = modErrorHtml(result.data.detail || 'Error al buscar');
+        dlCategoryPanelBody.innerHTML = '<p class="empty-msg" style="padding:6px">Error al cargar categorías</p>';
         return;
       }
-      renderModpackResults(result.data.results || []);
+      var cats = result.data.categories || [];
+      dlCategoriesCache.set(source, cats);
+      dlCategoryPanelBody.innerHTML = renderModSearchCategoryOptions(cats) || '<p class="empty-msg" style="padding:6px">Sin categorías</p>';
     })
     .catch(function() {
-      results.innerHTML = modErrorHtml('Error de red');
+      dlCategoryPanelBody.innerHTML = '<p class="empty-msg" style="padding:6px">Error al cargar categorías</p>';
     });
 }
 
-function renderModpackResults(items) {
-  var results = document.getElementById('dl-search-results');
-  if (!items.length) {
-    results.innerHTML = '<p class="empty-msg">Sin resultados</p>';
+dlCategoryPanelBody.addEventListener('click', function(event) {
+  var expandBtn = event.target.closest('.mod-search-category-expand');
+  if (!expandBtn) {
     return;
   }
-  results.innerHTML = '<div class="mods-table-wrap">' + items.map(function(item, i) {
-    return '<div class="mod-list-item mod-search-result" data-index="' + i + '" style="cursor:pointer">'
-      + (item.icon_url ? '<img src="' + escHtml(item.icon_url) + '" style="width:32px;height:32px;border-radius:6px;flex-shrink:0">' : '<span class="mod-icon">📦</span>')
-      + '<div class="mod-info"><div class="mod-display">' + escHtml(item.title) + '</div>'
-      + '<div class="mod-file">' + escHtml(item.author || '') + ' · ' + (item.downloads || 0).toLocaleString() + ' descargas</div></div>'
-      + '</div>';
-  }).join('') + '</div>';
+  var target = document.getElementById(expandBtn.dataset.target);
+  var isOpen = target.classList.toggle('show');
+  expandBtn.textContent = isOpen ? '−' : '+';
+  expandBtn.classList.toggle('open', isOpen);
+});
 
-  dlSearchResultsCache = items;
-  results.querySelectorAll('.mod-search-result').forEach(function(el) {
+dlCategoryPanelBody.addEventListener('change', function(event) {
+  if (event.target.type !== 'checkbox') {
+    return;
+  }
+  var value = event.target.value;
+  var idx = dlCategories.indexOf(value);
+  if (event.target.checked && idx === -1) {
+    dlCategories.push(value);
+  } else if (!event.target.checked && idx !== -1) {
+    dlCategories.splice(idx, 1);
+  }
+  runDlSearch(document.getElementById('dl-search-input').value.trim(), 0);
+});
+
+// -- Input de búsqueda: busca solo/a con Enter, o tras una pausa al escribir ---
+var dlSearchInputEl = document.getElementById('dl-search-input');
+
+dlSearchInputEl.addEventListener('input', function() {
+  clearTimeout(dlDebounceTimer);
+  var value = this.value;
+  dlDebounceTimer = setTimeout(function() {
+    runDlSearch(value.trim(), 0);
+  }, 400);
+});
+
+dlSearchInputEl.addEventListener('keydown', function(event) {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    clearTimeout(dlDebounceTimer);
+    runDlSearch(this.value.trim(), 0);
+  }
+});
+
+// -- Búsqueda (resultados paginados por el servidor) ---------------------------
+function runDlSearch(query, offset) {
+  offset = offset || 0;
+  dlQuery = query;
+  document.getElementById('dl-search-pagination').innerHTML = '';
+
+  var cacheKey = dlResultsCacheKey(dlSource, query, dlCategories, offset);
+  var cached = dlResultsCache.get(cacheKey);
+  if (cached) {
+    dlOffset = offset;
+    dlLimit = cached.limit;
+    dlTotal = cached.total;
+    renderDlResults(cached.results);
+    return;
+  }
+
+  var body = document.getElementById('dl-search-results');
+  body.innerHTML = modSearchSpinnerHtml('Buscando...');
+
+  var url = '/api/modpack-install/search?source=' + encodeURIComponent(dlSource)
+    + '&query=' + encodeURIComponent(query) + '&offset=' + offset;
+  if (dlCategories.length) {
+    url += '&category=' + encodeURIComponent(dlCategories.join(','));
+  }
+
+  var requestToken = ++dlRequestToken;
+  apiFetch(url)
+    .then(function(response) {
+      return response.json().then(function(data) { return { ok: response.ok, data: data }; });
+    })
+    .then(function(result) {
+      if (requestToken !== dlRequestToken) {
+        return; // se disparó otra búsqueda mientras esta estaba en vuelo
+      }
+      if (!result.ok) {
+        body.innerHTML = modErrorHtml(result.data.detail || 'Error al buscar');
+        return;
+      }
+      dlOffset = offset;
+      dlLimit = result.data.limit || 20;
+      dlTotal = result.data.total || 0;
+      dlResultsCache.set(cacheKey, { results: result.data.results || [], total: dlTotal, limit: dlLimit });
+      renderDlResults(result.data.results || []);
+    })
+    .catch(function(error) {
+      if (requestToken !== dlRequestToken) {
+        return;
+      }
+      body.innerHTML = modErrorHtml('Error de red: ' + error.message);
+    });
+}
+
+function renderDlResults(results) {
+  dlSearchResultsCache = results;
+  var body = document.getElementById('dl-search-results');
+  if (!results.length) {
+    body.innerHTML = '<p class="empty-msg">Sin resultados.</p>';
+    document.getElementById('dl-search-pagination').innerHTML = '';
+    return;
+  }
+  body.innerHTML = results.map(function(item, i) {
+    var icon = item.icon_url
+      ? '<img class="mod-search-icon" data-icon-url="' + escHtml(item.icon_url) + '" alt="" loading="lazy" decoding="async">'
+      : '<span class="mod-search-icon" style="display:flex;align-items:center;justify-content:center;font-size:1.2rem">📦</span>';
+    var desc = item.description ? '<div class="mod-search-desc">' + escHtml(item.description) + '</div>' : '';
+    var link = item.page_url
+      ? '<a class="mod-search-link" href="' + escHtml(item.page_url) + '" target="_blank" rel="noopener" title="Ver página del modpack" onclick="event.stopPropagation()">↗</a>'
+      : '';
+    return '<div class="mod-search-result-item" data-index="' + i + '" style="cursor:pointer">'
+      + icon
+      + '<div class="mod-search-info">'
+      + '<div class="mod-search-title-row"><span class="mod-search-title">' + escHtml(item.title) + '</span></div>'
+      + desc
+      + '<div class="mod-search-meta">' + escHtml(item.author || '') + ' · ⬇ ' + formatDownloads(item.downloads) + '</div>'
+      + '</div>'
+      + link
+      + '</div>';
+  }).join('');
+
+  Array.prototype.forEach.call(body.querySelectorAll('img[data-icon-url]'), function(img) {
+    applyModSearchImage(img, img.dataset.iconUrl);
+  });
+
+  Array.prototype.forEach.call(body.querySelectorAll('.mod-search-result-item'), function(el) {
     el.addEventListener('click', function() {
       selectModpackToInstall(dlSearchResultsCache[parseInt(this.dataset.index, 10)]);
     });
   });
-}
 
-var dlSearchResultsCache = [];
+  var totalPages = Math.max(1, Math.ceil(dlTotal / dlLimit));
+  var page = Math.floor(dlOffset / dlLimit);
+  renderModModalPagination('dl-search-pagination', page, totalPages, function(p) {
+    runDlSearch(dlQuery, p * dlLimit);
+  });
+}
 
 // Nombre distinto a propósito: manage.js ya tiene un selectModpack() global
 // (abre el panel de gestión de un modpack instalado) — todos los <script> de

@@ -26,6 +26,7 @@ document.getElementById('deploy-mode-create').addEventListener('click', function
 
 document.getElementById('deploy-mode-download').addEventListener('click', function() {
   switchDeployMode('deploy-mode-download');
+  initDlSearchIfNeeded();
 });
 
 var createMcVersionsLoaded = false;
