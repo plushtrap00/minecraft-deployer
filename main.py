@@ -96,9 +96,11 @@ async def _on_startup():
 @app.on_event("shutdown")
 async def _on_shutdown():
     """
-    Corta los streams SSE (consola, panel de sistema) en cuanto systemd manda
-    la señal de parada, para que `systemctl restart` no tenga que esperar a que
-    salte el timeout y fuerce un SIGKILL.
+    Uvicorn llama este evento DESPUÉS de esperar a que las conexiones se
+    cierren solas (ver timeout_graceful_shutdown más abajo) — para cuando
+    esto se ejecuta, los streams SSE de consola/sysmon ya se cortaron por esa
+    espera (o fueron cancelados a la fuerza al agotarse el timeout). Esto solo
+    limpia el estado en memoria antes de que el proceso termine.
     """
     shutdown_event.set()
     notify_app_shutdown()
@@ -325,4 +327,11 @@ if __name__ == "__main__":
     print(f"Carpeta por defecto: {DEFAULT_SERVERS_PATH}")
     print(f"Accede desde tu red local en: http://<IP-DE-ESTE-EQUIPO>:{WEB_PORT}")
 
-    uvicorn.run(app, host="0.0.0.0", port=WEB_PORT, reload=False, timeout_graceful_shutdown=5)
+    # Los streams SSE de consola y del panel de sistema son bucles que nunca
+    # terminan por sí solos: sin este límite bajo, `systemctl restart` (SIGTERM)
+    # se queda esperando a que esas conexiones se cierren solas ANTES de que
+    # el proceso llegue siquiera a enterarse del apagado (uvicorn espera esto
+    # primero y recién después dispara el evento "shutdown" de la app — para
+    # entonces ya es tarde para acortar la espera desde acá). Pasado este
+    # tiempo, uvicorn cancela las conexiones que sigan abiertas a la fuerza.
+    uvicorn.run(app, host="0.0.0.0", port=WEB_PORT, reload=False, timeout_graceful_shutdown=3)
