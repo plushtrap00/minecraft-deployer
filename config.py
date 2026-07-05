@@ -10,6 +10,11 @@ DEFAULT_SERVERS_PATH = Path(os.environ.get("SERVERS_PATH", str(Path.home() / "se
 MC_DOMAIN = os.environ.get("MC_DOMAIN", "")
 DEFAULT_SERVERS_PATH.mkdir(parents=True, exist_ok=True)
 
+# API key gratuita para buscar mods en CurseForge (console.curseforge.com/#/api-keys).
+# Sin esta variable, la búsqueda en CurseForge queda deshabilitada pero Modrinth
+# (que no requiere key) sigue funcionando normalmente.
+CURSEFORGE_API_KEY = os.environ.get("CURSEFORGE_API_KEY", "")
+
 TEMP_DIR = Path("uploads_temp")
 TEMP_DIR.mkdir(exist_ok=True)
 

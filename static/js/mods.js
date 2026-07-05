@@ -757,3 +757,219 @@ document.getElementById('mod-duplicates-modal').addEventListener('click', functi
     this.classList.remove('show');
   }
 });
+
+
+// -- Buscar e instalar mods desde Modrinth / CurseForge ------------------------
+var modSearchSource = 'modrinth';
+var modSearchBusy = false;
+
+function formatDownloads(n) {
+  n = n || 0;
+  if (n >= 1000000) {
+    return (n / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+  }
+  if (n >= 1000) {
+    return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+  }
+  return String(n);
+}
+
+document.getElementById('mod-search-btn').addEventListener('click', function() {
+  if (!currentModpack) {
+    return;
+  }
+  document.getElementById('mod-search-input').value = '';
+  document.getElementById('mod-search-modal-body').innerHTML = '<p class="empty-msg">Escribe el nombre de un mod y presiona Buscar.</p>';
+  document.getElementById('mod-search-modal').classList.add('show');
+});
+
+document.getElementById('mod-search-modal-close').addEventListener('click', function() {
+  if (!modSearchBusy) {
+    document.getElementById('mod-search-modal').classList.remove('show');
+  }
+});
+document.getElementById('mod-search-modal').addEventListener('click', function(event) {
+  if (event.target === this && !modSearchBusy) {
+    this.classList.remove('show');
+  }
+});
+
+document.getElementById('mod-search-tabs').addEventListener('click', function(event) {
+  var tab = event.target.closest('.mgmt-tab');
+  if (!tab || modSearchBusy) {
+    return;
+  }
+  Array.prototype.forEach.call(this.querySelectorAll('.mgmt-tab'), function(t) { t.classList.remove('active'); });
+  tab.classList.add('active');
+  modSearchSource = tab.dataset.source;
+  var query = document.getElementById('mod-search-input').value.trim();
+  if (query) {
+    runModSearch(query);
+  }
+});
+
+document.getElementById('mod-search-form').addEventListener('submit', function(event) {
+  event.preventDefault();
+  var query = document.getElementById('mod-search-input').value.trim();
+  if (query) {
+    runModSearch(query);
+  }
+});
+
+function runModSearch(query) {
+  var body = document.getElementById('mod-search-modal-body');
+  body.innerHTML = '<p class="empty-msg">Buscando...</p>';
+  apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/search?source=' + encodeURIComponent(modSearchSource) + '&query=' + encodeURIComponent(query))
+    .then(function(response) {
+      return response.json().then(function(data) { return { ok: response.ok, data: data }; });
+    })
+    .then(function(result) {
+      if (!result.ok) {
+        body.innerHTML = modErrorHtml(result.data.detail || 'Error al buscar');
+        return;
+      }
+      renderModSearchResults(result.data.results || []);
+    })
+    .catch(function(error) {
+      body.innerHTML = modErrorHtml('Error de red: ' + error.message);
+    });
+}
+
+function renderModSearchResults(results) {
+  var body = document.getElementById('mod-search-modal-body');
+  if (!results.length) {
+    body.innerHTML = '<p class="empty-msg">Sin resultados para esta versión/modloader.</p>';
+    return;
+  }
+  body.innerHTML = results.map(function(mod, i) {
+    var icon = mod.icon_url
+      ? '<img src="' + escHtml(mod.icon_url) + '" alt="" style="width:36px;height:36px;border-radius:6px;flex-shrink:0">'
+      : '<span class="mod-icon">🧩</span>';
+    return '<div class="mod-list-item mod-search-result" data-index="' + i + '" style="cursor:pointer">'
+      + icon
+      + '<div class="mod-info"><div class="mod-display">' + escHtml(mod.title) + '</div>'
+      + '<div class="mod-file">' + escHtml(mod.author || '') + ' · ⬇ ' + formatDownloads(mod.downloads) + '</div></div>'
+      + '</div>';
+  }).join('');
+  body._modSearchResults = results;
+}
+
+function openModSearchFiles(mod) {
+  var body = document.getElementById('mod-search-modal-body');
+  body.innerHTML = '<p class="empty-msg">Buscando versiones compatibles...</p>';
+  apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/search/' + encodeURIComponent(mod.source) + '/' + encodeURIComponent(mod.id) + '/files')
+    .then(function(response) {
+      return response.json().then(function(data) { return { ok: response.ok, data: data }; });
+    })
+    .then(function(result) {
+      if (!result.ok) {
+        body.innerHTML = '<button type="button" class="btn-secondary btn-sm mod-search-back" style="margin-bottom:10px">‹ Volver a resultados</button>'
+          + modErrorHtml(result.data.detail || 'Error al obtener versiones');
+        return;
+      }
+      renderModSearchFiles(mod, result.data.files || []);
+    })
+    .catch(function(error) {
+      body.innerHTML = '<button type="button" class="btn-secondary btn-sm mod-search-back" style="margin-bottom:10px">‹ Volver a resultados</button>'
+        + modErrorHtml('Error de red: ' + error.message);
+    });
+}
+
+function renderModSearchFiles(mod, files) {
+  var body = document.getElementById('mod-search-modal-body');
+  var header = '<div style="margin-bottom:10px">'
+    + '<button type="button" class="btn-secondary btn-sm mod-search-back">‹ Volver a resultados</button>'
+    + '<div style="font-weight:600;margin-top:8px">' + escHtml(mod.title) + '</div>'
+    + '</div>';
+  if (!files.length) {
+    body.innerHTML = header + '<p class="empty-msg">No hay versiones compatibles con la versión/modloader de este servidor.</p>';
+    return;
+  }
+  var list = files.map(function(f, i) {
+    var available = !!f.download_url;
+    var detail = escHtml(f.filename) + (f.game_versions && f.game_versions.length ? ' · MC ' + escHtml(f.game_versions.join(', ')) : '');
+    return '<div class="mod-modal-item">'
+      + '<div class="mod-info"><div class="mod-display">' + escHtml(f.version_number || f.filename) + '</div>'
+      + '<div class="mod-modal-detail">' + detail + '</div></div>'
+      + (available
+        ? '<button type="button" class="btn-sm mod-search-install" data-index="' + i + '" style="flex-shrink:0">Instalar</button>'
+        : '<span style="font-size:.72rem;color:var(--muted);flex-shrink:0">Sin descarga directa</span>')
+      + '</div>';
+  }).join('');
+  body.innerHTML = header + '<div class="mods-table-wrap">' + list + '</div>';
+  body._modSearchFiles = files;
+  body._modSearchMod = mod;
+}
+
+document.getElementById('mod-search-modal-body').addEventListener('click', function(event) {
+  if (modSearchBusy) {
+    return;
+  }
+  var row = event.target.closest('.mod-search-result');
+  if (row) {
+    var mod = this._modSearchResults[Number(row.dataset.index)];
+    if (mod) {
+      openModSearchFiles(mod);
+    }
+    return;
+  }
+  var backBtn = event.target.closest('.mod-search-back');
+  if (backBtn) {
+    var query = document.getElementById('mod-search-input').value.trim();
+    if (query) {
+      runModSearch(query);
+    }
+    return;
+  }
+  var installBtn = event.target.closest('.mod-search-install');
+  if (installBtn) {
+    var file = this._modSearchFiles[Number(installBtn.dataset.index)];
+    if (file) {
+      installSearchedMod(this._modSearchMod, file, installBtn);
+    }
+  }
+});
+
+function installSearchedMod(mod, file, buttonEl) {
+  modSearchBusy = true;
+  buttonEl.disabled = true;
+  buttonEl.textContent = 'Instalando...';
+
+  apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/search/install', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      source: mod.source,
+      download_url: file.download_url,
+      filename: file.filename
+    })
+  })
+    .then(function(response) {
+      return response.json().then(function(data) { return { ok: response.ok, data: data }; });
+    })
+    .then(function(result) {
+      modSearchBusy = false;
+      if (result.ok && result.data.success && result.data.needs_confirmation && result.data.needs_confirmation.length) {
+        document.getElementById('mod-search-modal').classList.remove('show');
+        openDowngradeModal(result.data.batch_id, result.data.needs_confirmation);
+        return;
+      }
+      var body = document.getElementById('mod-search-modal-body');
+      if (result.ok && result.data.success) {
+        showToast('Mod instalado: ' + result.data.filename, 'success');
+        body.innerHTML = '<div style="background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.3);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--green)">✅ Mod instalado: '
+          + escHtml(result.data.filename) + '</div>';
+        loadModsList();
+      } else {
+        buttonEl.disabled = false;
+        buttonEl.textContent = 'Instalar';
+        showToast(result.data.detail || 'Error al instalar', 'error');
+      }
+    })
+    .catch(function(error) {
+      modSearchBusy = false;
+      buttonEl.disabled = false;
+      buttonEl.textContent = 'Instalar';
+      showToast('Error de red: ' + error.message, 'error');
+    });
+}

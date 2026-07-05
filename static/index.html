@@ -527,7 +527,10 @@
           <div class="muz-hint">Se verificará compatibilidad con la versión del servidor</div>
         </div>
         <input type="file" id="mod-folder-input" webkitdirectory directory multiple style="display:none">
-        <button type="button" class="btn-secondary btn-sm" id="mod-folder-btn" style="margin:8px 0">📁 Subir carpeta de mods</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0">
+          <button type="button" class="btn-secondary btn-sm" id="mod-folder-btn">📁 Subir carpeta de mods</button>
+          <button type="button" class="btn-secondary btn-sm" id="mod-search-btn">🔎 Buscar mods online</button>
+        </div>
 
         <div style="display:flex;gap:8px;align-items:center">
           <input type="text" id="mods-search" placeholder="🔍 Buscar mod por nombre..." class="w-full">
@@ -721,6 +724,30 @@
     </div>
     <div class="modal-body">
       <div class="modal-scroll" id="mod-duplicates-modal-body"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: buscar e instalar mods desde Modrinth / CurseForge -->
+<div class="modal-overlay" id="mod-search-modal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <span>🔎</span>
+      <span class="modal-path">Buscar mods online</span>
+      <button class="modal-close" id="mod-search-modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="mgmt-tabs" id="mod-search-tabs" style="margin-bottom:10px">
+        <button type="button" class="mgmt-tab active" data-source="modrinth">Modrinth</button>
+        <button type="button" class="mgmt-tab" data-source="curseforge">CurseForge</button>
+      </div>
+      <form id="mod-search-form" style="display:flex;gap:8px;margin-bottom:10px">
+        <input type="text" id="mod-search-input" placeholder="🔍 Buscar mod por nombre..." class="w-full">
+        <button type="submit">Buscar</button>
+      </form>
+      <div class="modal-scroll" id="mod-search-modal-body">
+        <p class="empty-msg">Escribe el nombre de un mod y presiona Buscar.</p>
+      </div>
     </div>
   </div>
 </div>
