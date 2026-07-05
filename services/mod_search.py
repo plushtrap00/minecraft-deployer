@@ -138,13 +138,20 @@ _modrinth_categories_cache = {"ts": 0.0, "data": []}
 
 
 def get_modrinth_categories() -> list:
-    """Categorías de Modrinth para project_type=mod (adventure, magic, storage...)."""
+    """
+    Categorías de Modrinth para project_type=mod (adventure, magic, storage...).
+    A diferencia de CurseForge, la API de Modrinth (GET /v2/tag/category) no
+    expone ningún campo de jerarquía (solo name/icon/project_type/header):
+    es una taxonomía plana, así que "children" siempre va vacío. Se deja en
+    la respuesta para que el frontend use el mismo componente en ambas
+    pestañas sin necesitar dos formas de dato distintas.
+    """
     now = time.time()
     if _modrinth_categories_cache["data"] and now - _modrinth_categories_cache["ts"] < _CATEGORIES_CACHE_TTL:
         return _modrinth_categories_cache["data"]
     data = _http_get_json("https://api.modrinth.com/v2/tag/category")
     names = sorted({c["name"] for c in data if c.get("project_type") == "mod" and c.get("header") == "categories"})
-    result = [{"id": name, "name": name.replace("-", " ").capitalize()} for name in names]
+    result = [{"id": name, "name": name.replace("-", " ").capitalize(), "children": []} for name in names]
     _modrinth_categories_cache["ts"] = now
     _modrinth_categories_cache["data"] = result
     return result
@@ -256,7 +263,16 @@ _curseforge_categories_cache = {"ts": 0.0, "data": []}
 
 
 def get_curseforge_categories() -> list:
-    """Categorías de CurseForge para Minecraft mods (classId=6): Adventure, Magic, Storage..."""
+    """
+    Categorías de CurseForge para Minecraft mods (classId=6), con jerarquía:
+    Addons, Technology, World Gen... tienen subcategorías propias.
+
+    La API (GET /v1/categories) devuelve TODO en una lista plana; cada
+    categoría trae parentCategoryId. Las de primer nivel tienen
+    parentCategoryId == classId (6, la propia clase "mods"); las
+    subcategorías tienen parentCategoryId == id de su categoría padre.
+    Acá se arma el árbol de 2 niveles a partir de esa lista.
+    """
     now = time.time()
     if _curseforge_categories_cache["data"] and now - _curseforge_categories_cache["ts"] < _CATEGORIES_CACHE_TTL:
         return _curseforge_categories_cache["data"]
@@ -264,10 +280,26 @@ def get_curseforge_categories() -> list:
     params = {"gameId": str(CURSEFORGE_GAME_ID), "classId": str(CURSEFORGE_MOD_CLASS_ID)}
     url = "https://api.curseforge.com/v1/categories?" + urllib.parse.urlencode(params)
     data = _http_get_json(url, headers)
-    result = sorted(
-        ({"id": c["id"], "name": c["name"]} for c in data.get("data", []) if not c.get("isClass")),
-        key=lambda c: c["name"],
-    )
+
+    all_cats = [c for c in data.get("data", []) if not c.get("isClass")]
+    children_by_parent: dict = {}
+    for c in all_cats:
+        parent_id = c.get("parentCategoryId")
+        if parent_id != CURSEFORGE_MOD_CLASS_ID:
+            children_by_parent.setdefault(parent_id, []).append(c)
+
+    top_level = [c for c in all_cats if c.get("parentCategoryId") == CURSEFORGE_MOD_CLASS_ID]
+    result = [
+        {
+            "id": c["id"],
+            "name": c["name"],
+            "children": [
+                {"id": ch["id"], "name": ch["name"], "children": []}
+                for ch in sorted(children_by_parent.get(c["id"], []), key=lambda ch: ch["name"])
+            ],
+        }
+        for c in sorted(top_level, key=lambda c: c["name"])
+    ]
     _curseforge_categories_cache["ts"] = now
     _curseforge_categories_cache["data"] = result
     return result

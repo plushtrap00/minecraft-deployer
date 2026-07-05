@@ -835,54 +835,66 @@ document.getElementById('mod-search-tabs').addEventListener('click', function(ev
   runModSearch(document.getElementById('mod-search-input').value.trim(), 0);
 });
 
-// -- Filtro de categorías: dropdown multi-select con checkboxes ----------------
-var modSearchCategoryToggle = document.getElementById('mod-search-category-toggle');
-var modSearchCategoryMenu = document.getElementById('mod-search-category-menu');
+// -- Filtro de categorías: panel con checkboxes y subcategorías expandibles ---
+var modSearchCategoryPanelHeader = document.getElementById('mod-search-category-panel-header');
+var modSearchCategoryPanelToggle = document.getElementById('mod-search-category-panel-toggle');
+var modSearchCategoryPanelBody = document.getElementById('mod-search-category-panel-body');
 
-modSearchCategoryToggle.addEventListener('click', function(event) {
-  event.stopPropagation();
-  modSearchCategoryMenu.classList.toggle('show');
+// Colapsa/expande el panel entero (checkboxes + subcategorías), no toca la selección.
+modSearchCategoryPanelHeader.addEventListener('click', function() {
+  var collapsed = modSearchCategoryPanelBody.classList.toggle('collapsed');
+  modSearchCategoryPanelToggle.textContent = collapsed ? '▼' : '▲';
 });
 
-document.addEventListener('click', function(event) {
-  if (modSearchCategoryMenu.classList.contains('show') && !event.target.closest('#mod-search-category-dropdown')) {
-    modSearchCategoryMenu.classList.remove('show');
-  }
-});
-
-function updateModSearchCategoryToggleLabel() {
-  modSearchCategoryToggle.textContent = modSearchCategories.length
-    ? 'Categorías (' + modSearchCategories.length + ') ▾'
-    : 'Categorías ▾';
+function renderModSearchCategoryOptions(categories) {
+  return categories.map(function(c) {
+    var childrenId = 'mod-search-subcats-' + escHtml(String(c.id));
+    var hasChildren = c.children && c.children.length > 0;
+    var row = '<div class="mod-search-category-row">'
+      + '<label class="mod-search-category-option"><input type="checkbox" value="' + escHtml(String(c.id)) + '"> ' + escHtml(c.name) + '</label>'
+      + (hasChildren ? '<button type="button" class="mod-search-category-expand" data-target="' + childrenId + '">+</button>' : '')
+      + '</div>';
+    var childrenHtml = hasChildren
+      ? '<div class="mod-search-subcategory-list" id="' + childrenId + '">' + c.children.map(function(ch) {
+          return '<label class="mod-search-category-option sub"><input type="checkbox" value="' + escHtml(String(ch.id)) + '"> ' + escHtml(ch.name) + '</label>';
+        }).join('') + '</div>'
+      : '';
+    return row + childrenHtml;
+  }).join('');
 }
 
 function loadModSearchCategories(source) {
-  updateModSearchCategoryToggleLabel();
-  modSearchCategoryMenu.innerHTML = '<p class="empty-msg" style="padding:6px">Cargando...</p>';
-  modSearchCategoryToggle.disabled = true;
+  modSearchCategoryPanelBody.innerHTML = '<p class="empty-msg" style="padding:6px">Cargando...</p>';
   apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/search/categories?source=' + encodeURIComponent(source))
     .then(function(response) {
       return response.json().then(function(data) { return { ok: response.ok, data: data }; });
     })
     .then(function(result) {
-      modSearchCategoryToggle.disabled = false;
       if (!result.ok) {
-        modSearchCategoryMenu.innerHTML = '';
+        modSearchCategoryPanelBody.innerHTML = '';
         document.getElementById('mod-search-modal-body').innerHTML = modErrorHtml(result.data.detail || 'No se pudieron cargar las categorías');
         return;
       }
       var cats = result.data.categories || [];
-      modSearchCategoryMenu.innerHTML = cats.map(function(c) {
-        return '<label class="mod-search-category-option"><input type="checkbox" value="' + escHtml(String(c.id)) + '"> ' + escHtml(c.name) + '</label>';
-      }).join('') || '<p class="empty-msg" style="padding:6px">Sin categorías</p>';
+      modSearchCategoryPanelBody.innerHTML = renderModSearchCategoryOptions(cats) || '<p class="empty-msg" style="padding:6px">Sin categorías</p>';
     })
     .catch(function() {
-      modSearchCategoryToggle.disabled = false;
-      modSearchCategoryMenu.innerHTML = '<p class="empty-msg" style="padding:6px">Error al cargar categorías</p>';
+      modSearchCategoryPanelBody.innerHTML = '<p class="empty-msg" style="padding:6px">Error al cargar categorías</p>';
     });
 }
 
-modSearchCategoryMenu.addEventListener('change', function(event) {
+modSearchCategoryPanelBody.addEventListener('click', function(event) {
+  var expandBtn = event.target.closest('.mod-search-category-expand');
+  if (!expandBtn) {
+    return;
+  }
+  var target = document.getElementById(expandBtn.dataset.target);
+  var isOpen = target.classList.toggle('show');
+  expandBtn.textContent = isOpen ? '−' : '+';
+  expandBtn.classList.toggle('open', isOpen);
+});
+
+modSearchCategoryPanelBody.addEventListener('change', function(event) {
   if (event.target.type !== 'checkbox') {
     return;
   }
@@ -893,7 +905,6 @@ modSearchCategoryMenu.addEventListener('change', function(event) {
   } else if (!event.target.checked && idx !== -1) {
     modSearchCategories.splice(idx, 1);
   }
-  updateModSearchCategoryToggleLabel();
   runModSearch(document.getElementById('mod-search-input').value.trim(), 0);
 });
 

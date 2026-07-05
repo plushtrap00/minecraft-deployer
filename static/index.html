@@ -743,10 +743,13 @@
       </div>
       <div class="mod-search-toolbar">
         <input type="text" id="mod-search-input" placeholder="🔍 Buscar mod por nombre..." class="w-full">
-        <div class="mod-search-category-dropdown" id="mod-search-category-dropdown">
-          <button type="button" class="btn-secondary btn-sm" id="mod-search-category-toggle">Categorías ▾</button>
-          <div class="mod-search-category-menu" id="mod-search-category-menu"></div>
+      </div>
+      <div class="mod-search-category-panel" id="mod-search-category-panel">
+        <div class="mod-search-category-panel-header" id="mod-search-category-panel-header">
+          <span>Categorías</span>
+          <button type="button" class="mod-search-category-panel-toggle" id="mod-search-category-panel-toggle" title="Colapsar/expandir categorías">▲</button>
         </div>
+        <div class="mod-search-category-panel-body" id="mod-search-category-panel-body"></div>
       </div>
       <div class="modal-scroll" id="mod-search-modal-body">
         <p class="empty-msg">Cargando...</p>
