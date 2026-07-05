@@ -13,6 +13,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 
 from services.server_create import get_vanilla_mc_versions, validate_new_server_name, create_server_stream
 from services.modloader import get_available_versions, LOADER_DISPLAY_NAMES
+from services.busy import BusyGuard
 
 router = APIRouter(prefix="/api/create-server", tags=["create-server"])
 
@@ -62,8 +63,9 @@ async def create_server_sse(
 
         loader_key = None if loader == "vanilla" else loader
         version = loader_version if loader_key else ""
-        async for event in create_server_stream(name, mc_version, loader_key, version, ram_min, ram_max):
-            yield f"data: {json.dumps(event)}\n\n"
+        with BusyGuard(f"creando servidor '{name}'"):
+            async for event in create_server_stream(name, mc_version, loader_key, version, ram_min, ram_max):
+                yield f"data: {json.dumps(event)}\n\n"
 
     return StreamingResponse(
         event_stream(),

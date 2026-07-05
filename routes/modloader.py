@@ -21,6 +21,7 @@ from services.modloader import (
     install_loader_stream, LOADER_DISPLAY_NAMES,
 )
 from services import process as proc_module
+from services.busy import BusyGuard
 
 router = APIRouter(prefix="/api/modpacks", tags=["modloader"])
 
@@ -110,8 +111,9 @@ async def modloader_install_stream(modpack: str, version: str):
                 }) + "\n\n"
                 return
 
-            async for event in install_loader_stream(modpack, loader_key, mc_version, version):
-                yield "data: " + json.dumps(event) + "\n\n"
+            with BusyGuard(f"instalando {LOADER_DISPLAY_NAMES.get(loader_key, loader_key)} {version} en '{modpack}'"):
+                async for event in install_loader_stream(modpack, loader_key, mc_version, version):
+                    yield "data: " + json.dumps(event) + "\n\n"
         except HTTPException as e:
             yield "data: " + json.dumps({"type": "error", "detail": e.detail}) + "\n\n"
         except Exception as e:

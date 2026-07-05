@@ -57,6 +57,7 @@ from services.modpack import (
 from services.players import (
     ensure_global_dir, read_global_file, write_global_file, PLAYER_FILES,
 )
+from services.busy import BusyGuard
 
 router = APIRouter(prefix="/api/modpacks", tags=["modpacks"])
 
@@ -299,6 +300,8 @@ async def upload_and_extract(
 
     dest = DEFAULT_SERVERS_PATH / folder_name.strip()
     temp_file = TEMP_DIR / file.filename
+    busy_guard = BusyGuard(f"importando modpack '{folder_name.strip()}'")
+    busy_guard.__enter__()
     try:
         def _write_temp():
             with open(temp_file, "wb") as buffer:
@@ -344,6 +347,7 @@ async def upload_and_extract(
     finally:
         if temp_file.exists():
             temp_file.unlink()
+        busy_guard.__exit__(None, None, None)
 
 
 # ── Versión y mods ─────────────────────────────────────────────────────────────
@@ -396,45 +400,46 @@ async def upload_mod(modpack: str, file: UploadFile = File(...)):
     if not mods_dir.exists():
         raise HTTPException(status_code=404, detail="Carpeta mods/ no encontrada en este modpack")
 
-    jar_bytes = await file.read()
-    server_info = detect_modpack_version(modpack)
-    server_mc = server_info.get("mc_version")
-    filename = Path(file.filename).name
+    with BusyGuard(f"subiendo mod a '{modpack}'"):
+        jar_bytes = await file.read()
+        server_info = detect_modpack_version(modpack)
+        server_mc = server_info.get("mc_version")
+        filename = Path(file.filename).name
 
-    result = process_mod_jar(mods_dir, filename, jar_bytes, server_mc)
-    if result["status"] in ("incompatible", "invalid"):
-        raise HTTPException(status_code=409 if result["status"] == "incompatible" else 400, detail=result["detail"])
-    if result["status"] == "already_installed":
-        raise HTTPException(status_code=409, detail=result["detail"] + f" en {result['existing_filename']}.")
-    if result["status"] == "needs_confirmation":
-        # Versión más antigua que la instalada: no se rechaza directamente, se
-        # arma un lote de un solo mod para que el usuario decida (mismo flujo
-        # de confirmación que la subida masiva).
-        batch_id = secrets.token_hex(8)
-        batch_dir = BATCH_ROOT / batch_id
-        batch_dir.mkdir(parents=True)
-        (batch_dir / result["filename"]).write_bytes(jar_bytes)
-        (batch_dir / "manifest.json").write_text(json.dumps([result]), encoding="utf-8")
+        result = process_mod_jar(mods_dir, filename, jar_bytes, server_mc)
+        if result["status"] in ("incompatible", "invalid"):
+            raise HTTPException(status_code=409 if result["status"] == "incompatible" else 400, detail=result["detail"])
+        if result["status"] == "already_installed":
+            raise HTTPException(status_code=409, detail=result["detail"] + f" en {result['existing_filename']}.")
+        if result["status"] == "needs_confirmation":
+            # Versión más antigua que la instalada: no se rechaza directamente, se
+            # arma un lote de un solo mod para que el usuario decida (mismo flujo
+            # de confirmación que la subida masiva).
+            batch_id = secrets.token_hex(8)
+            batch_dir = BATCH_ROOT / batch_id
+            batch_dir.mkdir(parents=True)
+            (batch_dir / result["filename"]).write_bytes(jar_bytes)
+            (batch_dir / "manifest.json").write_text(json.dumps([result]), encoding="utf-8")
+            return JSONResponse({
+                "success": True,
+                "batch_id": batch_id,
+                "added": [],
+                "already_installed": [],
+                "needs_confirmation": [result],
+                "errors": [],
+                "total": 1,
+            })
+
         return JSONResponse({
             "success": True,
-            "batch_id": batch_id,
-            "added": [],
-            "already_installed": [],
-            "needs_confirmation": [result],
-            "errors": [],
-            "total": 1,
+            "filename": result["filename"],
+            "mod_id": result.get("mod_id"),
+            "mod_version": result.get("mod_version"),
+            "server_mc": server_mc,
+            "size_kb": round(len(jar_bytes) / 1024, 1),
+            "replaced_filename": result.get("replaced_filename"),
+            "previous_version": result.get("previous_version"),
         })
-
-    return JSONResponse({
-        "success": True,
-        "filename": result["filename"],
-        "mod_id": result.get("mod_id"),
-        "mod_version": result.get("mod_version"),
-        "server_mc": server_mc,
-        "size_kb": round(len(jar_bytes) / 1024, 1),
-        "replaced_filename": result.get("replaced_filename"),
-        "previous_version": result.get("previous_version"),
-    })
 
 
 # ── Subida masiva de mods (zip / carpeta) ──────────────────────────────────────
@@ -534,6 +539,8 @@ async def stream_mods_bulk(modpack: str, job_id: str):
         added, already_installed, needs_confirmation, errors = [], [], [], []
         pending_bytes = {}
 
+        busy_guard = BusyGuard(f"subiendo {total} mod(s) a '{modpack}'")
+        busy_guard.__enter__()
         try:
             # Se arma una sola vez el índice mod_id -> (Path, meta) de lo ya
             # instalado; si no, process_mod_jar tendría que releer y reparsear
@@ -580,6 +587,7 @@ async def stream_mods_bulk(modpack: str, job_id: str):
             yield "data: " + json.dumps({"type": "error", "detail": str(e)}) + "\n\n"
         finally:
             shutil.rmtree(job_dir, ignore_errors=True)
+            busy_guard.__exit__(None, None, None)
 
     return StreamingResponse(
         event_stream(),

@@ -17,6 +17,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from config import DEFAULT_SERVERS_PATH, MC_DOMAIN
 from services.utils import get_system_ram_gb, get_modpacks
 from services.modpack import detect_modpack_version
+from services import auto_update
 
 router = APIRouter()
 
@@ -77,6 +78,11 @@ async def list_modpacks():
             "modloader_version": ver.get("modloader_version"),
         })
     return JSONResponse({"modpacks": result})
+
+
+@router.get("/api/auto-update/status")
+async def auto_update_status():
+    return JSONResponse(auto_update.get_status())
 
 
 @router.get("/api/system-stats")

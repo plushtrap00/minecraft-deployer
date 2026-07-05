@@ -18,6 +18,7 @@ from services.modpack_install import (
     search_modrinth_modpacks, get_modrinth_modpack_versions, install_modrinth_modpack_stream,
     search_curseforge_modpacks, get_curseforge_modpack_versions, install_curseforge_modpack_stream,
 )
+from services.busy import BusyGuard
 
 router = APIRouter(prefix="/api/modpack-install", tags=["modpack-install"])
 
@@ -79,8 +80,9 @@ async def install_stream(source: str, project_id: str, version_id: str, name: st
                 return
             generator = install_curseforge_modpack_stream(cf_project_id, cf_file_id, name, ram_min, ram_max)
 
-        async for event in generator:
-            yield f"data: {json.dumps(event)}\n\n"
+        with BusyGuard(f"instalando modpack '{name}' desde {source}"):
+            async for event in generator:
+                yield f"data: {json.dumps(event)}\n\n"
 
     return StreamingResponse(
         event_stream(),

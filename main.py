@@ -34,6 +34,7 @@ from routes.auth import router as auth_router, verify_token
 from routes.users import router as users_router
 from services.lifecycle import shutdown_event
 from services.process import notify_app_shutdown
+from services import auto_update
 
 # ── Middleware de autenticación ────────────────────────────────────────────────
 
@@ -85,6 +86,11 @@ app.include_router(upload_router)
 app.include_router(firewall_router)
 app.include_router(players_router)
 app.include_router(server_router)
+
+
+@app.on_event("startup")
+async def _on_startup():
+    auto_update.start()
 
 
 @app.on_event("shutdown")
