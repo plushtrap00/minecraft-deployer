@@ -53,8 +53,9 @@ function cancelFetchesMatching(prefix) {
 }
 
 function applyRoleUI() {
-  var tab = document.getElementById('tab-users');
-  tab.style.display = currentRole === 'admin' ? 'inline-block' : 'none';
+  var isAdmin = currentRole === 'admin';
+  document.getElementById('tab-users').style.display = isAdmin ? 'inline-block' : 'none';
+  document.getElementById('tab-config').style.display = isAdmin ? 'inline-block' : 'none';
 }
 
 function logout() {

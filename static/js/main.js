@@ -1,5 +1,5 @@
 //  Navegación
-['deploy', 'manage', 'server', 'players', 'users'].forEach(function(name) {
+['deploy', 'manage', 'server', 'players', 'users', 'config'].forEach(function(name) {
   document.getElementById('tab-' + name).addEventListener('click', function() {
     if (guardModOperationNav()) {
       return;
@@ -22,6 +22,9 @@
     }
     if (name === 'users') {
       loadUsers();
+    }
+    if (name === 'config') {
+      loadAdminConfig();
     }
   });
 });

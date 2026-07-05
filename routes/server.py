@@ -21,7 +21,8 @@ from pathlib import Path
 from fastapi import APIRouter, Form, HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
 
-from config import DEFAULT_SERVERS_PATH, GRACEFUL_STOP_TIMEOUT_SECONDS
+from config import DEFAULT_SERVERS_PATH
+from app_constants import GRACEFUL_STOP_TIMEOUT_SECONDS
 from services import process as proc_module
 from services.process import (
     mc_process, mc_process_lock, mc_output_lines, mc_output_lock,

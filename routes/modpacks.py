@@ -45,6 +45,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 
 from config import DEFAULT_SERVERS_PATH, TEMP_DIR
+from app_constants import TEMP_DIR_MAX_AGE_SECONDS
 from routes.auth import require_admin
 from services.utils import get_mod_configs, get_kubejs_files, get_world_files, extract_archive, configure_jvm_ram, invalidate_kubejs_cache
 from services.modpack import (
@@ -455,7 +456,7 @@ BATCH_ROOT = TEMP_DIR / "mod-batches"
 BATCH_ROOT.mkdir(parents=True, exist_ok=True)
 UPLOAD_JOBS_ROOT = TEMP_DIR / "mod-upload-jobs"
 UPLOAD_JOBS_ROOT.mkdir(parents=True, exist_ok=True)
-_TEMP_DIR_MAX_AGE_SECONDS = 2 * 60 * 60
+_TEMP_DIR_MAX_AGE_SECONDS = TEMP_DIR_MAX_AGE_SECONDS
 _BATCH_ID_RE = re.compile(r'^[0-9a-f]{8,64}$')
 _JOB_ID_RE = re.compile(r'^[0-9a-f]{8,64}$')
 

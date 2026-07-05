@@ -17,7 +17,8 @@ import time
 from collections import deque
 from pathlib import Path
 
-from config import DEFAULT_SERVERS_PATH, MAX_LOG_LINES
+from config import DEFAULT_SERVERS_PATH
+from app_constants import MAX_LOG_LINES
 
 # ── Estado global ──────────────────────────────────────────────────────────────
 mc_process = None

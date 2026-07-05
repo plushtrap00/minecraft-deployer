@@ -17,21 +17,25 @@ from dotenv import load_dotenv
 import os
 
 from services.users import authenticate
+from app_constants import (
+    JWT_TOKEN_EXPIRE_HOURS, LOGIN_MAX_FAILED_ATTEMPTS,
+    LOGIN_ATTEMPT_WINDOW_SECONDS, LOGIN_LOCKOUT_SECONDS,
+)
 
 _ENV_PATH = Path(__file__).parent.parent / ".env"
 load_dotenv(_ENV_PATH, override=True)
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
-TOKEN_EXPIRE_HOURS = 24 * 7  # 1 semana
+TOKEN_EXPIRE_HOURS = JWT_TOKEN_EXPIRE_HOURS
 
 # ── Bloqueo temporal tras intentos fallidos de login ───────────────────────────
 # En memoria (se resetea si el proceso reinicia, igual que el resto del estado
 # de esta app); alcanza para frenar fuerza bruta contra un panel de homelab
 # sin sumar una dependencia nueva solo para esto.
-_MAX_FAILED_ATTEMPTS = 5
-_ATTEMPT_WINDOW_SECONDS = 5 * 60   # ventana en la que cuentan los fallos
-_LOCKOUT_SECONDS = 5 * 60          # cuánto dura el bloqueo al superar el máximo
+_MAX_FAILED_ATTEMPTS = LOGIN_MAX_FAILED_ATTEMPTS
+_ATTEMPT_WINDOW_SECONDS = LOGIN_ATTEMPT_WINDOW_SECONDS   # ventana en la que cuentan los fallos
+_LOCKOUT_SECONDS = LOGIN_LOCKOUT_SECONDS                 # cuánto dura el bloqueo al superar el máximo
 
 _failed_attempts: dict[str, list[float]] = {}  # clave "ip:usuario" -> timestamps de fallos
 

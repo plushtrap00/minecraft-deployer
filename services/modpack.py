@@ -20,7 +20,8 @@ from collections import defaultdict
 from itertools import zip_longest
 from pathlib import Path
 
-from config import DEFAULT_SERVERS_PATH, LOG_CRASH_RETENTION_COUNT
+from config import DEFAULT_SERVERS_PATH
+from app_constants import LOG_CRASH_RETENTION_COUNT
 
 # ── Detección de versión ───────────────────────────────────────────────────────
 

@@ -30,6 +30,7 @@ import urllib.parse
 from pathlib import Path
 
 from config import DEFAULT_SERVERS_PATH
+from app_constants import CURSEFORGE_BULK_FILES_CHUNK
 from services.mod_search import _http_get_json, download_bytes, _curseforge_headers, _HTTP_TIMEOUT, CURSEFORGE_GAME_ID
 from services.modloader import _http_get, _installer_url, LOADER_DISPLAY_NAMES
 from services.server_create import validate_new_server_name, _write_run_script, _bootstrap_common_files, _vanilla_server_jar_url
@@ -263,7 +264,7 @@ def get_curseforge_modpack_versions(mod_id) -> list:
     return versions
 
 
-_CURSEFORGE_BULK_FILES_CHUNK = 50
+_CURSEFORGE_BULK_FILES_CHUNK = CURSEFORGE_BULK_FILES_CHUNK
 
 
 def _resolve_curseforge_file_urls(file_ids: list) -> dict:

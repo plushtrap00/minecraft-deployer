@@ -45,6 +45,7 @@
   <button class="nav-tab" id="tab-server">🖥️ Servidor</button>
   <button class="nav-tab" id="tab-players">👥 Jugadores</button>
   <button class="nav-tab" id="tab-users">👤 Usuarios</button>
+  <button class="nav-tab" id="tab-config">⚙️ Configuración</button>
   <button class="nav-tab ml-auto" id="btn-sysmon">💻 Sistema<span class="nav-badge" id="sysmon-nav-badge" style="display:none">1</span></button>
   <button class="nav-tab nav-tab-danger" id="btn-logout" title="Cerrar sesión">⏻ Salir</button>
 </div>
@@ -1057,6 +1058,70 @@
   </div>
 </div>
 
+<!-- ══ CONFIGURACIÓN (solo admin) ══════════════════════════ -->
+<div class="page" id="page-config">
+  <div class="card">
+    <h2>⚙️ Variables de entorno (.env)</h2>
+    <div class="info-box">Credenciales y configuración específica de esta instalación. Los cambios <strong>no se aplican en caliente</strong> — hace falta reiniciar la app (botón al final de la página).</div>
+    <div class="users-form" id="config-env-form">
+      <div>
+        <label class="field-label">Usuario admin</label>
+        <input type="text" id="cfg-env-APP_USERNAME" class="w-full" autocomplete="off" spellcheck="false">
+      </div>
+      <div>
+        <label class="field-label">Nueva contraseña <span style="color:var(--muted);font-weight:400">(dejar en blanco para no cambiarla)</span></label>
+        <div class="pass-wrapper">
+          <input type="password" id="cfg-env-new-password" class="w-full" placeholder="mín. 8 caracteres" autocomplete="new-password">
+          <button type="button" id="cfg-toggle-pass-vis" class="btn-pass-toggle" title="Mostrar/ocultar">👁</button>
+        </div>
+      </div>
+      <div>
+        <label class="field-label">JWT_SECRET <span style="color:var(--yellow);font-weight:400">(cambiarlo cierra la sesión de todos)</span></label>
+        <input type="text" id="cfg-env-JWT_SECRET" class="w-full" autocomplete="off" spellcheck="false">
+      </div>
+      <div>
+        <label class="field-label">Puerto web</label>
+        <input type="number" id="cfg-env-WEB_PORT" class="w-full" min="1" max="65535">
+      </div>
+      <div>
+        <label class="field-label">Carpeta de servidores</label>
+        <input type="text" id="cfg-env-SERVERS_PATH" class="w-full" placeholder="~/servers-minecraft" autocomplete="off" spellcheck="false">
+      </div>
+      <div>
+        <label class="field-label">Dominio de Minecraft</label>
+        <input type="text" id="cfg-env-MC_DOMAIN" class="w-full" placeholder="mc.tudominio.com" autocomplete="off" spellcheck="false">
+      </div>
+      <div>
+        <label class="field-label">API key de CurseForge</label>
+        <input type="text" id="cfg-env-CURSEFORGE_API_KEY" class="w-full" autocomplete="off" spellcheck="false">
+      </div>
+      <div>
+        <label class="field-label">Auto-actualización habilitada</label>
+        <div class="prop-toggle-wrap"><div class="toggle-track" id="cfg-env-AUTO_UPDATE_ENABLED"><div class="toggle-thumb"></div></div></div>
+      </div>
+      <div>
+        <label class="field-label">Intervalo de auto-actualización (segundos)</label>
+        <input type="number" id="cfg-env-AUTO_UPDATE_INTERVAL_SECONDS" class="w-full" min="30">
+      </div>
+    </div>
+    <button id="cfg-save-env-btn" class="add-user-btn" style="margin-top:14px">💾 Guardar .env</button>
+  </div>
+
+  <div class="card">
+    <h2>🔧 Constantes de la app (.APP_CONSTANTS)</h2>
+    <div class="info-box">Números de ajuste (timeouts, límites, tamaños de caché) compartidos por todas las instalaciones — a diferencia del .env, este archivo no tiene secretos y sí se versiona en git.</div>
+    <div id="config-constants-form"><p class="empty-msg">Cargando...</p></div>
+    <button id="cfg-save-constants-btn" class="add-user-btn" style="margin-top:14px">💾 Guardar constantes</button>
+  </div>
+
+  <div class="card">
+    <h2>🔄 Aplicar cambios</h2>
+    <div class="info-box">Ni el .env ni las constantes se aplican hasta reiniciar la app. Se bloquea si hay un servidor de Minecraft en marcha o una operación en curso.</div>
+    <div id="cfg-restart-body"></div>
+    <button id="cfg-restart-btn" class="add-user-btn">🔄 Reiniciar la app ahora</button>
+  </div>
+</div>
+
 <!-- Alert / Confirm modal -->
 <div class="modal-overlay" id="dialog-overlay">
   <div class="modal modal-dialog">
@@ -1101,6 +1166,7 @@
 <script src="/static/js/players.js"></script>
 <script src="/static/js/server.js"></script>
 <script src="/static/js/users.js"></script>
+<script src="/static/js/config_admin.js"></script>
 <script src="/static/js/sysmon.js"></script>
 <script src="/static/js/main.js"></script>
 

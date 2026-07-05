@@ -17,6 +17,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from config import DEFAULT_SERVERS_PATH
+from app_constants import MOD_SEARCH_PAGE_SIZE
 from services.modpack import detect_modpack_version, process_mod_jar
 from services.modloader import loader_key_from_display
 from services.mod_search import (
@@ -29,7 +30,7 @@ from routes.modpacks import BATCH_ROOT
 router = APIRouter(prefix="/api/modpacks", tags=["mod-search"])
 
 VALID_SOURCES = {"modrinth", "curseforge"}
-SEARCH_PAGE_SIZE = 20
+SEARCH_PAGE_SIZE = MOD_SEARCH_PAGE_SIZE
 
 
 def _server_context(modpack: str) -> tuple:

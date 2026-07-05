@@ -32,6 +32,7 @@ from routes.players import router as players_router
 from routes.server import router as server_router
 from routes.auth import router as auth_router, verify_token
 from routes.users import router as users_router
+from routes.config_admin import router as config_admin_router
 from services.lifecycle import shutdown_event
 from services.process import notify_app_shutdown
 from services import auto_update
@@ -76,6 +77,7 @@ app.mount("/icon", StaticFiles(directory=Path(__file__).parent / "icon"), name="
 
 app.include_router(auth_router)
 app.include_router(users_router)
+app.include_router(config_admin_router)
 app.include_router(system_router)
 app.include_router(modpacks_router)
 app.include_router(modloader_router)
@@ -168,7 +170,8 @@ def _graceful_stop_orphan(pid: str) -> bool:
     directorio de trabajo real (/proc/<pid>/cwd, Linux) y leyendo su propio
     server.properties. Devuelve True si se confirma que paró solo a tiempo.
     """
-    from config import DEFAULT_SERVERS_PATH, GRACEFUL_STOP_TIMEOUT_SECONDS
+    from config import DEFAULT_SERVERS_PATH
+    from app_constants import GRACEFUL_STOP_TIMEOUT_SECONDS
     from services.modpack import parse_server_properties
     from services.rcon import RconConnection, RconError
 

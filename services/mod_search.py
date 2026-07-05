@@ -20,11 +20,15 @@ import urllib.parse
 from pathlib import Path
 
 from config import CURSEFORGE_API_KEY
+from app_constants import (
+    HTTP_TIMEOUT_SECONDS, MOD_DOWNLOAD_TIMEOUT_SECONDS, MOD_SEARCH_CATEGORIES_CACHE_TTL_SECONDS,
+    CURSEFORGE_FILES_PAGE_SIZE, CURSEFORGE_FILES_MAX,
+)
 
-_HTTP_TIMEOUT = 15
-_DOWNLOAD_TIMEOUT = 60
+_HTTP_TIMEOUT = HTTP_TIMEOUT_SECONDS
+_DOWNLOAD_TIMEOUT = MOD_DOWNLOAD_TIMEOUT_SECONDS
 _USER_AGENT = "minecraft-deployer/1.0 (mod search)"
-_CATEGORIES_CACHE_TTL = 3600
+_CATEGORIES_CACHE_TTL = MOD_SEARCH_CATEGORIES_CACHE_TTL_SECONDS
 
 MODRINTH_LOADERS = {"forge", "neoforge", "fabric", "quilt"}
 
@@ -215,8 +219,8 @@ def search_curseforge(
     return results, total
 
 
-_CURSEFORGE_FILES_PAGE_SIZE = 50
-_CURSEFORGE_FILES_MAX = 300  # tope de seguridad: 6 páginas como mucho por mod
+_CURSEFORGE_FILES_PAGE_SIZE = CURSEFORGE_FILES_PAGE_SIZE
+_CURSEFORGE_FILES_MAX = CURSEFORGE_FILES_MAX  # tope de seguridad: 6 páginas como mucho por mod
 
 
 def get_curseforge_files(mod_id, mc_version: str | None, loader: str | None) -> list:

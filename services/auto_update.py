@@ -27,12 +27,13 @@ import subprocess
 from pathlib import Path
 
 from config import AUTO_UPDATE_ENABLED, AUTO_UPDATE_INTERVAL_SECONDS
+from app_constants import AUTO_UPDATE_CHECK_INITIAL_DELAY_SECONDS, AUTO_UPDATE_GIT_TIMEOUT_SECONDS
 from services import process as proc_module
 from services.busy import is_busy, busy_reasons
 
 _REPO_DIR = Path(__file__).resolve().parent.parent
-_INITIAL_DELAY_SECONDS = 30
-_GIT_TIMEOUT_SECONDS = 30
+_INITIAL_DELAY_SECONDS = AUTO_UPDATE_CHECK_INITIAL_DELAY_SECONDS
+_GIT_TIMEOUT_SECONDS = AUTO_UPDATE_GIT_TIMEOUT_SECONDS
 
 _status = {
     "enabled": AUTO_UPDATE_ENABLED,
@@ -139,6 +140,20 @@ def apply_update() -> None:
     _status["commits_behind"] = 0
     _status["last_check"] = time.time()
     _status["last_error"] = None
+
+
+def restart_now() -> None:
+    """
+    Reinicio manual sin tocar el repo (botón "Guardar y reiniciar" del panel
+    de administración, tras cambiar .env o .APP_CONSTANTS). Mismas dos
+    condiciones de seguridad que apply_update(); el reinicio en sí también lo
+    dispara aparte schedule_restart(), llamado por el route handler.
+    """
+    if _server_running():
+        raise RuntimeError("No se puede reiniciar: hay un servidor de Minecraft en marcha.")
+    if is_busy():
+        raise RuntimeError(f"No se puede reiniciar: hay una operación en curso ({', '.join(busy_reasons())}).")
+    _log("reinicio manual pedido desde el panel de administración...")
 
 
 def schedule_restart(delay_seconds: float = 1.0) -> None:

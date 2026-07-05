@@ -21,11 +21,12 @@ import urllib.error
 from pathlib import Path
 
 from config import DEFAULT_SERVERS_PATH, TEMP_DIR
+from app_constants import HTTP_TIMEOUT_SECONDS
 from services.modpack import (
     read_mod_metadata, mod_display_name, mc_version_compatible, _version_cache,
 )
 
-_HTTP_TIMEOUT = 15
+_HTTP_TIMEOUT = HTTP_TIMEOUT_SECONDS
 
 # Nombres canónicos internos (como los usa esta app puertas adentro) vs. el
 # valor que detect_modpack_version() reporta en el campo "modloader".

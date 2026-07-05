@@ -25,17 +25,12 @@ TEMP_DIR.mkdir(exist_ok=True)
 
 CONFIG_EXTENSIONS = {".toml", ".cfg", ".json", ".yaml", ".yml", ".properties"}
 
-MAX_LOG_LINES = 500
-
-# Cuántos logs rotados (logs/*.log.gz, sin contar latest.log/debug.log, que
-# son los "actuales" y no forman parte de la rotación) y crash reports se
-# conservan por modpack antes de borrar los más viejos.
-LOG_CRASH_RETENTION_COUNT = 5
-
-# Tiempo máximo que se espera un apagado limpio (save-all + stop) antes de
-# recurrir a SIGKILL, tanto al parar el servidor a mano como al limpiar
-# procesos huérfanos en el arranque del panel.
-GRACEFUL_STOP_TIMEOUT_SECONDS = 30
+# MAX_LOG_LINES, LOG_CRASH_RETENTION_COUNT, GRACEFUL_STOP_TIMEOUT_SECONDS y el
+# resto de números de ajuste (timeouts, tamaños de caché...) viven en
+# app_constants.py / .APP_CONSTANTS, no acá: a diferencia de este archivo (que
+# lee .env, con secretos y config específica de esta instalación, en
+# gitignore), esos son compartidos por todas las instalaciones y se pueden
+# editar desde el panel de administración.
 
 # Auto-actualización: si está habilitada, la app comprueba cada AUTO_UPDATE_
 # INTERVAL_SECONDS si origin/main tiene commits nuevos y, si no hay ningún
