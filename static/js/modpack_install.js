@@ -102,17 +102,17 @@ var DL_LOG_RENDER_THROTTLE_MS = 200;
 
 document.getElementById('dl-install-btn').addEventListener('click', function() {
   if (!dlSelectedPack) {
-    showToast('Elegí un modpack primero', 'error');
+    showToast('Elige un modpack primero', 'error');
     return;
   }
   var versionId = document.getElementById('dl-version-select').value;
   if (!versionId) {
-    showToast('Elegí una versión del modpack', 'error');
+    showToast('Elige una versión del modpack', 'error');
     return;
   }
   var serverName = document.getElementById('dl-server-name').value.trim();
   if (!serverName) {
-    showToast('Escribí un nombre para el servidor', 'error');
+    showToast('Escribe un nombre para el servidor', 'error');
     return;
   }
   var ramMin = document.getElementById('dl-ram-min-val').value + document.getElementById('dl-ram-min-unit').value;

@@ -110,7 +110,7 @@ document.getElementById('modloader-install-btn').addEventListener('click', funct
   var version = modloaderCheckedVersion;
   showConfirm(
     'Cambiar a ' + modloaderInfo.loader_display + ' ' + version,
-    'Esto reemplaza los archivos del modloader del servidor. Asegurate de que el servidor esté detenido.',
+    'Esto reemplaza los archivos del modloader del servidor. Asegúrate de que el servidor esté detenido.',
     function() { startModloaderInstall(version); }
   );
 });

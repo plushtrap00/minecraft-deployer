@@ -35,8 +35,13 @@ document.getElementById('sysmon-refresh-btn').addEventListener('click', function
 });
 
 var AUTO_UPDATE_STATUS_POLL_MS = 30000;
+var AUTO_UPDATE_RESTART_POLL_MS = 2000;
+var AUTO_UPDATE_RESTART_MAX_WAIT_MS = 120000; // ~2 minutos de margen antes de rendirse
 var lastSysmonStats = null;
 var lastAutoUpdateStatus = null;
+var autoUpdateRestarting = false;
+var autoUpdateRestartStartedAt = null;
+var autoUpdatePollTimer = null;
 
 function startSysmonStream() {
   if (sysmonSSE) {
@@ -68,26 +73,60 @@ function stopSysmonStream() {
   }
 }
 
-// El estado de auto-actualización se pide aparte del stream de CPU/RAM/temp,
-// y corre SIEMPRE desde que carga la página (no solo mientras el panel está
+// El estado de auto-actualización se pide aparte del stream de CPU/RAM/temp, y
+// corre SIEMPRE desde que carga la página (no solo mientras el panel está
 // abierto): así el badge de notificación en la pestaña "Sistema" se puede
-// prender aunque el usuario nunca haya abierto el panel. Se cachea para que
-// renderSysmon() lo incluya en cada re-render sin tener que volver a pedirlo.
-loadAutoUpdateStatus();
-setInterval(loadAutoUpdateStatus, AUTO_UPDATE_STATUS_POLL_MS);
+// encender aunque el usuario nunca haya abierto el panel.
+//
+// Un único bucle (con setTimeout encadenado, no dos intervalos separados) se
+// autoprograma con un intervalo lento en operación normal y uno rápido
+// mientras se está esperando que la app vuelva a responder tras un
+// "Actualizar ahora" — antes había un segundo poll dedicado y más rápido para
+// ese caso, corriendo en paralelo con este, y bajo cualquier retraso del
+// navegador (por ejemplo, si la pestaña queda en segundo plano y Chrome
+// empieza a limitar los timers) ese poll paralelo podía directamente no
+// completar sus intentos a tiempo, dejando la recarga automática sin
+// dispararse nunca aunque la app ya hubiera vuelto a responder hacía rato.
+function scheduleNextAutoUpdatePoll() {
+  var delay = autoUpdateRestarting ? AUTO_UPDATE_RESTART_POLL_MS : AUTO_UPDATE_STATUS_POLL_MS;
+  autoUpdatePollTimer = setTimeout(loadAutoUpdateStatus, delay);
+}
 
 function loadAutoUpdateStatus() {
+  var wasRestarting = autoUpdateRestarting;
   apiFetch('/api/auto-update/status')
     .then(function(response) { return response.json(); })
     .then(function(data) {
       lastAutoUpdateStatus = data;
+      if (wasRestarting) {
+        // La app volvió a responder tras el reinicio: se recarga la página
+        // entera para que quede visualmente claro que ya terminó, en vez de
+        // solo refrescar el panel.
+        autoUpdateRestarting = false;
+        showToast('✅ Actualizado. Recargando la página...', 'success');
+        setTimeout(function() { window.location.reload(); }, 800);
+        return;
+      }
       updateSysmonBadge();
       if (lastSysmonStats) {
         renderSysmon(lastSysmonStats);
       }
+      scheduleNextAutoUpdatePoll();
     })
-    .catch(function() {});
+    .catch(function() {
+      if (wasRestarting && autoUpdateRestartStartedAt !== null
+          && Date.now() - autoUpdateRestartStartedAt > AUTO_UPDATE_RESTART_MAX_WAIT_MS) {
+        autoUpdateRestarting = false;
+        showToast('La app está tardando en volver a responder. Recarga la página a mano en unos segundos.', 'error');
+        if (lastSysmonStats) {
+          renderSysmon(lastSysmonStats);
+        }
+      }
+      scheduleNextAutoUpdatePoll();
+    });
 }
+
+loadAutoUpdateStatus();
 
 function updateSysmonBadge() {
   var badge = document.getElementById('sysmon-nav-badge');
@@ -107,8 +146,6 @@ document.getElementById('sysmon-body').addEventListener('click', function(event)
     applyAutoUpdate();
   }
 });
-
-var autoUpdateRestarting = false;
 
 function applyAutoUpdate() {
   var btn = document.getElementById('auto-update-apply-btn');
@@ -133,60 +170,27 @@ function applyAutoUpdate() {
       }
     })
     .catch(function() {
-      // La conexión cortándose acá es justo la señal esperada de que la app
+      // La conexión cortándose aquí es justo la señal esperada de que la app
       // ya está reiniciando -- no se trata como un error real.
       showToast('Actualización enviada. Reiniciando la app...', 'success');
       beginRestartWatch();
     });
 }
 
-var RESTART_POLL_INTERVAL_MS = 1500;
-var RESTART_POLL_MAX_ATTEMPTS = 60; // ~90s de margen antes de rendirse
-
-// Sin esto, tras pedir la actualización no había ninguna señal de si ya
-// terminó de bajar y reiniciarse o seguía en el aire -- ahora se sondea el
-// propio estado hasta que la app vuelve a responder, y ahí sí se recarga la
-// página sola para que quede visualmente claro que ya está lista.
 function beginRestartWatch() {
   autoUpdateRestarting = true;
+  autoUpdateRestartStartedAt = Date.now();
   updateSysmonBadge();
   if (lastSysmonStats) {
     renderSysmon(lastSysmonStats);
   }
-
-  var attempts = 0;
-
-  function poll() {
-    attempts++;
-    apiFetch('/api/auto-update/status')
-      .then(function(response) {
-        if (!response.ok) {
-          throw new Error('todavía no');
-        }
-        return response.json();
-      })
-      .then(function() {
-        autoUpdateRestarting = false;
-        showToast('✅ Actualizado. Recargando la página...', 'success');
-        setTimeout(function() { window.location.reload(); }, 800);
-      })
-      .catch(function() {
-        if (attempts >= RESTART_POLL_MAX_ATTEMPTS) {
-          autoUpdateRestarting = false;
-          showToast('La app está tardando en volver a responder. Recargá la página a mano en unos segundos.', 'error');
-          if (lastSysmonStats) {
-            renderSysmon(lastSysmonStats);
-          }
-          return;
-        }
-        setTimeout(poll, RESTART_POLL_INTERVAL_MS);
-      });
+  if (autoUpdatePollTimer !== null) {
+    clearTimeout(autoUpdatePollTimer);
   }
-
   // Pequeño margen inicial: la app todavía está terminando de mandar esta
   // misma respuesta y programando su propio reinicio (ver schedule_restart
   // en services/auto_update.py) antes de que el proceso realmente muera.
-  setTimeout(poll, RESTART_POLL_INTERVAL_MS);
+  autoUpdatePollTimer = setTimeout(loadAutoUpdateStatus, AUTO_UPDATE_RESTART_POLL_MS);
 }
 
 function sysColor(pct) {

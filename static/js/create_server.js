@@ -104,13 +104,13 @@ document.getElementById('create-server-btn').addEventListener('click', function(
   }
   var mcVersion = document.getElementById('create-mc-version').value;
   if (!mcVersion) {
-    showToast('Elegí una versión de Minecraft', 'error');
+    showToast('Elige una versión de Minecraft', 'error');
     return;
   }
   var loader = document.getElementById('create-loader').value;
   var loaderVersion = loader === 'vanilla' ? '' : document.getElementById('create-loader-version').value;
   if (loader !== 'vanilla' && !loaderVersion) {
-    showToast('Elegí una versión del modloader', 'error');
+    showToast('Elige una versión del modloader', 'error');
     return;
   }
   var ramMin = document.getElementById('create-ram-min-val').value + document.getElementById('create-ram-min-unit').value;
@@ -187,7 +187,7 @@ document.getElementById('create-server-btn').addEventListener('click', function(
     } else if (data.type === 'done') {
       source.close();
       var resultHtml = data.success
-        ? '<div style="background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.3);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--green)">✅ Servidor "' + escHtml(data.name) + '" creado. Ya podés subirle mods desde Gestión de modpacks.</div>'
+        ? '<div style="background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.3);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--green)">✅ Servidor "' + escHtml(data.name) + '" creado. Ya puedes subirle mods desde Gestión de modpacks.</div>'
         : modErrorHtml(data.detail || 'Error desconocido');
       finish(resultHtml);
       if (data.success) {

@@ -1026,7 +1026,7 @@ function modSearchResultsCacheKey(source, query, categories, offset) {
 // CDNs compartidos) pero SIN "max-age"/"public", así que el navegador no tiene
 // garantía de guardarlos en su propio caché: cada vez que se recreaban los
 // <img> al volver a una página ya vista, se volvían a descargar por completo
-// (de ahí los MB repetidos en la pestaña Network). Acá se descarga el ícono
+// (de ahí los MB repetidos en la pestaña Network). Aquí se descarga el ícono
 // UNA sola vez con fetch()+blob y se reusa un object URL en cualquier render
 // posterior, sin volver a tocar la red pase lo que pase con esos headers.
 var modSearchImageCache = new Map(); // url original -> object URL
