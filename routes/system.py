@@ -11,7 +11,9 @@ Rutas:
 - GET  /api/auto-update/status  → estado de la auto-actualización
 - POST /api/auto-update/apply   → aplica el pull pendiente y reinicia la app
 """
+import re
 import shutil
+import time
 from pathlib import Path
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
@@ -26,9 +28,24 @@ router = APIRouter()
 
 _STATIC_INDEX = Path(__file__).parent.parent / "static" / "index.html"
 
+# Se fija una sola vez al arrancar el proceso (no en cada request): así
+# cambia con cada reinicio real (incluido el que dispara la propia
+# auto-actualización), forzando al navegador a pedir de nuevo el JS/CSS en
+# vez de servir de caché una versión vieja — sin esto, "Configuración" podía
+# quedar sin funcionar en silencio porque el navegador seguía usando un
+# main.js cacheado de antes de que ese botón existiera.
+_ASSET_VERSION = str(int(time.time()))
+_STATIC_ASSET_RE = re.compile(r'(href|src)="(/static/[^"]+)"')
+
+
 @router.get("/", response_class=HTMLResponse)
 async def index():
-    return HTMLResponse(content=_STATIC_INDEX.read_text(encoding="utf-8"))
+    html = _STATIC_INDEX.read_text(encoding="utf-8")
+    html = _STATIC_ASSET_RE.sub(rf'\1="\2?v={_ASSET_VERSION}"', html)
+    return HTMLResponse(
+        content=html,
+        headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
+    )
 
 
 @router.get("/api/system-info")
