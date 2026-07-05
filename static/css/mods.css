@@ -236,3 +236,107 @@
   opacity: .4;
   cursor: not-allowed;
 }
+
+
+/* -- Buscar mods online (Modrinth / CurseForge) -------------------------- */
+
+.mod-search-toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.mod-search-toolbar input[type="text"] {
+  flex: 1;
+  min-width: 160px;
+}
+
+.mod-search-toolbar select {
+  flex: 0 0 auto;
+  max-width: 180px;
+}
+
+.mod-search-result-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background .15s;
+}
+
+.mod-search-result-item:last-child {
+  border-bottom: none;
+}
+
+.mod-search-result-item:hover {
+  background: rgba(88, 166, 255, .06);
+}
+
+.mod-search-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  object-fit: cover;
+  background: var(--bg);
+}
+
+.mod-search-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.mod-search-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mod-search-title {
+  font-weight: 600;
+  font-size: .88rem;
+}
+
+.mod-search-badge {
+  font-size: .68rem;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 10px;
+  white-space: nowrap;
+  background: rgba(63, 185, 80, .15);
+  color: var(--green);
+  border: 1px solid rgba(63, 185, 80, .35);
+}
+
+.mod-search-desc {
+  font-size: .76rem;
+  color: var(--muted);
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.mod-search-meta {
+  font-size: .72rem;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.mod-search-link {
+  flex-shrink: 0;
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 1.1rem;
+  padding: 2px 4px;
+}
+
+.mod-search-link:hover {
+  text-decoration: underline;
+}

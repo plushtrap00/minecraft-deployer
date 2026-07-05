@@ -22,6 +22,7 @@ from services.modloader import loader_key_from_display
 from services.mod_search import (
     ModSearchError, search_modrinth, search_curseforge,
     get_modrinth_versions, get_curseforge_files, download_bytes,
+    get_modrinth_categories, get_curseforge_categories, mark_installed,
 )
 from routes.modpacks import BATCH_ROOT
 
@@ -36,7 +37,7 @@ def _server_context(modpack: str) -> tuple:
 
 
 @router.get("/{modpack}/mods/search")
-async def search_mods(modpack: str, query: str, source: str = "modrinth"):
+async def search_mods(modpack: str, query: str, source: str = "modrinth", category: str = ""):
     if source not in VALID_SOURCES:
         raise HTTPException(status_code=400, detail="source debe ser 'modrinth' o 'curseforge'")
     query = query.strip()
@@ -46,13 +47,27 @@ async def search_mods(modpack: str, query: str, source: str = "modrinth"):
     mc_version, loader = _server_context(modpack)
     try:
         if source == "modrinth":
-            results = search_modrinth(query, mc_version, loader)
+            results = search_modrinth(query, mc_version, loader, category or None)
         else:
-            results = search_curseforge(query, mc_version, loader)
+            results = search_curseforge(query, mc_version, loader, category or None)
     except ModSearchError as e:
         raise HTTPException(status_code=502, detail=str(e))
 
+    mods_dir = DEFAULT_SERVERS_PATH / modpack / "mods"
+    mark_installed(results, mods_dir)
+
     return JSONResponse({"results": results, "mc_version": mc_version, "loader": loader})
+
+
+@router.get("/{modpack}/mods/search/categories")
+async def search_mod_categories(modpack: str, source: str = "modrinth"):
+    if source not in VALID_SOURCES:
+        raise HTTPException(status_code=400, detail="source debe ser 'modrinth' o 'curseforge'")
+    try:
+        categories = get_modrinth_categories() if source == "modrinth" else get_curseforge_categories()
+    except ModSearchError as e:
+        raise HTTPException(status_code=502, detail=str(e))
+    return JSONResponse({"categories": categories})
 
 
 @router.get("/{modpack}/mods/search/{source}/{project_id}/files")

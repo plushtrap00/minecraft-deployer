@@ -761,6 +761,7 @@ document.getElementById('mod-duplicates-modal').addEventListener('click', functi
 
 // -- Buscar e instalar mods desde Modrinth / CurseForge ------------------------
 var modSearchSource = 'modrinth';
+var modSearchCategory = '';
 var modSearchBusy = false;
 
 function formatDownloads(n) {
@@ -774,12 +775,21 @@ function formatDownloads(n) {
   return String(n);
 }
 
+function modSearchSpinnerHtml(text) {
+  return '<div class="mod-upload-progress"><div class="mod-upload-spinner"></div><div>' + escHtml(text) + '</div></div>';
+}
+
 document.getElementById('mod-search-btn').addEventListener('click', function() {
   if (!currentModpack) {
     return;
   }
   document.getElementById('mod-search-input').value = '';
   document.getElementById('mod-search-modal-body').innerHTML = '<p class="empty-msg">Escribe el nombre de un mod y presiona Buscar.</p>';
+  Array.prototype.forEach.call(document.querySelectorAll('#mod-search-tabs .mgmt-tab'), function(t) {
+    t.classList.toggle('active', t.dataset.source === 'modrinth');
+  });
+  modSearchSource = 'modrinth';
+  loadModSearchCategories(modSearchSource);
   document.getElementById('mod-search-modal').classList.add('show');
 });
 
@@ -802,6 +812,41 @@ document.getElementById('mod-search-tabs').addEventListener('click', function(ev
   Array.prototype.forEach.call(this.querySelectorAll('.mgmt-tab'), function(t) { t.classList.remove('active'); });
   tab.classList.add('active');
   modSearchSource = tab.dataset.source;
+  loadModSearchCategories(modSearchSource);
+  var query = document.getElementById('mod-search-input').value.trim();
+  if (query) {
+    runModSearch(query);
+  }
+});
+
+function loadModSearchCategories(source) {
+  var select = document.getElementById('mod-search-category');
+  select.innerHTML = '<option value="">Cargando categorías...</option>';
+  select.disabled = true;
+  modSearchCategory = '';
+  apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/search/categories?source=' + encodeURIComponent(source))
+    .then(function(response) {
+      return response.json().then(function(data) { return { ok: response.ok, data: data }; });
+    })
+    .then(function(result) {
+      if (!result.ok) {
+        select.innerHTML = '<option value="">Todas las categorías</option>';
+        document.getElementById('mod-search-modal-body').innerHTML = modErrorHtml(result.data.detail || 'No se pudieron cargar las categorías');
+        return;
+      }
+      var cats = result.data.categories || [];
+      select.innerHTML = '<option value="">Todas las categorías</option>' + cats.map(function(c) {
+        return '<option value="' + escHtml(String(c.id)) + '">' + escHtml(c.name) + '</option>';
+      }).join('');
+      select.disabled = false;
+    })
+    .catch(function() {
+      select.innerHTML = '<option value="">Todas las categorías</option>';
+    });
+}
+
+document.getElementById('mod-search-category').addEventListener('change', function() {
+  modSearchCategory = this.value;
   var query = document.getElementById('mod-search-input').value.trim();
   if (query) {
     runModSearch(query);
@@ -818,8 +863,12 @@ document.getElementById('mod-search-form').addEventListener('submit', function(e
 
 function runModSearch(query) {
   var body = document.getElementById('mod-search-modal-body');
-  body.innerHTML = '<p class="empty-msg">Buscando...</p>';
-  apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/search?source=' + encodeURIComponent(modSearchSource) + '&query=' + encodeURIComponent(query))
+  body.innerHTML = modSearchSpinnerHtml('Buscando...');
+  var url = '/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/search?source=' + encodeURIComponent(modSearchSource) + '&query=' + encodeURIComponent(query);
+  if (modSearchCategory) {
+    url += '&category=' + encodeURIComponent(modSearchCategory);
+  }
+  apiFetch(url)
     .then(function(response) {
       return response.json().then(function(data) { return { ok: response.ok, data: data }; });
     })
@@ -843,12 +892,21 @@ function renderModSearchResults(results) {
   }
   body.innerHTML = results.map(function(mod, i) {
     var icon = mod.icon_url
-      ? '<img src="' + escHtml(mod.icon_url) + '" alt="" style="width:36px;height:36px;border-radius:6px;flex-shrink:0">'
-      : '<span class="mod-icon">🧩</span>';
-    return '<div class="mod-list-item mod-search-result" data-index="' + i + '" style="cursor:pointer">'
+      ? '<img class="mod-search-icon" src="' + escHtml(mod.icon_url) + '" alt="">'
+      : '<span class="mod-search-icon" style="display:flex;align-items:center;justify-content:center;font-size:1.2rem">🧩</span>';
+    var badge = mod.installed ? '<span class="mod-search-badge">✅ Instalado</span>' : '';
+    var desc = mod.description ? '<div class="mod-search-desc">' + escHtml(mod.description) + '</div>' : '';
+    var link = mod.page_url
+      ? '<a class="mod-search-link" href="' + escHtml(mod.page_url) + '" target="_blank" rel="noopener" title="Ver página del mod" onclick="event.stopPropagation()">↗</a>'
+      : '';
+    return '<div class="mod-search-result-item" data-index="' + i + '">'
       + icon
-      + '<div class="mod-info"><div class="mod-display">' + escHtml(mod.title) + '</div>'
-      + '<div class="mod-file">' + escHtml(mod.author || '') + ' · ⬇ ' + formatDownloads(mod.downloads) + '</div></div>'
+      + '<div class="mod-search-info">'
+      + '<div class="mod-search-title-row"><span class="mod-search-title">' + escHtml(mod.title) + '</span>' + badge + '</div>'
+      + desc
+      + '<div class="mod-search-meta">' + escHtml(mod.author || '') + ' · ⬇ ' + formatDownloads(mod.downloads) + '</div>'
+      + '</div>'
+      + link
       + '</div>';
   }).join('');
   body._modSearchResults = results;
@@ -856,7 +914,7 @@ function renderModSearchResults(results) {
 
 function openModSearchFiles(mod) {
   var body = document.getElementById('mod-search-modal-body');
-  body.innerHTML = '<p class="empty-msg">Buscando versiones compatibles...</p>';
+  body.innerHTML = modSearchSpinnerHtml('Buscando versiones compatibles...');
   apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/search/' + encodeURIComponent(mod.source) + '/' + encodeURIComponent(mod.id) + '/files')
     .then(function(response) {
       return response.json().then(function(data) { return { ok: response.ok, data: data }; });
@@ -877,9 +935,10 @@ function openModSearchFiles(mod) {
 
 function renderModSearchFiles(mod, files) {
   var body = document.getElementById('mod-search-modal-body');
+  var badge = mod.installed ? ' <span class="mod-search-badge">✅ Instalado</span>' : '';
   var header = '<div style="margin-bottom:10px">'
     + '<button type="button" class="btn-secondary btn-sm mod-search-back">‹ Volver a resultados</button>'
-    + '<div style="font-weight:600;margin-top:8px">' + escHtml(mod.title) + '</div>'
+    + '<div style="font-weight:600;margin-top:8px">' + escHtml(mod.title) + badge + '</div>'
     + '</div>';
   if (!files.length) {
     body.innerHTML = header + '<p class="empty-msg">No hay versiones compatibles con la versión/modloader de este servidor.</p>';
@@ -905,7 +964,7 @@ document.getElementById('mod-search-modal-body').addEventListener('click', funct
   if (modSearchBusy) {
     return;
   }
-  var row = event.target.closest('.mod-search-result');
+  var row = event.target.closest('.mod-search-result-item');
   if (row) {
     var mod = this._modSearchResults[Number(row.dataset.index)];
     if (mod) {
