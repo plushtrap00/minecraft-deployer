@@ -777,6 +777,47 @@ var modSearchTotal = 0;
 var modSearchLastResults = [];
 var modSearchFilesState = { items: [], page: 0, mod: null };
 
+// -- Caché en memoria (LRU simple) ---------------------------------------------
+// Nada de esto persiste entre recargas de página a propósito: es solo para no
+// re-pedir la misma página/lista dos veces dentro de la misma sesión de uso
+// del modal (ida y vuelta entre páginas, pestañas, o el detalle de un mod).
+function createModSearchLru(maxSize) {
+  var map = new Map();
+  return {
+    get: function(key) {
+      if (!map.has(key)) {
+        return undefined;
+      }
+      var value = map.get(key);
+      map.delete(key);
+      map.set(key, value); // reinsertar = marcarlo como el más reciente
+      return value;
+    },
+    set: function(key, value) {
+      if (map.has(key)) {
+        map.delete(key);
+      }
+      map.set(key, value);
+      if (map.size > maxSize) {
+        map.delete(map.keys().next().value); // expulsa el más antiguo
+      }
+    },
+    clear: function() {
+      map.clear();
+    }
+  };
+}
+
+// ~30 páginas de 20 resultados: suficiente para navegar bastante sin acumular
+// memoria sin límite si el usuario prueba muchos términos distintos.
+var modSearchResultsCache = createModSearchLru(30);
+var modSearchCategoriesCache = createModSearchLru(10); // como mucho 2 fuentes
+var modSearchFilesCache = createModSearchLru(30);
+
+function modSearchResultsCacheKey(source, query, categories, offset) {
+  return source + '|' + query + '|' + categories.slice().sort().join(',') + '|' + offset;
+}
+
 function formatDownloads(n) {
   n = n || 0;
   if (n >= 1000000) {
@@ -865,6 +906,11 @@ function renderModSearchCategoryOptions(categories) {
 }
 
 function loadModSearchCategories(source) {
+  var cached = modSearchCategoriesCache.get(source);
+  if (cached) {
+    modSearchCategoryPanelBody.innerHTML = renderModSearchCategoryOptions(cached) || '<p class="empty-msg" style="padding:6px">Sin categorías</p>';
+    return;
+  }
   modSearchCategoryPanelBody.innerHTML = '<p class="empty-msg" style="padding:6px">Cargando...</p>';
   apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/search/categories?source=' + encodeURIComponent(source))
     .then(function(response) {
@@ -877,6 +923,7 @@ function loadModSearchCategories(source) {
         return;
       }
       var cats = result.data.categories || [];
+      modSearchCategoriesCache.set(source, cats);
       modSearchCategoryPanelBody.innerHTML = renderModSearchCategoryOptions(cats) || '<p class="empty-msg" style="padding:6px">Sin categorías</p>';
     })
     .catch(function() {
@@ -933,9 +980,20 @@ modSearchInputEl.addEventListener('keydown', function(event) {
 function runModSearch(query, offset) {
   offset = offset || 0;
   modSearchQuery = query;
+  document.getElementById('mod-search-pagination').innerHTML = '';
+
+  var cacheKey = modSearchResultsCacheKey(modSearchSource, query, modSearchCategories, offset);
+  var cached = modSearchResultsCache.get(cacheKey);
+  if (cached) {
+    modSearchOffset = offset;
+    modSearchLimit = cached.limit;
+    modSearchTotal = cached.total;
+    renderModSearchResults(cached.results);
+    return;
+  }
+
   var body = document.getElementById('mod-search-modal-body');
   body.innerHTML = modSearchSpinnerHtml('Buscando...');
-  document.getElementById('mod-search-pagination').innerHTML = '';
 
   var url = '/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/search?source=' + encodeURIComponent(modSearchSource)
     + '&query=' + encodeURIComponent(query) + '&offset=' + offset;
@@ -959,6 +1017,9 @@ function runModSearch(query, offset) {
       modSearchOffset = offset;
       modSearchLimit = result.data.limit || 20;
       modSearchTotal = result.data.total || 0;
+      modSearchResultsCache.set(cacheKey, {
+        results: result.data.results || [], total: modSearchTotal, limit: modSearchLimit
+      });
       renderModSearchResults(result.data.results || []);
     })
     .catch(function(error) {
@@ -979,7 +1040,7 @@ function renderModSearchResults(results) {
   }
   body.innerHTML = results.map(function(mod, i) {
     var icon = mod.icon_url
-      ? '<img class="mod-search-icon" src="' + escHtml(mod.icon_url) + '" alt="">'
+      ? '<img class="mod-search-icon" src="' + escHtml(mod.icon_url) + '" alt="" loading="lazy" decoding="async">'
       : '<span class="mod-search-icon" style="display:flex;align-items:center;justify-content:center;font-size:1.2rem">🧩</span>';
     var badge = mod.installed ? '<span class="mod-search-badge">✅ Instalado</span>' : '';
     var desc = mod.description ? '<div class="mod-search-desc">' + escHtml(mod.description) + '</div>' : '';
@@ -1008,9 +1069,18 @@ function renderModSearchResults(results) {
 // -- Versiones/archivos de un mod (todas las traídas de una vez, paginadas en cliente) --
 
 function openModSearchFiles(mod) {
+  document.getElementById('mod-search-pagination').innerHTML = '';
+
+  var cacheKey = mod.source + '|' + mod.id;
+  var cachedFiles = modSearchFilesCache.get(cacheKey);
+  if (cachedFiles) {
+    modSearchFilesState = { items: cachedFiles, page: 0, mod: mod };
+    renderModSearchFilesPage();
+    return;
+  }
+
   var body = document.getElementById('mod-search-modal-body');
   body.innerHTML = modSearchSpinnerHtml('Buscando versiones compatibles...');
-  document.getElementById('mod-search-pagination').innerHTML = '';
   apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/search/' + encodeURIComponent(mod.source) + '/' + encodeURIComponent(mod.id) + '/files')
     .then(function(response) {
       return response.json().then(function(data) { return { ok: response.ok, data: data }; });
@@ -1020,7 +1090,9 @@ function openModSearchFiles(mod) {
         body.innerHTML = modSearchBackButtonHtml() + modErrorHtml(result.data.detail || 'Error al obtener versiones');
         return;
       }
-      modSearchFilesState = { items: result.data.files || [], page: 0, mod: mod };
+      var files = result.data.files || [];
+      modSearchFilesCache.set(cacheKey, files);
+      modSearchFilesState = { items: files, page: 0, mod: mod };
       renderModSearchFilesPage();
     })
     .catch(function(error) {
@@ -1125,6 +1197,9 @@ function installSearchedMod(mod, file, buttonEl) {
         body.innerHTML = '<div style="background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.3);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--green)">✅ Mod instalado: '
           + escHtml(result.data.filename) + '</div>';
         document.getElementById('mod-search-pagination').innerHTML = '';
+        // El flag "installed" de otras páginas ya cacheadas puede haber
+        // quedado desactualizado con este mod recién instalado.
+        modSearchResultsCache.clear();
         loadModsList();
       } else {
         buttonEl.disabled = false;

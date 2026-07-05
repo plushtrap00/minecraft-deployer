@@ -240,10 +240,22 @@
 
 /* -- Buscar mods online (Modrinth / CurseForge) -------------------------- */
 
+/* .modal-scroll ya trae padding:20px (compartido por todos los modales,
+   no se toca acá); un poco más a la derecha específicamente en este modal
+   para que el contenido no quede pegado a la scrollbar nativa. */
+#mod-search-modal-body {
+  padding-right: 26px;
+}
+
 .mod-search-toolbar {
   display: flex;
   gap: 8px;
-  margin-bottom: 10px;
+  /* .modal-body no trae padding propio (solo .modal-scroll lo tiene); sin
+     este margen la barra de búsqueda y el panel de categorías quedaban
+     pegados a los bordes del modal mientras los resultados de abajo (ya
+     dentro de .modal-scroll) sí respetaban 20px, dando una sensación de
+     padding inconsistente entre bloques. */
+  margin: 0 20px 10px;
   flex-wrap: wrap;
 }
 
@@ -268,7 +280,11 @@
   flex-shrink: 0;
   border: 1px solid var(--border);
   border-radius: 8px;
-  margin-bottom: 10px;
+  /* Separación clara respecto a la lista de resultados: cada panel tiene
+     su propio scroll (max-height + overflow-y), así que sin un margen
+     generoso ambas scrollbars quedan pegadas una encima de la otra. Margen
+     horizontal para alinearse con la barra de búsqueda y con .modal-scroll. */
+  margin: 0 20px 16px;
   background: var(--bg);
   overflow: hidden;
 }

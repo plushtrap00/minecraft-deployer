@@ -325,7 +325,11 @@ code {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, .7);
-  z-index: 100;
+  /* Por encima de cualquier panel/toast flotante (z-index: 999, ver
+     sysmon.css/base.css .toast): un modal abierto debe tapar TODO,
+     si no el panel de sistema (fixed, top-right) se dibuja encima del
+     modal y se ve contenido de la página de fondo a través de sus bordes. */
+  z-index: 1000;
   align-items: center;
   justify-content: center;
   padding: 20px;
