@@ -49,7 +49,7 @@ from services.modpack import (
     mod_display_name, process_mod_jar, find_possible_duplicate_mods,
     detect_installed_mods, has_mod_keyword,
     parse_server_properties, save_server_property,
-    get_worlds, analyze_crash,
+    get_worlds, analyze_crash, classify_installed_mods,
 )
 from services.players import (
     ensure_global_dir, read_global_file, write_global_file, PLAYER_FILES,
@@ -371,6 +371,18 @@ async def mods_duplicates(modpack: str):
     mods_dir = DEFAULT_SERVERS_PATH / modpack / "mods"
     groups = await asyncio.to_thread(find_possible_duplicate_mods, mods_dir)
     return JSONResponse({"groups": groups})
+
+
+@router.get("/{modpack}/mods/client-only")
+async def mods_client_only(modpack: str):
+    """
+    Categoriza los mods instalados en server / client_only / unknown según su
+    metadata de side/environment (ver classify_mod_side en services/modpack.py).
+    Los "client_only" no se instalan del lado servidor A PROPÓSITO, no es un error.
+    """
+    mods_dir = DEFAULT_SERVERS_PATH / modpack / "mods"
+    result = await asyncio.to_thread(classify_installed_mods, mods_dir)
+    return JSONResponse(result)
 
 
 @router.post("/{modpack}/mods/upload")

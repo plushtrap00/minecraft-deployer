@@ -57,6 +57,12 @@
     <span class="disk-text" id="disk-text">Cargando...</span>
   </div>
 
+  <div class="mgmt-tabs" style="margin-bottom:16px">
+    <button class="mgmt-tab active" id="deploy-mode-import">📦 Importar modpack existente</button>
+    <button class="mgmt-tab" id="deploy-mode-create">🆕 Crear servidor nuevo</button>
+  </div>
+
+  <div id="deploy-import-section">
   <div class="card">
     <h2>1 · Archivo comprimido <span class="req">*</span></h2>
     <div class="info-box">Sube el archivo de server files del modpack (.zip, .rar, .tar.gz...)</div>
@@ -121,6 +127,67 @@
       <div class="result-grid" id="result-grid"></div>
     </div>
     <button class="deploy-btn" id="deploy-btn">🚀 Descomprimir en Ubuntu</button>
+  </div>
+  </div>
+  <!-- /deploy-import-section -->
+
+  <div id="deploy-create-section" style="display:none">
+    <div class="card">
+      <h2>1 · Nombre del servidor <span class="req">*</span></h2>
+      <input type="text" id="create-name" placeholder="ej: survival-nuevo, test-fabric..." class="w-full">
+      <p class="hint">Se creará en <code>~/servers-minecraft/<em>nombre</em></code></p>
+    </div>
+
+    <div class="card">
+      <h2>2 · Modloader y versión de Minecraft <span class="req">*</span></h2>
+      <div class="props-grid">
+        <div class="prop-field">
+          <label class="prop-label">Modloader</label>
+          <select id="create-loader" class="w-full">
+            <option value="vanilla">Vanilla (sin modloader)</option>
+            <option value="neoforge">NeoForge</option>
+            <option value="forge">Forge</option>
+            <option value="fabric">Fabric</option>
+            <option value="quilt">Quilt</option>
+          </select>
+        </div>
+        <div class="prop-field">
+          <label class="prop-label">Versión de Minecraft</label>
+          <select id="create-mc-version" class="w-full"><option value="">Cargando versiones...</option></select>
+        </div>
+        <div class="prop-field" id="create-loader-version-field" style="display:none">
+          <label class="prop-label">Versión del modloader</label>
+          <select id="create-loader-version" class="w-full"></select>
+        </div>
+      </div>
+      <p class="hint" id="create-loader-hint" style="margin-top:8px"></p>
+    </div>
+
+    <div class="card">
+      <h2>3 · Configuración de RAM <span class="req">*</span></h2>
+      <div class="ram-grid">
+        <div>
+          <label class="field-label">RAM mínima <span style="color:var(--accent)">(-Xms)</span></label>
+          <div class="input-row">
+            <input type="number" id="create-ram-min-val" value="2" min="1">
+            <select id="create-ram-min-unit"><option value="G">GB</option><option value="M">MB</option></select>
+          </div>
+        </div>
+        <div>
+          <label class="field-label">RAM máxima <span style="color:var(--accent)">(-Xmx)</span></label>
+          <div class="input-row">
+            <input type="number" id="create-ram-max-val" value="4" min="1">
+            <select id="create-ram-max-unit"><option value="G">GB</option><option value="M">MB</option></select>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>4 · Crear servidor</h2>
+      <div id="create-progress-body"></div>
+      <button class="deploy-btn" id="create-server-btn">🆕 Crear servidor</button>
+    </div>
   </div>
 </div>
 
@@ -536,6 +603,7 @@
         <div style="display:flex;gap:8px;align-items:center">
           <input type="text" id="mods-search" placeholder="🔍 Buscar mod por nombre..." class="w-full">
           <button type="button" class="btn-secondary btn-sm" id="mod-duplicates-btn" style="flex-shrink:0;white-space:nowrap">⚠️ Ver posibles duplicados</button>
+          <button type="button" class="btn-secondary btn-sm" id="mod-client-only-btn" style="flex-shrink:0;white-space:nowrap">🖥️ Mods solo-cliente</button>
         </div>
         <div id="mods-list"><p class="empty-msg">Cargando...</p></div>
       </div>
@@ -758,6 +826,21 @@
   </div>
 </div>
 
+<!-- Modal: mods solo-cliente -->
+<div class="modal-overlay" id="mod-client-only-modal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <span>🖥️</span>
+      <span class="modal-path">Mods solo-cliente</span>
+      <button class="modal-close" id="mod-client-only-modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-box">Los mods marcados como "solo cliente" no necesitan estar en la carpeta mods/ del servidor — no es un error que falten aquí, es lo esperado. La detección se basa en metadata que el propio mod declara, así que "sin detectar" no significa necesariamente que haga falta en el servidor.</div>
+      <div class="modal-scroll" id="mod-client-only-modal-body"></div>
+    </div>
+  </div>
+</div>
+
 <!-- Modal: buscar e instalar mods desde Modrinth / CurseForge -->
 <div class="modal-overlay" id="mod-search-modal">
   <div class="modal mod-search-dialog">
@@ -923,6 +1006,7 @@
 <script src="/static/js/logs.js"></script>
 <script src="/static/js/mods.js"></script>
 <script src="/static/js/modloader.js"></script>
+<script src="/static/js/create_server.js"></script>
 <script src="/static/js/players.js"></script>
 <script src="/static/js/server.js"></script>
 <script src="/static/js/users.js"></script>

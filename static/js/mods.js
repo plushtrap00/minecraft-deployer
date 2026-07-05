@@ -761,6 +761,73 @@ document.getElementById('mod-duplicates-modal').addEventListener('click', functi
 });
 
 
+// -- Mods solo-cliente -----------------------------------------------------------
+document.getElementById('mod-client-only-btn').addEventListener('click', openClientOnlyModal);
+
+function openClientOnlyModal() {
+  if (!currentModpack) {
+    return;
+  }
+  document.getElementById('mod-client-only-modal-body').innerHTML = '<p class="empty-msg">Analizando metadata de los mods...</p>';
+  document.getElementById('mod-client-only-modal').classList.add('show');
+
+  apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/client-only')
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      renderClientOnlyModal(data);
+    })
+    .catch(function(error) {
+      document.getElementById('mod-client-only-modal-body').innerHTML = modErrorHtml('Error de red: ' + error.message);
+    });
+}
+
+function renderClientOnlyGroup(items) {
+  return '<div class="mods-table-wrap" style="margin-bottom:8px">' + items.map(function(mod) {
+    var opacityStyle = mod.enabled ? '' : ' style="opacity:.5"';
+    var confidenceText = mod.confidence === 'high' ? ' · confianza alta' : (mod.confidence === 'medium' ? ' · confianza media' : '');
+    var disabledNote = mod.enabled ? '' : ' · <span style="color:var(--yellow)">desactivado</span>';
+    var reasonLine = mod.reason ? '<div class="mod-modal-detail">' + escHtml(mod.reason) + confidenceText + '</div>' : '';
+    return '<div class="mod-modal-item"' + opacityStyle + '>'
+      + '<div class="mod-info"><div class="mod-display">' + escHtml(mod.display_name) + '</div>'
+      + '<div class="mod-modal-detail">' + escHtml(mod.filename) + disabledNote + '</div>'
+      + reasonLine
+      + '</div></div>';
+  }).join('') + '</div>';
+}
+
+function renderClientOnlyModal(data) {
+  var body = document.getElementById('mod-client-only-modal-body');
+  var clientOnly = data.client_only || [];
+  var unknown = data.unknown || [];
+  var server = data.server || [];
+
+  var html = '<div style="font-size:.85rem;font-weight:600;margin:4px 0 8px">🖥️ Solo cliente (' + clientOnly.length + ')</div>';
+  html += clientOnly.length
+    ? renderClientOnlyGroup(clientOnly)
+    : '<p class="empty-msg" style="padding:8px 4px">No se detectó ningún mod solo-cliente.</p>';
+
+  if (unknown.length) {
+    html += '<div style="font-size:.85rem;font-weight:600;margin:16px 0 8px">❓ Categoría desconocida (' + unknown.length + ')</div>'
+      + '<p class="hint" style="margin-bottom:8px">Este mod no declara de forma clara si hace falta en el servidor — revísalo a mano si no estás seguro.</p>'
+      + renderClientOnlyGroup(unknown);
+  }
+
+  html += '<div style="font-size:.8rem;color:var(--muted);margin-top:16px;padding-top:10px;border-top:1px solid var(--border)">'
+    + '🖧 ' + server.length + ' mod(s) detectado(s) como necesarios en el servidor (no se listan aquí).</div>';
+
+  body.innerHTML = html;
+}
+
+document.getElementById('mod-client-only-modal-close').addEventListener('click', function() {
+  document.getElementById('mod-client-only-modal').classList.remove('show');
+});
+document.getElementById('mod-client-only-modal').addEventListener('click', function(event) {
+  if (event.target === this) {
+    this.classList.remove('show');
+  }
+});
+
+
 // -- Buscar e instalar mods desde Modrinth / CurseForge ------------------------
 var modSearchSource = 'modrinth';
 var modSearchCategories = [];

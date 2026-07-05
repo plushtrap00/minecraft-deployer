@@ -164,6 +164,28 @@ def _mods_block(text: str) -> str:
     return rest[:end.start()] if end else rest
 
 
+def _toml_dep_side(text: str, mod_id: str | None, dep_modid: str) -> str | None:
+    """
+    Extrae el campo side= del bloque [[dependencies.<mod_id>]] cuyo modId sea
+    dep_modid (forge/neoforge) — no es un campo oficial a nivel de mod como el
+    "environment" de Fabric, es una convención de comunidad para marcar que LA
+    DEPENDENCIA DEL PROPIO LOADER solo hace falta en un lado. Mismo anclaje que
+    _toml_dep_version_ranges para no confundir bloques de distintos modIds.
+    """
+    if not mod_id:
+        return None
+    header_re = re.compile(r'\[\[\s*dependencies\.["\']?' + re.escape(mod_id) + r'["\']?\s*\]\]', re.IGNORECASE)
+    blocks = header_re.split(text)[1:]
+    for block in blocks:
+        end = re.search(r'\n\s*\[', block)
+        block_text = block[:end.start()] if end else block
+        if re.search(r'modId\s*=\s*[\'"]' + re.escape(dep_modid) + r'[\'"]', block_text, re.IGNORECASE):
+            sm = re.search(r'side\s*=\s*[\'"]([^\'"]+)[\'"]', block_text, re.IGNORECASE)
+            if sm:
+                return sm.group(1)
+    return None
+
+
 def _toml_dep_version_ranges(text: str, mod_id: str | None, dep_modid: str) -> list:
     """
     Extrae el/los versionRange del bloque [[dependencies.<mod_id>]] cuyo modId
@@ -207,11 +229,17 @@ def read_mod_metadata(jar_bytes: bytes) -> dict:
     """
     Lee los metadatos de un mod desde sus bytes JAR.
     Soporta NeoForge/Forge (mods.toml), Fabric (fabric.mod.json) y Quilt.
-    Devuelve: {mc_versions, modloader, mod_id, mod_version, error}
+    Devuelve: {mc_versions, modloader, mod_id, mod_version, side, error}
+
+    "side" es el valor CRUDO declarado por el propio mod (sin normalizar):
+    "client"/"server"/"*" para Fabric (campo oficial del loader), o el string
+    de side= de su bloque de dependencia del loader para NeoForge/Forge
+    (convención de comunidad, no oficial). None si no declara nada — usar
+    classify_mod_side() para interpretarlo, no este campo directamente.
     """
     result = {
         "mc_versions": [], "loader_versions": {}, "modloader": None,
-        "mod_id": None, "mod_version": None, "error": None,
+        "mod_id": None, "mod_version": None, "side": None, "error": None,
     }
     try:
         with zipfile.ZipFile(io.BytesIO(jar_bytes)) as zf:
@@ -242,6 +270,12 @@ def read_mod_metadata(jar_bytes: bytes) -> dict:
                     ranges = _toml_dep_version_ranges(text, result["mod_id"], loader_key)
                     if ranges:
                         result["loader_versions"][loader_key] = ranges
+                    # side= en el bloque de dependencia del propio loader: convención
+                    # de comunidad para "esta dependencia (y por ende el mod) solo
+                    # hace falta en un lado". No todos los mods client-only la declaran.
+                    side = _toml_dep_side(text, result["mod_id"], loader_key)
+                    if side:
+                        result["side"] = side
                 return result
 
             # Fabric
@@ -252,6 +286,11 @@ def read_mod_metadata(jar_bytes: bytes) -> dict:
                 result["mod_version"] = data.get("version")
                 if result["mod_version"] and "${" in result["mod_version"]:
                     result["mod_version"] = _manifest_implementation_version(zf)
+                # "environment" SÍ es un campo oficial del spec de Fabric Loader
+                # ("client"/"server"/"*"), a diferencia del "side" de Forge/NeoForge:
+                # el propio loader lo usa para decidir si cargar el mod en un
+                # dedicated server, así que cuando está declarado es una señal fiable.
+                result["side"] = data.get("environment")
                 depends = data.get("depends", {})
                 mc = depends.get("minecraft")
                 if mc:
@@ -261,7 +300,10 @@ def read_mod_metadata(jar_bytes: bytes) -> dict:
                     result["loader_versions"]["fabric"] = [loader_ver] if isinstance(loader_ver, str) else loader_ver
                 return result
 
-            # Quilt
+            # Quilt: no se extrae "side" aquí — a diferencia de Fabric, no hay
+            # consenso claro sobre dónde vive un campo de entorno equivalente en
+            # este manifest, y prefiero dejarlo en None (sin señal) antes que
+            # arriesgarme a leer la clave equivocada y reportar un side falso.
             if "quilt.mod.json" in names:
                 result["modloader"] = "Quilt"
                 data = json.loads(zf.read("quilt.mod.json").decode("utf-8", errors="replace"))
@@ -290,6 +332,103 @@ def read_mod_metadata(jar_bytes: bytes) -> dict:
         result["error"] = str(e)
 
     return result
+
+
+# ── Detección de mods client-only ──────────────────────────────────────────────
+#
+# No hay una forma 100% fiable de saber esto para todos los loaders:
+# - Fabric declara "environment" en su spec oficial (el propio loader lo usa
+#   para decidir si cargar el mod en un dedicated server) → confianza alta.
+# - Forge/NeoForge no tienen un campo equivalente a nivel de mod; lo más
+#   cercano es que algunos mods marquen side="CLIENT" en el bloque de
+#   dependencia de su propio loader, una convención de comunidad no aplicada
+#   de forma consistente → confianza media, y solo cuando está presente.
+# - Sin ninguna declaración (el caso más común en la práctica), se asume que
+#   el mod hace falta en el server en vez de marcarlo "desconocido" — la
+#   inmensa mayoría de los mods sin esta metadata sí son necesarios ahí.
+# - Un valor de side/environment presente pero irreconocible si cuenta como
+#   señal ambigua real → "unknown", en vez de adivinar.
+def classify_mod_side(meta: dict) -> dict:
+    """
+    Devuelve {"category": "server"|"client_only"|"unknown", "confidence":
+    "high"|"medium"|None, "reason": str|None} a partir del dict que devuelve
+    read_mod_metadata().
+    """
+    modloader = meta.get("modloader") or ""
+    side = meta.get("side")
+
+    if modloader == "Fabric":
+        if side == "client":
+            return {
+                "category": "client_only", "confidence": "high",
+                "reason": 'fabric.mod.json declara "environment": "client"',
+            }
+        if side in (None, "*", "server"):
+            return {"category": "server", "confidence": None, "reason": None}
+        return {
+            "category": "unknown", "confidence": None,
+            "reason": f'valor de "environment" no reconocido: {side!r}',
+        }
+
+    if modloader in ("NeoForge", "NeoForge/Forge"):
+        if side:
+            side_upper = side.upper()
+            if side_upper == "CLIENT":
+                return {
+                    "category": "client_only", "confidence": "medium",
+                    "reason": 'mods.toml declara side="CLIENT" para la dependencia del propio loader (convención no oficial)',
+                }
+            if side_upper in ("SERVER", "BOTH"):
+                return {"category": "server", "confidence": None, "reason": None}
+            return {
+                "category": "unknown", "confidence": None,
+                "reason": f'valor de "side" no reconocido: {side!r}',
+            }
+        return {"category": "server", "confidence": None, "reason": None}
+
+    # Quilt u otros: sin señal fiable extraída todavía (ver comentario en
+    # read_mod_metadata), se trata igual que "sin declaración".
+    return {"category": "server", "confidence": None, "reason": None}
+
+
+def classify_installed_mods(mods_dir: Path) -> dict:
+    """
+    Categoriza los mods instalados (incluidos los .disabled) en server /
+    client_only / unknown según su metadata de side/environment. Los jars sin
+    metadata reconocible (result["error"] set) se excluyen: no hay base para
+    clasificarlos, y ya se reportan aparte en el flujo normal de instalación.
+    """
+    if not mods_dir.exists():
+        return {"server": [], "client_only": [], "unknown": []}
+
+    buckets: dict = {"server": [], "client_only": [], "unknown": []}
+    for f in sorted(mods_dir.iterdir(), key=lambda x: x.name.lower()):
+        if not f.is_file():
+            continue
+        low = f.name.lower()
+        if not (low.endswith(".jar") or low.endswith(".jar.disabled")):
+            continue
+        try:
+            meta = read_mod_metadata(f.read_bytes())
+        except Exception:
+            continue
+        if meta.get("error"):
+            continue
+
+        classification = classify_mod_side(meta)
+        entry = {
+            "filename": f.name,
+            "display_name": mod_display_name(f.name),
+            "mod_id": meta.get("mod_id"),
+            "enabled": not f.name.endswith(".disabled"),
+        }
+        if classification["confidence"]:
+            entry["confidence"] = classification["confidence"]
+        if classification["reason"]:
+            entry["reason"] = classification["reason"]
+        buckets[classification["category"]].append(entry)
+
+    return buckets
 
 
 _PRERELEASE_MARKER_RE = re.compile(r'alpha|beta|rc|pre|snapshot|dev', re.IGNORECASE)
