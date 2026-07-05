@@ -818,6 +818,62 @@ function modSearchResultsCacheKey(source, query, categories, offset) {
   return source + '|' + query + '|' + categories.slice().sort().join(',') + '|' + offset;
 }
 
+// -- Caché real de íconos (bytes, no solo la URL) -------------------------------
+// Modrinth/CurseForge sirven los íconos con "Cache-Control: s-maxage=..." (para
+// CDNs compartidos) pero SIN "max-age"/"public", así que el navegador no tiene
+// garantía de guardarlos en su propio caché: cada vez que se recreaban los
+// <img> al volver a una página ya vista, se volvían a descargar por completo
+// (de ahí los MB repetidos en la pestaña Network). Acá se descarga el ícono
+// UNA sola vez con fetch()+blob y se reusa un object URL en cualquier render
+// posterior, sin volver a tocar la red pase lo que pase con esos headers.
+var modSearchImageCache = new Map(); // url original -> object URL
+var modSearchImagePending = new Map(); // url original -> [<img> esperando el blob]
+var MOD_SEARCH_IMAGE_CACHE_MAX = 150;
+
+function modSearchImageCacheSet(url, objectUrl) {
+  modSearchImageCache.set(url, objectUrl);
+  if (modSearchImageCache.size > MOD_SEARCH_IMAGE_CACHE_MAX) {
+    var oldestKey = modSearchImageCache.keys().next().value;
+    URL.revokeObjectURL(modSearchImageCache.get(oldestKey));
+    modSearchImageCache.delete(oldestKey);
+  }
+}
+
+function applyModSearchImage(imgEl, url) {
+  var cached = modSearchImageCache.get(url);
+  if (cached) {
+    imgEl.src = cached;
+    return;
+  }
+  var pending = modSearchImagePending.get(url);
+  if (pending) {
+    pending.push(imgEl); // ya hay una descarga en curso para esta misma URL
+    return;
+  }
+  modSearchImagePending.set(url, [imgEl]);
+  fetch(url)
+    .then(function(response) {
+      if (!response.ok) {
+        throw new Error('bad response');
+      }
+      return response.blob();
+    })
+    .then(function(blob) {
+      var objectUrl = URL.createObjectURL(blob);
+      modSearchImageCacheSet(url, objectUrl);
+      var waiters = modSearchImagePending.get(url) || [];
+      modSearchImagePending.delete(url);
+      waiters.forEach(function(el) { el.src = objectUrl; });
+    })
+    .catch(function() {
+      // Si el fetch falla (p.ej. CORS bloqueado por el CDN), al menos que
+      // cargue la imagen directo como antes, en vez de quedar en blanco.
+      var waiters = modSearchImagePending.get(url) || [];
+      modSearchImagePending.delete(url);
+      waiters.forEach(function(el) { el.src = url; });
+    });
+}
+
 function formatDownloads(n) {
   n = n || 0;
   if (n >= 1000000) {
@@ -1039,8 +1095,10 @@ function renderModSearchResults(results) {
     return;
   }
   body.innerHTML = results.map(function(mod, i) {
+    // Sin src todavía: applyModSearchImage() lo completa abajo, desde caché
+    // (blob ya descargado) o disparando la descarga una sola vez.
     var icon = mod.icon_url
-      ? '<img class="mod-search-icon" src="' + escHtml(mod.icon_url) + '" alt="" loading="lazy" decoding="async">'
+      ? '<img class="mod-search-icon" data-icon-url="' + escHtml(mod.icon_url) + '" alt="" loading="lazy" decoding="async">'
       : '<span class="mod-search-icon" style="display:flex;align-items:center;justify-content:center;font-size:1.2rem">🧩</span>';
     var badge = mod.installed ? '<span class="mod-search-badge">✅ Instalado</span>' : '';
     var desc = mod.description ? '<div class="mod-search-desc">' + escHtml(mod.description) + '</div>' : '';
@@ -1058,6 +1116,10 @@ function renderModSearchResults(results) {
       + '</div>';
   }).join('');
   body._modSearchResults = results;
+
+  Array.prototype.forEach.call(body.querySelectorAll('img[data-icon-url]'), function(img) {
+    applyModSearchImage(img, img.dataset.iconUrl);
+  });
 
   var totalPages = Math.max(1, Math.ceil(modSearchTotal / modSearchLimit));
   var page = Math.floor(modSearchOffset / modSearchLimit);
