@@ -310,7 +310,11 @@ function selectModpack(name) {
 });
 
 function activateMgmtTab(name) {
-  document.querySelectorAll('.mgmt-tab').forEach(function(tab) {
+  // Acotado a #mgmt-panel-tabs: .mgmt-tab también se usa (con otro
+  // significado) en las sub-pestañas de la página de despliegue y en el
+  // modal de búsqueda de mods — sin este scope, esta función también les
+  // quitaba el estado "active" a esos botones por compartir la misma clase.
+  document.querySelectorAll('#mgmt-panel-tabs .mgmt-tab').forEach(function(tab) {
     tab.classList.remove('active');
   });
   document.querySelectorAll('.mgmt-content').forEach(function(content) {
