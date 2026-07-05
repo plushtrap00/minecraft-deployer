@@ -11,6 +11,7 @@ Contiene:
 - notify_app_shutdown(): desbloquea las colas SSE para que la app pueda salir rápido
 """
 import os
+import subprocess
 import threading
 import time
 from collections import deque
@@ -50,6 +51,60 @@ def wait_process_exit(proc, timeout_seconds: float) -> bool:
             return True
         time.sleep(0.5)
     return proc.poll() is not None
+
+
+def _child_pids(pid: int) -> list:
+    try:
+        result = subprocess.run(["pgrep", "-P", str(pid)], capture_output=True, text=True)
+        return [int(p) for p in result.stdout.split() if p.strip().isdigit()]
+    except Exception:
+        return []
+
+
+def find_java_descendant_pid(root_pid: int) -> int | None:
+    """
+    El .sh de arranque puede envolver a java con varios niveles de procesos
+    intermedios (y, en algunos scripts de la comunidad, con un bucle propio
+    que vuelve a lanzar java pasados unos segundos si no detecta un cierre
+    "oficial"). Para poder esperar al proceso de Minecraft REAL en vez de al
+    wrapper — que si tiene ese bucle nunca termina por sí solo — se recorre
+    el árbol de descendientes de root_pid buscando el primero cuyo
+    /proc/<pid>/comm sea "java".
+    """
+    to_check = [root_pid]
+    seen = set()
+    while to_check:
+        pid = to_check.pop(0)
+        if pid in seen:
+            continue
+        seen.add(pid)
+        for child in _child_pids(pid):
+            try:
+                comm = Path(f"/proc/{child}/comm").read_text().strip()
+            except Exception:
+                comm = ""
+            if comm == "java":
+                return child
+            to_check.append(child)
+    return None
+
+
+def _pid_running(pid: int) -> bool:
+    try:
+        os.kill(pid, 0)
+        return True
+    except OSError:
+        return False
+
+
+def wait_java_exit(java_pid: int, timeout_seconds: float) -> bool:
+    """Igual que wait_process_exit pero para un PID que no es hijo directo de este proceso (no admite .poll())."""
+    deadline = time.monotonic() + timeout_seconds
+    while time.monotonic() < deadline:
+        if not _pid_running(java_pid):
+            return True
+        time.sleep(0.3)
+    return not _pid_running(java_pid)
 
 
 # ── Apagado de la app ──────────────────────────────────────────────────────────

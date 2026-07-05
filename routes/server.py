@@ -26,6 +26,7 @@ from services import process as proc_module
 from services.process import (
     mc_process, mc_process_lock, mc_output_lines, mc_output_lock,
     mc_sse_clients, mc_sse_lock, _reader_thread, wait_process_exit,
+    find_java_descendant_pid, wait_java_exit,
 )
 from services import metrics as metrics_module
 from services.metrics import mc_metrics, read_proc_ram, _parse_metrics_line
@@ -147,17 +148,36 @@ async def server_stop():
         if proc is None or proc.poll() is not None:
             raise HTTPException(status_code=400, detail="No hay servidor en marcha")
         # Apagado limpio primero: da tiempo a guardar el mundo antes de matar
-        # el proceso. Solo se recurre a SIGKILL si no cierra solo a tiempo.
+        # el proceso.
         try:
             proc.stdin.write(b"save-all\n")
             proc.stdin.write(b"stop\n")
             proc.stdin.flush()
         except Exception:
-            pass  # si falla escribir a stdin, el fallback de abajo se encarga
+            pass  # si falla escribir a stdin, el kill de grupo de abajo se encarga igual
 
-    stopped_gracefully = await asyncio.to_thread(wait_process_exit, proc, GRACEFUL_STOP_TIMEOUT_SECONDS)
+    # No se espera a que termine el script wrapper (proc) en sí: algunos .sh de
+    # arranque tienen su propio bucle que vuelve a lanzar java pasados unos
+    # segundos si no reconocen la forma exacta en que se les pidió parar (más
+    # allá del parcheo de RESTART=false ya aplicado al arrancar), y ese wrapper
+    # nunca termina solo mientras el bucle siga vivo. En cambio, se busca el
+    # proceso java real entre sus descendientes y se espera A ESE — apenas
+    # Minecraft cierra de verdad (por su propio "stop", no por un kill nuestro),
+    # se mata TODO el grupo de procesos de inmediato, antes de que el bucle del
+    # script tenga oportunidad de relanzarlo. Si no se puede identificar (p.ej.
+    # el script hace "exec java" y quedan como el mismo proceso), se cae al
+    # comportamiento anterior de esperar a proc directamente.
+    java_pid = await asyncio.to_thread(find_java_descendant_pid, proc.pid)
+    if java_pid is not None and java_pid != proc.pid:
+        stopped_gracefully = await asyncio.to_thread(wait_java_exit, java_pid, GRACEFUL_STOP_TIMEOUT_SECONDS)
+    else:
+        stopped_gracefully = await asyncio.to_thread(wait_process_exit, proc, GRACEFUL_STOP_TIMEOUT_SECONDS)
 
-    if not stopped_gracefully and proc.poll() is None:
+    # Se mata TODO el grupo siempre en este punto (no solo como fallback si no
+    # cerró a tiempo): así, aunque el wrapper intente reiniciar java tras un
+    # sleep, ese intento nunca llega a completarse — se corta el árbol entero
+    # apenas Minecraft terminó de guardar y cerrar, igual que un Ctrl+C.
+    if proc.poll() is None:
         try:
             import signal
             os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
