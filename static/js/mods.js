@@ -736,6 +736,16 @@ function openDowngradeModal(batchId, items) {
   items.forEach(function(item) {
     downgradeState.selected[item.filename] = false;
   });
+  // Título genérico si el lote mezcla motivos (versión antigua + solo-cliente...),
+  // específico si todos los items del lote comparten el mismo motivo.
+  var reasons = items.reduce(function(set, it) { set[it.reason || 'downgrade'] = true; return set; }, {});
+  var reasonKeys = Object.keys(reasons);
+  var titleByReason = {
+    downgrade: 'Mods con versión más antigua que la instalada',
+    client_only: 'Mods que parecen ser solo de cliente',
+  };
+  document.getElementById('mod-downgrade-modal-title').textContent =
+    (reasonKeys.length === 1 && titleByReason[reasonKeys[0]]) || 'Mods que necesitan confirmación';
   renderDowngradeModalPage();
   document.getElementById('mod-downgrade-modal').classList.add('show');
 }
@@ -746,11 +756,13 @@ function renderDowngradeModalPage() {
   var pageItems = downgradeState.items.slice(start, start + MOD_MODAL_PAGE_SIZE);
   body.innerHTML = pageItems.map(function(item) {
     var checked = downgradeState.selected[item.filename] ? ' checked' : '';
+    var detail = item.reason === 'client_only'
+      ? escHtml(item.detail || 'Este mod parece ser solo de cliente.')
+      : 'v' + escHtml(item.mod_version) + ' reemplazaría a v' + escHtml(item.existing_version) + ' (' + escHtml(item.existing_filename) + ')';
     return '<label class="mod-modal-item" style="cursor:pointer">'
       + '<input type="checkbox" class="mod-downgrade-check" data-filename="' + escHtml(item.filename) + '"' + checked + '>'
       + '<div class="mod-info"><div class="mod-display">' + escHtml(item.display_name) + '</div>'
-      + '<div class="mod-modal-detail">v' + escHtml(item.mod_version) + ' reemplazaría a v' + escHtml(item.existing_version)
-      + ' (' + escHtml(item.existing_filename) + ')</div></div></label>';
+      + '<div class="mod-modal-detail">' + detail + '</div></div></label>';
   }).join('');
   Array.prototype.forEach.call(body.querySelectorAll('.mod-downgrade-check'), function(cb) {
     cb.addEventListener('change', function() {
@@ -802,7 +814,7 @@ function renderDowngradeResult(data) {
   var html = '';
   if (applied.length) {
     html += '<div class="bulk-result-row" style="color:var(--green)"><span class="bulk-result-icon">✅</span>'
-      + '<span>Degradados a versión anterior: <b>' + applied.map(function(it) { return escHtml(it.display_name); }).join('</b>, <b>') + '</b></span></div>';
+      + '<span>Instalados de todas formas: <b>' + applied.map(function(it) { return escHtml(it.display_name); }).join('</b>, <b>') + '</b></span></div>';
   }
   if (skipped.length) {
     html += '<div class="bulk-result-row" style="color:var(--muted)"><span class="bulk-result-icon">⏭️</span>'
@@ -923,11 +935,16 @@ function renderClientOnlyGroup(items) {
     var confidenceText = mod.confidence === 'high' ? ' · confianza alta' : (mod.confidence === 'medium' ? ' · confianza media' : '');
     var disabledNote = mod.enabled ? '' : ' · <span style="color:var(--yellow)">desactivado</span>';
     var reasonLine = mod.reason ? '<div class="mod-modal-detail">' + escHtml(mod.reason) + confidenceText + '</div>' : '';
+    var toggleTitle = mod.enabled ? 'Deshabilitar mod' : 'Habilitar mod';
+    var toggleIcon = mod.enabled ? '⏸' : '▶';
     return '<div class="mod-modal-item"' + opacityStyle + '>'
       + '<div class="mod-info"><div class="mod-display">' + escHtml(mod.display_name) + '</div>'
       + '<div class="mod-modal-detail">' + escHtml(mod.filename) + disabledNote + '</div>'
       + reasonLine
-      + '</div></div>';
+      + '</div>'
+      + '<button type="button" class="btn-secondary client-only-toggle" title="' + toggleTitle + '" data-filename="' + escHtml(mod.filename) + '" style="font-size:.78rem;padding:4px 8px;flex-shrink:0">' + toggleIcon + '</button>'
+      + '<button type="button" class="btn-danger client-only-delete" title="Borrar mod" data-filename="' + escHtml(mod.filename) + '" style="opacity:1;font-size:.78rem;padding:4px 8px;flex-shrink:0">🗑</button>'
+      + '</div>';
   }).join('') + '</div>';
 }
 
@@ -952,6 +969,64 @@ function renderClientOnlyModal(data) {
     + '🖧 ' + server.length + ' mod(s) detectado(s) como necesarios en el servidor (no se listan aquí).</div>';
 
   body.innerHTML = html;
+}
+
+// Deshabilitar/borrar directamente desde este modal, sin tener que ir a
+// buscar el mismo mod en la lista general — reusa los mismos endpoints que
+// esa lista, pero refresca ESTE modal después (no la lista de detrás, que
+// loadModsList() ya se encarga de mantener al día por su cuenta).
+document.getElementById('mod-client-only-modal-body').addEventListener('click', function(event) {
+  var toggleBtn = event.target.closest('.client-only-toggle');
+  if (toggleBtn) {
+    clientOnlyToggleMod(toggleBtn.dataset.filename);
+    return;
+  }
+  var deleteBtn = event.target.closest('.client-only-delete');
+  if (deleteBtn) {
+    clientOnlyDeleteMod(deleteBtn.dataset.filename);
+  }
+});
+
+function clientOnlyToggleMod(filename) {
+  apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/' + encodeURIComponent(filename) + '/toggle', {
+    method: 'POST'
+  })
+    .then(function(response) {
+      return response.json().then(function(data) { return { ok: response.ok, data: data }; });
+    })
+    .then(function(result) {
+      if (result.ok && result.data.success) {
+        showToast(result.data.enabled ? 'Mod habilitado' : 'Mod deshabilitado', 'success');
+        loadModsList();
+        openClientOnlyModal();
+      } else {
+        showToast(result.data.detail || 'Error al cambiar el estado del mod', 'error');
+      }
+    })
+    .catch(function() { showToast('Error de red', 'error'); });
+}
+
+function clientOnlyDeleteMod(filename) {
+  showConfirm(
+    'Borrar "' + filename + '"',
+    'Esta acción no se puede deshacer.',
+    function() {
+      apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/' + encodeURIComponent(filename), {
+        method: 'DELETE'
+      })
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+          if (data.success) {
+            showToast('Mod borrado', 'success');
+            loadModsList();
+            openClientOnlyModal();
+          } else {
+            showToast(data.detail || 'Error al borrar', 'error');
+          }
+        })
+        .catch(function() { showToast('Error de red', 'error'); });
+    }
+  );
 }
 
 document.getElementById('mod-client-only-modal-close').addEventListener('click', function() {

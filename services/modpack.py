@@ -649,8 +649,9 @@ def process_mod_jar(mods_dir: Path, filename: str, jar_bytes: bytes, server_mc: 
     nada de disco.
 
     Devuelve dict con: status, filename, display_name, mod_id, mod_version, detail,
-    y según el caso: existing_filename, existing_version, replaced_filename, previous_version.
+    y según el caso: reason, existing_filename, existing_version, replaced_filename, previous_version.
     status: "added" | "already_installed" | "needs_confirmation" | "incompatible" | "invalid"
+    reason (solo con status == "needs_confirmation"): "downgrade" | "client_only"
     """
     display_name = mod_display_name(filename)
     meta = read_mod_metadata(jar_bytes)
@@ -663,6 +664,23 @@ def process_mod_jar(mods_dir: Path, filename: str, jar_bytes: bytes, server_mc: 
             "status": "invalid", "filename": filename, "display_name": display_name,
             "mod_id": None, "mod_version": None,
             "detail": meta["error"],
+        }
+
+    # Se comprueba ANTES que la compatibilidad de versión: un mod de cliente
+    # (p.ej. Sodium) puede crashear el servidor al arrancar (usa LWJGL, que no
+    # existe en un dedicado) sin dejar ni rastro en los logs — mejor avisar y
+    # dejar decidir, que instalarlo en silencio y que el servidor deje de
+    # arrancar sin explicación. classify_installed_mods() ya detectaba esto
+    # DESPUÉS de instalado (panel "🖥️ Mods solo-cliente"); esto lo hace ANTES.
+    classification = classify_mod_side(meta)
+    if classification["category"] == "client_only":
+        return {
+            "status": "needs_confirmation", "reason": "client_only",
+            "filename": filename, "display_name": display_name,
+            "mod_id": meta.get("mod_id"), "mod_version": meta.get("mod_version"),
+            "detail": "Este mod parece ser solo de cliente"
+                      + (f" ({classification['reason']})" if classification["reason"] else "")
+                      + " — normalmente no hace falta (y puede impedir que el servidor arranque).",
         }
 
     if server_mc and meta["mc_versions"] and not mc_version_compatible(server_mc, meta["mc_versions"]):
@@ -678,7 +696,8 @@ def process_mod_jar(mods_dir: Path, filename: str, jar_bytes: bytes, server_mc: 
         cmp = compare_mod_versions(meta.get("mod_version"), existing_meta.get("mod_version"))
         if cmp < 0:
             return {
-                "status": "needs_confirmation", "filename": filename, "display_name": display_name,
+                "status": "needs_confirmation", "reason": "downgrade",
+                "filename": filename, "display_name": display_name,
                 "mod_id": meta.get("mod_id"), "mod_version": meta.get("mod_version"),
                 "existing_filename": existing_path.name, "existing_version": existing_meta.get("mod_version"),
                 "detail": f"Versión más antigua ({_fmt_ver(meta.get('mod_version'))}) que la instalada "

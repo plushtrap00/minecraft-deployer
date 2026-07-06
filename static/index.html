@@ -693,7 +693,7 @@
             <option value="only-disabled">Solo deshabilitados</option>
           </select>
           <div class="mods-menu" id="mods-menu">
-            <button type="button" class="btn-secondary btn-sm" id="mods-menu-btn" title="Más acciones" aria-haspopup="true" aria-expanded="false">⋮</button>
+            <button type="button" class="btn-secondary btn-sm" id="mods-menu-btn" title="Más opciones" aria-haspopup="true" aria-expanded="false">⋮ Más opciones</button>
             <div class="mods-menu-dropdown" id="mods-menu-dropdown">
               <button type="button" class="mods-menu-item" id="mod-duplicates-btn">⚠️ Ver posibles duplicados</button>
               <button type="button" class="mods-menu-item" id="mod-client-only-btn">🖥️ Mods solo-cliente</button>
@@ -866,12 +866,12 @@
   </div>
 </div>
 
-<!-- Modal: confirmar degradado de versión de mods -->
+<!-- Modal: confirmar mods que necesitan revisión (versión más antigua, solo-cliente...) -->
 <div class="modal-overlay" id="mod-downgrade-modal">
   <div class="modal modal-sm">
     <div class="modal-header">
       <span>⚠️</span>
-      <span class="modal-path">Mods con versión más antigua que la instalada</span>
+      <span class="modal-path" id="mod-downgrade-modal-title">Mods que necesitan confirmación</span>
       <button class="modal-close" id="mod-downgrade-modal-close">✕</button>
     </div>
     <div class="modal-body">
