@@ -1,6 +1,7 @@
 __pycache__/
 *.pyc
 *.pyo
+.venv/
 .env
 .APP_CONSTANTS
 users.json
