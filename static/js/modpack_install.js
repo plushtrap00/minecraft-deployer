@@ -241,6 +241,9 @@ function selectModpackToInstall(pack) {
   document.getElementById('dl-install-card').style.display = '';
   document.getElementById('dl-progress-body').innerHTML = '';
   document.getElementById('dl-duplicate-warning').innerHTML = '';
+  dlDuplicateCheckPending = false;
+  dlDuplicateMatches = [];
+  updateDlInstallBtnAppearance();
 
   var versionSelect = document.getElementById('dl-version-select');
   versionSelect.innerHTML = '<option value="">Cargando versiones...</option>';
@@ -272,23 +275,43 @@ function selectModpackToInstall(pack) {
 // -- Aviso de posible instalación duplicada ------------------------------------
 // Compara la lista de mods de la versión elegida contra los servidores ya
 // existentes (misma versión de MC) SIN descargar nada pesado — ver
-// find_similar_installed_modpacks() en services/modpack_install.py. No bloquea
-// la instalación, solo avisa: puede haber más de un servidor legítimo con el
-// mismo modpack (mundos separados, pruebas, etc.).
+// find_similar_installed_modpacks() en services/modpack_install.py. Mientras
+// se comprueba, el botón de instalar queda bloqueado (para que no dé tiempo a
+// pulsarlo antes de saber el resultado); si encuentra coincidencia, el botón
+// se marca con ⚠️ pero sigue permitiendo instalar igualmente (puede haber más
+// de un servidor legítimo con el mismo modpack: mundos separados, pruebas...).
 var dlDuplicateCheckToken = 0;
+var dlDuplicateCheckPending = false;
+var dlDuplicateMatches = [];
+var dlInstallBusy = false;
 
 document.getElementById('dl-version-select').addEventListener('change', checkDlDuplicate);
+
+function updateDlInstallBtnAppearance() {
+  var btn = document.getElementById('dl-install-btn');
+  btn.disabled = dlInstallBusy || dlDuplicateCheckPending;
+  if (dlInstallBusy) {
+    return;
+  }
+  btn.innerHTML = dlDuplicateMatches.length ? '⚠️ Descargar e instalar' : '🌐 Descargar e instalar';
+}
 
 function checkDlDuplicate() {
   var warningEl = document.getElementById('dl-duplicate-warning');
   var versionId = document.getElementById('dl-version-select').value;
   if (!dlSelectedPack || !versionId) {
     warningEl.innerHTML = '';
+    dlDuplicateCheckPending = false;
+    dlDuplicateMatches = [];
+    updateDlInstallBtnAppearance();
     return;
   }
 
   var requestToken = ++dlDuplicateCheckToken;
-  warningEl.innerHTML = '<p class="empty-msg" style="padding:6px 0;font-size:.78rem">Comprobando si ya está instalado...</p>';
+  dlDuplicateCheckPending = true;
+  dlDuplicateMatches = [];
+  updateDlInstallBtnAppearance();
+  warningEl.innerHTML = '<p class="empty-msg" style="padding:6px 0;font-size:.78rem">🔍 Comprobando si ya está instalado...</p>';
 
   var url = '/api/modpack-install/check-existing?source=' + encodeURIComponent(dlSelectedPack.source)
     + '&project_id=' + encodeURIComponent(dlSelectedPack.id) + '&version_id=' + encodeURIComponent(versionId);
@@ -301,14 +324,19 @@ function checkDlDuplicate() {
       if (requestToken !== dlDuplicateCheckToken) {
         return; // se disparó otra comprobación mientras esta estaba en vuelo
       }
-      var matches = (result.ok && result.data.matches) || [];
-      warningEl.innerHTML = matches.length ? dlDuplicateWarningHtml(matches) : '';
+      dlDuplicateCheckPending = false;
+      dlDuplicateMatches = (result.ok && result.data.matches) || [];
+      warningEl.innerHTML = dlDuplicateMatches.length ? dlDuplicateWarningHtml(dlDuplicateMatches) : '';
+      updateDlInstallBtnAppearance();
     })
     .catch(function() {
       if (requestToken !== dlDuplicateCheckToken) {
         return;
       }
-      warningEl.innerHTML = ''; // sin conexión no se puede comprobar: no bloquear por esto
+      dlDuplicateCheckPending = false;
+      dlDuplicateMatches = []; // sin conexión no se puede comprobar: no bloquear por esto
+      warningEl.innerHTML = '';
+      updateDlInstallBtnAppearance();
     });
 }
 
@@ -342,6 +370,7 @@ document.getElementById('dl-install-btn').addEventListener('click', function() {
   var ramMax = document.getElementById('dl-ram-max-val').value + document.getElementById('dl-ram-max-unit').value;
 
   var btn = this;
+  dlInstallBusy = true;
   btn.disabled = true;
 
   var logLines = [];
@@ -387,7 +416,8 @@ document.getElementById('dl-install-btn').addEventListener('click', function() {
     if (logEl) {
       logEl.scrollTop = logEl.scrollHeight;
     }
-    btn.disabled = false;
+    dlInstallBusy = false;
+    updateDlInstallBtnAppearance();
   }
 
   var url = '/api/modpack-install/stream?source=' + encodeURIComponent(dlSelectedPack.source)
