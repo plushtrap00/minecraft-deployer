@@ -6,6 +6,7 @@ Endpoints:
 - GET /api/modpack-install/search
 - GET /api/modpack-install/categories
 - GET /api/modpack-install/versions
+- GET /api/modpack-install/check-existing
 - GET /api/modpack-install/stream   (SSE — GET porque EventSource no soporta POST)
 """
 import json
@@ -20,6 +21,7 @@ from services.modpack_install import (
     search_modrinth_modpacks, get_modrinth_modpack_versions, install_modrinth_modpack_stream,
     search_curseforge_modpacks, get_curseforge_modpack_versions, install_curseforge_modpack_stream,
     get_modrinth_modpack_categories, get_curseforge_modpack_categories,
+    get_modrinth_modpack_files, get_curseforge_modpack_files, find_similar_installed_modpacks,
 )
 from services.busy import BusyGuard
 
@@ -67,6 +69,33 @@ async def versions(source: str, project_id: str):
     except ModSearchError as e:
         raise HTTPException(status_code=502, detail=str(e))
     return JSONResponse({"versions": result})
+
+
+@router.get("/check-existing")
+async def check_existing(source: str, project_id: str, version_id: str):
+    """
+    Comprueba si esta versión de modpack ya podría estar instalada en algún
+    servidor existente, comparando su lista de mods (sin descargarlos) contra
+    los mods ya instalados en cada servidor — ver find_similar_installed_modpacks().
+    """
+    if source not in _SOURCES:
+        raise HTTPException(status_code=400, detail="source inválido")
+    try:
+        if source == "modrinth":
+            filenames, mc_version = await asyncio.to_thread(get_modrinth_modpack_files, project_id, version_id)
+        else:
+            try:
+                cf_project_id = int(project_id)
+                cf_file_id = int(version_id)
+            except ValueError:
+                raise HTTPException(status_code=400, detail="ID de CurseForge inválido")
+            filenames, mc_version = await asyncio.to_thread(get_curseforge_modpack_files, cf_project_id, cf_file_id)
+    except ModSearchError as e:
+        raise HTTPException(status_code=502, detail=str(e))
+    except RuntimeError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    matches = await asyncio.to_thread(find_similar_installed_modpacks, filenames, mc_version)
+    return JSONResponse({"matches": matches})
 
 
 @router.get("/stream")

@@ -37,6 +37,7 @@ DEFAULTS = {
     "LOGIN_LOCKOUT_SECONDS": 300,
     "MOD_SEARCH_PAGE_SIZE": 20,
     "TEMP_DIR_MAX_AGE_SECONDS": 7200,
+    "MODPACK_DUPLICATE_MATCH_THRESHOLD_PERCENT": 40,
 }
 
 # Texto explicativo para el formulario del panel de administración.
@@ -58,6 +59,7 @@ DESCRIPTIONS = {
     "LOGIN_LOCKOUT_SECONDS": "Segundos que queda bloqueada una cuenta tras superar el máximo de intentos fallidos.",
     "MOD_SEARCH_PAGE_SIZE": "Resultados por página al buscar mods online.",
     "TEMP_DIR_MAX_AGE_SECONDS": "Antigüedad máxima de archivos temporales (subidas en curso) antes de limpiarlos.",
+    "MODPACK_DUPLICATE_MATCH_THRESHOLD_PERCENT": "Porcentaje mínimo de mods coincidentes con un servidor ya existente para avisar de una posible instalación duplicada al descargar un modpack.",
 }
 
 
@@ -95,6 +97,7 @@ LOGIN_ATTEMPT_WINDOW_SECONDS = _values["LOGIN_ATTEMPT_WINDOW_SECONDS"]
 LOGIN_LOCKOUT_SECONDS = _values["LOGIN_LOCKOUT_SECONDS"]
 MOD_SEARCH_PAGE_SIZE = _values["MOD_SEARCH_PAGE_SIZE"]
 TEMP_DIR_MAX_AGE_SECONDS = _values["TEMP_DIR_MAX_AGE_SECONDS"]
+MODPACK_DUPLICATE_MATCH_THRESHOLD_PERCENT = _values["MODPACK_DUPLICATE_MATCH_THRESHOLD_PERCENT"]
 
 
 def get_all() -> dict:

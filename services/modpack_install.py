@@ -31,11 +31,12 @@ import urllib.parse
 from pathlib import Path
 
 from config import DEFAULT_SERVERS_PATH
-from app_constants import CURSEFORGE_BULK_FILES_CHUNK, MOD_SEARCH_CATEGORIES_CACHE_TTL_SECONDS
+from app_constants import CURSEFORGE_BULK_FILES_CHUNK, MOD_SEARCH_CATEGORIES_CACHE_TTL_SECONDS, MODPACK_DUPLICATE_MATCH_THRESHOLD_PERCENT
 from services.mod_search import _http_get_json, download_bytes, _curseforge_headers, _HTTP_TIMEOUT, CURSEFORGE_GAME_ID
 from services.modloader import _http_get, _installer_url, LOADER_DISPLAY_NAMES
 from services.server_create import validate_new_server_name, _write_run_script, _bootstrap_common_files, _vanilla_server_jar_url
-from services.utils import configure_jvm_ram
+from services.utils import configure_jvm_ram, get_modpacks
+from services.modpack import _dedup_fingerprint, detect_modpack_version
 
 CURSEFORGE_MODPACK_CLASS_ID = 4471
 
@@ -184,20 +185,44 @@ def get_modrinth_modpack_versions(project_id: str) -> list:
     return versions
 
 
+def _get_modrinth_pack_index(project_id: str, version_id: str) -> tuple[dict, zipfile.ZipFile]:
+    versions = get_modrinth_modpack_versions(project_id)
+    version = next((v for v in versions if v["version_id"] == version_id), None)
+    if not version:
+        raise RuntimeError("Versión de modpack no encontrada")
+    mrpack_bytes = download_bytes(version["download_url"])
+    zf = zipfile.ZipFile(io.BytesIO(mrpack_bytes))
+    index = json.loads(zf.read("modrinth.index.json"))
+    return index, zf
+
+
+def get_modrinth_modpack_files(project_id: str, version_id: str) -> tuple[list, str | None]:
+    """
+    Nombres de archivo (mods, sin overrides) + versión de MC de una versión de
+    modpack, sin descargar los mods en sí (solo el .mrpack, que es liviano:
+    los mods son URLs externas, no van embebidos) — usado por
+    find_similar_installed_modpacks() para comprobar si ya está instalado
+    ANTES de descargar nada pesado.
+    """
+    index, _zf = _get_modrinth_pack_index(project_id, version_id)
+    deps = index.get("dependencies", {})
+    mc_version = deps.get("minecraft")
+    files = index.get("files", [])
+    filenames = [
+        Path(f["path"]).name
+        for f in files
+        if f.get("path") and (f.get("env") or {}).get("server") != "unsupported"
+    ]
+    return filenames, mc_version
+
+
 async def install_modrinth_modpack_stream(project_id: str, version_id: str, server_name: str, ram_min: str, ram_max: str):
     server_dir = DEFAULT_SERVERS_PATH / server_name
     server_dir.mkdir(parents=True)
 
     try:
         yield {"type": "log", "message": "Descargando índice del modpack..."}
-        versions = await asyncio.to_thread(get_modrinth_modpack_versions, project_id)
-        version = next((v for v in versions if v["version_id"] == version_id), None)
-        if not version:
-            raise RuntimeError("Versión de modpack no encontrada")
-
-        mrpack_bytes = await asyncio.to_thread(download_bytes, version["download_url"])
-        zf = zipfile.ZipFile(io.BytesIO(mrpack_bytes))
-        index = json.loads(zf.read("modrinth.index.json"))
+        index, zf = await asyncio.to_thread(_get_modrinth_pack_index, project_id, version_id)
 
         deps = index.get("dependencies", {})
         mc_version = deps.get("minecraft")
@@ -357,6 +382,33 @@ def _parse_curseforge_loader(mod_loader_id: str) -> tuple:
     return None, None
 
 
+def _download_curseforge_pack_zip(mod_id, file_id) -> zipfile.ZipFile:
+    versions = get_curseforge_modpack_versions(mod_id)
+    version = next((v for v in versions if v["version_id"] == file_id), None)
+    if not version or not version.get("download_url"):
+        raise RuntimeError("No se pudo obtener la descarga de esta versión del modpack (puede estar bloqueada por el autor)")
+    pack_bytes = download_bytes(version["download_url"])
+    return zipfile.ZipFile(io.BytesIO(pack_bytes))
+
+
+def get_curseforge_modpack_files(mod_id, file_id) -> tuple[list, str | None]:
+    """
+    Igual que get_modrinth_modpack_files() pero para CurseForge: el manifest
+    solo trae referencias (projectID/fileID), así que hace falta resolverlas
+    a nombres de archivo reales vía la API (sin descargar los jars) — mismo
+    endpoint bulk que ya usa _resolve_curseforge_file_urls() al instalar.
+    """
+    zf = _download_curseforge_pack_zip(mod_id, file_id)
+    manifest = json.loads(zf.read("manifest.json"))
+    zf.close()
+    mc_version = (manifest.get("minecraft") or {}).get("version")
+    file_refs = manifest.get("files", [])
+    file_ids = [f["fileID"] for f in file_refs if f.get("fileID")]
+    resolved = _resolve_curseforge_file_urls(file_ids)
+    filenames = [info["fileName"] for info in resolved.values() if info.get("fileName")]
+    return filenames, mc_version
+
+
 async def install_curseforge_modpack_stream(mod_id, file_id, server_name: str, ram_min: str, ram_max: str):
     server_dir = DEFAULT_SERVERS_PATH / server_name
     server_dir.mkdir(parents=True)
@@ -364,13 +416,7 @@ async def install_curseforge_modpack_stream(mod_id, file_id, server_name: str, r
     try:
         headers = _curseforge_headers()
         yield {"type": "log", "message": "Descargando manifest del modpack..."}
-        versions = await asyncio.to_thread(get_curseforge_modpack_versions, mod_id)
-        version = next((v for v in versions if v["version_id"] == file_id), None)
-        if not version or not version.get("download_url"):
-            raise RuntimeError("No se pudo obtener la descarga de esta versión del modpack (puede estar bloqueada por el autor)")
-
-        pack_bytes = await asyncio.to_thread(download_bytes, version["download_url"])
-        zf = zipfile.ZipFile(io.BytesIO(pack_bytes))
+        zf = await asyncio.to_thread(_download_curseforge_pack_zip, mod_id, file_id)
         manifest = json.loads(zf.read("manifest.json"))
 
         mc_version = (manifest.get("minecraft") or {}).get("version")
@@ -423,3 +469,76 @@ async def install_curseforge_modpack_stream(mod_id, file_id, server_name: str, r
     except Exception as e:
         shutil.rmtree(server_dir, ignore_errors=True)
         yield {"type": "done", "success": False, "detail": str(e)}
+
+
+# ── Detección de instalación duplicada ────────────────────────────────────────
+
+def _installed_mod_fingerprints(server_name: str) -> set:
+    """
+    Huellas "sin versión" (ver _dedup_fingerprint) de los mods ya instalados en
+    un servidor, incluidos los .disabled — que un mod esté deshabilitado no
+    significa que el modpack no sea ese, así que cuenta igual para esta
+    comparación.
+    """
+    mods_dir = DEFAULT_SERVERS_PATH / server_name / "mods"
+    if not mods_dir.exists():
+        return set()
+    fingerprints = set()
+    for f in mods_dir.iterdir():
+        if not f.is_file():
+            continue
+        low = f.name.lower()
+        if low.endswith(".jar") or low.endswith(".zip") or low.endswith(".jar.disabled") or low.endswith(".zip.disabled"):
+            fingerprints.add(_dedup_fingerprint(f.name))
+    return fingerprints
+
+
+def find_similar_installed_modpacks(filenames: list, mc_version: str | None) -> list:
+    """
+    Compara los nombres de archivo de una versión de modpack candidata a
+    instalar contra los mods ya instalados en cada servidor existente, usando
+    la misma huella "sin versión/loader/MC" que ya usa
+    find_possible_duplicate_mods() (services/modpack.py) para detectar
+    duplicados dentro de un mismo modpack. Así, actualizar un mod (que cambia
+    el número de versión en el nombre del jar) o añadir mods sueltos a mano no
+    rompe la detección: solo importa si el "núcleo" del nombre original sigue
+    presente.
+
+    El % se calcula sobre el TOTAL de archivos del modpack candidato, no sobre
+    lo instalado en el servidor: añadir mods extra a un servidor no baja el
+    porcentaje, solo quitar o reemplazar los que vinieron originalmente con
+    el pack sí lo hace.
+
+    No requiere descargar ningún mod: filenames viene de
+    get_modrinth_modpack_files()/get_curseforge_modpack_files(), que solo leen
+    el índice/manifest del pack, y lo instalado se compara por nombre de
+    archivo en disco.
+    """
+    pack_fingerprints = {
+        fp for fp in (_dedup_fingerprint(name) for name in filenames if name)
+        if len(fp) >= 4
+    }
+    if not pack_fingerprints:
+        return []
+
+    matches = []
+    for server_name in get_modpacks():
+        if mc_version:
+            server_mc = detect_modpack_version(server_name).get("mc_version")
+            if server_mc and server_mc != mc_version:
+                continue
+        installed_fingerprints = _installed_mod_fingerprints(server_name)
+        if not installed_fingerprints:
+            continue
+        matched = pack_fingerprints & installed_fingerprints
+        if not matched:
+            continue
+        overlap_pct = round(len(matched) * 100 / len(pack_fingerprints))
+        if overlap_pct >= MODPACK_DUPLICATE_MATCH_THRESHOLD_PERCENT:
+            matches.append({
+                "server_name": server_name, "overlap_pct": overlap_pct,
+                "matched_count": len(matched), "total_count": len(pack_fingerprints),
+            })
+
+    matches.sort(key=lambda m: m["overlap_pct"], reverse=True)
+    return matches

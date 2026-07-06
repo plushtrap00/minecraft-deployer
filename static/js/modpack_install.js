@@ -240,6 +240,7 @@ function selectModpackToInstall(pack) {
   document.getElementById('dl-ram-card').style.display = '';
   document.getElementById('dl-install-card').style.display = '';
   document.getElementById('dl-progress-body').innerHTML = '';
+  document.getElementById('dl-duplicate-warning').innerHTML = '';
 
   var versionSelect = document.getElementById('dl-version-select');
   versionSelect.innerHTML = '<option value="">Cargando versiones...</option>';
@@ -257,6 +258,7 @@ function selectModpackToInstall(pack) {
         var label = (v.version_number || v.filename) + ' (' + (v.game_versions || []).join(', ') + (v.loaders ? ' · ' + v.loaders.join(', ') : '') + ')';
         return '<option value="' + escHtml(String(v.version_id)) + '">' + escHtml(label) + '</option>';
       }).join('');
+      checkDlDuplicate();
     })
     .catch(function() {
       versionSelect.innerHTML = '<option value="">Error de red</option>';
@@ -265,6 +267,57 @@ function selectModpackToInstall(pack) {
   if (!document.getElementById('dl-server-name').value) {
     document.getElementById('dl-server-name').value = (pack.slug || pack.title || '').toLowerCase().replace(/[^a-z0-9_-]/g, '-');
   }
+}
+
+// -- Aviso de posible instalación duplicada ------------------------------------
+// Compara la lista de mods de la versión elegida contra los servidores ya
+// existentes (misma versión de MC) SIN descargar nada pesado — ver
+// find_similar_installed_modpacks() en services/modpack_install.py. No bloquea
+// la instalación, solo avisa: puede haber más de un servidor legítimo con el
+// mismo modpack (mundos separados, pruebas, etc.).
+var dlDuplicateCheckToken = 0;
+
+document.getElementById('dl-version-select').addEventListener('change', checkDlDuplicate);
+
+function checkDlDuplicate() {
+  var warningEl = document.getElementById('dl-duplicate-warning');
+  var versionId = document.getElementById('dl-version-select').value;
+  if (!dlSelectedPack || !versionId) {
+    warningEl.innerHTML = '';
+    return;
+  }
+
+  var requestToken = ++dlDuplicateCheckToken;
+  warningEl.innerHTML = '<p class="empty-msg" style="padding:6px 0;font-size:.78rem">Comprobando si ya está instalado...</p>';
+
+  var url = '/api/modpack-install/check-existing?source=' + encodeURIComponent(dlSelectedPack.source)
+    + '&project_id=' + encodeURIComponent(dlSelectedPack.id) + '&version_id=' + encodeURIComponent(versionId);
+
+  apiFetch(url)
+    .then(function(response) {
+      return response.json().then(function(data) { return { ok: response.ok, data: data }; });
+    })
+    .then(function(result) {
+      if (requestToken !== dlDuplicateCheckToken) {
+        return; // se disparó otra comprobación mientras esta estaba en vuelo
+      }
+      var matches = (result.ok && result.data.matches) || [];
+      warningEl.innerHTML = matches.length ? dlDuplicateWarningHtml(matches) : '';
+    })
+    .catch(function() {
+      if (requestToken !== dlDuplicateCheckToken) {
+        return;
+      }
+      warningEl.innerHTML = ''; // sin conexión no se puede comprobar: no bloquear por esto
+    });
+}
+
+function dlDuplicateWarningHtml(matches) {
+  var lines = matches.map(function(m) {
+    return '«' + escHtml(m.server_name) + '» (' + m.overlap_pct + '% de mods coinciden)';
+  }).join(', ');
+  return '<div style="background:rgba(210,153,34,.12);border:1px solid rgba(210,153,34,.35);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--yellow);margin-top:10px">'
+    + '⚠️ Esta versión se parece a lo ya instalado en ' + lines + '. Puede que ya la tengas — revisa antes de crear otro servidor.</div>';
 }
 
 var DL_LOG_MAX_LINES = 300;
