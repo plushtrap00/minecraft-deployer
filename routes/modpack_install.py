@@ -22,6 +22,7 @@ from services.modpack_install import (
     search_curseforge_modpacks, get_curseforge_modpack_versions, install_curseforge_modpack_stream,
     get_modrinth_modpack_categories, get_curseforge_modpack_categories,
     get_modrinth_modpack_files, get_curseforge_modpack_files, find_similar_installed_modpacks,
+    ModpackDownloadBlocked,
 )
 from services.busy import BusyGuard
 
@@ -92,14 +93,19 @@ async def check_existing(source: str, project_id: str, version_id: str):
             filenames, mc_version = await asyncio.to_thread(get_curseforge_modpack_files, cf_project_id, cf_file_id)
     except ModSearchError as e:
         raise HTTPException(status_code=502, detail=str(e))
+    except ModpackDownloadBlocked as e:
+        # A diferencia de un mod suelto bloqueado (que solo se salta), esto
+        # bloquea el PROPIO archivo del modpack: instalar desde esta app
+        # fallaría igual, así que se marca "blocked" para que el frontend
+        # impida el botón de instalar en vez de solo avisar.
+        return JSONResponse({"matches": [], "checked": False, "blocked": True, "reason": str(e)})
     except RuntimeError as e:
-        # Esta versión no se puede leer (p.ej. el autor bloqueó la descarga por
-        # terceros en CurseForge) — es un caso normal y esperado, no un error de
-        # verdad, así que no se corta con un 4xx: simplemente no se puede
-        # comprobar, y eso no debería impedir que el usuario instale igual.
-        return JSONResponse({"matches": [], "checked": False, "reason": str(e)})
+        # Otro motivo por el que no se pudo leer esta versión (p.ej. un ID
+        # desactualizado) — no necesariamente impide instalar, así que no
+        # bloquea el botón, solo informa de que no se pudo comprobar.
+        return JSONResponse({"matches": [], "checked": False, "blocked": False, "reason": str(e)})
     matches = await asyncio.to_thread(find_similar_installed_modpacks, filenames, mc_version)
-    return JSONResponse({"matches": matches, "checked": True})
+    return JSONResponse({"matches": matches, "checked": True, "blocked": False})
 
 
 @router.get("/stream")

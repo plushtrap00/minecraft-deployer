@@ -243,6 +243,7 @@ function selectModpackToInstall(pack) {
   document.getElementById('dl-duplicate-warning').innerHTML = '';
   dlDuplicateCheckPending = false;
   dlDuplicateMatches = [];
+  dlInstallBlocked = false;
   updateDlInstallBtnAppearance();
 
   var versionSelect = document.getElementById('dl-version-select');
@@ -284,13 +285,18 @@ var dlDuplicateCheckToken = 0;
 var dlDuplicateCheckPending = false;
 var dlDuplicateMatches = [];
 var dlInstallBusy = false;
+var dlInstallBlocked = false;
 
 document.getElementById('dl-version-select').addEventListener('change', checkDlDuplicate);
 
 function updateDlInstallBtnAppearance() {
   var btn = document.getElementById('dl-install-btn');
-  btn.disabled = dlInstallBusy || dlDuplicateCheckPending;
+  btn.disabled = dlInstallBusy || dlDuplicateCheckPending || dlInstallBlocked;
   if (dlInstallBusy) {
+    return;
+  }
+  if (dlInstallBlocked) {
+    btn.innerHTML = '🚫 Descarga bloqueada por el autor';
     return;
   }
   btn.innerHTML = dlDuplicateMatches.length ? '⚠️ Descargar e instalar' : '🌐 Descargar e instalar';
@@ -303,6 +309,7 @@ function checkDlDuplicate() {
     warningEl.innerHTML = '';
     dlDuplicateCheckPending = false;
     dlDuplicateMatches = [];
+    dlInstallBlocked = false;
     updateDlInstallBtnAppearance();
     return;
   }
@@ -310,6 +317,7 @@ function checkDlDuplicate() {
   var requestToken = ++dlDuplicateCheckToken;
   dlDuplicateCheckPending = true;
   dlDuplicateMatches = [];
+  dlInstallBlocked = false;
   updateDlInstallBtnAppearance();
   warningEl.innerHTML = '<p class="empty-msg" style="padding:6px 0;font-size:.78rem">🔍 Comprobando si ya está instalado...</p>';
 
@@ -327,7 +335,11 @@ function checkDlDuplicate() {
       dlDuplicateCheckPending = false;
       var data = result.ok ? result.data : {};
       dlDuplicateMatches = data.matches || [];
-      if (dlDuplicateMatches.length) {
+      dlInstallBlocked = !!data.blocked;
+      if (dlInstallBlocked) {
+        warningEl.innerHTML = '<div style="background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.3);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--red)">🚫 '
+          + escHtml(data.reason || 'El autor bloqueó la descarga de este modpack por terceros.') + '</div>';
+      } else if (dlDuplicateMatches.length) {
         warningEl.innerHTML = dlDuplicateWarningHtml(dlDuplicateMatches);
       } else if (result.ok && data.checked === false) {
         warningEl.innerHTML = '<p class="empty-msg" style="padding:6px 0;font-size:.78rem">ℹ️ No se pudo comprobar si ya está instalado (' + escHtml(data.reason || 'motivo desconocido') + ').</p>';
@@ -342,6 +354,7 @@ function checkDlDuplicate() {
       }
       dlDuplicateCheckPending = false;
       dlDuplicateMatches = []; // sin conexión no se puede comprobar: no bloquear por esto
+      dlInstallBlocked = false;
       warningEl.innerHTML = '';
       updateDlInstallBtnAppearance();
     });

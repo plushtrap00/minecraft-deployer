@@ -43,6 +43,21 @@ from services.modpack import _dedup_fingerprint, detect_modpack_version
 
 CURSEFORGE_MODPACK_CLASS_ID = 4471
 
+
+class ModpackVersionUnavailable(RuntimeError):
+    """La versión pedida no aparece en la lista de versiones del modpack (ID inválido/desactualizado)."""
+
+
+class ModpackDownloadBlocked(RuntimeError):
+    """
+    El autor bloqueó la descarga por terceros para esta versión concreta (algo
+    habitual en CurseForge). A diferencia de un mod suelto bloqueado dentro de
+    un modpack (que solo se salta y el resto se instala igual), esto bloquea
+    el PROPIO archivo del modpack: instalar desde esta app fallará siempre,
+    así que quien llame a esto debe tratarlo como "no instalable", no como un
+    simple aviso.
+    """
+
 _MODRINTH_LOADER_DEP_KEYS = {"forge": "forge", "neoforge": "neoforge", "fabric": "fabric-loader", "quilt": "quilt-loader"}
 
 
@@ -192,7 +207,7 @@ def _get_modrinth_pack_index(project_id: str, version_id: str) -> tuple[dict, zi
     versions = get_modrinth_modpack_versions(project_id)
     version = next((v for v in versions if v["version_id"] == version_id), None)
     if not version:
-        raise RuntimeError("Versión de modpack no encontrada")
+        raise ModpackVersionUnavailable("Versión de modpack no encontrada")
     mrpack_bytes = download_bytes(version["download_url"])
     zf = zipfile.ZipFile(io.BytesIO(mrpack_bytes))
     index = json.loads(zf.read("modrinth.index.json"))
@@ -405,8 +420,12 @@ def _parse_curseforge_loader(mod_loader_id: str) -> tuple:
 def _download_curseforge_pack_zip(mod_id, file_id) -> zipfile.ZipFile:
     versions = get_curseforge_modpack_versions(mod_id)
     version = next((v for v in versions if v["version_id"] == file_id), None)
-    if not version or not version.get("download_url"):
-        raise RuntimeError("No se pudo obtener la descarga de esta versión del modpack (puede estar bloqueada por el autor)")
+    if not version:
+        raise ModpackVersionUnavailable("Versión de modpack no encontrada")
+    if not version.get("download_url"):
+        raise ModpackDownloadBlocked(
+            "El autor de este modpack bloqueó su descarga por terceros en CurseForge — no se puede instalar desde esta app."
+        )
     pack_bytes = download_bytes(version["download_url"])
     return zipfile.ZipFile(io.BytesIO(pack_bytes))
 
