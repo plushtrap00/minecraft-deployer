@@ -82,9 +82,15 @@ docker compose down           # parar (los datos persisten en el volumen/carpeta
 docker compose up -d --build  # reconstruir tras actualizar el código (git pull)
 ```
 
-Para cambiar solo el usuario/contraseña más adelante sin rehacer toda la configuración, usa `python3 set_password.py` y reinicia el contenedor.
+Para cambiar cualquier cosa más adelante (el puerto, la contraseña, la versión de Java...), vuelve a ejecutar `python3 setup.py`: detecta la configuración ya existente y usa cada valor actual como valor por defecto, así que basta con pulsar Enter en todo salvo lo que quieras cambiar (la contraseña también se puede dejar en blanco para mantenerla). Después, reconstruye y reinicia:
 
-`docker-compose.yml` no está en git (lo genera `setup.py`, y cada instalación lo personaliza — versionarlo haría que un `git pull` chocara en cuanto alguien cambiara, por ejemplo, el puerto). Puedes editarlo a mano cuando quieras (p. ej. para cambiar el puerto expuesto) sin miedo a conflictos en la próxima actualización. Si prefieres no ejecutar el asistente, `docker-compose.example.yml` es la plantilla de referencia: cópiala como `docker-compose.yml` y ajusta lo que necesites.
+```bash
+docker compose up -d --build
+```
+
+Si solo quieres cambiar el usuario/contraseña, `python3 set_password.py` es la versión rápida (sin las demás preguntas).
+
+`docker-compose.yml` no está en git (lo genera `setup.py`, y cada instalación lo personaliza — versionarlo haría que un `git pull` chocara en cuanto alguien cambiara, por ejemplo, el puerto). Si prefieres no ejecutar el asistente, `docker-compose.example.yml` es la plantilla de referencia: cópiala como `docker-compose.yml` y ajusta lo que necesites a mano.
 
 ### Opción B — `install.sh` dentro de un contenedor ya en marcha
 
