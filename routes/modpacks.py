@@ -924,6 +924,13 @@ async def get_log_file(modpack: str, filename: str):
 
 firewall_router = APIRouter(tags=["firewall"])
 
+_UFW_UNAVAILABLE_DETAIL = (
+    "ufw no está disponible en este entorno (normal si corres en Docker: el "
+    "firewall se gestiona desde el host, no desde dentro del contenedor — "
+    "controla el acceso público/LAN con el mapeo de puertos de docker-compose.yml)."
+)
+
+
 @firewall_router.post("/api/firewall/set")
 async def set_firewall(request: Request, mode: str = Form(...)):
     """
@@ -938,7 +945,10 @@ async def set_firewall(request: Request, mode: str = Form(...)):
         raise HTTPException(status_code=400, detail="mode debe ser 'lan' o 'public'")
 
     async def run(cmd: list) -> tuple[int, str]:
-        r = await asyncio.to_thread(subprocess.run, ["sudo"] + cmd, capture_output=True, text=True)
+        try:
+            r = await asyncio.to_thread(subprocess.run, ["sudo"] + cmd, capture_output=True, text=True)
+        except FileNotFoundError:
+            raise HTTPException(status_code=409, detail=_UFW_UNAVAILABLE_DETAIL)
         return r.returncode, r.stdout + r.stderr
 
     # Primero limpiar reglas existentes del 25565
@@ -958,10 +968,17 @@ async def set_firewall(request: Request, mode: str = Form(...)):
 
 @firewall_router.get("/api/firewall/status")
 async def firewall_status(request: Request):
-    """Devuelve el modo actual del firewall para el puerto 25565."""
+    """
+    Devuelve el modo actual del firewall para el puerto 25565, o mode="unavailable"
+    si ufw/sudo no existen en este entorno (p. ej. dentro de un contenedor Docker,
+    donde además no tendría efecto real sobre el host aunque estuviera instalado).
+    """
     require_admin(request)
     import subprocess
-    r = await asyncio.to_thread(subprocess.run, ["sudo", "ufw", "status"], capture_output=True, text=True)
+    try:
+        r = await asyncio.to_thread(subprocess.run, ["sudo", "ufw", "status"], capture_output=True, text=True)
+    except FileNotFoundError:
+        return JSONResponse({"mode": "unavailable", "ufw_output": ""})
     output = r.stdout
 
     # Detectar si hay regla pública (ALLOW Anywhere en 25565)

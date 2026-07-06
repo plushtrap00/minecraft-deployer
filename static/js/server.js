@@ -125,6 +125,21 @@ function loadFirewallStatus() {
   apiFetch('/api/firewall/status')
     .then(function(response) { return response.json(); })
     .then(function(data) {
+      var track = document.getElementById('net-toggle-track');
+      var label = document.getElementById('net-toggle-label');
+      var desc = document.getElementById('net-toggle-desc');
+      if (data.mode === 'unavailable') {
+        // ufw no existe en este entorno (típico dentro de un contenedor Docker,
+        // donde además no tendría efecto real sobre el host) — no tiene sentido
+        // dejar el interruptor en un estado ambiguo, se explica y se bloquea.
+        track.classList.add('disabled');
+        track.style.pointerEvents = 'none';
+        label.textContent = '🔒 No disponible';
+        desc.textContent = 'En Docker, el acceso público/LAN se controla desde el mapeo de puertos de docker-compose.yml, no desde aquí.';
+        return;
+      }
+      track.classList.remove('disabled');
+      track.style.pointerEvents = '';
       netPublic = (data.mode === 'public');
       applyNetToggleUI(netPublic);
     })
