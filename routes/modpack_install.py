@@ -33,15 +33,24 @@ SEARCH_PAGE_SIZE = MOD_SEARCH_PAGE_SIZE
 
 
 @router.get("/search")
-async def search(source: str, query: str = "", category: str = "", offset: int = 0):
+async def search(
+    source: str, query: str = "", category: str = "", offset: int = 0,
+    mc_version: str = "", loader: str = "",
+):
     if source not in _SOURCES:
         raise HTTPException(status_code=400, detail="source inválido")
     categories = [c for c in category.split(",") if c] if category else None
     try:
         if source == "modrinth":
-            results, total = await asyncio.to_thread(search_modrinth_modpacks, query, categories, SEARCH_PAGE_SIZE, offset)
+            results, total = await asyncio.to_thread(
+                search_modrinth_modpacks, query, categories, SEARCH_PAGE_SIZE, offset,
+                mc_version=mc_version or None, loader=loader or None,
+            )
         else:
-            results, total = await asyncio.to_thread(search_curseforge_modpacks, query, categories, SEARCH_PAGE_SIZE, offset)
+            results, total = await asyncio.to_thread(
+                search_curseforge_modpacks, query, categories, SEARCH_PAGE_SIZE, offset,
+                mc_version=mc_version or None, loader=loader or None,
+            )
     except ModSearchError as e:
         raise HTTPException(status_code=502, detail=str(e))
     return JSONResponse({"results": results, "total": total, "offset": offset, "limit": SEARCH_PAGE_SIZE})

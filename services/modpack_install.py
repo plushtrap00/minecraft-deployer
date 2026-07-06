@@ -35,7 +35,10 @@ from app_constants import (
     CURSEFORGE_BULK_FILES_CHUNK, MOD_SEARCH_CATEGORIES_CACHE_TTL_SECONDS, MODPACK_DUPLICATE_MATCH_THRESHOLD_PERCENT,
     CURSEFORGE_FILES_PAGE_SIZE, CURSEFORGE_FILES_MAX,
 )
-from services.mod_search import _http_get_json, download_bytes, _curseforge_headers, _HTTP_TIMEOUT, CURSEFORGE_GAME_ID
+from services.mod_search import (
+    _http_get_json, download_bytes, _curseforge_headers, _HTTP_TIMEOUT, CURSEFORGE_GAME_ID,
+    MODRINTH_LOADERS, CURSEFORGE_LOADER_TYPES,
+)
 from services.modloader import _http_get, _installer_url, LOADER_DISPLAY_NAMES
 from services.server_create import validate_new_server_name, _write_run_script, _bootstrap_common_files, _vanilla_server_jar_url
 from services.utils import configure_jvm_ram, get_modpacks
@@ -144,8 +147,17 @@ def _extract_overrides(zf: zipfile.ZipFile, server_dir: Path) -> None:
 
 def search_modrinth_modpacks(
     query: str, categories: list[str] | None = None, limit: int = 20, offset: int = 0,
+    mc_version: str | None = None, loader: str | None = None,
 ) -> tuple[list, int]:
     facets = [["project_type:modpack"]]
+    if mc_version:
+        facets.append([f"versions:{mc_version}"])
+    if loader in MODRINTH_LOADERS:
+        # Modrinth trata los modloaders como una categoría más (mismo facet que
+        # ya usa search_modrinth() en mod_search.py para mods sueltos) — grupo
+        # propio, no mezclado con las categorías de género, para que sea un AND
+        # con ellas en vez de un OR.
+        facets.append([f"categories:{loader}"])
     if categories:
         # Un solo grupo con varias categorías = OR, igual que en la búsqueda de mods.
         facets.append([f"categories:{c}" for c in categories])
@@ -288,6 +300,7 @@ async def install_modrinth_modpack_stream(project_id: str, version_id: str, serv
 
 def search_curseforge_modpacks(
     query: str, categories: list[str] | None = None, limit: int = 20, offset: int = 0,
+    mc_version: str | None = None, loader: str | None = None,
 ) -> tuple[list, int]:
     headers = _curseforge_headers()
     params = {
@@ -297,6 +310,10 @@ def search_curseforge_modpacks(
     }
     if query:
         params["searchFilter"] = query
+    if mc_version:
+        params["gameVersion"] = mc_version
+    if loader in CURSEFORGE_LOADER_TYPES:
+        params["modLoaderType"] = str(CURSEFORGE_LOADER_TYPES[loader])
     if categories:
         params["categoryIds"] = json.dumps([int(c) for c in categories][:10])
     url = "https://api.curseforge.com/v1/mods/search?" + urllib.parse.urlencode(params)

@@ -9,6 +9,9 @@ var dlSearchInitialized = false;
 
 var dlSource = 'modrinth';
 var dlCategories = [];
+var dlLoaderFilter = '';
+var dlMcVersionFilter = '';
+var dlMcVersionsLoaded = false;
 var dlBusy = false;
 var dlDebounceTimer = null;
 var dlRequestToken = 0;
@@ -22,8 +25,8 @@ var dlSearchResultsCache = []; // última página cruda, para mapear el click po
 var dlResultsCache = createModSearchLru(30);
 var dlCategoriesCache = createModSearchLru(4); // como mucho 2 fuentes
 
-function dlResultsCacheKey(source, query, categories, offset) {
-  return source + '|' + query + '|' + categories.slice().sort().join(',') + '|' + offset;
+function dlResultsCacheKey(source, query, categories, offset, loader, mcVersion) {
+  return source + '|' + query + '|' + categories.slice().sort().join(',') + '|' + offset + '|' + loader + '|' + mcVersion;
 }
 
 // Llamado por create_server.js la primera vez que se abre "Descargar modpack".
@@ -33,8 +36,42 @@ function initDlSearchIfNeeded() {
   }
   dlSearchInitialized = true;
   loadDlCategories(dlSource);
+  loadDlMcVersions();
   runDlSearch('', 0);
 }
+
+// -- Filtros de modloader / versión de Minecraft -------------------------------
+// Reutiliza el mismo endpoint que ya usa "Crear servidor nuevo" para listar
+// versiones oficiales de Minecraft (API de Mojang), en vez de duplicar la lista.
+function loadDlMcVersions() {
+  if (dlMcVersionsLoaded) {
+    return;
+  }
+  dlMcVersionsLoaded = true;
+  apiFetch('/api/create-server/mc-versions')
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      var select = document.getElementById('dl-mc-version-filter');
+      var versions = data.versions || [];
+      versions.forEach(function(v) {
+        var opt = document.createElement('option');
+        opt.value = v;
+        opt.textContent = v;
+        select.appendChild(opt);
+      });
+    })
+    .catch(function() {}); // sin versiones para filtrar no bloquea la búsqueda
+}
+
+document.getElementById('dl-loader-filter').addEventListener('change', function() {
+  dlLoaderFilter = this.value;
+  runDlSearch(document.getElementById('dl-search-input').value.trim(), 0);
+});
+
+document.getElementById('dl-mc-version-filter').addEventListener('change', function() {
+  dlMcVersionFilter = this.value;
+  runDlSearch(document.getElementById('dl-search-input').value.trim(), 0);
+});
 
 // -- Pestañas de fuente ---------------------------------------------------------
 document.getElementById('dl-source-tabs').addEventListener('click', function(event) {
@@ -134,7 +171,7 @@ function runDlSearch(query, offset) {
   dlQuery = query;
   document.getElementById('dl-search-pagination').innerHTML = '';
 
-  var cacheKey = dlResultsCacheKey(dlSource, query, dlCategories, offset);
+  var cacheKey = dlResultsCacheKey(dlSource, query, dlCategories, offset, dlLoaderFilter, dlMcVersionFilter);
   var cached = dlResultsCache.get(cacheKey);
   if (cached) {
     dlOffset = offset;
@@ -151,6 +188,12 @@ function runDlSearch(query, offset) {
     + '&query=' + encodeURIComponent(query) + '&offset=' + offset;
   if (dlCategories.length) {
     url += '&category=' + encodeURIComponent(dlCategories.join(','));
+  }
+  if (dlLoaderFilter) {
+    url += '&loader=' + encodeURIComponent(dlLoaderFilter);
+  }
+  if (dlMcVersionFilter) {
+    url += '&mc_version=' + encodeURIComponent(dlMcVersionFilter);
   }
 
   var requestToken = ++dlRequestToken;
