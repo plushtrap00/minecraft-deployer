@@ -51,6 +51,23 @@ function populateEnvForm(data) {
   });
   var toggle = document.getElementById('cfg-env-AUTO_UPDATE_ENABLED');
   toggle.classList.toggle('on', (data.AUTO_UPDATE_ENABLED || '').toLowerCase() === 'true');
+
+  // En Docker, el puerto y la carpeta de servidores los controla
+  // docker-compose.yml (mapeo de puertos y volumen/carpeta), no este .env —
+  // cambiarlos aquí no tiene el efecto que parece, así que se deshabilitan
+  // con una nota en vez de dejar que parezca que "no hacen nada" al guardar.
+  ['WEB_PORT', 'SERVERS_PATH'].forEach(function(key) {
+    var input = document.getElementById('cfg-env-' + key);
+    var hint = document.getElementById('cfg-env-' + key + '-hint');
+    if (!input || !hint) {
+      return;
+    }
+    input.disabled = !!data.in_docker;
+    hint.style.display = data.in_docker ? '' : 'none';
+    hint.textContent = data.in_docker
+      ? '⚠️ En Docker esto se controla desde docker-compose.yml, no desde aquí.'
+      : '';
+  });
 }
 
 function renderConstantsForm(data) {

@@ -45,7 +45,14 @@ _ENV_EDITABLE_KEYS = [
 async def get_env(request: Request):
     _require_admin(request)
     values = dotenv_values(_ENV_PATH) if _ENV_PATH.exists() else {}
-    return JSONResponse({key: values.get(key, "") for key in _ENV_EDITABLE_KEYS})
+    result = {key: values.get(key, "") for key in _ENV_EDITABLE_KEYS}
+    # WEB_PORT/SERVERS_PATH en Docker los controla docker-compose.yml (mapeo de
+    # puertos y volumen/carpeta), no este .env — el frontend usa esto para
+    # avisar en vez de dejar que el usuario cambie un campo sin efecto real (y
+    # que además falla al guardar si el .env está montado de solo lectura,
+    # como en el docker-compose.yml que genera setup.py).
+    result["in_docker"] = auto_update.running_in_docker()
+    return JSONResponse(result)
 
 
 class EnvUpdateBody(BaseModel):

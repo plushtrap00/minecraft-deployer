@@ -188,7 +188,7 @@ def generate_compose(
         f"      - \"{mc_port}:25565\"\n"
         f"    volumes:\n"
         f"{volume_def}\n"
-        f"      - ./.env:/app/.env:ro\n"
+        f"      - ./.env:/app/.env\n"
         f"    environment:\n"
         f"      SERVERS_PATH: /servers\n"
         f"    restart: unless-stopped\n"

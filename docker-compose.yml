@@ -11,8 +11,11 @@ services:
     volumes:
       # Carpeta donde se guardan los modpacks (persistente entre reinicios)
       - servers:/servers
-      # Contraseña de la app — genera el .env con: python set_password.py
-      - ./.env:/app/.env:ro
+      # Credenciales/config de la app — genera el .env con: python set_password.py
+      # (o python setup.py para el asistente completo). Sin ":ro": el panel
+      # "⚙️ Configuración" de la propia app necesita poder escribir este archivo
+      # para guardar cambios (contraseña, CurseForge, auto-actualización...).
+      - ./.env:/app/.env
     environment:
       SERVERS_PATH: /servers
     restart: unless-stopped
@@ -25,6 +28,6 @@ volumes:
 #
 #   volumes:
 #     - ./servers-minecraft:/servers
-#     - ./.env:/app/.env:ro
+#     - ./.env:/app/.env
 #
 # Y elimina el bloque "volumes: servers:" del final.
