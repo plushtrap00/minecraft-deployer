@@ -337,8 +337,7 @@ function checkDlDuplicate() {
       dlDuplicateMatches = data.matches || [];
       dlInstallBlocked = !!data.blocked;
       if (dlInstallBlocked) {
-        warningEl.innerHTML = '<div style="background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.3);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--red)">🚫 '
-          + escHtml(data.reason || 'El autor bloqueó la descarga de este modpack por terceros.') + '</div>';
+        warningEl.innerHTML = dlBlockedHtml(data.reason);
       } else if (dlDuplicateMatches.length) {
         warningEl.innerHTML = dlDuplicateWarningHtml(dlDuplicateMatches);
       } else if (result.ok && data.checked === false) {
@@ -366,6 +365,20 @@ function dlDuplicateWarningHtml(matches) {
   }).join(', ');
   return '<div style="background:rgba(210,153,34,.12);border:1px solid rgba(210,153,34,.35);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--yellow);margin-top:10px">'
     + '⚠️ Esta versión se parece a lo ya instalado en ' + lines + '. Puede que ya la tengas — revisa antes de crear otro servidor.</div>';
+}
+
+function dlBlockedHtml(reason) {
+  var pageLink = dlSelectedPack && dlSelectedPack.page_url
+    ? '<a href="' + escHtml(dlSelectedPack.page_url) + '" target="_blank" rel="noopener">la página del modpack en CurseForge</a>'
+    : 'la página del modpack en CurseForge';
+  return '<div style="background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.3);border-radius:6px;padding:10px 14px;font-size:.82rem">'
+    + '<div style="color:var(--red);font-weight:600;margin-bottom:8px">🚫 ' + escHtml(reason || 'El autor bloqueó la descarga de este modpack por terceros.') + '</div>'
+    + '<div style="color:var(--muted)">Cómo instalarlo de todas formas:</div>'
+    + '<ol style="margin:6px 0 0 18px;padding:0;color:var(--muted);line-height:1.6">'
+    + '<li>Entra en ' + pageLink + ' y ve a la pestaña <b>Files</b>.</li>'
+    + '<li>Si esa versión tiene un archivo de <b>«Server Files»</b> aparte del pack normal, descárgalo y súbelo aquí con <b>«📦 Importar modpack existente»</b>.</li>'
+    + '<li>Si no hay server files, crea un servidor vacío con <b>«🆕 Crear servidor nuevo»</b> usando el modloader y la versión de Minecraft que se ven en el desplegable de arriba, y añade los mods a mano (subiéndolos o con «🔎 Buscar mods online» una vez creado).</li>'
+    + '</ol></div>';
 }
 
 var DL_LOG_MAX_LINES = 300;

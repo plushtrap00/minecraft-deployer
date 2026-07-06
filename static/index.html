@@ -44,6 +44,7 @@
   <button class="nav-tab" id="tab-manage">📦 Gestión de modpacks</button>
   <button class="nav-tab" id="tab-server">🖥️ Servidor</button>
   <button class="nav-tab" id="tab-players">👥 Jugadores</button>
+  <button class="nav-tab" id="tab-help">❓ Ayuda</button>
   <button class="nav-tab" id="tab-users">👤 Usuarios</button>
   <button class="nav-tab" id="tab-config">⚙️ Configuración</button>
   <button class="nav-tab ml-auto" id="btn-sysmon">💻 Sistema<span class="nav-badge" id="sysmon-nav-badge" style="display:none">1</span></button>
@@ -1041,6 +1042,83 @@
       <div id="banned-ips-list"><p class="empty-msg">Cargando...</p></div>
     </div>
 
+  </div>
+</div>
+
+<!-- ══ AYUDA ══════════════════════════════════════════════ -->
+<div class="page" id="page-help">
+  <div class="card">
+    <h2>❓ Cómo usar Minecraft Server Deployer</h2>
+    <div class="info-box">Cada apartado se puede desplegar por separado. Si es la primera vez que usas la app, empieza por «Crear tu primer servidor».</div>
+
+    <details class="help-section" open>
+      <summary>🆕 Crear tu primer servidor</summary>
+      <div class="help-section-body">
+        <p>Desde la pestaña <b>⛏️ Instalar modpack</b> tienes tres formas de conseguir un servidor, según lo que ya tengas:</p>
+        <ul>
+          <li><b>📦 Importar modpack existente</b> — si ya tienes un modpack descargado (un <code>.zip</code>, por ejemplo exportado de CurseForge/Modrinth, o los «server files» de un modpack), súbelo aquí y la app lo descomprime y lo deja listo.</li>
+          <li><b>🆕 Crear servidor nuevo</b> — arranca desde cero: eliges versión de Minecraft, modloader (Forge, NeoForge, Fabric, Quilt o ninguno) y su versión, sin mods todavía. Útil para modpacks sin server files disponibles: creas el servidor con el modloader correcto y luego añades los mods a mano.</li>
+          <li><b>🌐 Descargar modpack</b> — busca un modpack en Modrinth o CurseForge y la app se encarga de todo: descarga el modloader, los mods y la configuración. Antes de instalar comprueba si ese modpack ya se parece a uno que tengas instalado, para no duplicarlo por error.</li>
+        </ul>
+        <p>En los tres casos eliges también cuánta RAM mínima/máxima (<code>-Xms</code>/<code>-Xmx</code>) tendrá el servidor.</p>
+      </div>
+    </details>
+
+    <details class="help-section">
+      <summary>📦 Gestión de modpacks</summary>
+      <div class="help-section-body">
+        <p>Elige un servidor arriba para ver sus pestañas:</p>
+        <ul>
+          <li><b>🧩 Mods</b> — lista de mods instalados (activar/desactivar/borrar), subir mods sueltos o una carpeta entera, y buscar mods nuevos online (con detección de compatibilidad de versión y aviso si ya está instalado). El menú «⋮» tiene además: ver posibles duplicados, ver mods que son solo de cliente, y borrar en lote los deshabilitados.</li>
+          <li><b>📄 server.properties</b> — editor con formulario para los ajustes más comunes (dificultad, modo de juego, whitelist, MOTD...) o en texto plano para todo lo demás.</li>
+          <li><b>🔧 Config de mods</b> — edita los archivos de configuración de cada mod (<code>config/</code>) desde el navegador.</li>
+          <li><b>📜 KubeJS</b> — si el modpack usa KubeJS, gestiona sus scripts (crear, editar, mover/renombrar, borrar).</li>
+          <li><b>🗺️ Archivos de mundo</b> — crea un mundo nuevo, cambia el activo, o borra los que ya no uses (menos el que está activo).</li>
+          <li><b>📋 Logs</b> — consulta logs rotados y crash reports; si hay un crash, la app intenta identificar qué mod lo causó.</li>
+          <li><b>🔧 Cambiar versión de modloader</b> (botón junto al nombre del modpack) — sube o baja la versión del modloader sin tocar mods ni mundo, avisando antes si algún mod dejaría de ser compatible.</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="help-section">
+      <summary>🖥️ Servidor (arrancar, consola, red)</summary>
+      <div class="help-section-body">
+        <p>Desde la pestaña <b>🖥️ Servidor</b> eliges qué modpack arrancar (si hay más de uno) y decides si acepta conexiones solo de tu red local o de cualquier IP.</p>
+        <ul>
+          <li><b>Consola en vivo</b> — ves el log del servidor en tiempo real y puedes enviar comandos (<code>say</code>, <code>list</code>, <code>stop</code>...) directamente.</li>
+          <li><b>Métricas</b> — TPS y MSPT en vivo (vía RCON, en Forge/NeoForge) y jugadores conectados, mientras el servidor está en marcha.</li>
+          <li><b>Firewall</b> — controla si el puerto de Minecraft está abierto solo en tu red local o también desde fuera (necesita permisos de administrador).</li>
+        </ul>
+      </div>
+    </details>
+
+    <details class="help-section">
+      <summary>👥 Jugadores</summary>
+      <div class="help-section-body">
+        <p>Gestión global de jugadores, aplicada a <b>todos los servidores a la vez</b>: operadores (ops), whitelist, y baneos de jugador o de IP. Si el servidor está corriendo en ese momento, usa los comandos de la consola para que el cambio surta efecto inmediato (los archivos por sí solos no expulsan/aceptan a nadie en caliente).</p>
+      </div>
+    </details>
+
+    <details class="help-section">
+      <summary>👤 Usuarios <span style="font-weight:400;color:var(--muted)">(solo administrador)</span></summary>
+      <div class="help-section-body">
+        <p>Crea cuentas adicionales para otras personas que quieras que puedan usar el panel. Solo el administrador puede crear o borrar usuarios, y no puede borrarse a sí mismo.</p>
+      </div>
+    </details>
+
+    <details class="help-section">
+      <summary>⚙️ Configuración <span style="font-weight:400;color:var(--muted)">(solo administrador)</span></summary>
+      <div class="help-section-body">
+        <p>Edita las variables de entorno (usuario, puertos, dominio, clave de CurseForge, auto-actualización...) y los números de ajuste internos de la app (timeouts, límites, tamaños de página...) directamente desde el navegador. Los cambios no se aplican en caliente: hace falta reiniciar la app, y el propio panel tiene un botón para hacerlo (no reinicia si hay un servidor de Minecraft corriendo o una operación en curso).</p>
+      </div>
+    </details>
+
+    <details class="help-section">
+      <summary>💻 Sistema</summary>
+      <div class="help-section-body">
+        <p>Monitor de recursos del equipo donde corre la app: CPU, RAM y disco en tiempo real, además de comprobar si hay una actualización de la propia app disponible en GitHub.</p>
+      </div>
+    </details>
   </div>
 </div>
 

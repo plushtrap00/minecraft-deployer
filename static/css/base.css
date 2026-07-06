@@ -307,6 +307,77 @@ button:disabled {
   margin-top: 10px;
 }
 
+/* -- Página de ayuda: secciones plegables (<details>/<summary> nativos) --- */
+.help-section {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+
+.help-section + .help-section {
+  margin-top: 0;
+}
+
+.help-section summary {
+  cursor: pointer;
+  padding: 12px 16px;
+  font-weight: 600;
+  font-size: .88rem;
+  list-style: none;
+  user-select: none;
+}
+
+.help-section summary::-webkit-details-marker {
+  display: none;
+}
+
+.help-section summary::before {
+  content: '▸';
+  display: inline-block;
+  width: 14px;
+  color: var(--accent);
+  transition: transform .15s;
+}
+
+.help-section[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.help-section-body {
+  padding: 0 16px 14px;
+  color: var(--muted);
+  font-size: .85rem;
+  line-height: 1.65;
+}
+
+.help-section-body p {
+  margin: 0 0 8px;
+}
+
+.help-section-body ul,
+.help-section-body ol {
+  margin: 6px 0 10px 20px;
+  padding: 0;
+}
+
+.help-section-body li {
+  margin-bottom: 4px;
+}
+
+.help-section-body code {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: .82em;
+  color: var(--text);
+}
+
+.help-section-body b {
+  color: var(--text);
+}
+
 .empty-msg {
   color: var(--muted);
   font-size: .85rem;

@@ -1,5 +1,5 @@
 //  Navegación
-['deploy', 'manage', 'server', 'players', 'users', 'config'].forEach(function(name) {
+['deploy', 'manage', 'server', 'players', 'help', 'users', 'config'].forEach(function(name) {
   document.getElementById('tab-' + name).addEventListener('click', function() {
     if (guardModOperationNav()) {
       return;
