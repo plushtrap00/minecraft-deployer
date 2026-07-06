@@ -1,15 +1,22 @@
 """
 app_constants.py - Constantes de comportamiento ajustables de la app.
 
-A diferencia de config.py (que también lee .env: secretos + configuración
-específica de cada instalación, en gitignore), este módulo lee .APP_CONSTANTS
-(JSON) en la raíz del repo. Ese archivo SÍ se versiona en git: son solo
-números de ajuste (timeouts, límites, tamaños de caché) compartidos por
-todas las instalaciones, sin nada sensible — por eso es seguro commitearlo.
+Igual que config.py, este módulo lee un archivo local en gitignore:
+.APP_CONSTANTS (JSON) en la raíz del repo. A diferencia de .env, no tiene
+nada sensible (son solo números de ajuste: timeouts, límites, tamaños de
+caché) — pero SÍ se modifica en cada instalación desde el panel de
+administración (routes/config_admin.py), así que no puede versionarse en
+git: si estuviera trackeado, un `git pull` fallaría en cuanto el usuario
+guardara un cambio desde el panel y luego el repo remoto tocara ese mismo
+archivo (pasó de verdad: ver commit que lo sacó de git). DEFAULTS de abajo
+es la única fuente de verdad de qué claves existen y sus valores de
+fábrica; el archivo se autogenera con esos valores la primera vez que se
+importa este módulo si no existe todavía (install.sh también se asegura de
+generarlo explícitamente).
 
-Editable desde el panel de administración (routes/config_admin.py). Como el
-resto de módulos leen estos valores una sola vez al importarse, un cambio
-guardado desde ahí no toma efecto hasta reiniciar la app.
+Editable desde el panel de administración. Como el resto de módulos leen
+estos valores una sola vez al importarse, un cambio guardado desde ahí no
+toma efecto hasta reiniciar la app.
 """
 import json
 from pathlib import Path

@@ -209,6 +209,15 @@ fi
 
 "$VENV_PIP" install --quiet --upgrade pip
 
+# .APP_CONSTANTS (ajustes no sensibles) no está en git (el panel de admin lo
+# modifica en cada instalación) — se autogenera con valores por defecto al
+# importar app_constants.py, pero se fuerza acá para que exista desde el
+# primer arranque en vez de depender de un efecto colateral del import.
+if [[ ! -f ".APP_CONSTANTS" ]]; then
+    "$VENV_PYTHON" -c "import app_constants" 2>/dev/null || true
+    [[ -f ".APP_CONSTANTS" ]] && ok ".APP_CONSTANTS generado"
+fi
+
 # ══════════════════════════════════════════════════════════════════════════════
 # 3. CONFIGURACIÓN — solo en primera instalación
 #    En actualizaciones se reutiliza el .env existente
