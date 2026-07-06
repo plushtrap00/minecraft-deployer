@@ -16,9 +16,7 @@
       loadModpacks();
     }
     if (name === 'server') {
-      loadMcDomain();
-      checkServerStatus();
-      loadFirewallStatus();
+      loadServerPageData();
     }
     if (name === 'users') {
       loadUsers();
@@ -28,3 +26,14 @@
     }
   });
 });
+
+// "Servidor" es la pestaña activa por defecto (ver static/index.html), así
+// que necesita cargar sus datos también al entrar a la app, no solo al hacer
+// clic en la pestaña — se llama desde onLoginSuccess()/checkExistingToken()
+// en auth.js, una vez hay sesión real (no antes, para no repetir el mismo
+// 401-antes-de-login que ya rompía el sondeo de auto-actualización).
+function loadServerPageData() {
+  loadMcDomain();
+  checkServerStatus();
+  loadFirewallStatus();
+}

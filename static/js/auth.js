@@ -87,6 +87,9 @@ function onLoginSuccess(token, role) {
   if (typeof loadAutoUpdateStatus === 'function') {
     loadAutoUpdateStatus();
   }
+  if (typeof loadServerPageData === 'function') {
+    loadServerPageData();
+  }
 }
 
 function doLogin() {
@@ -150,6 +153,9 @@ document.getElementById('login-pass').addEventListener('keydown', function(event
         localStorage.setItem('mc_role', currentRole);
         document.getElementById('login-screen').classList.add('hidden');
         applyRoleUI();
+        if (typeof loadServerPageData === 'function') {
+          loadServerPageData();
+        }
       } else {
         logout();
       }
