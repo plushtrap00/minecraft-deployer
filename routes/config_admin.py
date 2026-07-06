@@ -64,16 +64,36 @@ class EnvUpdateBody(BaseModel):
 async def update_env(request: Request, body: EnvUpdateBody):
     _require_admin(request)
 
-    if body.new_password:
-        if len(body.new_password) < 8:
-            raise HTTPException(status_code=400, detail="La contraseña debe tener al menos 8 caracteres")
-        password_hash = bcrypt.hashpw(body.new_password.encode(), bcrypt.gensalt()).decode()
-        await asyncio.to_thread(set_key, str(_ENV_PATH), "APP_PASSWORD_HASH", password_hash, quote_mode="never")
+    try:
+        if body.new_password:
+            if len(body.new_password) < 8:
+                raise HTTPException(status_code=400, detail="La contraseña debe tener al menos 8 caracteres")
+            password_hash = bcrypt.hashpw(body.new_password.encode(), bcrypt.gensalt()).decode()
+            await asyncio.to_thread(set_key, str(_ENV_PATH), "APP_PASSWORD_HASH", password_hash, quote_mode="never")
 
-    for key, value in body.values.items():
-        if key not in _ENV_EDITABLE_KEYS:
-            continue
-        await asyncio.to_thread(set_key, str(_ENV_PATH), key, str(value), quote_mode="never")
+        for key, value in body.values.items():
+            if key not in _ENV_EDITABLE_KEYS:
+                continue
+            await asyncio.to_thread(set_key, str(_ENV_PATH), key, str(value), quote_mode="never")
+    except HTTPException:
+        raise
+    except OSError as e:
+        # dotenv.set_key() escribe de forma atómica (archivo temporal + os.replace);
+        # si .env no se puede escribir (p.ej. montado ":ro" en Docker), esto lanza
+        # sin que quede rastro en ningún lado si no se captura explícitamente acá.
+        print(f"[config-admin] No se pudo escribir {_ENV_PATH}: {e}", flush=True)
+        raise HTTPException(
+            status_code=500,
+            detail=(
+                "No se pudo guardar .env: el archivo no se puede escribir. Si usas Docker, "
+                "comprueba que docker-compose.yml no monte el .env como solo lectura (sin "
+                "\":ro\" en esa línea) — puede que necesites volver a ejecutar "
+                "'python3 setup.py' para regenerarlo tras una actualización."
+            ),
+        )
+    except Exception as e:
+        print(f"[config-admin] Error inesperado guardando .env: {e!r}", flush=True)
+        raise HTTPException(status_code=500, detail=f"Error inesperado al guardar .env: {e}")
 
     return JSONResponse({"success": True})
 
