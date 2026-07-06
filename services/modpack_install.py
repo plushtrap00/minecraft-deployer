@@ -31,7 +31,10 @@ import urllib.parse
 from pathlib import Path
 
 from config import DEFAULT_SERVERS_PATH
-from app_constants import CURSEFORGE_BULK_FILES_CHUNK, MOD_SEARCH_CATEGORIES_CACHE_TTL_SECONDS, MODPACK_DUPLICATE_MATCH_THRESHOLD_PERCENT
+from app_constants import (
+    CURSEFORGE_BULK_FILES_CHUNK, MOD_SEARCH_CATEGORIES_CACHE_TTL_SECONDS, MODPACK_DUPLICATE_MATCH_THRESHOLD_PERCENT,
+    CURSEFORGE_FILES_PAGE_SIZE, CURSEFORGE_FILES_MAX,
+)
 from services.mod_search import _http_get_json, download_bytes, _curseforge_headers, _HTTP_TIMEOUT, CURSEFORGE_GAME_ID
 from services.modloader import _http_get, _installer_url, LOADER_DISPLAY_NAMES
 from services.server_create import validate_new_server_name, _write_run_script, _bootstrap_common_files, _vanilla_server_jar_url
@@ -337,11 +340,28 @@ def get_curseforge_modpack_categories() -> list:
 
 
 def get_curseforge_modpack_versions(mod_id) -> list:
+    """
+    Trae TODAS las versiones del modpack (no solo las primeras 50): igual que
+    get_curseforge_files() en mod_search.py, la API de CurseForge pagina con
+    index/pageSize, y sin este loop las builds más antiguas de un modpack con
+    muchas versiones quedaban invisibles para siempre (nunca aparecían en el
+    desplegable ni se podían resolver por install/check-existing).
+    """
     headers = _curseforge_headers()
-    url = f"https://api.curseforge.com/v1/mods/{mod_id}/files?" + urllib.parse.urlencode({"pageSize": "50"})
-    data = _http_get_json(url, headers)
+    raw_files = []
+    index = 0
+    while index < CURSEFORGE_FILES_MAX:
+        params = {"pageSize": str(CURSEFORGE_FILES_PAGE_SIZE), "index": str(index)}
+        url = f"https://api.curseforge.com/v1/mods/{mod_id}/files?" + urllib.parse.urlencode(params)
+        data = _http_get_json(url, headers)
+        page = data.get("data", [])
+        raw_files.extend(page)
+        if len(page) < CURSEFORGE_FILES_PAGE_SIZE:
+            break
+        index += CURSEFORGE_FILES_PAGE_SIZE
+
     versions = []
-    for f in data.get("data", []):
+    for f in raw_files:
         if not f.get("fileName", "").lower().endswith(".zip"):
             continue
         versions.append({

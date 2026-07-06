@@ -93,9 +93,13 @@ async def check_existing(source: str, project_id: str, version_id: str):
     except ModSearchError as e:
         raise HTTPException(status_code=502, detail=str(e))
     except RuntimeError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        # Esta versión no se puede leer (p.ej. el autor bloqueó la descarga por
+        # terceros en CurseForge) — es un caso normal y esperado, no un error de
+        # verdad, así que no se corta con un 4xx: simplemente no se puede
+        # comprobar, y eso no debería impedir que el usuario instale igual.
+        return JSONResponse({"matches": [], "checked": False, "reason": str(e)})
     matches = await asyncio.to_thread(find_similar_installed_modpacks, filenames, mc_version)
-    return JSONResponse({"matches": matches})
+    return JSONResponse({"matches": matches, "checked": True})
 
 
 @router.get("/stream")

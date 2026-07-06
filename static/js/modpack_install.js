@@ -325,8 +325,15 @@ function checkDlDuplicate() {
         return; // se disparó otra comprobación mientras esta estaba en vuelo
       }
       dlDuplicateCheckPending = false;
-      dlDuplicateMatches = (result.ok && result.data.matches) || [];
-      warningEl.innerHTML = dlDuplicateMatches.length ? dlDuplicateWarningHtml(dlDuplicateMatches) : '';
+      var data = result.ok ? result.data : {};
+      dlDuplicateMatches = data.matches || [];
+      if (dlDuplicateMatches.length) {
+        warningEl.innerHTML = dlDuplicateWarningHtml(dlDuplicateMatches);
+      } else if (result.ok && data.checked === false) {
+        warningEl.innerHTML = '<p class="empty-msg" style="padding:6px 0;font-size:.78rem">ℹ️ No se pudo comprobar si ya está instalado (' + escHtml(data.reason || 'motivo desconocido') + ').</p>';
+      } else {
+        warningEl.innerHTML = '';
+      }
       updateDlInstallBtnAppearance();
     })
     .catch(function() {
