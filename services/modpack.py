@@ -349,12 +349,39 @@ def read_mod_metadata(jar_bytes: bytes) -> dict:
 #   inmensa mayoría de los mods sin esta metadata sí son necesarios ahí.
 # - Un valor de side/environment presente pero irreconocible si cuenta como
 #   señal ambigua real → "unknown", en vez de adivinar.
+#
+# Caso aparte: mods de renderizado/apariencia que declaran side="BOTH" (en vez
+# de "CLIENT") pese a que en la práctica revientan un servidor dedicado porque
+# su propio código referencia clases de cliente (LWJGL, ClientLevel,
+# ShaderInstance...) sin comprobar antes en qué lado están corriendo — la
+# metadata por sí sola no basta para detectarlos, así que van en una lista
+# explícita, confirmada mod a mod (viendo el .jar real y/o el traceback del
+# crash), no una suposición genérica por nombre o categoría.
+_KNOWN_CLIENT_ONLY_MOD_IDS = {
+    "sodium": 'optimización de renderizado — usa LWJGL, que no existe en un servidor dedicado',
+    "embeddium": 'optimización de renderizado — usa LWJGL, que no existe en un servidor dedicado',
+    "rubidium": 'optimización de renderizado — usa LWJGL, que no existe en un servidor dedicado',
+    "iris": 'shaders — renderizado de cliente',
+    "oculus": 'shaders — renderizado de cliente',
+    "euphoria_patcher": 'parche de shaders — referencia clases de cliente (LWJGL/ClientLevel) aunque declara side="BOTH"',
+    "darkmodeeverywhere": 'tema visual del cliente — referencia clases de renderizado de cliente aunque declara side="BOTH"',
+    "drippyloadingscreen": 'pantalla de carga del cliente — referencia clases de cliente (Screen) aunque declara side="BOTH"',
+}
+
+
 def classify_mod_side(meta: dict) -> dict:
     """
     Devuelve {"category": "server"|"client_only"|"unknown", "confidence":
     "high"|"medium"|None, "reason": str|None} a partir del dict que devuelve
     read_mod_metadata().
     """
+    mod_id = meta.get("mod_id")
+    if mod_id in _KNOWN_CLIENT_ONLY_MOD_IDS:
+        return {
+            "category": "client_only", "confidence": "high",
+            "reason": _KNOWN_CLIENT_ONLY_MOD_IDS[mod_id],
+        }
+
     modloader = meta.get("modloader") or ""
     side = meta.get("side")
 
