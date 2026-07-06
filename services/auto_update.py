@@ -121,6 +121,28 @@ def _loop() -> None:
         time.sleep(AUTO_UPDATE_INTERVAL_SECONDS)
 
 
+def check_now() -> dict:
+    """
+    Fuerza una comprobación inmediata contra GitHub (botón "Comprobar ahora"
+    del panel) — a diferencia de _check_and_update_once() (el bucle en
+    segundo plano), SIEMPRE vuelve a preguntarle a GitHub aunque ya se supiera
+    de una actualización pendiente, porque acá es el usuario quien lo pide
+    explícitamente. Funciona aunque AUTO_UPDATE_ENABLED esté en false: revisar
+    a mano es una acción independiente de que el chequeo automático esté
+    activado.
+    """
+    try:
+        behind = _commits_behind()
+    except Exception as e:
+        _status["last_check"] = time.time()
+        _status["last_error"] = str(e)
+        raise RuntimeError(str(e))
+    _status["last_check"] = time.time()
+    _status["commits_behind"] = behind
+    _status["last_error"] = None
+    return get_status()
+
+
 def apply_update() -> None:
     """
     Dispara el pull + reinicio a pedido (botón "Actualizar" del panel).

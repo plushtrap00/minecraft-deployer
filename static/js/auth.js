@@ -76,6 +76,17 @@ function onLoginSuccess(token, role) {
   localStorage.setItem('mc_role', currentRole);
   document.getElementById('login-screen').classList.add('hidden');
   applyRoleUI();
+  // El primer intento de sysmon.js de comprobar auto-actualización sale
+  // disparado sin sesión todavía (nada más cargar la página) y falla con 401
+  // — no hace falta esperar hasta el próximo intento programado para que se
+  // entere de que ya hay sesión de verdad.
+  if (typeof autoUpdatePollTimer !== 'undefined' && autoUpdatePollTimer !== null) {
+    clearTimeout(autoUpdatePollTimer);
+    autoUpdatePollTimer = null;
+  }
+  if (typeof loadAutoUpdateStatus === 'function') {
+    loadAutoUpdateStatus();
+  }
 }
 
 function doLogin() {

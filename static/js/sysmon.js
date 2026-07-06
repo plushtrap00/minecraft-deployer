@@ -29,16 +29,12 @@ document.getElementById('sysmon-close-btn').addEventListener('click', function()
   stopSysmonStream();
 });
 
-document.getElementById('sysmon-refresh-btn').addEventListener('click', function() {
-  stopSysmonStream();
-  startSysmonStream();
-});
-
 var AUTO_UPDATE_STATUS_POLL_MS = 30000;
 var AUTO_UPDATE_RESTART_POLL_MS = 2000;
 var AUTO_UPDATE_RESTART_MAX_WAIT_MS = 120000; // ~2 minutos de margen antes de rendirse
 var lastSysmonStats = null;
 var lastAutoUpdateStatus = null;
+var autoUpdateChecking = false;
 var autoUpdateRestarting = false;
 var autoUpdateRestartStartedAt = null;
 var autoUpdatePollTimer = null;
@@ -116,7 +112,14 @@ function loadAutoUpdateStatus() {
     })
     .catch(function(error) {
       if (error && error.message === 'Sesión expirada') {
-        return; // apiFetch ya llamó a logout(); no es un reinicio, no hay nada más que hacer acá
+        // apiFetch ya llamó a logout() — pasa de forma normal la primera vez
+        // que carga la página sin sesión todavía (esta llamada sale disparada
+        // en cuanto se define, sin esperar al login). Aun así hay que seguir
+        // programando el siguiente intento: si no, en cuanto el usuario inicia
+        // sesión de verdad (sin recargar la página) este bucle queda muerto
+        // para siempre y el aviso de actualización nunca se vuelve a comprobar.
+        scheduleNextAutoUpdatePoll();
+        return;
       }
       if (!wasRestarting) {
         // Esta pestaña no pidió ningún reinicio, pero de golpe la app dejó de
@@ -159,7 +162,50 @@ document.getElementById('sysmon-body').addEventListener('click', function(event)
   if (event.target.closest('#auto-update-apply-btn')) {
     applyAutoUpdate();
   }
+  if (event.target.closest('#auto-update-check-btn')) {
+    checkForUpdatesNow();
+  }
 });
+
+// Botón "🔍 Comprobar ahora" — antes vivía arriba junto a CPU/RAM (donde solo
+// forzaba un refresco de un stream que ya se actualiza solo), reaprovechado
+// acá para forzar una comprobación real contra GitHub sin esperar al próximo
+// ciclo del bucle en segundo plano.
+function checkForUpdatesNow() {
+  autoUpdateChecking = true;
+  if (lastSysmonStats) {
+    renderSysmon(lastSysmonStats);
+  }
+  apiFetch('/api/auto-update/check', { method: 'POST' })
+    .then(function(response) {
+      return response.json().then(function(data) { return { ok: response.ok, data: data }; });
+    })
+    .then(function(result) {
+      autoUpdateChecking = false;
+      if (result.ok) {
+        lastAutoUpdateStatus = result.data;
+        updateSysmonBadge();
+        showToast(
+          result.data.commits_behind > 0
+            ? '🔔 Hay ' + result.data.commits_behind + ' commit(s) nuevos disponibles'
+            : '✅ Ya tienes la última versión',
+          'success'
+        );
+      } else {
+        showToast(result.data.detail || 'No se pudo comprobar', 'error');
+      }
+      if (lastSysmonStats) {
+        renderSysmon(lastSysmonStats);
+      }
+    })
+    .catch(function() {
+      autoUpdateChecking = false;
+      showToast('Error de red al comprobar actualizaciones', 'error');
+      if (lastSysmonStats) {
+        renderSysmon(lastSysmonStats);
+      }
+    });
+}
 
 function applyAutoUpdate() {
   var btn = document.getElementById('auto-update-apply-btn');
@@ -290,11 +336,10 @@ function renderAutoUpdateSection() {
   }
 
   if (!status.enabled) {
-    html += '<span class="sysmon-no-temps">Deshabilitada (AUTO_UPDATE_ENABLED=false en el .env)</span></div>';
-    return html;
+    html += '<span class="sysmon-no-temps">Comprobación automática deshabilitada (AUTO_UPDATE_ENABLED=false en el .env) — puedes comprobar a mano igualmente.</span>';
+  } else {
+    html += autoUpdateRow('Entorno', status.in_docker ? 'Docker' : 'Nativo (systemd)');
   }
-
-  html += autoUpdateRow('Entorno', status.in_docker ? 'Docker' : 'Nativo (systemd)');
 
   if (status.commits_behind > 0) {
     html += autoUpdateRow('Estado', '🔔 ' + status.commits_behind + ' commit(s) nuevos disponibles', 'var(--yellow)');
@@ -310,7 +355,10 @@ function renderAutoUpdateSection() {
       html += '<span class="sysmon-no-temps">Bloqueado: ' + escHtml(blockedReason) + '</span>';
     }
     html += '</div>';
-  } else {
+  } else if (status.last_check) {
+    // Solo "al día" si ya se comprobó de verdad alguna vez (automático o a
+    // mano) — si nunca se comprobó, commits_behind sigue en su valor inicial
+    // 0 y mostrar "al día" sería un falso positivo.
     html += autoUpdateRow('Estado', '✅ Al día', 'var(--green)');
   }
 
@@ -325,6 +373,11 @@ function renderAutoUpdateSection() {
   if (status.last_error) {
     html += autoUpdateRow('Error', status.last_error, 'var(--red)');
   }
+
+  html += '<div style="margin-top:6px">'
+    + '<button type="button" class="btn-secondary btn-xs" id="auto-update-check-btn"' + (autoUpdateChecking ? ' disabled' : '') + '>'
+    + (autoUpdateChecking ? '↻ Comprobando...' : '🔍 Comprobar ahora') + '</button>'
+    + '</div>';
 
   html += '</div>';
   return html;

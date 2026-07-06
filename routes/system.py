@@ -9,6 +9,7 @@ Rutas:
 - GET  /api/system-stats        → estadísticas del sistema (snapshot único)
 - GET  /api/system-stats/stream → SSE: estadísticas del sistema cada ~3s
 - GET  /api/auto-update/status  → estado de la auto-actualización
+- POST /api/auto-update/check   → fuerza una comprobación inmediata contra GitHub
 - POST /api/auto-update/apply   → aplica el pull pendiente y reinicia la app
 """
 import re
@@ -102,6 +103,17 @@ async def list_modpacks():
 @router.get("/api/auto-update/status")
 async def auto_update_status():
     return JSONResponse(auto_update.get_status())
+
+
+@router.post("/api/auto-update/check")
+async def auto_update_check():
+    """Fuerza una comprobación inmediata contra GitHub (botón "Comprobar ahora")."""
+    import asyncio
+    try:
+        status = await asyncio.to_thread(auto_update.check_now)
+    except RuntimeError as e:
+        raise HTTPException(status_code=502, detail=f"No se pudo comprobar: {e}")
+    return JSONResponse(status)
 
 
 @router.post("/api/auto-update/apply")

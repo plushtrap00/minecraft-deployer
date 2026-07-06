@@ -912,6 +912,8 @@ document.getElementById('mod-duplicates-modal').addEventListener('click', functi
 // -- Mods solo-cliente -----------------------------------------------------------
 document.getElementById('mod-client-only-btn').addEventListener('click', openClientOnlyModal);
 
+var clientOnlyModalData = null; // último resultado cargado, para togglear/borrar sin recargar todo
+
 function openClientOnlyModal() {
   if (!currentModpack) {
     return;
@@ -922,6 +924,7 @@ function openClientOnlyModal() {
   apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/client-only')
     .then(function(response) { return response.json(); })
     .then(function(data) {
+      clientOnlyModalData = data;
       renderClientOnlyModal(data);
     })
     .catch(function(error) {
@@ -997,8 +1000,7 @@ function clientOnlyToggleMod(filename) {
     .then(function(result) {
       if (result.ok && result.data.success) {
         showToast(result.data.enabled ? 'Mod habilitado' : 'Mod deshabilitado', 'success');
-        loadModsList();
-        openClientOnlyModal();
+        updateModStateLocally(filename, result.data.filename, result.data.enabled);
       } else {
         showToast(result.data.detail || 'Error al cambiar el estado del mod', 'error');
       }
@@ -1018,8 +1020,7 @@ function clientOnlyDeleteMod(filename) {
         .then(function(data) {
           if (data.success) {
             showToast('Mod borrado', 'success');
-            loadModsList();
-            openClientOnlyModal();
+            removeModLocally(filename);
           } else {
             showToast(data.detail || 'Error al borrar', 'error');
           }
@@ -1027,6 +1028,44 @@ function clientOnlyDeleteMod(filename) {
         .catch(function() { showToast('Error de red', 'error'); });
     }
   );
+}
+
+// Actualiza la lista general (allMods, ya cargada) y este modal (clientOnlyModalData,
+// ya cargado) en memoria, en vez de volver a pedir ambas cosas al servidor por
+// un cambio de un solo mod — la respuesta del propio toggle/delete ya trae
+// todo lo necesario para reflejarlo sin una ida y vuelta de más.
+function updateModStateLocally(oldFilename, newFilename, enabled) {
+  allMods.forEach(function(mod) {
+    if (mod.filename === oldFilename) {
+      mod.filename = newFilename;
+      mod.enabled = enabled;
+    }
+  });
+  applyModsFilters();
+
+  if (clientOnlyModalData) {
+    ['client_only', 'unknown', 'server'].forEach(function(key) {
+      (clientOnlyModalData[key] || []).forEach(function(mod) {
+        if (mod.filename === oldFilename) {
+          mod.filename = newFilename;
+          mod.enabled = enabled;
+        }
+      });
+    });
+    renderClientOnlyModal(clientOnlyModalData);
+  }
+}
+
+function removeModLocally(filename) {
+  allMods = allMods.filter(function(mod) { return mod.filename !== filename; });
+  applyModsFilters();
+
+  if (clientOnlyModalData) {
+    ['client_only', 'unknown', 'server'].forEach(function(key) {
+      clientOnlyModalData[key] = (clientOnlyModalData[key] || []).filter(function(mod) { return mod.filename !== filename; });
+    });
+    renderClientOnlyModal(clientOnlyModalData);
+  }
 }
 
 document.getElementById('mod-client-only-modal-close').addEventListener('click', function() {
