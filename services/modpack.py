@@ -775,11 +775,17 @@ def mc_version_compatible(server_mc: str, mod_versions: list, bare_as_minimum: b
             if server_mc.startswith(prefix):
                 return True
             continue
-        # Rango Maven de valor único: [1.21.1] significa exactamente 1.21.1
+        # Rango Maven de valor único: [1.21.1] significa exactamente 1.21.1 en
+        # la especificación formal — pero igual que con el resto de esta
+        # función, se trata como prefijo (no exacto): un mod que declara
+        # "[1.21]" en la práctica también funciona en parches menores como
+        # 1.21.1 (NeoForge no aplica este campo de forma estricta), así que
+        # exigir coincidencia exacta bloqueaba instalaciones válidas.
         m_exact = re.match(r'^\[([\d.]+)\]$', vrange)
         if m_exact:
             recognized_any = True
-            if ver_tuple(server_mc) == ver_tuple(m_exact.group(1)):
+            declared = m_exact.group(1)
+            if server_mc == declared or server_mc.startswith(declared + '.'):
                 return True
             continue
         m = re.match(r'^[\[\(]([\d.]*),\s*([\d.]*)[\]\)]$', vrange)
