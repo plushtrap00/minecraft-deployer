@@ -54,33 +54,35 @@ git clone https://github.com/plushtrap00/minecraft-deployer
 cd minecraft-deployer
 ```
 
-Genera el `.env` (usuario fijo `pablo`, tú eliges la contraseña). Si no tienes Python instalado en el host, hazlo dentro de un contenedor temporal para no instalar nada fuera de Docker:
+Genera la configuración con el asistente interactivo `setup.py`: te pregunta usuario y contraseña de administrador, puertos, versión de Java, dónde guardar los modpacks (volumen Docker o una carpeta del host) y demás opciones, y genera tanto `.env` como un `docker-compose.yml` ya ajustado a tus respuestas (no hace falta editarlo a mano).
+
+Si no tienes Python instalado en el host, hazlo dentro de un contenedor temporal para no instalar nada fuera de Docker:
 
 ```bash
-docker run --rm -it -v "$PWD":/app -w /app python:3.12-slim bash -c "pip install -q bcrypt && python set_password.py"
+docker run --rm -it -v "$PWD":/app -w /app python:3.12-slim bash -c "pip install -q bcrypt && python setup.py"
 ```
 
-(si ya tienes Python 3 con `bcrypt` disponible, basta con `python3 set_password.py`)
+(si ya tienes Python 3 con `bcrypt` disponible, basta con `python3 setup.py`)
 
-Arranca:
+Construye y arranca:
 
 ```bash
-docker compose up -d --build
+docker compose build
+docker compose up -d
 ```
 
-La app queda accesible en `http://<IP-del-host>:8000`. Los modpacks/servidores se guardan en un volumen Docker persistente (`servers`), y el puerto de Minecraft (`25565`) también queda expuesto.
-
-- Para usar una carpeta del host en vez de un volumen Docker (y poder ver los archivos directamente desde el sistema operativo), `docker-compose.yml` ya trae las líneas alternativas comentadas, listas para descomentar.
-- Para cambiar la versión de Java (`17` en vez de `21`), edita `JAVA_VERSION` en `docker-compose.yml` antes de construir la imagen.
+La app queda accesible en `http://<IP-del-host>:<puerto-que-elegiste>`.
 
 Comandos útiles:
 
 ```bash
 docker compose logs -f        # ver logs en vivo
 docker compose restart        # reiniciar
-docker compose down           # parar (los datos persisten en el volumen)
+docker compose down           # parar (los datos persisten en el volumen/carpeta elegidos)
 docker compose up -d --build  # reconstruir tras actualizar el código (git pull)
 ```
+
+Para cambiar solo el usuario/contraseña más adelante sin rehacer toda la configuración, usa `python3 set_password.py` y reinicia el contenedor.
 
 ### Opción B — `install.sh` dentro de un contenedor ya en marcha
 
@@ -94,6 +96,6 @@ Elige `1) Contenedor` cuando te lo pregunte. Hace exactamente lo mismo que el mo
 
 ## Después de instalar
 
-- **Primer acceso**: con el usuario/contraseña que configuraste (fijo `pablo` + tu contraseña en la Opción A de Docker; el que elegiste en instalación nativa o modo Contenedor).
+- **Primer acceso**: con el usuario y la contraseña que configuraste durante la instalación (en cualquiera de las opciones).
 - **CurseForge**: si no añadiste la clave de API durante la instalación, puedes añadirla luego desde **⚙️ Configuración** dentro de la propia app (solo administrador), sin tocar nada por consola.
 - **Tutorial dentro de la app**: pestaña **❓ Ayuda**, con una explicación de cada sección del panel.

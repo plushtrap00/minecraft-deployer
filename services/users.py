@@ -17,7 +17,7 @@ load_dotenv(_ENV_PATH, override=True)
 
 
 def _admin_username() -> str:
-    return os.getenv("APP_USERNAME", "pablo")
+    return os.getenv("APP_USERNAME", "admin")
 
 
 def _admin_hash() -> str | None:

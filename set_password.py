@@ -1,5 +1,5 @@
 """
-set_password.py - Configura o cambia la contraseña de pablo en .env.
+set_password.py - Configura el usuario y la contraseña de administrador en .env.
 También genera JWT_SECRET si no existe.
 
 Uso:
@@ -15,7 +15,8 @@ ENV_FILE = Path(__file__).parent / ".env"
 
 
 def main():
-    print("=== Configurar contraseña de pablo ===")
+    print("=== Configurar acceso de administrador ===")
+    username = input("Usuario [admin]: ").strip() or "admin"
     password = getpass.getpass("Nueva contraseña: ")
     confirm  = getpass.getpass("Confirmar contraseña: ")
 
@@ -34,11 +35,17 @@ def main():
     else:
         content = ""
 
-    # Actualizar o añadir PABLO_PASSWORD_HASH
-    if "PABLO_PASSWORD_HASH=" in content:
-        content = re.sub(r"PABLO_PASSWORD_HASH=.*", f"PABLO_PASSWORD_HASH={hashed}", content)
+    # Actualizar o añadir APP_USERNAME
+    if "APP_USERNAME=" in content:
+        content = re.sub(r"APP_USERNAME=.*", f"APP_USERNAME={username}", content)
     else:
-        content += f"\nPABLO_PASSWORD_HASH={hashed}\n"
+        content += f"\nAPP_USERNAME={username}\n"
+
+    # Actualizar o añadir APP_PASSWORD_HASH
+    if "APP_PASSWORD_HASH=" in content:
+        content = re.sub(r"APP_PASSWORD_HASH=.*", f"APP_PASSWORD_HASH={hashed}", content)
+    else:
+        content += f"APP_PASSWORD_HASH={hashed}\n"
 
     # Generar JWT_SECRET si no existe
     if "JWT_SECRET=" not in content or re.search(r"JWT_SECRET=\s*$", content, re.MULTILINE):
@@ -50,7 +57,7 @@ def main():
         print(f"✓ JWT_SECRET generado automáticamente")
 
     ENV_FILE.write_text(content.strip() + "\n")
-    print(f"✓ Contraseña guardada en {ENV_FILE}")
+    print(f"✓ Usuario '{username}' configurado en {ENV_FILE}")
     print("  Ya puedes arrancar la app con: bash start.sh")
 
 
