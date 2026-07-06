@@ -84,6 +84,8 @@ docker compose up -d --build  # reconstruir tras actualizar el código (git pull
 
 Para cambiar solo el usuario/contraseña más adelante sin rehacer toda la configuración, usa `python3 set_password.py` y reinicia el contenedor.
 
+`docker-compose.yml` no está en git (lo genera `setup.py`, y cada instalación lo personaliza — versionarlo haría que un `git pull` chocara en cuanto alguien cambiara, por ejemplo, el puerto). Puedes editarlo a mano cuando quieras (p. ej. para cambiar el puerto expuesto) sin miedo a conflictos en la próxima actualización. Si prefieres no ejecutar el asistente, `docker-compose.example.yml` es la plantilla de referencia: cópiala como `docker-compose.yml` y ajusta lo que necesites.
+
 ### Opción B — `install.sh` dentro de un contenedor ya en marcha
 
 Si ya tienes una shell dentro de un contenedor Docker (por ejemplo, uno que te da un panel de hosting) y prefieres no tocar el `Dockerfile`, puedes usar el mismo instalador que en Linux nativo:

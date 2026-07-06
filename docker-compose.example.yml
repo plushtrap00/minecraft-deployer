@@ -1,3 +1,15 @@
+# Plantilla de referencia — el docker-compose.yml real NO está en git (se
+# modifica en cada instalación: puertos, versión de Java, ruta de servidores...
+# y versionarlo causaba que un simple `git pull` chocara en cuanto alguien
+# tocaba, por ejemplo, el puerto). Dos formas de conseguir el tuyo:
+#
+#   1. python3 setup.py   → asistente interactivo, genera .env y este archivo
+#      ya ajustados a tus respuestas (recomendado).
+#   2. cp docker-compose.example.yml docker-compose.yml y edítalo a mano,
+#      generando el .env aparte con: python3 set_password.py
+#
+# Ver README.md para la guía completa de instalación con Docker.
+
 services:
   minecraft-deployer:
     build:

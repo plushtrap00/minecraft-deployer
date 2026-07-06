@@ -4,6 +4,7 @@ __pycache__/
 .venv/
 .env
 .APP_CONSTANTS
+docker-compose.yml
 users.json
 uploads_temp/
 *.zip
