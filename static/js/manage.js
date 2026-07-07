@@ -300,6 +300,58 @@ function selectModpack(name) {
   loadKubejs();
 }
 
+// -- Borrar modpack completo (triple confirmación) -----------------------------
+// Es la acción más destructiva de todo el panel (mundos, config de mods y
+// KubeJS, todo) — de ahí las tres confirmaciones seguidas en vez de la
+// habitual showConfirm() única que usa el resto del panel para borrar un
+// mundo o un archivo suelto.
+document.getElementById('btn-delete-modpack').addEventListener('click', function() {
+  if (!currentModpack) {
+    return;
+  }
+  var name = currentModpack;
+  showConfirm(
+    '¿Borrar "' + name + '"?',
+    'Se borrará la carpeta del modpack por completo.',
+    function() {
+      showConfirm(
+        '¿Estás seguro?',
+        'Los mundos se perderán, y la configuración de mods y KubeJS también.',
+        function() {
+          showConfirm(
+            'Última oportunidad',
+            '¿Estás seguro de que quieres borrar "' + name + '"? Esta acción no se puede deshacer.',
+            function() { deleteModpack(name); },
+            { confirmLabel: 'Sí, borrar definitivamente' }
+          );
+        }
+      );
+    }
+  );
+});
+
+function deleteModpack(name) {
+  apiFetch('/api/modpacks/' + encodeURIComponent(name), { method: 'DELETE' })
+    .then(function(response) {
+      return response.json().then(function(data) { return { ok: response.ok, data: data }; });
+    })
+    .then(function(result) {
+      if (result.ok) {
+        showToast('Modpack "' + name + '" borrado', 'success');
+        if (currentModpack === name) {
+          currentModpack = null;
+          document.getElementById('mgmt-panel').classList.remove('show');
+        }
+        loadModpacks();
+      } else {
+        showToast(result.data.detail || 'No se pudo borrar', 'error');
+      }
+    })
+    .catch(function() {
+      showToast('Error de red', 'error');
+    });
+}
+
 ['props', 'configs', 'kubejs', 'worldfiles', 'logs', 'mods'].forEach(function(name) {
   document.getElementById('mtab-' + name).addEventListener('click', function() {
     if (name !== 'mods' && guardModOperationNav()) {

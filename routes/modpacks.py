@@ -8,6 +8,7 @@ Rutas:
 - GET/POST  /api/modpacks/{modpack}/kubejs-file
 - GET       /api/modpacks/{modpack}/kubejs
 - POST      /api/upload-and-extract
+- DELETE    /api/modpacks/{modpack}
 - GET       /api/modpacks/{modpack}/version
 - GET       /api/modpacks/{modpack}/mods
 - GET       /api/modpacks/{modpack}/mods/duplicates
@@ -59,7 +60,8 @@ from services.modpack import (
 from services.players import (
     ensure_global_dir, read_global_file, write_global_file, PLAYER_FILES,
 )
-from services.busy import BusyGuard
+from services.busy import BusyGuard, is_busy, busy_reasons
+from services import process as proc_module
 
 router = APIRouter(prefix="/api/modpacks", tags=["modpacks"])
 
@@ -350,6 +352,49 @@ async def upload_and_extract(
         if temp_file.exists():
             temp_file.unlink()
         busy_guard.__exit__(None, None, None)
+
+
+# ── Borrar modpack completo ────────────────────────────────────────────────────
+
+@router.delete("/{modpack}")
+async def delete_modpack(modpack: str):
+    """
+    Borra la carpeta entera del modpack (mundos, config, kubejs, mods, logs...
+    todo). La triple confirmación ("¿seguro? / los mundos y config se pierden /
+    última oportunidad") vive en el frontend (manage.js) — acá solo quedan las
+    comprobaciones de que sea seguro hacerlo ya mismo, mismo criterio que
+    auto_update.restart_now(): ni con el servidor de este modpack en marcha ni
+    con una operación en curso (subida/instalación de mods, creación de otro
+    servidor...) que pudiera estar tocando esta misma carpeta.
+    """
+    base = DEFAULT_SERVERS_PATH / modpack
+    try:
+        base.resolve().relative_to(DEFAULT_SERVERS_PATH.resolve())
+    except ValueError:
+        raise HTTPException(status_code=403, detail="Ruta no permitida")
+    if not base.exists() or not base.is_dir():
+        raise HTTPException(status_code=404, detail="El modpack no existe")
+
+    with proc_module.mc_process_lock:
+        server_running = (
+            proc_module.mc_running_modpack == modpack
+            and proc_module.mc_process is not None
+            and proc_module.mc_process.poll() is None
+        )
+    if server_running:
+        raise HTTPException(
+            status_code=409,
+            detail=f"No se puede borrar: el servidor de '{modpack}' está en marcha. Detenlo primero.",
+        )
+    if is_busy():
+        raise HTTPException(
+            status_code=409,
+            detail=f"No se puede borrar: hay una operación en curso ({', '.join(busy_reasons())}).",
+        )
+
+    with BusyGuard(f"borrando modpack '{modpack}'"):
+        await asyncio.to_thread(shutil.rmtree, base)
+    return JSONResponse({"success": True})
 
 
 # ── Versión y mods ─────────────────────────────────────────────────────────────
