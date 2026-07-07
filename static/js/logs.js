@@ -69,22 +69,21 @@ function loadLogFile(filename) {
     .then(function(data) {
       rawLogContent = data.content;
       renderLog();
+      // analyze_crash() (services/modpack.py) devuelve una lista plana de
+      // strings ("Posible culpable: X"), no un objeto {mods, caused_by} —
+      // antes se leía como si lo fuera, lo que lanzaba un TypeError acá
+      // (culprits.mods es undefined en un array) y el catch de abajo pisaba
+      // el log ya renderizado con "Error al cargar archivo".
       var culprits = data.culprits;
-      if (culprits && (culprits.mods.length || culprits.caused_by.length)) {
+      if (culprits && culprits.length) {
         culpritBox.style.display = 'block';
-        var modsHtml;
-        if (culprits.mods.length) {
-          modsHtml = culprits.mods.map(function(modName) {
+        document.getElementById('crash-culprit-mods').innerHTML = culprits
+          .map(function(line) {
             return '<code style="display:inline-block;margin:2px 4px 2px 0;background:rgba(248,81,73,.15);color:var(--red);padding:1px 6px;border-radius:4px">'
-              + escHtml(modName) + '</code>';
-          }).join('');
-        } else {
-          modsHtml = '<span style="color:var(--muted)">No se pudo identificar un mod concreto</span>';
-        }
-        document.getElementById('crash-culprit-mods').innerHTML = modsHtml;
-        document.getElementById('crash-caused-by').innerHTML = culprits.caused_by
-          .map(function(line) { return '<div>' + escHtml(line) + '</div>'; })
+              + escHtml(line) + '</code>';
+          })
           .join('');
+        document.getElementById('crash-caused-by').innerHTML = '';
       }
     })
     .catch(function() {
