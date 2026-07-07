@@ -338,6 +338,14 @@ function updateDlInstallBtnAppearance() {
   if (dlInstallBusy) {
     return;
   }
+  // El botón vive en la tarjeta "4 · Instalar modpack", separada de donde
+  // aparece el aviso de "Comprobando si ya está instalado..." (tarjeta "2");
+  // sin este texto en el propio botón, mientras se comprueba solo se veía
+  // deshabilitado sin ninguna pista de por qué, como si estuviera roto.
+  if (dlDuplicateCheckPending) {
+    btn.innerHTML = '🔍 Comprobando si ya está instalado...';
+    return;
+  }
   if (dlInstallBlocked) {
     btn.innerHTML = '🚫 Descarga bloqueada por el autor';
     return;
