@@ -473,7 +473,8 @@ function uploadMod(file) {
       setModOperationBusy(false);
       modFileInput.value = '';
       if (result.ok && result.data.success && result.data.needs_confirmation && result.data.needs_confirmation.length) {
-        // Versión más antigua que la instalada: mismo flujo de confirmación que la subida masiva.
+        // Necesita confirmación (versión más antigua o parece solo de cliente):
+        // mismo flujo que la subida masiva, reusado tal cual.
         renderBulkResult(result.data);
       } else if (result.ok && result.data.success) {
         var info = '';
@@ -512,6 +513,36 @@ function uploadMod(file) {
 var lastBulkData = null;
 var MOD_MODAL_PAGE_SIZE = 10;
 
+// needs_confirmation mezcla dos motivos bien distintos (item.reason):
+// "downgrade" (versión más antigua que la instalada) y "client_only" (mod
+// que parece ser solo de cliente) — mismo criterio que ya usaba
+// openDowngradeModal() para el título del modal de detalle, reusado acá para
+// que el resumen de arriba (antes de entrar al detalle) también diga lo
+// correcto en vez de asumir siempre "versión anterior".
+var NEEDS_CONFIRMATION_LABELS = {
+  downgrade: {
+    title: 'Mods con versión más antigua que la instalada',
+    many: function(n) { return n + ' mods requieren verificación de versión anterior'; },
+    fewPrefix: 'Verificación para pasar a versión anterior: ',
+  },
+  client_only: {
+    title: 'Mods que parecen ser solo de cliente',
+    many: function(n) { return n + ' mods parecen ser solo de cliente'; },
+    fewPrefix: 'Parecen ser solo de cliente: ',
+  },
+};
+var NEEDS_CONFIRMATION_MIXED = {
+  title: 'Mods que necesitan confirmación',
+  many: function(n) { return n + ' mods necesitan confirmación (versión anterior o solo cliente)'; },
+  fewPrefix: 'Necesitan confirmación: ',
+};
+
+function needsConfirmationLabels(items) {
+  var reasons = items.reduce(function(set, it) { set[it.reason || 'downgrade'] = true; return set; }, {});
+  var reasonKeys = Object.keys(reasons);
+  return (reasonKeys.length === 1 && NEEDS_CONFIRMATION_LABELS[reasonKeys[0]]) || NEEDS_CONFIRMATION_MIXED;
+}
+
 var BULK_CATEGORIES = [
   {
     key: 'added', icon: '✅', color: 'var(--green)', modalTitle: 'Mods agregados', modalType: 'list',
@@ -524,9 +555,8 @@ var BULK_CATEGORIES = [
     fewPrefix: 'Ya están instalados los mods: '
   },
   {
-    key: 'needs_confirmation', icon: '⚠️', color: 'var(--yellow)', modalTitle: 'Mods con versión más antigua', modalType: 'downgrade',
-    many: function(n) { return n + ' mods requieren verificación de versión anterior'; },
-    fewPrefix: 'Verificación para pasar a versión anterior: ', alwaysClickable: true
+    key: 'needs_confirmation', icon: '⚠️', color: 'var(--yellow)', modalType: 'downgrade',
+    dynamicLabels: true, alwaysClickable: true
   },
   {
     key: 'errors', icon: '❌', color: 'var(--red)', modalTitle: 'Mods con error', modalType: 'list',
@@ -662,18 +692,22 @@ function renderBulkResult(data) {
     var names = items.map(function(it) {
       return it.display_name + (cat.key === 'errors' && it.detail ? ' (' + it.detail + ')' : '');
     });
+    // needs_confirmation no tiene texto fijo: el motivo real (versión
+    // anterior vs. solo-cliente) solo se sabe mirando los items de este lote
+    // en concreto (ver needsConfirmationLabels).
+    var labels = cat.dynamicLabels ? needsConfirmationLabels(items) : cat;
     if (items.length <= 2 && !cat.alwaysClickable) {
       return '<div class="bulk-result-row"><span class="bulk-result-icon">' + cat.icon + '</span>'
-        + '<span style="color:' + cat.color + '">' + escHtml(cat.fewPrefix) + '<b>' + names.map(escHtml).join('</b>, <b>') + '</b></span></div>';
+        + '<span style="color:' + cat.color + '">' + escHtml(labels.fewPrefix) + '<b>' + names.map(escHtml).join('</b>, <b>') + '</b></span></div>';
     }
     if (items.length <= 2) {
       // needs_confirmation con pocos mods: texto clicable que abre el mismo formulario
       return '<div class="bulk-result-row clickable" style="color:' + cat.color + '" data-bulk-cat="' + cat.key + '">'
         + '<span class="bulk-result-icon">' + cat.icon + '</span>'
-        + '<span class="bulk-result-link">' + escHtml(cat.fewPrefix) + '<b>' + names.map(escHtml).join('</b>, <b>') + '</b></span></div>';
+        + '<span class="bulk-result-link">' + escHtml(labels.fewPrefix) + '<b>' + names.map(escHtml).join('</b>, <b>') + '</b></span></div>';
     }
     return '<div class="bulk-result-row clickable" style="color:' + cat.color + '" data-bulk-cat="' + cat.key + '">'
-      + '<span class="bulk-result-icon">' + cat.icon + '</span><span class="bulk-result-link">' + escHtml(cat.many(items.length)) + '</span></div>';
+      + '<span class="bulk-result-icon">' + cat.icon + '</span><span class="bulk-result-link">' + escHtml(labels.many(items.length)) + '</span></div>';
   }).join('');
 
   setModUploadModalBody(rows || '<div class="bulk-result-row" style="color:var(--muted)">No se procesó ningún mod.</div>');
