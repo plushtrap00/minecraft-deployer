@@ -186,11 +186,85 @@ document.getElementById('net-toggle-track').addEventListener('click', function()
     });
 });
 
+// Antes de arrancar se hace un chequeo rápido (GET /pending-mods, solo lee un
+// JSON) de si queda algo pendiente. Si no hay nada, se arranca directo sin
+// más — pero si SÍ hay algo, puede que ya se haya resuelto por una vía que la
+// app no ve sola (un mod copiado a mano por SFTP en vez de subido desde el
+// panel), así que se dispara un re-chequeo completo con progreso (SSE: abre
+// cada mod instalado para comparar su mod_id/versión real) antes de decidir
+// si de verdad hay que bloquear el arranque. Por eso la ruedita de "Comprobando
+// mods pendientes..." solo aparece cuando hacía falta — el caso normal (sin
+// nada pendiente) arranca sin ningún paso extra.
 function startServer(modpack) {
   var dot = document.getElementById('status-dot');
   dot.className = 'status-dot starting';
-  document.getElementById('status-text').textContent = 'Iniciando ' + modpack + '...';
   document.getElementById('server-picker').style.display = 'none';
+
+  apiFetch('/api/modpacks/' + encodeURIComponent(modpack) + '/pending-mods')
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      if (data.pending_mods && data.pending_mods.length) {
+        recheckPendingModsThenStart(modpack);
+      } else {
+        _launchServer(modpack);
+      }
+    })
+    .catch(function() {
+      // Si el chequeo rápido falla por lo que sea, no se deja bloqueado el
+      // arranque: se intenta igual, apoyándose en el chequeo síncrono que
+      // hace /api/server/start de todas formas.
+      _launchServer(modpack);
+    });
+}
+
+function recheckPendingModsThenStart(modpack) {
+  document.getElementById('status-text').textContent = 'Comprobando mods pendientes...';
+
+  var streamUrl = '/api/modpacks/' + encodeURIComponent(modpack) + '/pending-mods/stream?token=' + encodeURIComponent(authToken);
+  var checkSource = new EventSource(streamUrl);
+  var settled = false;
+
+  function finishCheck(pendingMods) {
+    if (settled) {
+      return;
+    }
+    settled = true;
+    checkSource.close();
+    if (pendingMods && pendingMods.length) {
+      applyServerState(false, null);
+      showAlert(
+        'Este modpack dio error al descargar estos mods: ' + pendingMods.join(', ')
+          + '. Instálalos manualmente en Gestionar → Mods → importar carpeta/mods uno a uno.',
+        '⏳'
+      );
+      return;
+    }
+    _launchServer(modpack);
+  }
+
+  checkSource.onmessage = function(event) {
+    var data;
+    try {
+      data = JSON.parse(event.data);
+    } catch (e) {
+      return;
+    }
+    if (data.type === 'progress') {
+      document.getElementById('status-text').textContent =
+        'Comprobando mods pendientes... (' + data.index + '/' + data.total + ')';
+    } else if (data.type === 'done') {
+      finishCheck(data.pending_mods);
+    }
+  };
+  checkSource.onerror = function() {
+    // No se deja bloqueado el arranque por un stream caído: se sigue igual,
+    // apoyándose en el chequeo síncrono que hace /api/server/start de todas formas.
+    finishCheck([]);
+  };
+}
+
+function _launchServer(modpack) {
+  document.getElementById('status-text').textContent = 'Iniciando ' + modpack + '...';
 
   var form = new FormData();
   form.append('modpack', modpack);

@@ -11,6 +11,7 @@ Rutas:
 - DELETE    /api/modpacks/{modpack}
 - GET       /api/modpacks/{modpack}/version
 - GET       /api/modpacks/{modpack}/pending-mods
+- GET       /api/modpacks/{modpack}/pending-mods/stream
 - GET       /api/modpacks/{modpack}/mods
 - GET       /api/modpacks/{modpack}/mods/duplicates
 - POST      /api/modpacks/{modpack}/mods/upload
@@ -56,7 +57,7 @@ from services.modpack import (
     detect_installed_mods, has_mod_keyword,
     parse_server_properties, save_server_property,
     get_worlds, analyze_crash, classify_installed_mods,
-    prune_old_logs_and_crashes, get_pending_mods, resolve_pending_mods,
+    prune_old_logs_and_crashes, get_pending_mods, resolve_pending_mods, check_pending_mods_stream,
 )
 from services.players import (
     ensure_global_dir, read_global_file, write_global_file, PLAYER_FILES,
@@ -407,8 +408,29 @@ async def get_modpack_version(modpack: str):
 
 @router.get("/{modpack}/pending-mods")
 async def get_pending_mods_route(modpack: str):
-    """Mods que quedaron sin descargar al instalar (ver services/modpack.get_pending_mods) — usado por el aviso de la pestaña Mods."""
+    """Mods que quedaron sin descargar al instalar (ver services/modpack.get_pending_mods) — lectura rápida, sin abrir jars. Usado por el aviso de la pestaña Mods y como primer chequeo antes de iniciar el servidor."""
     return JSONResponse({"pending_mods": get_pending_mods(modpack)})
+
+
+@router.get("/{modpack}/pending-mods/stream")
+async def get_pending_mods_stream(modpack: str):
+    """
+    Re-chequeo completo con progreso (ver services/modpack.check_pending_mods_stream):
+    abre cada mod instalado para comparar su mod_id/versión real contra lo
+    pendiente, por si se resolvió por una vía que el panel no ve directamente
+    (copiado a mano por SFTP). El botón "Iniciar servidor" solo llama a esto
+    cuando /pending-mods ya dijo que queda algo — si no hay nada pendiente, se
+    salta este paso entero y arranca directo.
+    """
+    async def event_stream():
+        for event in check_pending_mods_stream(modpack):
+            yield f"data: {json.dumps(event)}\n\n"
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @router.get("/{modpack}/mods")
