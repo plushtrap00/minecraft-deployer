@@ -3,10 +3,10 @@ routes/config_admin.py - Panel de administración: editar .env y .APP_CONSTANTS.
 
 Solo accesible para el rol admin (mismo criterio que gestión de usuarios y
 firewall: acciones de infraestructura, no de uso normal del panel). Los
-cambios no se aplican en caliente — hace falta reiniciar la app, para lo
-cual este mismo panel ofrece un botón que reusa el mecanismo ya existente de
-services/auto_update.py (mismo aviso de seguridad: no reinicia si hay un
-servidor de Minecraft corriendo o una operación en curso).
+cambios no se aplican en caliente — al guardar el .env o las constantes, el
+frontend ofrece reiniciar la app en el momento, reusando el mecanismo ya
+existente de services/auto_update.py (mismo aviso de seguridad: no reinicia
+si hay un servidor de Minecraft corriendo o una operación en curso).
 
 Rutas:
 - GET  /api/admin/env        → variables de .env conocidas (sin hashes de contraseña)
@@ -64,6 +64,20 @@ class EnvUpdateBody(BaseModel):
 async def update_env(request: Request, body: EnvUpdateBody):
     _require_admin(request)
 
+    # Solo se ofrece reiniciar (y solo se toca el disco) si algo cambió de
+    # verdad — comparado contra lo que ya hay en .env, no contra lo último
+    # que este proceso leyó al arrancar. Una contraseña nueva siempre cuenta
+    # como cambio: al ser un campo write-only (se guarda ya hasheada) no hay
+    # nada previo con qué compararla.
+    current = dotenv_values(_ENV_PATH) if _ENV_PATH.exists() else {}
+    changed = bool(body.new_password) or any(
+        str(current.get(key, "")) != str(value)
+        for key, value in body.values.items()
+        if key in _ENV_EDITABLE_KEYS
+    )
+    if not changed:
+        return JSONResponse({"success": True, "changed": False})
+
     try:
         if body.new_password:
             if len(body.new_password) < 8:
@@ -95,7 +109,8 @@ async def update_env(request: Request, body: EnvUpdateBody):
         print(f"[config-admin] Error inesperado guardando .env: {e!r}", flush=True)
         raise HTTPException(status_code=500, detail=f"Error inesperado al guardar .env: {e}")
 
-    return JSONResponse({"success": True})
+    auto_update.mark_restart_pending()
+    return JSONResponse({"success": True, "changed": True})
 
 
 @router.get("/constants")
@@ -112,10 +127,12 @@ class ConstantsUpdateBody(BaseModel):
 async def update_constants(request: Request, body: ConstantsUpdateBody):
     _require_admin(request)
     try:
-        await asyncio.to_thread(app_constants.save, body.values)
+        changed = await asyncio.to_thread(app_constants.save, body.values)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    return JSONResponse({"success": True})
+    if changed:
+        auto_update.mark_restart_pending()
+    return JSONResponse({"success": True, "changed": changed})
 
 
 @router.post("/restart")

@@ -151,7 +151,7 @@ function updateSysmonBadge() {
     return;
   }
   var status = lastAutoUpdateStatus;
-  var hasUpdate = !autoUpdateRestarting && !!(status && status.enabled && status.commits_behind > 0);
+  var hasUpdate = !autoUpdateRestarting && !!(status && ((status.enabled && status.commits_behind > 0) || status.restart_pending));
   badge.style.display = hasUpdate ? '' : 'none';
 }
 
@@ -164,6 +164,9 @@ document.getElementById('sysmon-body').addEventListener('click', function(event)
   }
   if (event.target.closest('#auto-update-check-btn')) {
     checkForUpdatesNow();
+  }
+  if (event.target.closest('#sysmon-restart-btn')) {
+    doAppRestart(document.getElementById('sysmon-restart-btn'));
   }
 });
 
@@ -308,8 +311,36 @@ function renderSysmon(stats) {
   html += '</div>';
 
   html += renderAutoUpdateSection();
+  html += renderRestartPendingSection();
 
   document.getElementById('sysmon-body').innerHTML = html;
+}
+
+// Aparece solo cuando queda un cambio de .env o de constantes guardado pero
+// sin aplicar (ver "Más tarde" en el diálogo que ofrece config_admin.js justo
+// tras guardar, y restart_pending en services/auto_update.py) — mismo patrón
+// de "bloqueado por X" que la sección de auto-actualización de arriba, para
+// que el motivo sea igual de visible en los dos casos.
+function renderRestartPendingSection() {
+  var status = lastAutoUpdateStatus;
+  if (!status || !status.restart_pending || autoUpdateRestarting) {
+    return '';
+  }
+  var blockedReason = status.server_running
+    ? 'hay un servidor de Minecraft en marcha'
+    : (status.busy ? status.busy_reasons.join(', ') : null);
+
+  var html = '<div class="sysmon-section">';
+  html += '<div class="sysmon-section-title">⚡ Reinicio pendiente</div>';
+  html += '<span class="sysmon-no-temps">Guardaste cambios de .env o de constantes que todavía no se aplicaron.</span>';
+  html += '<div style="margin-top:6px;display:flex;flex-direction:column;gap:4px;align-items:flex-start">';
+  html += '<button type="button" class="btn-secondary btn-sm" id="sysmon-restart-btn"'
+    + (blockedReason ? ' disabled' : '') + '>🔄 Reiniciar ahora</button>';
+  if (blockedReason) {
+    html += '<span class="sysmon-no-temps">Bloqueado: ' + escHtml(blockedReason) + '</span>';
+  }
+  html += '</div></div>';
+  return html;
 }
 
 function autoUpdateRow(label, value, valueColor) {

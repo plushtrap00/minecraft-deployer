@@ -4,8 +4,8 @@ var CFG_ENV_TEXT_KEYS = [
   'MC_DOMAIN', 'CURSEFORGE_API_KEY', 'AUTO_UPDATE_INTERVAL_SECONDS',
 ];
 
-// -- Sub-pestañas: Variables de entorno / Constantes de la app / Aplicar cambios --
-['env', 'constants', 'restart'].forEach(function(name) {
+// -- Sub-pestañas: Variables de entorno / Constantes de la app --------------
+['env', 'constants'].forEach(function(name) {
   document.getElementById('cfgtab-' + name).addEventListener('click', function() {
     activateCfgTab(name);
   });
@@ -36,10 +36,6 @@ function loadAdminConfig() {
       document.getElementById('config-constants-form').innerHTML =
         '<p class="empty-msg" style="color:var(--red)">Error al cargar</p>';
     });
-
-  var restartBtn = document.getElementById('cfg-restart-btn');
-  restartBtn.disabled = false;
-  restartBtn.textContent = '🔄 Reiniciar la app ahora';
 }
 
 function populateEnvForm(data) {
@@ -70,18 +66,47 @@ function populateEnvForm(data) {
   });
 }
 
+// Orden e icono de cada sección en la que se agrupan las constantes, para no
+// mostrarlas todas juntas en una lista larga (ver campo "category" que manda
+// app_constants.py junto a cada valor).
+var CFG_CONSTANT_CATEGORY_ORDER = [
+  ['Logs', '📋'],
+  ['Servidor de Minecraft', '🖥️'],
+  ['Auto-actualización', '🔄'],
+  ['Mods y modpacks', '🧩'],
+  ['Sesión y login', '🔐'],
+  ['Otros', '🗄️'],
+];
+
 function renderConstantsForm(data) {
   var container = document.getElementById('config-constants-form');
-  var html = '<div class="props-grid">';
+  var byCategory = {};
   Object.keys(data).forEach(function(key) {
     var entry = data[key];
-    html += '<div class="prop-field">'
-      + '<label class="prop-label">' + escHtml(key) + '</label>'
-      + '<input type="number" class="w-full cfg-constant-input" data-key="' + escHtml(key) + '" value="' + escHtml(String(entry.value)) + '">'
-      + '<div class="field-hint">' + escHtml(entry.description) + '</div>'
-      + '</div>';
+    var category = entry.category || 'Otros';
+    (byCategory[category] = byCategory[category] || []).push({ key: key, entry: entry });
   });
-  html += '</div>';
+
+  var html = '';
+  CFG_CONSTANT_CATEGORY_ORDER.forEach(function(pair, index) {
+    var category = pair[0];
+    var icon = pair[1];
+    var items = byCategory[category];
+    if (!items || !items.length) {
+      return;
+    }
+    html += '<details class="help-section"' + (index === 0 ? ' open' : '') + '>'
+      + '<summary>' + icon + ' ' + escHtml(category) + '</summary>'
+      + '<div class="help-section-body"><div class="props-grid">';
+    items.forEach(function(item) {
+      html += '<div class="prop-field">'
+        + '<label class="prop-label">' + escHtml(item.key) + '</label>'
+        + '<input type="number" class="w-full cfg-constant-input" data-key="' + escHtml(item.key) + '" value="' + escHtml(String(item.entry.value)) + '">'
+        + '<div class="field-hint">' + escHtml(item.entry.description) + '</div>'
+        + '</div>';
+    });
+    html += '</div></div></details>';
+  });
   container.innerHTML = html;
 }
 
@@ -124,8 +149,12 @@ document.getElementById('cfg-save-env-btn').addEventListener('click', function()
     .then(function(result) {
       btn.disabled = false;
       if (result.ok) {
-        showToast('.env guardado. Reinicia la app para aplicar los cambios.', 'success');
         document.getElementById('cfg-env-new-password').value = '';
+        if (result.data.changed) {
+          offerAppRestart('.env guardado.');
+        } else {
+          showToast('No había cambios que guardar.', 'success');
+        }
       } else {
         showToast(result.data.detail || 'Error al guardar', 'error');
       }
@@ -155,7 +184,11 @@ document.getElementById('cfg-save-constants-btn').addEventListener('click', func
     .then(function(result) {
       btn.disabled = false;
       if (result.ok) {
-        showToast('Constantes guardadas. Reinicia la app para aplicar los cambios.', 'success');
+        if (result.data.changed) {
+          offerAppRestart('Constantes guardadas.');
+        } else {
+          showToast('No había cambios que guardar.', 'success');
+        }
       } else {
         showToast(result.data.detail || 'Error al guardar', 'error');
       }
@@ -166,14 +199,37 @@ document.getElementById('cfg-save-constants-btn').addEventListener('click', func
     });
 });
 
+// Se ofrece reiniciar justo tras guardar un cambio real en el .env o las
+// constantes (el backend ya filtró el caso de "guardar sin tocar nada" — ver
+// el campo "changed" de la respuesta), pero es una decisión del usuario, no
+// automática: "Más tarde" dispara loadAutoUpdateStatus() para que el aviso de
+// reinicio pendiente aparezca ya mismo en el monitor de sistema (sysmon.js),
+// sin esperar a su siguiente sondeo periódico.
+function offerAppRestart(savedMessage) {
+  showConfirm(
+    savedMessage,
+    'Los cambios no se aplican hasta reiniciar la app. ¿Reiniciarla ahora? (no reinicia si hay un servidor de Minecraft corriendo o una operación en curso)',
+    doAppRestart,
+    {
+      icon: '✅',
+      confirmLabel: 'Reiniciar ahora',
+      cancelLabel: 'Más tarde',
+      confirmColor: 'var(--accent)',
+      onCancel: function() { loadAutoUpdateStatus(); },
+    }
+  );
+}
+
 // El reinicio en sí se sigue con el mismo poll compartido de sysmon.js
-// (beginRestartWatch), que ya corre siempre en segundo plano: así este botón
-// bloquea la app con el mismo overlay global en vez de tener su propio poll
-// y su propio texto de estado duplicados.
-document.getElementById('cfg-restart-btn').addEventListener('click', function() {
-  var btn = this;
-  btn.disabled = true;
-  btn.textContent = 'Reiniciando...';
+// (beginRestartWatch), que ya corre siempre en segundo plano: así se bloquea
+// la app con el mismo overlay global en vez de tener su propio poll y su
+// propio texto de estado duplicados. btn es opcional (lo usa el botón de
+// reinicio pendiente del monitor de sistema para desactivarse mientras dura
+// la petición; el diálogo de confirmación no necesita uno propio).
+function doAppRestart(btn) {
+  if (btn) {
+    btn.disabled = true;
+  }
   apiFetch('/api/admin/restart', { method: 'POST' })
     .then(function(response) {
       return response.json().then(function(data) { return { ok: response.ok, data: data }; });
@@ -184,8 +240,9 @@ document.getElementById('cfg-restart-btn').addEventListener('click', function() 
         beginRestartWatch('Aplicando los cambios de configuración...', 'Esto puede tardar unos segundos. No cierres esta pestaña.');
       } else {
         showToast(result.data.detail || 'No se pudo reiniciar', 'error');
-        btn.disabled = false;
-        btn.textContent = '🔄 Reiniciar la app ahora';
+        if (btn) {
+          btn.disabled = false;
+        }
       }
     })
     .catch(function() {
@@ -194,4 +251,4 @@ document.getElementById('cfg-restart-btn').addEventListener('click', function() 
       showToast('Reiniciando la app...', 'success');
       beginRestartWatch('Aplicando los cambios de configuración...', 'Esto puede tardar unos segundos. No cierres esta pestaña.');
     });
-});
+}

@@ -88,16 +88,25 @@ function showAlert(msg, icon) {
   overlay.classList.add('show');
 }
 
-function showConfirm(title, msg, onConfirm) {
+// options es opcional: { icon, confirmLabel, cancelLabel, confirmColor, onCancel }
+// — por defecto se comporta igual que antes (confirmación destructiva en
+// rojo), pero permite reusar el mismo diálogo para acciones no destructivas
+// (p.ej. "¿reiniciar la app ahora o más tarde?") con textos y color propios.
+function showConfirm(title, msg, onConfirm, options) {
+  options = options || {};
   var overlay = document.getElementById('dialog-overlay');
-  document.getElementById('dialog-icon').textContent = '⚠️';
+  document.getElementById('dialog-icon').textContent = options.icon || '⚠️';
   document.getElementById('dialog-title').textContent = title;
   document.getElementById('dialog-msg').textContent = msg;
   var btns = document.getElementById('dialog-buttons');
-  btns.innerHTML = '<button class="btn-secondary" id="dialog-cancel">Cancelar</button>'
-    + '<button id="dialog-ok" style="background:var(--red);color:#fff">Confirmar</button>';
+  var confirmColor = options.confirmColor || 'var(--red)';
+  btns.innerHTML = '<button class="btn-secondary" id="dialog-cancel">' + escHtml(options.cancelLabel || 'Cancelar') + '</button>'
+    + '<button id="dialog-ok" style="background:' + confirmColor + ';color:#fff">' + escHtml(options.confirmLabel || 'Confirmar') + '</button>';
   document.getElementById('dialog-cancel').addEventListener('click', function() {
     overlay.classList.remove('show');
+    if (options.onCancel) {
+      options.onCancel();
+    }
   });
   document.getElementById('dialog-ok').addEventListener('click', function() {
     overlay.classList.remove('show');

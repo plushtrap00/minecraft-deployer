@@ -47,6 +47,29 @@ DEFAULTS = {
     "MODPACK_DUPLICATE_MATCH_THRESHOLD_PERCENT": 40,
 }
 
+# Agrupación de cada constante para el formulario del panel de administración
+# (que las separa en secciones plegables en vez de una lista larga única).
+CATEGORIES = {
+    "MAX_LOG_LINES": "Logs",
+    "LOG_CRASH_RETENTION_COUNT": "Logs",
+    "GRACEFUL_STOP_TIMEOUT_SECONDS": "Servidor de Minecraft",
+    "AUTO_UPDATE_CHECK_INITIAL_DELAY_SECONDS": "Auto-actualización",
+    "AUTO_UPDATE_GIT_TIMEOUT_SECONDS": "Auto-actualización",
+    "HTTP_TIMEOUT_SECONDS": "Mods y modpacks",
+    "MOD_DOWNLOAD_TIMEOUT_SECONDS": "Mods y modpacks",
+    "MOD_SEARCH_CATEGORIES_CACHE_TTL_SECONDS": "Mods y modpacks",
+    "CURSEFORGE_FILES_PAGE_SIZE": "Mods y modpacks",
+    "CURSEFORGE_FILES_MAX": "Mods y modpacks",
+    "CURSEFORGE_BULK_FILES_CHUNK": "Mods y modpacks",
+    "MOD_SEARCH_PAGE_SIZE": "Mods y modpacks",
+    "MODPACK_DUPLICATE_MATCH_THRESHOLD_PERCENT": "Mods y modpacks",
+    "JWT_TOKEN_EXPIRE_HOURS": "Sesión y login",
+    "LOGIN_MAX_FAILED_ATTEMPTS": "Sesión y login",
+    "LOGIN_ATTEMPT_WINDOW_SECONDS": "Sesión y login",
+    "LOGIN_LOCKOUT_SECONDS": "Sesión y login",
+    "TEMP_DIR_MAX_AGE_SECONDS": "Otros",
+}
+
 # Texto explicativo para el formulario del panel de administración.
 DESCRIPTIONS = {
     "MAX_LOG_LINES": "Líneas de consola que se guardan en memoria para el visor de logs en vivo.",
@@ -117,23 +140,39 @@ def get_all() -> dict:
     """
     current = _load()
     return {
-        key: {"value": current.get(key, DEFAULTS[key]), "description": DESCRIPTIONS.get(key, "")}
+        key: {
+            "value": current.get(key, DEFAULTS[key]),
+            "description": DESCRIPTIONS.get(key, ""),
+            "category": CATEGORIES.get(key, "Otros"),
+        }
         for key in DEFAULTS
     }
 
 
-def save(new_values: dict) -> None:
+def save(new_values: dict) -> bool:
     """
     Valida que sean todas números enteros y escribe .APP_CONSTANTS. No aplica
     en caliente: como el resto de módulos leen estos valores una sola vez al
     importarse, hace falta reiniciar la app para que tomen efecto.
+
+    Devuelve si algo cambió de verdad respecto a lo que ya había en disco —
+    el panel de administración lo usa para no ofrecer un reinicio cuando el
+    usuario guarda sin haber tocado ningún valor. Parte de _load() (no de
+    _values, la copia cacheada al importar el módulo) para comparar contra el
+    estado real en disco, no contra uno que puede llevar rato desactualizado.
     """
-    merged = dict(_values)
+    merged = _load()
+    changed = False
     for key, raw in new_values.items():
         if key not in DEFAULTS:
             continue
         try:
-            merged[key] = int(raw)
+            parsed = int(raw)
         except (TypeError, ValueError):
             raise ValueError(f'"{key}" debe ser un número entero')
-    _CONSTANTS_PATH.write_text(json.dumps(merged, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        if merged.get(key) != parsed:
+            changed = True
+        merged[key] = parsed
+    if changed:
+        _CONSTANTS_PATH.write_text(json.dumps(merged, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    return changed

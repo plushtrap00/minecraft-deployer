@@ -44,6 +44,18 @@ _status = {
     "last_error": None,
 }
 
+# Se enciende cuando se guarda un cambio real en .env o .APP_CONSTANTS (ver
+# routes/config_admin.py) para que el panel pueda ofrecer reiniciar más tarde
+# desde el monitor de sistema, no solo en el momento de guardar. No hace
+# falta apagarlo a mano: al reiniciar, este módulo se reimporta desde cero y
+# vuelve a False solo.
+_restart_pending = False
+
+
+def mark_restart_pending() -> None:
+    global _restart_pending
+    _restart_pending = True
+
 
 def _log(message: str) -> None:
     print(f"[auto-update] {message}", flush=True)
@@ -205,4 +217,5 @@ def get_status() -> dict:
         "server_running": _server_running(),
         "busy": is_busy(),
         "busy_reasons": busy_reasons(),
+        "restart_pending": _restart_pending,
     }
