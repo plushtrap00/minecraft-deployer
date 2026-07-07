@@ -289,6 +289,7 @@
       </h2>
       <div class="mgmt-tabs" id="mgmt-panel-tabs">
         <button class="mgmt-tab active" id="mtab-props">📄 server.properties</button>
+        <button class="mgmt-tab" id="mtab-ram">🧠 RAM</button>
         <button class="mgmt-tab" id="mtab-configs">🔧 Config de mods</button>
         <button class="mgmt-tab" id="mtab-kubejs">📜 KubeJS</button>
         <button class="mgmt-tab" id="mtab-worldfiles">🗺️ Archivos de mundo</button>
@@ -532,6 +533,14 @@
 
         <!-- Hidden full content store -->
         <textarea id="props-editor" style="display:none" spellcheck="false"></textarea>
+      </div>
+    </div>
+
+    <!-- RAM de la JVM -->
+    <div class="mgmt-content" id="mgmt-ram">
+      <div class="card">
+        <div class="info-box">Cada modpack guarda la RAM en un sitio distinto según cómo esté instalado (<code>user_jvm_args.txt</code>, <code>variables.txt</code>, o embebida en su propio script de arranque) — el panel detecta cuál usa este antes de dejarte tocar nada. Los cambios <strong>requieren reiniciar el servidor</strong> para aplicarse.</div>
+        <div id="ram-cfg-body"><p class="empty-msg">Detectando configuración de RAM...</p></div>
       </div>
     </div>
 

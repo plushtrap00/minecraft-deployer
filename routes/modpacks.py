@@ -3,6 +3,7 @@ routes/modpacks.py - Endpoints de configuración y contenido de modpacks.
 
 Rutas:
 - GET/POST  /api/modpacks/{modpack}/server-properties
+- GET/POST  /api/modpacks/{modpack}/ram
 - GET/POST  /api/modpacks/{modpack}/config-file
 - GET       /api/modpacks/{modpack}/configs
 - GET/POST  /api/modpacks/{modpack}/kubejs-file
@@ -50,7 +51,7 @@ from pydantic import BaseModel
 from config import DEFAULT_SERVERS_PATH, TEMP_DIR
 from app_constants import TEMP_DIR_MAX_AGE_SECONDS
 from routes.auth import require_admin
-from services.utils import get_mod_configs, get_kubejs_files, get_world_files, extract_archive, configure_jvm_ram, invalidate_kubejs_cache
+from services.utils import get_mod_configs, get_kubejs_files, get_world_files, extract_archive, configure_jvm_ram, detect_jvm_ram, invalidate_kubejs_cache
 from services.modpack import (
     detect_modpack_version, find_installed_mod_by_id, build_mod_id_index,
     mod_display_name, process_mod_jar, find_possible_duplicate_mods,
@@ -95,6 +96,49 @@ async def set_server_property(modpack: str, key: str = Form(...), value: str = F
         raise HTTPException(status_code=404, detail="server.properties no encontrado")
     save_server_property(modpack, key, value)
     return JSONResponse({"success": True, "key": key, "value": value})
+
+
+# ── RAM de la JVM ──────────────────────────────────────────────────────────────
+# La misma comprobación en tres pasos que ya usaba la importación de modpacks
+# (configure_jvm_ram/detect_jvm_ram en services/utils.py), reutilizada acá
+# para poder cambiar la RAM DESPUÉS de creado el servidor, no solo al crearlo.
+
+_RAM_VALUE_RE = re.compile(r'^\d+[MG]$', re.IGNORECASE)
+
+
+@router.get("/{modpack}/ram")
+async def get_ram(modpack: str):
+    server_dir = DEFAULT_SERVERS_PATH / modpack
+    if not server_dir.exists():
+        raise HTTPException(status_code=404, detail="El modpack no existe")
+    return JSONResponse(detect_jvm_ram(server_dir))
+
+
+class RamUpdateBody(BaseModel):
+    ram_min: str
+    ram_max: str
+
+
+@router.post("/{modpack}/ram")
+async def set_ram(modpack: str, body: RamUpdateBody):
+    server_dir = DEFAULT_SERVERS_PATH / modpack
+    if not server_dir.exists():
+        raise HTTPException(status_code=404, detail="El modpack no existe")
+    if not _RAM_VALUE_RE.match(body.ram_min) or not _RAM_VALUE_RE.match(body.ram_max):
+        raise HTTPException(status_code=400, detail="Formato de RAM inválido (ej: 4G, 2500M)")
+
+    source = await asyncio.to_thread(configure_jvm_ram, server_dir, body.ram_min, body.ram_max)
+    if not source:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "No se pudo detectar dónde configura este modpack la RAM (no tiene "
+                "user_jvm_args.txt, variables.txt, ni -Xms/-Xmx en su script de arranque). "
+                "Edítala a mano en la carpeta del servidor."
+            ),
+        )
+    return JSONResponse({"success": True, "source": source})
+
 
 # ── Archivos de config ─────────────────────────────────────────────────────────
 

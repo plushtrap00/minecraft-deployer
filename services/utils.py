@@ -8,7 +8,8 @@ Contiene:
 - get_kubejs_files(): árbol de archivos KubeJS
 - get_world_files(): árbol de archivos de texto editables de un mundo
 - extract_archive(): descomprimir ZIP/TAR/RAR
-- configure_jvm_ram(): modificar RAM en user_jvm_args.txt / variables.txt
+- detect_jvm_ram() / configure_jvm_ram(): leer/modificar RAM en
+  user_jvm_args.txt, variables.txt, o el propio script de arranque
 """
 import os
 import re
@@ -222,27 +223,95 @@ def extract_archive(archive_path: Path, dest_path: Path) -> dict:
         raise HTTPException(status_code=400, detail=f"Formato no soportado: {filename}")
 
 
+# Cada modpack puede guardar la RAM de la JVM en un sitio distinto según cómo
+# se haya instalado, y no hay forma de saber cuál usa sin mirar — de ahí que
+# tanto detectar como modificar prueben, en el mismo orden de prioridad:
+# 1. user_jvm_args.txt: lo generan los instaladores oficiales de Forge/
+#    NeoForge modernos. -Xms/-Xmx pueden venir en líneas separadas o
+#    combinados en una sola (ej. "-Xmx12G -Xms4G"), y a veces con más flags
+#    JVM pegados en esa misma línea (ej. "-Xmx12G -Xms4G -XX:+UseG1GC") — por
+#    eso se sustituye el token exacto con regex en vez de reemplazar la línea
+#    entera, que perdería cualquier flag que compartiera línea con -Xmx/-Xms.
+# 2. variables.txt: formato más viejo (scripts de itzg/docker-minecraft-server
+#    y similares), con los flags dentro de JAVA_ARGS="...".
+# 3. El propio script de arranque (run.sh/start.sh/startserver.sh): vanilla,
+#    Fabric y Quilt (ver _write_run_script en services/server_create.py)
+#    embeben "-Xms... -Xmx..." directo en la línea "java ...", sin ningún
+#    archivo de configuración aparte.
+# Si no aparece en NINGUNO de los tres, se da por no detectable: mejor avisar
+# que "no se puede editar la RAM de este modpack desde aquí" que insertar
+# flags a ciegas en un script cuya estructura no se conoce.
+_XMS_RE = re.compile(r'-Xms\S+', re.IGNORECASE)
+_XMX_RE = re.compile(r'-Xmx\S+', re.IGNORECASE)
+_RAM_SCRIPT_NAMES = ("run.sh", "start.sh", "startserver.sh")
+
+
+def _detect_ram_in_text(text: str) -> tuple[str | None, str | None]:
+    xms_m = re.search(r'-Xms(\S+)', text, re.IGNORECASE)
+    xmx_m = re.search(r'-Xmx(\S+)', text, re.IGNORECASE)
+    return (xms_m.group(1) if xms_m else None, xmx_m.group(1) if xmx_m else None)
+
+
+def detect_jvm_ram(server_dir: Path) -> dict:
+    """
+    Detecta la RAM configurada actualmente, sin modificar nada. Devuelve
+    {"ram_min", "ram_max", "source"} — source es el nombre del archivo donde
+    se encontró (o None si no se pudo detectar en ninguno de los tres sitios
+    que prueba configure_jvm_ram()).
+    """
+    jvm_path = server_dir / "user_jvm_args.txt"
+    if jvm_path.exists():
+        active_text = "\n".join(
+            line for line in jvm_path.read_text(encoding="utf-8").splitlines()
+            if not line.lstrip().startswith("#")
+        )
+        ram_min, ram_max = _detect_ram_in_text(active_text)
+        if ram_min or ram_max:
+            return {"ram_min": ram_min, "ram_max": ram_max, "source": "user_jvm_args.txt"}
+
+    vars_path = server_dir / "variables.txt"
+    if vars_path.exists():
+        m = re.search(r'JAVA_ARGS\s*=\s*"([^"]*)"', vars_path.read_text(encoding="utf-8"), re.IGNORECASE)
+        if m:
+            ram_min, ram_max = _detect_ram_in_text(m.group(1))
+            if ram_min or ram_max:
+                return {"ram_min": ram_min, "ram_max": ram_max, "source": "variables.txt"}
+
+    for script_name in _RAM_SCRIPT_NAMES:
+        script_path = server_dir / script_name
+        if not script_path.exists():
+            continue
+        ram_min, ram_max = _detect_ram_in_text(script_path.read_text(encoding="utf-8", errors="replace"))
+        if ram_min or ram_max:
+            return {"ram_min": ram_min, "ram_max": ram_max, "source": script_name}
+
+    return {"ram_min": None, "ram_max": None, "source": None}
+
+
 def configure_jvm_ram(dest_path: Path, ram_min: str, ram_max: str) -> str | None:
     """
-    Modifica la configuración de RAM JVM en user_jvm_args.txt o variables.txt.
-    Devuelve el nombre del archivo modificado, o None si no se encontró ninguno.
+    Modifica la configuración de RAM JVM (ver detect_jvm_ram para dónde
+    busca). Devuelve el nombre del archivo modificado, o None si no se
+    encontró ninguno de los tres sitios conocidos (no se toca nada en ese caso).
     """
-    # Intentar user_jvm_args.txt primero
+    # 1. user_jvm_args.txt
     jvm_path = dest_path / "user_jvm_args.txt"
     if jvm_path.exists():
         lines = jvm_path.read_text(encoding="utf-8").splitlines(keepends=True)
         xms_found = xmx_found = False
         new_lines = []
         for line in lines:
-            stripped = line.strip()
-            if stripped.startswith("-Xms") and not stripped.startswith("#"):
-                new_lines.append(f"-Xms{ram_min}\n")
-                xms_found = True
-            elif stripped.startswith("-Xmx") and not stripped.startswith("#"):
-                new_lines.append(f"-Xmx{ram_max}\n")
-                xmx_found = True
-            else:
+            if line.lstrip().startswith("#"):
                 new_lines.append(line)
+                continue
+            new_line = line
+            if _XMS_RE.search(new_line):
+                new_line = _XMS_RE.sub(f"-Xms{ram_min}", new_line)
+                xms_found = True
+            if _XMX_RE.search(new_line):
+                new_line = _XMX_RE.sub(f"-Xmx{ram_max}", new_line)
+                xmx_found = True
+            new_lines.append(new_line)
         if not xms_found:
             new_lines.insert(0, f"-Xms{ram_min}\n")
         if not xmx_found:
@@ -250,33 +319,45 @@ def configure_jvm_ram(dest_path: Path, ram_min: str, ram_max: str) -> str | None
         jvm_path.write_text("".join(new_lines), encoding="utf-8")
         return "user_jvm_args.txt"
 
-    # Intentar variables.txt
+    # 2. variables.txt (JAVA_ARGS="...")
     vars_path = dest_path / "variables.txt"
     if vars_path.exists():
         content = vars_path.read_text(encoding="utf-8")
-        xms_found = bool(re.search(r'-Xms\S+', content, re.IGNORECASE))
-        xmx_found = bool(re.search(r'-Xmx\S+', content, re.IGNORECASE))
-        lines = content.splitlines(keepends=True)
-        new_lines = []
-        for line in lines:
-            # Buscar línea con JAVA_ARGS que contenga -Xms/-Xmx
-            if re.search(r'JAVA_ARGS\s*=', line, re.IGNORECASE):
-                # Extraer el valor entre comillas si existe
-                m = re.match(r'(\s*JAVA_ARGS\s*=\s*")([^"]*)"', line)
-                if m:
-                    args = m.group(2)
-                    args = re.sub(r'-Xms\S+', f'-Xms{ram_min}', args, flags=re.IGNORECASE)
-                    args = re.sub(r'-Xmx\S+', f'-Xmx{ram_max}', args, flags=re.IGNORECASE)
-                    if not xms_found:
-                        args = f'-Xms{ram_min} ' + args
-                    if not xmx_found:
-                        args = f'-Xmx{ram_max} ' + args
-                    new_lines.append(f'{m.group(1)}{args}"\n')
-                else:
+        if re.search(r'JAVA_ARGS\s*=', content, re.IGNORECASE):
+            xms_found = bool(_XMS_RE.search(content))
+            xmx_found = bool(_XMX_RE.search(content))
+            lines = content.splitlines(keepends=True)
+            new_lines = []
+            for line in lines:
+                # El tercer grupo captura desde la comilla de cierre hasta el
+                # final de la línea INCLUYENDO su salto de línea — con solo
+                # ".*" (sin \n) el \n final quedaba fuera de todos los grupos
+                # y se perdía al reconstruir la línea, fusionándola con la
+                # siguiente.
+                m = re.match(r'(\s*JAVA_ARGS\s*=\s*")([^"]*)("[^\n]*\n?)', line, re.IGNORECASE)
+                if not m:
                     new_lines.append(line)
-            else:
-                new_lines.append(line)
-        vars_path.write_text("".join(new_lines), encoding="utf-8")
-        return "variables.txt"
+                    continue
+                args = m.group(2)
+                args = _XMS_RE.sub(f"-Xms{ram_min}", args) if xms_found else f"-Xms{ram_min} " + args
+                args = _XMX_RE.sub(f"-Xmx{ram_max}", args) if xmx_found else f"-Xmx{ram_max} " + args
+                new_lines.append(f"{m.group(1)}{args}{m.group(3)}")
+            vars_path.write_text("".join(new_lines), encoding="utf-8")
+            return "variables.txt"
+
+    # 3. Script de arranque (vanilla/Fabric/Quilt): solo si YA tiene -Xms/-Xmx
+    # embebidos — insertarlos a ciegas en un script de estructura desconocida
+    # podría romperlo.
+    for script_name in _RAM_SCRIPT_NAMES:
+        script_path = dest_path / script_name
+        if not script_path.exists():
+            continue
+        text = script_path.read_text(encoding="utf-8", errors="replace")
+        if not (_XMS_RE.search(text) or _XMX_RE.search(text)):
+            continue
+        new_text = _XMS_RE.sub(f"-Xms{ram_min}", text)
+        new_text = _XMX_RE.sub(f"-Xmx{ram_max}", new_text)
+        script_path.write_text(new_text, encoding="utf-8")
+        return script_name
 
     return None
