@@ -52,6 +52,7 @@
 
 .mgmt-tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   margin-bottom: 0;
   border-bottom: 1px solid var(--border);
