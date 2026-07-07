@@ -543,6 +543,36 @@ function needsConfirmationLabels(items) {
   return (reasonKeys.length === 1 && NEEDS_CONFIRMATION_LABELS[reasonKeys[0]]) || NEEDS_CONFIRMATION_MIXED;
 }
 
+// Mismo criterio de reason que needsConfirmationLabels(), pero como
+// fragmento de frase en vez de etiqueta completa — para "N mods aceptados
+// aunque {fragmento}" / lo que haga falta.
+var FLAGGED_REASON_PHRASE = {
+  downgrade: 'con versión más antigua que la instalada',
+  client_only: 'categorizados como solo de cliente',
+};
+var FLAGGED_REASON_PHRASE_MIXED = 'marcados para revisión (versión anterior o solo cliente)';
+
+function flaggedReasonPhrase(items) {
+  var reasons = items.reduce(function(set, it) { set[it.reason || 'downgrade'] = true; return set; }, {});
+  var reasonKeys = Object.keys(reasons);
+  return (reasonKeys.length === 1 && FLAGGED_REASON_PHRASE[reasonKeys[0]]) || FLAGGED_REASON_PHRASE_MIXED;
+}
+
+function acceptedFlaggedLabels(items) {
+  var phrase = flaggedReasonPhrase(items);
+  return {
+    many: function(n) { return n + ' mods han sido aceptados por el usuario aunque fuesen ' + phrase; },
+    fewPrefix: 'Aceptados igualmente por el usuario: ',
+  };
+}
+
+function rejectedFlaggedLabels(items) {
+  return {
+    many: function(n) { return n + ' mods han sido rechazados por el usuario'; },
+    fewPrefix: 'Rechazados por el usuario: ',
+  };
+}
+
 var BULK_CATEGORIES = [
   {
     key: 'added', icon: '✅', color: 'var(--green)', modalTitle: 'Mods agregados', modalType: 'list',
@@ -557,6 +587,18 @@ var BULK_CATEGORIES = [
   {
     key: 'needs_confirmation', icon: '⚠️', color: 'var(--yellow)', modalType: 'downgrade',
     dynamicLabels: true, alwaysClickable: true
+  },
+  // Estas dos solo aparecen una vez resuelto un lote de needs_confirmation
+  // (ver updateBulkDataAfterDowngrade) — antes de eso no existen en los
+  // datos, así que renderBulkResult() las salta igual que cualquier
+  // categoría vacía.
+  {
+    key: 'accepted_flagged', icon: '✅', color: 'var(--green)', modalTitle: 'Mods instalados igualmente', modalType: 'list',
+    dynamicLabels: true, labelFn: acceptedFlaggedLabels
+  },
+  {
+    key: 'rejected_flagged', icon: '🚫', color: 'var(--muted)', modalTitle: 'Mods rechazados', modalType: 'list',
+    dynamicLabels: true, labelFn: rejectedFlaggedLabels
   },
   {
     key: 'errors', icon: '❌', color: 'var(--red)', modalTitle: 'Mods con error', modalType: 'list',
@@ -692,10 +734,10 @@ function renderBulkResult(data) {
     var names = items.map(function(it) {
       return it.display_name + (cat.key === 'errors' && it.detail ? ' (' + it.detail + ')' : '');
     });
-    // needs_confirmation no tiene texto fijo: el motivo real (versión
-    // anterior vs. solo-cliente) solo se sabe mirando los items de este lote
-    // en concreto (ver needsConfirmationLabels).
-    var labels = cat.dynamicLabels ? needsConfirmationLabels(items) : cat;
+    // needs_confirmation / accepted_flagged / rejected_flagged no tienen
+    // texto fijo: el motivo real (versión anterior vs. solo-cliente) solo se
+    // sabe mirando los items de este lote en concreto.
+    var labels = cat.dynamicLabels ? (cat.labelFn || needsConfirmationLabels)(items) : cat;
     if (items.length <= 2 && !cat.alwaysClickable) {
       return '<div class="bulk-result-row"><span class="bulk-result-icon">' + cat.icon + '</span>'
         + '<span style="color:' + cat.color + '">' + escHtml(labels.fewPrefix) + '<b>' + names.map(escHtml).join('</b>, <b>') + '</b></span></div>';
@@ -861,6 +903,7 @@ function submitDowngradeDecision(acceptFilenames) {
     .then(function(data) {
       if (data.success) {
         renderDowngradeResult(data);
+        updateBulkDataAfterDowngrade(data);
         loadModsList();
       } else {
         document.getElementById('mod-downgrade-modal-body').innerHTML = modErrorHtml(data.detail || 'Error al confirmar');
@@ -896,6 +939,23 @@ function renderDowngradeResult(data) {
   // visibles pero deshabilitados para siempre, sin ninguna acción posible.
   document.getElementById('mod-downgrade-confirm').style.display = 'none';
   document.getElementById('mod-downgrade-reject-all').style.display = 'none';
+}
+
+// El modal "📦 Subida de mods" (mod-upload-modal) se queda abierto DEBAJO de
+// este todo el rato — nunca se cierra al abrir el de confirmación — así que
+// si no se actualiza acá, al volver a él (o si sigue visible detrás) seguía
+// mostrando "N mods necesitan confirmación" con un enlace que reabre el
+// mismo lote ya resuelto (y borrado) en el servidor, dando "El lote ya no
+// existe o expiró" en cualquier acción. Se reemplaza needs_confirmation por
+// dos categorías nuevas reflejando lo que el usuario decidió de verdad.
+function updateBulkDataAfterDowngrade(data) {
+  if (!lastBulkData) {
+    return;
+  }
+  lastBulkData.needs_confirmation = [];
+  lastBulkData.accepted_flagged = (lastBulkData.accepted_flagged || []).concat(data.applied || []);
+  lastBulkData.rejected_flagged = (lastBulkData.rejected_flagged || []).concat(data.skipped || []);
+  renderBulkResult(lastBulkData);
 }
 
 document.getElementById('mod-downgrade-confirm').addEventListener('click', function() {
