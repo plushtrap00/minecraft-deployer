@@ -56,6 +56,31 @@ function loadModpackVersion() {
     .catch(function() {});
 }
 
+// Mods que el autor del modpack bloqueó para descarga por terceros al
+// instalarlo desde CurseForge (ver services/modpack.py::get_pending_mods) —
+// mientras sigan en la lista, el servidor se niega a arrancar (routes/server.py).
+function loadPendingMods() {
+  var banner = document.getElementById('mods-pending-banner');
+  if (!currentModpack || !banner) {
+    return;
+  }
+  apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/pending-mods')
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      var pending = data.pending_mods || [];
+      if (!pending.length) {
+        banner.style.display = 'none';
+        return;
+      }
+      banner.innerHTML = '⏳ <strong>' + pending.length + ' mod(s) pendientes de instalar</strong> — '
+        + 'el autor de este modpack bloqueó su descarga por terceros, así que hay que importarlos a mano '
+        + '(arriba: arrastra el .jar o usa "Subir carpeta de mods"). El servidor no arrancará hasta que estén todos: '
+        + pending.map(escHtml).join(', ');
+      banner.style.display = '';
+    })
+    .catch(function() { banner.style.display = 'none'; });
+}
+
 function loadModsList() {
   if (!currentModpack) {
     return;
@@ -66,6 +91,11 @@ function loadModsList() {
   }
   list.innerHTML = '<p class="empty-msg">Cargando...</p>';
   document.getElementById('mods-count').textContent = '';
+  // Se reengancha acá (en vez de en cada sitio que llama a loadModsList() tras
+  // subir/borrar/togglear un mod) para que la lista de pendientes se
+  // refresque sola cada vez que la de mods cambia, sin tener que acordarse de
+  // añadirlo en cada punto nuevo que toque mods/.
+  loadPendingMods();
   apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods')
     .then(function(response) { return response.json(); })
     .then(function(data) {

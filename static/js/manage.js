@@ -264,6 +264,9 @@ function renderModpacks(packs) {
     if (pack.modloader) {
       badges += ' <span class="badge" style="background:rgba(210,153,34,.1);color:var(--yellow)">' + pack.modloader + '</span>';
     }
+    if (pack.pending_mods && pack.pending_mods.length) {
+      badges += ' <span class="badge" style="background:rgba(248,81,73,.15);color:var(--red)" title="' + escHtml(pack.pending_mods.join(', ')) + '">⏳ ' + pack.pending_mods.length + ' mod(s) pendiente(s)</span>';
+    }
     var element = document.createElement('div');
     element.className = 'modpack-card';
     element.dataset.name = pack.name;

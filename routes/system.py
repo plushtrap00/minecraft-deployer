@@ -21,7 +21,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 
 from config import DEFAULT_SERVERS_PATH, MC_DOMAIN
 from services.utils import get_system_ram_gb, get_modpacks
-from services.modpack import detect_modpack_version
+from services.modpack import detect_modpack_version, get_pending_mods
 from services import auto_update
 
 router = APIRouter()
@@ -96,6 +96,7 @@ async def list_modpacks():
             "mc_version": ver.get("mc_version"),
             "modloader": ver.get("modloader"),
             "modloader_version": ver.get("modloader_version"),
+            "pending_mods": get_pending_mods(name),
         })
     return JSONResponse({"modpacks": result})
 

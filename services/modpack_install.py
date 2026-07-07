@@ -42,7 +42,7 @@ from services.mod_search import (
 from services.modloader import _http_get, _installer_url, LOADER_DISPLAY_NAMES
 from services.server_create import validate_new_server_name, _write_run_script, _bootstrap_common_files, _vanilla_server_jar_url
 from services.utils import configure_jvm_ram, get_modpacks
-from services.modpack import _dedup_fingerprint, detect_modpack_version
+from services.modpack import _dedup_fingerprint, detect_modpack_version, write_pending_mods
 
 CURSEFORGE_MODPACK_CLASS_ID = 4471
 
@@ -492,11 +492,23 @@ async def install_curseforge_modpack_stream(mod_id, file_id, server_name: str, r
 
         mods_dir = server_dir / "mods"
         mods_dir.mkdir(exist_ok=True)
+        # skipped_no_url son mods con nombre de archivo conocido pero sin URL de
+        # descarga (bloqueados por el autor): se persisten en mods-pendientes.txt
+        # porque se pueden verificar por nombre más tarde (ver write_pending_mods
+        # / get_pending_mods). unresolved_ids son referencias que la API ni
+        # siquiera devolvió (fileID inválido/borrado) — no hay nombre de archivo
+        # con el que comprobar si ya se resolvieron a mano, así que solo se
+        # avisan en el log: persistirlas dejaría el modpack bloqueado para
+        # arrancar para siempre, sin ninguna forma de que el autoborrado lo detecte.
         skipped_no_url = []
+        unresolved_ids = []
         for ref in file_refs:
             info = resolved.get(ref.get("fileID"))
             if not info or not info.get("downloadUrl"):
-                skipped_no_url.append(info["fileName"] if info else str(ref.get("fileID")))
+                if info and info.get("fileName"):
+                    skipped_no_url.append(info["fileName"])
+                else:
+                    unresolved_ids.append(str(ref.get("fileID")))
                 continue
             dest = _safe_join(mods_dir, info["fileName"])
             file_bytes = await asyncio.to_thread(download_bytes, info["downloadUrl"])
@@ -504,6 +516,9 @@ async def install_curseforge_modpack_stream(mod_id, file_id, server_name: str, r
 
         if skipped_no_url:
             yield {"type": "log", "message": f"⚠️ {len(skipped_no_url)} mod(s) no se pudieron descargar automáticamente (el autor bloqueó la distribución por terceros): {', '.join(skipped_no_url[:10])}"}
+            await asyncio.to_thread(write_pending_mods, server_name, skipped_no_url)
+        if unresolved_ids:
+            yield {"type": "log", "message": f"⚠️ {len(unresolved_ids)} referencia(s) de mod no se pudieron resolver en absoluto (ID inválido o borrado en CurseForge): {', '.join(unresolved_ids[:10])}"}
 
         yield {"type": "log", "message": "Aplicando overrides de configuración..."}
         overrides_folder = manifest.get("overrides", "overrides")
