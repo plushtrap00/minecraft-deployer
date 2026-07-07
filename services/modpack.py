@@ -1025,8 +1025,17 @@ def prune_old_logs_and_crashes(modpack: str, keep: int = LOG_CRASH_RETENTION_COU
 # que server_start() (routes/server.py) se niegue a arrancar ese modpack
 # mientras sigan sin estar de verdad en mods/, en vez de dejar arrancar un
 # servidor a medias sin que nadie se dé cuenta hasta que un jugador lo note.
+#
+# get_pending_mods() es deliberadamente una simple lectura de JSON (sin abrir
+# ningún jar): la usan tanto el listado de modpacks como el arranque del
+# servidor, así que tiene que ser instantánea. Toda la comprobación "de
+# verdad" (mismo mod_id/versión real, no solo nombre de archivo) pasa en
+# resolve_pending_mods(), llamada una sola vez justo cuando se instala un mod
+# nuevo (subida individual, en lote, o al confirmar un lote) — resolver en el
+# momento en que la lista cambia es mucho más barato que re-escanear todo
+# mods/ cada vez que alguien solo quiere consultar si sigue pendiente.
 
-PENDING_MODS_FILENAME = "mods-pendientes.txt"
+PENDING_MODS_FILENAME = "mods-pendientes.json"
 
 
 def write_pending_mods(modpack: str, filenames: list) -> None:
@@ -1035,7 +1044,19 @@ def write_pending_mods(modpack: str, filenames: list) -> None:
     names = sorted({n.strip() for n in filenames if n and n.strip()})
     if not names:
         return
-    path.write_text("\n".join(names) + "\n", encoding="utf-8")
+    path.write_text(json.dumps(names, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def get_pending_mods(modpack: str) -> list:
+    """Lectura simple: si mods-pendientes.json no está vacío, faltan mods por instalar a mano."""
+    path = DEFAULT_SERVERS_PATH / modpack / PENDING_MODS_FILENAME
+    if not path.exists():
+        return []
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+    return data if isinstance(data, list) else []
 
 
 _VERSION_TOKEN_RE = re.compile(r'\d+(?:\.\d+){1,3}')
@@ -1049,8 +1070,8 @@ def _extract_filename_version(filename: str) -> str | None:
     convención más común — versión de mod al final, justo antes de la
     extensión (ej. "bwncr-neoforge-1.21.1-3.20.4.jar" -> "3.20.4") — que no
     siempre acierta (hay packs que no siguen ese orden), por eso
-    _match_pending_names() solo la usa como desempate cuando SÍ hay una
-    versión real del lado instalado con la que comparar.
+    resolve_pending_mods() solo la usa como desempate cuando SÍ hay una
+    versión real del mod recién instalado con la que comparar.
     """
     stem = filename
     for suffix in (".disabled", ".jar", ".zip"):
@@ -1060,135 +1081,50 @@ def _extract_filename_version(filename: str) -> str | None:
     return matches[-1] if matches else None
 
 
-def _scan_installed_mod_candidates(mods_dir: Path):
+def resolve_pending_mods(modpack: str, filename: str, mod_id: str | None, mod_version: str | None) -> list:
     """
-    Generador: por cada archivo en mods/, yield (filename, candidate). Abre
-    cada .jar para leer su mod_id y versión REALES (mods.toml/fabric.mod.json
-    vía read_mod_metadata) en vez de fiarse solo del nombre de archivo — un
-    mod reinstalado con otro nombre (build nueva, bajado de Modrinth en vez de
-    CurseForge...) sigue reconociéndose así. candidate es None para archivos
-    que no son .jar (p.ej. un .zip suelto), que no se pueden abrir para leer
-    metadata. Es un generador (no una lista) para que quien lo consuma pueda
-    reportar progreso archivo a archivo si le interesa (ver
-    check_pending_mods_stream) sin que la función sepa nada de eso.
+    Se llama justo después de instalar un mod (subida individual, en lote, o
+    al confirmar un lote — ver routes/modpacks.py) con su metadata YA leída
+    por ese mismo flujo (process_mod_jar), sin abrir el jar de nuevo acá. Un
+    pendiente se da por resuelto si el mod recién instalado calza por nombre
+    "core" (mismo _dedup_fingerprint, ignora versión/loader/MC — el mismo
+    criterio que ya usa find_possible_duplicate_mods()) O por mod_id real —
+    así se reconoce aunque se haya bajado con otro nombre de archivo (build
+    nueva, bajado de Modrinth en vez de CurseForge...) — Y su versión es igual
+    o superior a la que se puede extraer del nombre pendiente, o directamente
+    si no hay versión que comparar de ningún lado. Devuelve la lista de
+    pendientes que queda tras esto.
     """
-    if not mods_dir.exists():
-        return
-    files = sorted((f for f in mods_dir.iterdir() if f.is_file()), key=lambda f: f.name.lower())
-    for f in files:
-        low = f.name.lower()
-        if not (low.endswith(".jar") or low.endswith(".jar.disabled")):
-            yield f.name, None
-            continue
-        real_name = f.name[: -len(".disabled")] if f.name.endswith(".disabled") else f.name
-        try:
-            meta = read_mod_metadata(f.read_bytes())
-        except Exception:
-            meta = {}
-        yield f.name, {
-            "filename_fp": _dedup_fingerprint(real_name),
-            "modid_fp": re.sub(r'[^a-z0-9]', '', (meta.get("mod_id") or "").lower()),
-            "mod_version": meta.get("mod_version"),
-        }
-
-
-def _match_pending_names(names: list, candidates: list) -> list:
-    """
-    Devuelve el subconjunto de `names` que sigue sin resolver contra
-    `candidates` (ver _scan_installed_mod_candidates). Un pendiente se da por
-    resuelto si algún candidato instalado calza por nombre "core" (mismo
-    _dedup_fingerprint, ignora versión/loader/MC — el mismo criterio que ya
-    usa find_possible_duplicate_mods()) O por mod_id real, Y su versión
-    instalada es igual o superior a la que se puede extraer del nombre
-    pendiente — o directamente si no hay versión que comparar de ningún lado
-    (mejor no bloquear para siempre por no poder leer un número que por un
-    falso "sigue pendiente").
-    """
-    still_pending = []
-    for name in names:
-        target_fp = _dedup_fingerprint(name)
-        target_version = _extract_filename_version(name)
-        resolved = False
-        for candidate in candidates:
-            if not candidate or not target_fp:
-                continue
-            name_matches = target_fp == candidate["filename_fp"] or (
-                candidate["modid_fp"] and target_fp == candidate["modid_fp"]
-            )
-            if not name_matches:
-                continue
-            if target_version and candidate["mod_version"] and compare_mod_versions(candidate["mod_version"], target_version) < 0:
-                continue  # mismo mod, pero la versión instalada es más vieja que la pedida: sigue pendiente
-            resolved = True
-            break
-        if not resolved:
-            still_pending.append(name)
-    return still_pending
-
-
-def get_pending_mods(modpack: str) -> list:
-    """
-    Lee mods-pendientes.txt y de paso lo autolimpia contra lo que hay de
-    verdad en mods/ ahora mismo (ver _match_pending_names) — así el bloqueo de
-    arranque desaparece en cuanto el mod que faltaba está de verdad instalado,
-    aunque haya llegado con otro nombre de archivo o por otra vía (subido
-    desde el panel o copiado a mano por SFTP, da igual). Solo abre los jars
-    instalados cuando de verdad queda algo pendiente que comprobar — una vez
-    resuelto del todo, el archivo se borra y las siguientes llamadas son
-    instantáneas otra vez.
-    """
-    base = DEFAULT_SERVERS_PATH / modpack
-    path = base / PENDING_MODS_FILENAME
+    path = DEFAULT_SERVERS_PATH / modpack / PENDING_MODS_FILENAME
     if not path.exists():
         return []
-    names = [line.strip() for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
-    if not names:
+    try:
+        names = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+    if not isinstance(names, list) or not names:
         path.unlink(missing_ok=True)
         return []
 
-    candidates = [candidate for _filename, candidate in _scan_installed_mod_candidates(base / "mods")]
-    still_pending = _match_pending_names(names, candidates)
+    candidate_fp = _dedup_fingerprint(filename)
+    candidate_modid_fp = re.sub(r'[^a-z0-9]', '', (mod_id or "").lower())
+
+    still_pending = []
+    for name in names:
+        target_fp = _dedup_fingerprint(name)
+        name_matches = target_fp and (target_fp == candidate_fp or (candidate_modid_fp and target_fp == candidate_modid_fp))
+        if name_matches:
+            target_version = _extract_filename_version(name)
+            if not (target_version and mod_version and compare_mod_versions(mod_version, target_version) < 0):
+                continue  # resuelto: no se vuelve a añadir a still_pending
+        still_pending.append(name)
+
     if still_pending != names:
         if still_pending:
-            path.write_text("\n".join(still_pending) + "\n", encoding="utf-8")
+            path.write_text(json.dumps(still_pending, ensure_ascii=False, indent=2), encoding="utf-8")
         else:
             path.unlink(missing_ok=True)
     return still_pending
-
-
-def check_pending_mods_stream(modpack: str):
-    """
-    Igual que get_pending_mods(), pero reportando progreso archivo a archivo
-    mientras escanea mods/ — pensado para el botón "Iniciar servidor"
-    (routes/modpacks.py expone esto como SSE), porque abrir cada jar para leer
-    su metadata real puede tardar unos segundos en modpacks grandes (varios
-    cientos de mods) y sin esto el usuario se queda sin ningún feedback en ese
-    rato. Generador síncrono (no async): mismo criterio que process_mod_jar()
-    en la subida en lote de mods, que tampoco se manda a un hilo aparte.
-    """
-    base = DEFAULT_SERVERS_PATH / modpack
-    path = base / PENDING_MODS_FILENAME
-    names = [line.strip() for line in path.read_text(encoding="utf-8").splitlines() if line.strip()] if path.exists() else []
-    if not names:
-        if path.exists():
-            path.unlink(missing_ok=True)
-        yield {"type": "done", "pending_mods": []}
-        return
-
-    mods_dir = base / "mods"
-    total = sum(1 for f in mods_dir.iterdir() if f.is_file()) if mods_dir.exists() else 0
-    candidates = []
-    for i, (filename, candidate) in enumerate(_scan_installed_mod_candidates(mods_dir), start=1):
-        candidates.append(candidate)
-        yield {"type": "progress", "index": i, "total": total, "filename": filename}
-
-    still_pending = _match_pending_names(names, candidates)
-    if still_pending != names:
-        if still_pending:
-            path.write_text("\n".join(still_pending) + "\n", encoding="utf-8")
-        else:
-            path.unlink(missing_ok=True)
-    yield {"type": "done", "pending_mods": still_pending}
 
 
 # ── Análisis de crash reports ──────────────────────────────────────────────────

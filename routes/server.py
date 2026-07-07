@@ -55,42 +55,27 @@ async def server_start(modpack: str = Form(...)):
         if proc_module.mc_process is not None and proc_module.mc_process.poll() is None:
             raise HTTPException(status_code=400, detail="Ya hay un servidor en marcha")
 
-    server_dir = DEFAULT_SERVERS_PATH / modpack
-    try:
-        server_dir.resolve().relative_to(DEFAULT_SERVERS_PATH.resolve())
-    except ValueError:
-        raise HTTPException(status_code=403, detail="Ruta no permitida")
+        server_dir = DEFAULT_SERVERS_PATH / modpack
+        try:
+            server_dir.resolve().relative_to(DEFAULT_SERVERS_PATH.resolve())
+        except ValueError:
+            raise HTTPException(status_code=403, detail="Ruta no permitida")
 
-    # Modpacks de CurseForge instalados con algún mod bloqueado por el autor
-    # para descarga por terceros (ver services/modpack_install.py) no arrancan
-    # hasta que esos mods se instalen a mano — un servidor a medias lanzado
-    # sin darse cuenta es peor que no dejarlo arrancar. El frontend ya hace
-    # esta misma comprobación con progreso antes de llegar a llamar acá (ver
-    # /api/modpacks/{modpack}/pending-mods/stream); esto es el respaldo por si
-    # alguien llama a la API directamente. Va FUERA del lock a propósito:
-    # get_pending_mods() abre cada jar instalado para comparar versiones
-    # (services/modpack.py) y puede tardar varios segundos en modpacks
-    # grandes — mantener mc_process_lock tomado durante un await así de largo
-    # congelaría el event loop entero para cualquier otra request mientras
-    # tanto (mc_process_lock es un threading.Lock normal, no uno async).
-    pending_mods = await asyncio.to_thread(get_pending_mods, modpack)
-    if pending_mods:
-        return JSONResponse(status_code=409, content={
-            "detail": (
-                f"Este modpack dio error al descargar estos mods: {', '.join(pending_mods)}. "
-                "Instálalos manualmente en Gestionar → Mods → importar carpeta/mods uno a uno."
-            ),
-            "pending_mods": pending_mods,
-        })
-
-    with mc_process_lock:
-        # Se repite (ya se comprobó arriba): entre medio se soltó el lock para
-        # el chequeo de mods pendientes, así que otra request pudo colarse y
-        # arrancar un servidor en ese rato — sin este segundo chequeo, justo
-        # antes de lanzar el proceso de verdad, quedaría una ventana de
-        # carrera en la que dos arranques concurrentes pisan mc_process.
-        if proc_module.mc_process is not None and proc_module.mc_process.poll() is None:
-            raise HTTPException(status_code=400, detail="Ya hay un servidor en marcha")
+        # Modpacks de CurseForge instalados con algún mod bloqueado por el autor
+        # para descarga por terceros (ver services/modpack_install.py) no
+        # arrancan hasta que esos mods se instalen a mano — un servidor a medias
+        # lanzado sin darse cuenta es peor que no dejarlo arrancar.
+        # get_pending_mods() es solo una lectura de mods-pendientes.json (ver
+        # services/modpack.py), no reescanea mods/, así que es instantánea.
+        pending_mods = get_pending_mods(modpack)
+        if pending_mods:
+            return JSONResponse(status_code=409, content={
+                "detail": (
+                    f"Este modpack dio error al descargar estos mods: {', '.join(pending_mods)}. "
+                    "Instálalos manualmente en Gestionar → Mods → importar carpeta/mods uno a uno."
+                ),
+                "pending_mods": pending_mods,
+            })
 
         script = next(
             (server_dir / s for s in ["startserver.sh", "start.sh", "run.sh"] if (server_dir / s).exists()),

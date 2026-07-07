@@ -186,64 +186,11 @@ document.getElementById('net-toggle-track').addEventListener('click', function()
     });
 });
 
-// Antes de arrancar, se comprueba con progreso (SSE) si siguen quedando mods
-// pendientes de instalar a mano (ver services/modpack.check_pending_mods_stream)
-// — abre cada jar instalado para comparar su mod_id/versión real, así que en
-// modpacks grandes puede tardar unos segundos, de ahí el streaming en vez de
-// una única llamada silenciosa. /api/server/start hace la misma comprobación
-// como respaldo síncrono, así que si este stream falla por lo que sea, el
-// arranque de todas formas no deja pasar un modpack a medias.
 function startServer(modpack) {
   var dot = document.getElementById('status-dot');
   dot.className = 'status-dot starting';
-  document.getElementById('status-text').textContent = 'Comprobando mods instalados...';
-  document.getElementById('server-picker').style.display = 'none';
-
-  var streamUrl = '/api/modpacks/' + encodeURIComponent(modpack) + '/pending-mods/stream?token=' + encodeURIComponent(authToken);
-  var checkSource = new EventSource(streamUrl);
-  var settled = false;
-
-  function finishCheck(pendingMods) {
-    if (settled) {
-      return;
-    }
-    settled = true;
-    checkSource.close();
-    if (pendingMods && pendingMods.length) {
-      applyServerState(false, null);
-      showAlert(
-        'Este modpack dio error al descargar estos mods: ' + pendingMods.join(', ')
-          + '. Instálalos manualmente en Gestionar → Mods → importar carpeta/mods uno a uno.',
-        '⏳'
-      );
-      return;
-    }
-    _launchServer(modpack);
-  }
-
-  checkSource.onmessage = function(event) {
-    var data;
-    try {
-      data = JSON.parse(event.data);
-    } catch (e) {
-      return;
-    }
-    if (data.type === 'progress') {
-      document.getElementById('status-text').textContent =
-        'Comprobando mods instalados... (' + data.index + '/' + data.total + ')';
-    } else if (data.type === 'done') {
-      finishCheck(data.pending_mods);
-    }
-  };
-  checkSource.onerror = function() {
-    // No se deja bloqueado el arranque por un stream caído: se sigue igual,
-    // apoyándose en el chequeo síncrono que hace /api/server/start de todas formas.
-    finishCheck([]);
-  };
-}
-
-function _launchServer(modpack) {
   document.getElementById('status-text').textContent = 'Iniciando ' + modpack + '...';
+  document.getElementById('server-picker').style.display = 'none';
 
   var form = new FormData();
   form.append('modpack', modpack);

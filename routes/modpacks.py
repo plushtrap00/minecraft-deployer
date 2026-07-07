@@ -11,7 +11,6 @@ Rutas:
 - DELETE    /api/modpacks/{modpack}
 - GET       /api/modpacks/{modpack}/version
 - GET       /api/modpacks/{modpack}/pending-mods
-- GET       /api/modpacks/{modpack}/pending-mods/stream
 - GET       /api/modpacks/{modpack}/mods
 - GET       /api/modpacks/{modpack}/mods/duplicates
 - POST      /api/modpacks/{modpack}/mods/upload
@@ -57,7 +56,7 @@ from services.modpack import (
     detect_installed_mods, has_mod_keyword,
     parse_server_properties, save_server_property,
     get_worlds, analyze_crash, classify_installed_mods,
-    prune_old_logs_and_crashes, get_pending_mods, check_pending_mods_stream,
+    prune_old_logs_and_crashes, get_pending_mods, resolve_pending_mods,
 )
 from services.players import (
     ensure_global_dir, read_global_file, write_global_file, PLAYER_FILES,
@@ -409,29 +408,7 @@ async def get_modpack_version(modpack: str):
 @router.get("/{modpack}/pending-mods")
 async def get_pending_mods_route(modpack: str):
     """Mods que quedaron sin descargar al instalar (ver services/modpack.get_pending_mods) — usado por el aviso de la pestaña Mods."""
-    pending = await asyncio.to_thread(get_pending_mods, modpack)
-    return JSONResponse({"pending_mods": pending})
-
-
-@router.get("/{modpack}/pending-mods/stream")
-async def get_pending_mods_stream(modpack: str):
-    """
-    Igual que /pending-mods pero con progreso: abre cada mod instalado para
-    comparar su mod_id/versión real contra lo pendiente (ver
-    services/modpack.check_pending_mods_stream), lo que puede tardar varios
-    segundos en modpacks grandes. Lo usa el botón "Iniciar servidor" antes de
-    llamar a /api/server/start, para no dejar al usuario sin feedback durante
-    ese rato ni depender solo del respaldo síncrono de ese endpoint.
-    """
-    async def event_stream():
-        for event in check_pending_mods_stream(modpack):
-            yield f"data: {json.dumps(event)}\n\n"
-
-    return StreamingResponse(
-        event_stream(),
-        media_type="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
-    )
+    return JSONResponse({"pending_mods": get_pending_mods(modpack)})
 
 
 @router.get("/{modpack}/mods")
@@ -506,6 +483,8 @@ async def upload_mod(modpack: str, file: UploadFile = File(...)):
                 "errors": [],
                 "total": 1,
             })
+
+        resolve_pending_mods(modpack, result["filename"], result.get("mod_id"), result.get("mod_version"))
 
         return JSONResponse({
             "success": True,
@@ -631,6 +610,7 @@ async def stream_mods_bulk(modpack: str, job_id: str):
                 status = result["status"]
                 if status == "added":
                     added.append(result)
+                    resolve_pending_mods(modpack, result["filename"], result.get("mod_id"), result.get("mod_version"))
                 elif status == "already_installed":
                     already_installed.append(result)
                 elif status == "needs_confirmation":
@@ -707,6 +687,7 @@ async def confirm_mods_bulk(modpack: str, body: BulkConfirmBody):
             dest = mods_dir / filename
         dest.write_bytes(jar_bytes)
         applied.append({**item, "filename": dest.name})
+        resolve_pending_mods(modpack, dest.name, item.get("mod_id"), item.get("mod_version"))
 
     shutil.rmtree(batch_dir, ignore_errors=True)
     return JSONResponse({"success": True, "applied": applied, "skipped": skipped})
