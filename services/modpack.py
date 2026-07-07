@@ -987,11 +987,14 @@ def prune_old_logs_and_crashes(modpack: str, keep: int = LOG_CRASH_RETENTION_COU
     latest.log y debug.log no cuentan para este límite ni se tocan nunca: son
     los de la sesión actual, no logs rotados de sesiones pasadas.
 
-    El nombre ya trae la fecha primero (ej. "2024-01-15-1.log.gz",
-    "crash-2024-01-15_10.23.45-server.txt"), así que ordenar por nombre en
-    reversa deja los más recientes primero — mismo criterio que ya usa
-    get_log_list() para listarlos, para que "los últimos 5 que se ven" y
-    "los últimos 5 que se conservan" sean siempre los mismos.
+    Se ordena por fecha de modificación real (mtime), no por nombre: los
+    crash reports sí llevan la fecha en el nombre ("crash-2024-01-15_
+    10.23.45-server.txt"), pero los logs rotados no siempre ("debug-1.log.gz"
+    vs "debug-5.log.gz" — el orden real depende de cómo numere el rotador de
+    log4j2, no es necesariamente ascendente/descendente por fecha). mtime es
+    fiable para los dos casos por igual, y es el mismo criterio que usa
+    get_log_list() para listarlos, para que "los últimos `keep` que se ven" y
+    "los últimos `keep` que se conservan" sean siempre los mismos.
     """
     base = DEFAULT_SERVERS_PATH / modpack
 
@@ -999,6 +1002,7 @@ def prune_old_logs_and_crashes(modpack: str, keep: int = LOG_CRASH_RETENTION_COU
     if logs_dir.exists():
         rotated = sorted(
             (f for f in logs_dir.iterdir() if f.is_file() and f.name not in _CURRENT_LOG_FILENAMES),
+            key=lambda f: f.stat().st_mtime,
             reverse=True,
         )
         for old in rotated[keep:]:
@@ -1009,7 +1013,11 @@ def prune_old_logs_and_crashes(modpack: str, keep: int = LOG_CRASH_RETENTION_COU
 
     crash_dir = base / "crash-reports"
     if crash_dir.exists():
-        crashes = sorted((f for f in crash_dir.iterdir() if f.is_file()), reverse=True)
+        crashes = sorted(
+            (f for f in crash_dir.iterdir() if f.is_file()),
+            key=lambda f: f.stat().st_mtime,
+            reverse=True,
+        )
         for old in crashes[keep:]:
             try:
                 old.unlink()
@@ -1201,27 +1209,89 @@ def check_pending_mods_stream(modpack: str):
 
 # ── Análisis de crash reports ──────────────────────────────────────────────────
 
-def analyze_crash(text: str, modpack: str) -> list:
+# Marcan el final de la parte "útil" de un crash report de Forge/NeoForge (el
+# resumen de la excepción + su stack trace) y el principio de las secciones
+# de contexto (mod list completa, detalles de sistema, hilos...) — formato
+# estable desde hace años en ambos loaders. Se usa el que aparezca primero.
+_CRASH_REGION_END_RE = re.compile(
+    r'^(--------+|-- (Head|Affected level|System Details) --|A detailed walkthrough)',
+    re.MULTILINE,
+)
+_CRASH_DESCRIPTION_RE = re.compile(r'^Description:\s*(.*)$', re.MULTILINE)
+_CRASH_EXCEPTION_LINE_RE = re.compile(r'^\s*(?:Caused by:\s*)?[\w.$]+(?:Exception|Error)\b.*$', re.MULTILINE)
+_CRASH_CAUSED_BY_RE = re.compile(r'^\s*Caused by:.*$', re.MULTILINE)
+
+
+def _crash_stack_region(text: str) -> str:
     """
-    Intenta identificar qué mod causó el crash comparando el stack trace
-    con los jars instalados en mods/.
-    Devuelve una lista de strings con pistas.
+    Aísla el resumen de excepción + stack trace real de un crash report,
+    cortando antes de las secciones de contexto (Mod List, System Details...).
+    Sin esto, buscar el nombre de un mod "en cualquier parte del archivo" da
+    falsos positivos constantes: CUALQUIER mod instalado aparece en la Mod
+    List de todo crash report, esté relacionado o no con lo que falló.
     """
+    desc_match = _CRASH_DESCRIPTION_RE.search(text)
+    start = desc_match.end() if desc_match else 0
+    end_match = _CRASH_REGION_END_RE.search(text, pos=start)
+    end = end_match.start() if end_match else len(text)
+    region = text[start:end]
+    # Fallback defensivo: un crash que no sea de Forge/NeoForge (o un texto
+    # cualquiera pegado en logs/) puede no tener ninguno de estos marcadores;
+    # mejor analizar el texto completo que quedarse con una región vacía.
+    return region if region.strip() else text
+
+
+def analyze_crash(text: str, modpack: str) -> dict:
+    """
+    Intenta identificar qué mod causó el crash, buscando solo dentro de la
+    región de stack trace real (ver _crash_stack_region), no en el archivo
+    entero. Devuelve {"exception_summary", "caused_by_chain", "culprit_mods"}.
+    """
+    region = _crash_stack_region(text)
+
+    exception_summary = None
+    exc_match = _CRASH_EXCEPTION_LINE_RE.search(region)
+    if exc_match:
+        exception_summary = exc_match.group(0).strip()
+    else:
+        desc_match = _CRASH_DESCRIPTION_RE.search(text)
+        if desc_match and desc_match.group(1).strip():
+            exception_summary = desc_match.group(1).strip()
+
+    caused_by_chain = []
+    for line in _CRASH_CAUSED_BY_RE.findall(region):
+        stripped = line.strip()
+        if stripped not in caused_by_chain:
+            caused_by_chain.append(stripped)
+
+    culprit_mods = []
     mods_dir = DEFAULT_SERVERS_PATH / modpack / "mods"
-    culprits = []
-
     if mods_dir.exists():
-        mod_jars = [f.name for f in mods_dir.iterdir() if f.is_file() and f.suffix == ".jar"]
-        for jar in mod_jars:
-            mod_id = re.sub(r'[-_+][0-9].*$', '', jar.replace('.jar', ''))
-            if mod_id.lower() in text.lower():
-                culprits.append(f"Posible culpable: {jar}")
+        # _dedup_fingerprint() (ya usada para detectar mods duplicados) corta
+        # también en palabras de loader ("-neoforge", "-fabric"...), no solo
+        # en el primer número — sin eso, "sodium-neoforge-0.8.12+mc1.21.1.jar"
+        # se reducía a "sodium-neoforge", que nunca aparece tal cual en un
+        # stack trace real (los paquetes Java van con puntos, no guiones; ahí
+        # sí aparece "sodium" solo, ej. "me.jellysquid.mods.sodium.client...").
+        # Se descartan fingerprints muy cortos (<4) por la misma razón que ya
+        # aplica find_possible_duplicate_mods(): con pocas letras, el riesgo
+        # de que calcen por casualidad en cualquier parte del trace es alto.
+        region_lower = region.lower()
+        ranked = []
+        for f in mods_dir.iterdir():
+            if not (f.is_file() and f.suffix == ".jar"):
+                continue
+            fp = _dedup_fingerprint(f.name)
+            if len(fp) < 4:
+                continue
+            pos = region_lower.find(fp)
+            if pos != -1:
+                ranked.append((pos, f.name))
+        ranked.sort()
+        culprit_mods = [name for _pos, name in ranked[:5]]
 
-    # Buscar líneas de excepción relevantes
-    for line in text.splitlines():
-        if "Caused by:" in line or "Exception" in line:
-            culprits.append(line.strip())
-            if len(culprits) >= 5:
-                break
-
-    return culprits
+    return {
+        "exception_summary": exception_summary,
+        "caused_by_chain": caused_by_chain,
+        "culprit_mods": culprit_mods,
+    }

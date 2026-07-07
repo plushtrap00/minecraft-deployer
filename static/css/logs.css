@@ -156,3 +156,52 @@
   white-space: pre-wrap;
   word-break: break-all;
 }
+
+.log-line {
+  display: flex;
+  gap: 8px;
+}
+
+.log-line-num {
+  flex-shrink: 0;
+  width: 44px;
+  text-align: right;
+  color: var(--muted);
+  opacity: .5;
+  user-select: none;
+}
+
+.log-line-text {
+  flex: 1;
+  min-width: 0;
+}
+
+#log-pagination {
+  margin-top: 4px;
+}
+
+.crash-exception-summary {
+  font-family: Consolas, Monaco, monospace;
+  font-size: .82rem;
+  color: var(--text);
+  background: rgba(0, 0, 0, .2);
+  border-radius: 6px;
+  padding: 6px 10px;
+  margin-bottom: 8px;
+  word-break: break-word;
+}
+
+.crash-caused-by-details {
+  margin-top: 8px;
+}
+
+.crash-caused-by-details summary {
+  cursor: pointer;
+  font-size: .78rem;
+  color: var(--muted);
+  user-select: none;
+}
+
+.crash-caused-by-details[open] summary {
+  margin-bottom: 4px;
+}

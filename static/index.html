@@ -647,9 +647,13 @@
           <!-- Main: log viewer -->
           <div class="log-main">
             <div id="crash-culprit" class="crash-culprit-box" style="display:none">
-              <div class="crash-culprit-title">⚠️ Posible mod culpable detectado</div>
+              <div class="crash-culprit-title">⚠️ Análisis del crash</div>
+              <div id="crash-exception-summary" class="crash-exception-summary"></div>
               <div id="crash-culprit-mods" class="crash-culprit-detail"></div>
-              <div id="crash-caused-by" class="crash-caused-by"></div>
+              <details id="crash-caused-by-details" class="crash-caused-by-details" style="display:none">
+                <summary>Cadena de causas (caused by)</summary>
+                <div id="crash-caused-by" class="crash-caused-by"></div>
+              </details>
             </div>
 
             <div class="log-filters">
@@ -662,12 +666,14 @@
                 <option value="info">INFO</option>
               </select>
               <span id="log-match-count" class="log-match-count"></span>
+              <a id="log-download-link" class="btn-secondary btn-sm" style="display:none;text-decoration:none" download title="Descargar archivo completo">⬇ Descargar</a>
             </div>
 
             <div id="log-placeholder" class="log-placeholder">
               Selecciona un archivo del panel izquierdo
             </div>
             <div id="log-viewer" class="log-viewer" style="display:none"></div>
+            <div class="mod-modal-pagination" id="log-pagination"></div>
           </div>
         </div>
       </div>
