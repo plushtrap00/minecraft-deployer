@@ -810,6 +810,12 @@ function openDowngradeModal(batchId, items) {
   };
   document.getElementById('mod-downgrade-modal-title').textContent =
     (reasonKeys.length === 1 && titleByReason[reasonKeys[0]]) || 'Mods que necesitan confirmación';
+  // Por si el modal se reabre con un lote nuevo justo después de haber
+  // resuelto uno anterior (que los deja ocultos, ver renderDowngradeResult).
+  document.getElementById('mod-downgrade-confirm').style.display = '';
+  document.getElementById('mod-downgrade-reject-all').style.display = '';
+  document.getElementById('mod-downgrade-confirm').disabled = false;
+  document.getElementById('mod-downgrade-reject-all').disabled = false;
   renderDowngradeModalPage();
   document.getElementById('mod-downgrade-modal').classList.add('show');
 }
@@ -885,6 +891,11 @@ function renderDowngradeResult(data) {
       + '<span>Sin cambios (no aceptados): <b>' + skipped.map(function(it) { return escHtml(it.display_name); }).join('</b>, <b>') + '</b></span></div>';
   }
   document.getElementById('mod-downgrade-modal-body').innerHTML = html || '<div class="bulk-result-row" style="color:var(--muted)">No se aplicó ningún cambio.</div>';
+  // Viven en el <div class="modal-footer"> aparte del cuerpo, así que
+  // reemplazar mod-downgrade-modal-body no los toca — sin esto quedaban
+  // visibles pero deshabilitados para siempre, sin ninguna acción posible.
+  document.getElementById('mod-downgrade-confirm').style.display = 'none';
+  document.getElementById('mod-downgrade-reject-all').style.display = 'none';
 }
 
 document.getElementById('mod-downgrade-confirm').addEventListener('click', function() {
