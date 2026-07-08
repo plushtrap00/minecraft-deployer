@@ -42,7 +42,7 @@ from services.mod_search import (
 from services.modloader import _http_get, _installer_url, LOADER_DISPLAY_NAMES
 from services.server_create import validate_new_server_name, _write_run_script, _bootstrap_common_files, _vanilla_server_jar_url
 from services.utils import configure_jvm_ram, get_modpacks
-from services.modpack import _dedup_fingerprint, detect_modpack_version, write_pending_mods
+from services.modpack import _dedup_fingerprint, detect_modpack_version, write_pending_mods, _KNOWN_CLIENT_ONLY_MOD_IDS
 
 CURSEFORGE_MODPACK_CLASS_ID = 4471
 
@@ -73,6 +73,29 @@ def _safe_join(base: Path, rel_path: str) -> Path:
     except ValueError:
         raise ValueError(f"Ruta insegura dentro del modpack: {rel_path}")
     return full
+
+
+# _KNOWN_CLIENT_ONLY_MOD_IDS está clavado por mod_id real (tal cual lo declara
+# cada mod, p.ej. "euphoria_patcher" con guion bajo) — pero acá solo hay un
+# nombre de archivo, no el jar, así que hace falta comparar por
+# _dedup_fingerprint() en vez de por igualdad directa. Se normalizan también
+# las claves (no solo el nombre de archivo entrante) para que casos como
+# "euphoria_patcher" (fingerprint "euphoriapatcher", sin guion bajo) sigan
+# calzando — comparar el nombre de archivo fingerprinteado contra la clave
+# CRUDA sin normalizar nunca habría hecho match para ese caso.
+_KNOWN_CLIENT_ONLY_FINGERPRINTS = {
+    _dedup_fingerprint(mod_id): reason for mod_id, reason in _KNOWN_CLIENT_ONLY_MOD_IDS.items()
+}
+
+
+def _known_client_only_reason(filename: str) -> str | None:
+    """
+    Devuelve el motivo si `filename` corresponde a un mod conocido que
+    revienta un servidor dedicado (sodium, iris y demás confirmados mod a mod
+    en _KNOWN_CLIENT_ONLY_MOD_IDS, services/modpack.py), o None si no calza
+    con ninguno.
+    """
+    return _KNOWN_CLIENT_ONLY_FINGERPRINTS.get(_dedup_fingerprint(filename))
 
 
 async def _run_loader_installer(server_dir: Path, loader_key: str, mc_version: str, loader_version: str, ram_min: str, ram_max: str):
@@ -274,15 +297,30 @@ async def install_modrinth_modpack_stream(project_id: str, version_id: str, serv
         skipped = len(files) - len(server_files)
         note = f" ({skipped} solo-cliente omitido(s))" if skipped else ""
         yield {"type": "log", "message": f"Descargando {len(server_files)} archivo(s) del modpack{note}..."}
+        skipped_known_bad = []
         for f in server_files:
             rel_path = f.get("path")
             downloads = f.get("downloads") or []
             if not rel_path or not downloads:
                 continue
+            # El campo "env" de Modrinth ya filtró lo declarado client-only,
+            # pero algunos mods (sodium/iris y demás de
+            # _KNOWN_CLIENT_ONLY_MOD_IDS) declaran server-compatible de forma
+            # incorrecta — se comprueban aparte solo dentro de mods/, para no
+            # marcar por casualidad un resourcepack/shaderpack con un nombre
+            # parecido.
+            if rel_path.startswith("mods/"):
+                bad_reason = _known_client_only_reason(Path(rel_path).name)
+                if bad_reason:
+                    skipped_known_bad.append(Path(rel_path).name)
+                    continue
             dest = _safe_join(server_dir, rel_path)
             dest.parent.mkdir(parents=True, exist_ok=True)
             file_bytes = await asyncio.to_thread(download_bytes, downloads[0])
             dest.write_bytes(file_bytes)
+
+        if skipped_known_bad:
+            yield {"type": "log", "message": f"🚫 {len(skipped_known_bad)} mod(s) conocidos por reventar un servidor dedicado no se instalan: {', '.join(skipped_known_bad)}"}
 
         yield {"type": "log", "message": "Aplicando overrides de configuración..."}
         await asyncio.to_thread(_extract_overrides, zf, server_dir)
@@ -562,6 +600,24 @@ async def install_curseforge_modpack_stream(mod_id, file_id, server_name: str, r
 
             extracted_count = await asyncio.to_thread(_extract_server_pack)
             yield {"type": "log", "message": f"Server Pack extraído ({extracted_count} archivo(s)) — ya incluye sus propios mods y overrides."}
+
+            # El Server Pack lo arma el autor del modpack, no esta app — puede
+            # incluir igual algún mod como sodium/iris que ya sabemos que
+            # revienta un servidor dedicado (pasa sobre todo con mods que
+            # declaran side="BOTH" de forma incorrecta, ver
+            # _KNOWN_CLIENT_ONLY_MOD_IDS en services/modpack.py).
+            server_pack_mods_dir = server_dir / "mods"
+            if server_pack_mods_dir.exists():
+                removed_known_bad = []
+                for jar_path in server_pack_mods_dir.iterdir():
+                    if not jar_path.is_file():
+                        continue
+                    bad_reason = _known_client_only_reason(jar_path.name)
+                    if bad_reason:
+                        removed_known_bad.append(jar_path.name)
+                        jar_path.unlink()
+                if removed_known_bad:
+                    yield {"type": "log", "message": f"🚫 {len(removed_known_bad)} mod(s) conocidos por reventar un servidor dedicado quitados del Server Pack: {', '.join(removed_known_bad)}"}
         else:
             if server_pack_file_id:
                 yield {"type": "log", "message": "⚠️ El Server Pack de este modpack está bloqueado para descarga por terceros — se instalarán los mods uno por uno."}
@@ -600,6 +656,7 @@ async def install_curseforge_modpack_stream(mod_id, file_id, server_name: str, r
             # avisan en el log: persistirlas dejaría el modpack bloqueado para
             # arrancar para siempre, sin ninguna forma de que el autoborrado lo detecte.
             unresolved_ids = []
+            skipped_known_bad = []
             for ref in file_refs:
                 info = resolved.get(ref.get("fileID"))
                 if not info or not info.get("downloadUrl"):
@@ -608,10 +665,19 @@ async def install_curseforge_modpack_stream(mod_id, file_id, server_name: str, r
                     else:
                         unresolved_ids.append(str(ref.get("fileID")))
                     continue
+                # Mods como sodium/iris que ya sabemos que revientan un
+                # servidor dedicado ni se descargan — no tiene sentido bajar
+                # algo que se va a tener que borrar o deshabilitar igual.
+                bad_reason = _known_client_only_reason(info["fileName"])
+                if bad_reason:
+                    skipped_known_bad.append(info["fileName"])
+                    continue
                 dest = _safe_join(mods_dir, info["fileName"])
                 file_bytes = await asyncio.to_thread(download_bytes, info["downloadUrl"])
                 dest.write_bytes(file_bytes)
 
+            if skipped_known_bad:
+                yield {"type": "log", "message": f"🚫 {len(skipped_known_bad)} mod(s) conocidos por reventar un servidor dedicado no se instalan: {', '.join(skipped_known_bad)}"}
             if skipped_no_url:
                 yield {"type": "log", "message": f"⚠️ {len(skipped_no_url)} mod(s) no se pudieron descargar automáticamente (el autor bloqueó la distribución por terceros): {', '.join(skipped_no_url[:10])}"}
                 await asyncio.to_thread(write_pending_mods, server_name, skipped_no_url)
