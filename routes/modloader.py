@@ -3,7 +3,7 @@ routes/modloader.py - Cambio de versión del modloader de un modpack.
 
 Rutas:
 - GET  /api/modpacks/{modpack}/modloader/versions       → loader/MC actuales + versiones disponibles
-- POST /api/modpacks/{modpack}/modloader/check          → mods que dejarían de ser compatibles
+- GET  /api/modpacks/{modpack}/modloader/check/stream   → SSE: mods que dejarían de ser compatibles
 - GET  /api/modpacks/{modpack}/modloader/install/stream → SSE: descarga e instala la versión elegida
 
 Solo se puede cambiar entre versiones del MISMO tipo de loader detectado y la
@@ -12,13 +12,12 @@ MISMA versión de Minecraft del modpack — nunca de tipo de loader ni de MC.
 import json
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
-from pydantic import BaseModel
 
 from config import DEFAULT_SERVERS_PATH
 from services.modpack import detect_modpack_version
 from services.modloader import (
     loader_key_from_display, get_available_versions, check_mod_compatibility,
-    install_loader_stream, LOADER_DISPLAY_NAMES,
+    check_mod_compatibility_stream, install_loader_stream, LOADER_DISPLAY_NAMES,
 )
 from services import process as proc_module
 from services.busy import BusyGuard
@@ -57,19 +56,29 @@ async def modloader_versions(modpack: str):
     })
 
 
-class ModloaderCheckBody(BaseModel):
-    version: str
+@router.get("/{modpack}/modloader/check/stream")
+async def modloader_check_stream(modpack: str, version: str):
+    """
+    Revisa, con progreso en vivo, si los mods instalados siguen siendo
+    compatibles con `version`. Con packs grandes leer y parsear cada jar
+    tarda lo suyo, así que se cede progreso mod a mod en vez de dejar al
+    usuario esperando una respuesta bloqueante sin feedback.
+    """
+    async def event_stream():
+        try:
+            loader_key, mc_version, current_version = _current_loader(modpack)
+            async for event in check_mod_compatibility_stream(modpack, loader_key, version):
+                yield "data: " + json.dumps(event) + "\n\n"
+        except HTTPException as e:
+            yield "data: " + json.dumps({"type": "error", "detail": e.detail}) + "\n\n"
+        except Exception as e:
+            yield "data: " + json.dumps({"type": "error", "detail": str(e)}) + "\n\n"
 
-
-@router.post("/{modpack}/modloader/check")
-async def modloader_check(modpack: str, body: ModloaderCheckBody):
-    loader_key, mc_version, current_version = _current_loader(modpack)
-    incompatible = check_mod_compatibility(modpack, loader_key, body.version)
-    return JSONResponse({
-        "success": True,
-        "compatible": not incompatible,
-        "incompatible_mods": incompatible,
-    })
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 @router.get("/{modpack}/modloader/install/stream")

@@ -73,34 +73,48 @@ document.getElementById('modloader-verify-btn').addEventListener('click', functi
   document.getElementById('modloader-install-btn').disabled = true;
   modloaderCheckedVersion = null;
 
-  apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/modloader/check', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ version: version })
-  })
-    .then(function(response) {
-      return response.json().then(function(data) { return { ok: response.ok, data: data }; });
-    })
-    .then(function(result) {
-      if (!result.ok) {
-        resultEl.innerHTML = modErrorHtml(result.data.detail || 'Error desconocido');
-        return;
-      }
-      if (result.data.compatible) {
+  var url = '/api/modpacks/' + encodeURIComponent(currentModpack) + '/modloader/check/stream'
+    + '?version=' + encodeURIComponent(version) + '&token=' + encodeURIComponent(authToken);
+  var source = new EventSource(url);
+
+  source.onmessage = function(event) {
+    var data;
+    try {
+      data = JSON.parse(event.data);
+    } catch (e) {
+      return;
+    }
+    if (data.type === 'progress') {
+      resultEl.innerHTML = '<div style="color:var(--muted);font-size:.83rem">Verificando compatibilidad... ('
+        + data.current + '/' + data.total + ') ' + escHtml(data.display_name) + '</div>';
+    } else if (data.type === 'result') {
+      source.close();
+      if (data.compatible) {
         resultEl.innerHTML = '<div style="background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.3);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--green)">'
           + '✅ Todos los mods siguen siendo compatibles.</div>';
         modloaderCheckedVersion = version;
         document.getElementById('modloader-install-btn').disabled = false;
       } else {
-        var names = result.data.incompatible_mods.map(function(m) {
+        var names = data.incompatible_mods.map(function(m) {
           return escHtml(m.display_name) + ' (requiere ' + escHtml(m.required) + ')';
         }).join(', ');
-        resultEl.innerHTML = modErrorHtml('No se puede cambiar de versión: dejarían de ser compatibles: ' + names);
+        var msg = 'El servidor no arrancaría con esta versión: dejarían de ser compatibles: ' + names + '.';
+        if (data.min_required_version) {
+          msg += ' Hace falta al menos la versión ' + escHtml(data.min_required_version)
+            + ' de ' + escHtml(modloaderInfo.loader_display) + ' para que TODOS los mods instalados funcionen.';
+        }
+        resultEl.innerHTML = modErrorHtml(msg);
       }
-    })
-    .catch(function(error) {
-      resultEl.innerHTML = modErrorHtml('Error de red: ' + error.message);
-    });
+    } else if (data.type === 'error') {
+      source.close();
+      resultEl.innerHTML = modErrorHtml(data.detail || 'Error desconocido');
+    }
+  };
+
+  source.onerror = function() {
+    source.close();
+    resultEl.innerHTML = modErrorHtml('Se perdió la conexión al verificar la compatibilidad.');
+  };
 });
 
 document.getElementById('modloader-install-btn').addEventListener('click', function() {

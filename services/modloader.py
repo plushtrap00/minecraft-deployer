@@ -121,6 +121,59 @@ def get_available_versions(loader_key: str, mc_version: str) -> list:
 
 # ── Compatibilidad de mods instalados con una versión de loader propuesta ──────
 
+def _loader_version_tuple(v: str) -> tuple:
+    return tuple(int(x) for x in v.split('.') if x.isdigit())
+
+
+def _extract_min_loader_version(ranges: list) -> str | None:
+    """
+    A partir de las mismas cadenas de rango de loader_versions que interpreta
+    mc_version_compatible (versión "pelada" = mínimo, rango Maven "[x,)",
+    valor exacto "[x]"), calcula la versión mínima que ese mod necesita del
+    modloader. Si un mod declara varias alternativas (OR), se usa la más
+    laxa -- el mínimo más bajo -- porque basta con satisfacer una para que
+    el mod funcione. Devuelve None si ningún rango declarado tiene un límite
+    inferior reconocible (p.ej. solo tope máximo, wildcard, o sintaxis sin
+    resolver como "${...}").
+    """
+    best = None  # (tupla, string original)
+    for vrange in ranges or []:
+        vrange = (vrange or '').strip()
+        if not vrange or '$' in vrange or '{' in vrange:
+            continue
+        lo = None
+        if re.match(r'^\d+(\.\d+)*$', vrange):
+            lo = vrange
+        else:
+            m_exact = re.match(r'^\[([\d.]+)\]$', vrange)
+            if m_exact:
+                lo = m_exact.group(1)
+            else:
+                m = re.match(r'^[\[\(]([\d.]*),\s*([\d.]*)[\]\)]$', vrange)
+                if m and m.group(1):
+                    lo = m.group(1)
+        if lo is None:
+            continue
+        t = _loader_version_tuple(lo)
+        if best is None or t < best[0]:
+            best = (t, lo)
+    return best[1] if best else None
+
+
+def _iter_mods(modpack: str):
+    mods_dir = DEFAULT_SERVERS_PATH / modpack / "mods"
+    if not mods_dir.exists():
+        return []
+    result = []
+    for f in sorted(mods_dir.iterdir(), key=lambda x: x.name.lower()):
+        if not f.is_file():
+            continue
+        low = f.name.lower()
+        if low.endswith(".jar") or low.endswith(".jar.disabled"):
+            result.append(f)
+    return result
+
+
 def check_mod_compatibility(modpack: str, loader_key: str, target_version: str) -> list:
     """
     Revisa cada mod instalado y devuelve los que quedarían CLARAMENTE
@@ -129,17 +182,8 @@ def check_mod_compatibility(modpack: str, loader_key: str, target_version: str) 
     versión de forma inequívoca; datos ambiguos o sin poder interpretar no
     cuentan en contra).
     """
-    mods_dir = DEFAULT_SERVERS_PATH / modpack / "mods"
-    if not mods_dir.exists():
-        return []
-
     incompatible = []
-    for f in sorted(mods_dir.iterdir(), key=lambda x: x.name.lower()):
-        if not f.is_file():
-            continue
-        low = f.name.lower()
-        if not (low.endswith(".jar") or low.endswith(".jar.disabled")):
-            continue
+    for f in _iter_mods(modpack):
         try:
             meta = read_mod_metadata(f.read_bytes())
         except Exception:
@@ -154,6 +198,62 @@ def check_mod_compatibility(modpack: str, loader_key: str, target_version: str) 
                 "required": ", ".join(ranges),
             })
     return incompatible
+
+
+async def check_mod_compatibility_stream(modpack: str, loader_key: str, target_version: str):
+    """
+    Generador async equivalente a check_mod_compatibility(), pero cediendo
+    progreso mod a mod (leer y parsear cada jar del pack no es instantáneo
+    con packs grandes, y bloquear la respuesta hasta terminar todos deja al
+    usuario esperando sin feedback). Además calcula min_required_version: la
+    versión mínima de loader que dejaría a TODOS los mods instalados
+    compatibles a la vez -- el máximo de los mínimos que declara cada uno,
+    ya que cubrir al más exigente cubre automáticamente al resto.
+
+    Eventos cedidos:
+    - {"type": "progress", "current", "total", "display_name"}
+    - {"type": "result", "compatible", "incompatible_mods", "min_required_version", "checked"}
+    """
+    files = await asyncio.to_thread(_iter_mods, modpack)
+    incompatible = []
+    overall_min = None  # (tupla, string)
+
+    for i, f in enumerate(files, start=1):
+        yield {
+            "type": "progress", "current": i, "total": len(files),
+            "display_name": mod_display_name(f.name),
+        }
+
+        try:
+            meta = await asyncio.to_thread(lambda path=f: read_mod_metadata(path.read_bytes()))
+        except Exception:
+            continue
+
+        ranges = meta.get("loader_versions", {}).get(loader_key)
+        if not ranges:
+            continue
+
+        mod_min = _extract_min_loader_version(ranges)
+        if mod_min is not None:
+            t = _loader_version_tuple(mod_min)
+            if overall_min is None or t > overall_min[0]:
+                overall_min = (t, mod_min)
+
+        if not mc_version_compatible(target_version, ranges, bare_as_minimum=True):
+            incompatible.append({
+                "filename": f.name,
+                "display_name": mod_display_name(f.name),
+                "required": ", ".join(ranges),
+                "min_version": mod_min,
+            })
+
+    yield {
+        "type": "result",
+        "compatible": not incompatible,
+        "incompatible_mods": incompatible,
+        "min_required_version": overall_min[1] if overall_min else None,
+        "checked": len(files),
+    }
 
 
 # ── Instalación ─────────────────────────────────────────────────────────────────
