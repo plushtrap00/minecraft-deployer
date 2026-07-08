@@ -136,6 +136,7 @@ function renderModsList(mods) {
       + '<div class="mod-info"><div class="mod-display">' + escHtml(mod.name) + '</div>'
       + '<div class="mod-file">' + escHtml(mod.filename) + '</div></div>'
       + disabledLabel
+      + '<button type="button" class="btn-secondary mod-change-version" title="Cambiar versión" data-name="' + escHtml(mod.name) + '" style="font-size:.78rem;padding:4px 8px;flex-shrink:0">🔄</button>'
       + '<button type="button" class="btn-secondary mod-toggle" title="' + toggleTitle + '" data-filename="' + escHtml(mod.filename) + '" style="font-size:.78rem;padding:4px 8px;flex-shrink:0">' + toggleIcon + '</button>'
       + '<button type="button" class="btn-danger mod-delete" title="Borrar mod" data-filename="' + escHtml(mod.filename) + '" style="opacity:1;font-size:.78rem;padding:4px 8px;flex-shrink:0">🗑</button>'
       + '</div>';
@@ -153,6 +154,11 @@ document.getElementById('mods-list').addEventListener('click', function(event) {
   var toggleBtn = event.target.closest('.mod-toggle');
   if (toggleBtn) {
     toggleMod(toggleBtn.dataset.filename);
+    return;
+  }
+  var changeVersionBtn = event.target.closest('.mod-change-version');
+  if (changeVersionBtn) {
+    openModSearchModal(changeVersionBtn.dataset.name);
   }
 });
 
@@ -1345,11 +1351,18 @@ function modSearchBackButtonHtml() {
   return '<button type="button" class="btn-secondary btn-sm mod-search-back" style="margin-bottom:10px">‹ Volver a resultados</button>';
 }
 
-document.getElementById('mod-search-btn').addEventListener('click', function() {
+// query precargada: usado tanto por "🔍 Buscar mods" (vacía) como por
+// "🔄 Cambiar versión" en un mod ya instalado (nombre del mod) — desde ahí el
+// usuario ve el resultado real marcado "✅ Instalado" (mark_installed compara
+// por mod_id, no por nombre de archivo, así que es fiable) y puede elegir
+// cualquier versión, más nueva o más vieja: install_searched_mod() reusa
+// process_mod_jar(), el mismo chequeo de versión anterior que ya dispara el
+// modal de confirmación al subir un mod a mano.
+function openModSearchModal(prefillQuery) {
   if (!currentModpack) {
     return;
   }
-  document.getElementById('mod-search-input').value = '';
+  document.getElementById('mod-search-input').value = prefillQuery || '';
   Array.prototype.forEach.call(document.querySelectorAll('#mod-search-tabs .mgmt-tab'), function(t) {
     t.classList.toggle('active', t.dataset.source === 'modrinth');
   });
@@ -1357,7 +1370,11 @@ document.getElementById('mod-search-btn').addEventListener('click', function() {
   modSearchCategories = [];
   loadModSearchCategories(modSearchSource);
   document.getElementById('mod-search-modal').classList.add('show');
-  runModSearch('', 0);
+  runModSearch(prefillQuery || '', 0);
+}
+
+document.getElementById('mod-search-btn').addEventListener('click', function() {
+  openModSearchModal('');
 });
 
 document.getElementById('mod-search-modal-close').addEventListener('click', function() {
