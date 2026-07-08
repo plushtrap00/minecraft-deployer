@@ -838,6 +838,8 @@ async def detected_mods(modpack: str):
     names = detect_installed_mods(modpack)
     return JSONResponse({
         "has_biomesoplenty": has_mod_keyword(names, "biomesoplenty") or has_mod_keyword(names, "biomes-o-plenty"),
+        "has_terraforged": has_mod_keyword(names, "terraforged"),
+        "has_skyblockbuilder": has_mod_keyword(names, "skyblockbuilder") or has_mod_keyword(names, "skyblock-builder"),
         "has_create": has_mod_keyword(names, "create"),
         "has_jei": has_mod_keyword(names, "jei"),
         "has_rei": has_mod_keyword(names, "rei"),

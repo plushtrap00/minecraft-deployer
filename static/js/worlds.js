@@ -123,6 +123,7 @@ var typeDescs = {
   'minecraft:flat':        'Mundo completamente plano. Perfecto para construcciones y redstone a gran escala.',
   'biomesoplenty':         'Añade más de 90 biomas nuevos. Requiere el mod Biomes O Plenty instalado.',
   'terraforged':           'Generación de terreno realista y detallada. Requiere el mod TerraForged instalado.',
+  'skyblockbuilder:skyblock': 'Mundo skyblock (islas vacías) generado por SkyblockBuilder — necesario para que el mod cree equipo/isla al unirse; "Normal" genera terreno vanilla normal aunque el mod esté instalado.',
   'custom':                'Introduce manualmente el identificador del tipo de mundo del mod que quieras usar.'
 };
 
@@ -142,6 +143,7 @@ var typeDescs = {
         .then(function(data) {
           var bop = document.getElementById('opt-bop');
           var terraForged = document.getElementById('opt-tf');
+          var skyblock = document.getElementById('opt-sky');
           if (bop) {
             bop.disabled = !data.has_biomesoplenty;
             bop.textContent = '🌺 Biomes O Plenty' + (data.has_biomesoplenty ? ' — detectado' : ' — mod no detectado');
@@ -149,6 +151,21 @@ var typeDescs = {
           if (terraForged) {
             terraForged.disabled = !data.has_terraforged;
             terraForged.textContent = '🏔️ TerraForged' + (data.has_terraforged ? ' — detectado' : ' — mod no detectado');
+          }
+          if (skyblock) {
+            skyblock.disabled = !data.has_skyblockbuilder;
+            skyblock.textContent = '🏝️ Skyblock (SkyblockBuilder)' + (data.has_skyblockbuilder ? ' — detectado' : ' — mod no detectado');
+            // A diferencia de BOP/TerraForged (cosméticos, cualquiera de los
+            // dos sirve como terreno "normal" si se elige mal), elegir el
+            // tipo equivocado acá no es solo distinto: SkyblockBuilder
+            // simplemente no crea equipo/isla y el jugador aparece en
+            // terreno vanilla sin ningún aviso — visto de primera mano con
+            // este modpack. Si el mod está instalado, no tiene sentido que
+            // "Normal" siga siendo el valor por defecto.
+            if (data.has_skyblockbuilder) {
+              document.getElementById('nw-type-select').value = 'skyblockbuilder:skyblock';
+              updateTypeDesc();
+            }
           }
         })
         .catch(function() {});
