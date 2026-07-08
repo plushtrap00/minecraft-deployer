@@ -592,6 +592,19 @@ def _dedup_fingerprint(filename: str) -> str:
     return re.sub(r'[^a-z0-9]', '', core.lower())
 
 
+# _KNOWN_CLIENT_ONLY_MOD_IDS está clavado por mod_id real (tal cual lo declara
+# cada mod, p.ej. "euphoria_patcher" con guion bajo) — para comparar contra
+# nombres de archivo (que es todo lo que hay antes de descargar un mod, o lo
+# único que queda guardado en mods-pendientes.json) hace falta normalizar
+# ambos lados con el mismo criterio, o un caso como "euphoria_patcher"
+# (fingerprint "euphoriapatcher", sin guion bajo) nunca calzaría. Se define
+# acá abajo, no junto al dict de arriba, porque necesita _dedup_fingerprint()
+# ya declarada.
+_KNOWN_CLIENT_ONLY_FINGERPRINTS = {
+    _dedup_fingerprint(mod_id): reason for mod_id, reason in _KNOWN_CLIENT_ONLY_MOD_IDS.items()
+}
+
+
 def find_possible_duplicate_mods(mods_dir: Path) -> list:
     """
     Agrupa los mods instalados en posibles duplicados. No se puede confiar del
@@ -1060,7 +1073,16 @@ def write_pending_mods(modpack: str, filenames: list) -> None:
 
 
 def get_pending_mods(modpack: str) -> list:
-    """Lectura simple: si mods-pendientes.json no está vacío, faltan mods por instalar a mano."""
+    """
+    Lectura simple: si mods-pendientes.json no está vacío, faltan mods por
+    instalar a mano. De paso descarta (autolimpieza barata, sin abrir ningún
+    jar) cualquier entrada que calce con _KNOWN_CLIENT_ONLY_FINGERPRINTS —
+    esto pasa cuando el propio mod bloqueado para terceros ES uno de esos
+    conocidos (services/modpack_install.py ya evita que ENTREN nuevos así,
+    pero un mods-pendientes.json de antes de ese chequeo puede seguir
+    teniendo uno): no tiene sentido pedir instalar a mano algo que ya se sabe
+    que no hace falta en el servidor.
+    """
     path = DEFAULT_SERVERS_PATH / modpack / PENDING_MODS_FILENAME
     if not path.exists():
         return []
@@ -1068,7 +1090,11 @@ def get_pending_mods(modpack: str) -> list:
         data = json.loads(path.read_text(encoding="utf-8"))
     except Exception:
         return []
-    return data if isinstance(data, list) else []
+    if not isinstance(data, list):
+        return []
+    still_pending = [name for name in data if not _KNOWN_CLIENT_ONLY_FINGERPRINTS.get(_dedup_fingerprint(name))]
+    _write_pending_mods_list(modpack, still_pending, data)
+    return still_pending
 
 
 def _write_pending_mods_list(modpack: str, still_pending: list, previous: list) -> None:

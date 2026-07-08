@@ -42,7 +42,7 @@ from services.mod_search import (
 from services.modloader import _http_get, _installer_url, LOADER_DISPLAY_NAMES
 from services.server_create import validate_new_server_name, _write_run_script, _bootstrap_common_files, _vanilla_server_jar_url
 from services.utils import configure_jvm_ram, get_modpacks
-from services.modpack import _dedup_fingerprint, detect_modpack_version, write_pending_mods, _KNOWN_CLIENT_ONLY_MOD_IDS
+from services.modpack import _dedup_fingerprint, detect_modpack_version, write_pending_mods, _KNOWN_CLIENT_ONLY_FINGERPRINTS
 
 CURSEFORGE_MODPACK_CLASS_ID = 4471
 
@@ -73,19 +73,6 @@ def _safe_join(base: Path, rel_path: str) -> Path:
     except ValueError:
         raise ValueError(f"Ruta insegura dentro del modpack: {rel_path}")
     return full
-
-
-# _KNOWN_CLIENT_ONLY_MOD_IDS está clavado por mod_id real (tal cual lo declara
-# cada mod, p.ej. "euphoria_patcher" con guion bajo) — pero acá solo hay un
-# nombre de archivo, no el jar, así que hace falta comparar por
-# _dedup_fingerprint() en vez de por igualdad directa. Se normalizan también
-# las claves (no solo el nombre de archivo entrante) para que casos como
-# "euphoria_patcher" (fingerprint "euphoriapatcher", sin guion bajo) sigan
-# calzando — comparar el nombre de archivo fingerprinteado contra la clave
-# CRUDA sin normalizar nunca habría hecho match para ese caso.
-_KNOWN_CLIENT_ONLY_FINGERPRINTS = {
-    _dedup_fingerprint(mod_id): reason for mod_id, reason in _KNOWN_CLIENT_ONLY_MOD_IDS.items()
-}
 
 
 def _known_client_only_reason(filename: str) -> str | None:
@@ -659,18 +646,20 @@ async def install_curseforge_modpack_stream(mod_id, file_id, server_name: str, r
             skipped_known_bad = []
             for ref in file_refs:
                 info = resolved.get(ref.get("fileID"))
+                # Se comprueba ANTES que el bloqueo de descarga a propósito:
+                # un mod como sodium/iris que además esté bloqueado por
+                # terceros (pasa) no debe terminar en mods-pendientes.json
+                # pidiendo instalarlo a mano — ya sabemos que no hace falta
+                # en el servidor sea cual sea su estado de descarga.
+                filename_hint = info.get("fileName") if info else None
+                if filename_hint and _known_client_only_reason(filename_hint):
+                    skipped_known_bad.append(filename_hint)
+                    continue
                 if not info or not info.get("downloadUrl"):
                     if info and info.get("fileName"):
                         skipped_no_url.append(info["fileName"])
                     else:
                         unresolved_ids.append(str(ref.get("fileID")))
-                    continue
-                # Mods como sodium/iris que ya sabemos que revientan un
-                # servidor dedicado ni se descargan — no tiene sentido bajar
-                # algo que se va a tener que borrar o deshabilitar igual.
-                bad_reason = _known_client_only_reason(info["fileName"])
-                if bad_reason:
-                    skipped_known_bad.append(info["fileName"])
                     continue
                 dest = _safe_join(mods_dir, info["fileName"])
                 file_bytes = await asyncio.to_thread(download_bytes, info["downloadUrl"])
