@@ -400,6 +400,11 @@ def get_curseforge_modpack_versions(mod_id) -> list:
             "source": "curseforge", "version_id": f.get("id"), "version_number": f.get("displayName"),
             "game_versions": f.get("gameVersions", []),
             "download_url": f.get("downloadUrl"), "filename": f.get("fileName"),
+            # ID del archivo "Server Files" asociado a esta build, si el autor
+            # publicó uno (null si no) — ver install_curseforge_modpack_stream:
+            # cuando existe, se prefiere sobre resolver/descargar cada mod
+            # suelto porque ya viene listo para arrancar.
+            "server_pack_file_id": f.get("serverPackFileId"),
         })
     return versions
 
@@ -434,7 +439,8 @@ def _parse_curseforge_loader(mod_loader_id: str) -> tuple:
     return None, None
 
 
-def _download_curseforge_pack_zip(mod_id, file_id) -> zipfile.ZipFile:
+def _download_curseforge_pack_zip(mod_id, file_id) -> tuple:
+    """Devuelve (ZipFile del archivo "Client", dict de la versión) — la versión trae server_pack_file_id si esta build tiene Server Pack asociado."""
     versions = get_curseforge_modpack_versions(mod_id)
     version = next((v for v in versions if v["version_id"] == file_id), None)
     if not version:
@@ -444,7 +450,23 @@ def _download_curseforge_pack_zip(mod_id, file_id) -> zipfile.ZipFile:
             "El autor de este modpack bloqueó su descarga por terceros en CurseForge — no se puede instalar desde esta app."
         )
     pack_bytes = download_bytes(version["download_url"])
-    return zipfile.ZipFile(io.BytesIO(pack_bytes))
+    return zipfile.ZipFile(io.BytesIO(pack_bytes)), version
+
+
+def _resolve_curseforge_server_pack(server_pack_file_id: int) -> dict | None:
+    """
+    Resuelve el archivo "Server Files" asociado a una versión de modpack
+    (server_pack_file_id, de get_curseforge_modpack_versions) a su URL de
+    descarga real. Devuelve None si el autor también bloqueó ESTE archivo
+    para descarga por terceros (es un archivo aparte del "Client", puede
+    estar bloqueado aunque el otro no lo esté, o viceversa) — en ese caso
+    quien llame debe caer al método mod-por-mod, igual que si no existiera.
+    """
+    resolved = _resolve_curseforge_file_urls([server_pack_file_id])
+    info = resolved.get(server_pack_file_id)
+    if not info or not info.get("downloadUrl"):
+        return None
+    return {"download_url": info["downloadUrl"], "filename": info.get("fileName") or "server-files.zip"}
 
 
 def get_curseforge_modpack_files(mod_id, file_id) -> tuple[list, str | None]:
@@ -454,7 +476,7 @@ def get_curseforge_modpack_files(mod_id, file_id) -> tuple[list, str | None]:
     a nombres de archivo reales vía la API (sin descargar los jars) — mismo
     endpoint bulk que ya usa _resolve_curseforge_file_urls() al instalar.
     """
-    zf = _download_curseforge_pack_zip(mod_id, file_id)
+    zf, _version = _download_curseforge_pack_zip(mod_id, file_id)
     manifest = json.loads(zf.read("manifest.json"))
     zf.close()
     mc_version = (manifest.get("minecraft") or {}).get("version")
@@ -472,7 +494,7 @@ async def install_curseforge_modpack_stream(mod_id, file_id, server_name: str, r
     try:
         headers = _curseforge_headers()
         yield {"type": "log", "message": "Descargando manifest del modpack..."}
-        zf = await asyncio.to_thread(_download_curseforge_pack_zip, mod_id, file_id)
+        zf, version = await asyncio.to_thread(_download_curseforge_pack_zip, mod_id, file_id)
         manifest = json.loads(zf.read("manifest.json"))
 
         mc_version = (manifest.get("minecraft") or {}).get("version")
@@ -485,53 +507,87 @@ async def install_curseforge_modpack_stream(mod_id, file_id, server_name: str, r
         async for event in _install_loader_or_vanilla(server_dir, loader_key, mc_version, loader_version, ram_min, ram_max):
             yield event
 
-        file_refs = manifest.get("files", [])
-        yield {"type": "log", "message": f"Resolviendo descargas de {len(file_refs)} mod(s)..."}
-        file_ids = [f["fileID"] for f in file_refs if f.get("fileID")]
-        resolved = await asyncio.to_thread(_resolve_curseforge_file_urls, file_ids)
+        # Antes de resolver y descargar los mods uno por uno, se comprueba si
+        # el autor publicó un "Server Files" para esta build (server_pack_file_id,
+        # ver get_curseforge_modpack_versions) — un zip ya preparado con los
+        # mods de servidor (sin los de cliente) más su propia config/scripts,
+        # pensado para bajar y arrancar directo. Cuando existe y se puede
+        # descargar, se usa entero en vez de resolver cada mod contra la API;
+        # solo se cae al método mod-por-mod si no hay Server Pack o si ESE
+        # archivo en concreto también está bloqueado para terceros (es un
+        # archivo aparte del "Client", el bloqueo de uno no implica el del otro).
+        server_pack_file_id = version.get("server_pack_file_id")
+        server_pack_info = None
+        if server_pack_file_id:
+            yield {"type": "log", "message": "Este modpack tiene un Server Pack — comprobando si se puede usar en vez de descargar los mods uno por uno..."}
+            server_pack_info = await asyncio.to_thread(_resolve_curseforge_server_pack, server_pack_file_id)
 
-        mods_dir = server_dir / "mods"
-        mods_dir.mkdir(exist_ok=True)
-        # skipped_no_url son mods con nombre de archivo conocido pero sin URL de
-        # descarga (bloqueados por el autor): se persisten en mods-pendientes.txt
-        # porque se pueden verificar por nombre más tarde (ver write_pending_mods
-        # / get_pending_mods). unresolved_ids son referencias que la API ni
-        # siquiera devolvió (fileID inválido/borrado) — no hay nombre de archivo
-        # con el que comprobar si ya se resolvieron a mano, así que solo se
-        # avisan en el log: persistirlas dejaría el modpack bloqueado para
-        # arrancar para siempre, sin ninguna forma de que el autoborrado lo detecte.
         skipped_no_url = []
-        unresolved_ids = []
-        for ref in file_refs:
-            info = resolved.get(ref.get("fileID"))
-            if not info or not info.get("downloadUrl"):
-                if info and info.get("fileName"):
-                    skipped_no_url.append(info["fileName"])
-                else:
-                    unresolved_ids.append(str(ref.get("fileID")))
-                continue
-            dest = _safe_join(mods_dir, info["fileName"])
-            file_bytes = await asyncio.to_thread(download_bytes, info["downloadUrl"])
-            dest.write_bytes(file_bytes)
+        if server_pack_info:
+            yield {"type": "log", "message": f"✅ Server Pack encontrado ({server_pack_info['filename']}) — descargando de una sola vez..."}
+            pack_bytes = await asyncio.to_thread(download_bytes, server_pack_info["download_url"])
 
-        if skipped_no_url:
-            yield {"type": "log", "message": f"⚠️ {len(skipped_no_url)} mod(s) no se pudieron descargar automáticamente (el autor bloqueó la distribución por terceros): {', '.join(skipped_no_url[:10])}"}
-            await asyncio.to_thread(write_pending_mods, server_name, skipped_no_url)
-        if unresolved_ids:
-            yield {"type": "log", "message": f"⚠️ {len(unresolved_ids)} referencia(s) de mod no se pudieron resolver en absoluto (ID inválido o borrado en CurseForge): {', '.join(unresolved_ids[:10])}"}
+            def _extract_server_pack():
+                with zipfile.ZipFile(io.BytesIO(pack_bytes)) as server_zf:
+                    count = len(server_zf.namelist())
+                    server_zf.extractall(server_dir)
+                    return count
 
-        yield {"type": "log", "message": "Aplicando overrides de configuración..."}
-        overrides_folder = manifest.get("overrides", "overrides")
-        prefix = overrides_folder + "/"
-        for name in zf.namelist():
-            if not name.startswith(prefix) or name.endswith("/"):
-                continue
-            rel = name[len(prefix):]
-            if not rel:
-                continue
-            dest = _safe_join(server_dir, rel)
-            dest.parent.mkdir(parents=True, exist_ok=True)
-            dest.write_bytes(zf.read(name))
+            extracted_count = await asyncio.to_thread(_extract_server_pack)
+            yield {"type": "log", "message": f"Server Pack extraído ({extracted_count} archivo(s)) — ya incluye sus propios mods y overrides."}
+        else:
+            if server_pack_file_id:
+                yield {"type": "log", "message": "⚠️ El Server Pack de este modpack está bloqueado para descarga por terceros — se instalarán los mods uno por uno."}
+            else:
+                yield {"type": "log", "message": "Este modpack no tiene Server Pack — se instalarán los mods uno por uno."}
+
+            file_refs = manifest.get("files", [])
+            yield {"type": "log", "message": f"Resolviendo descargas de {len(file_refs)} mod(s)..."}
+            file_ids = [f["fileID"] for f in file_refs if f.get("fileID")]
+            resolved = await asyncio.to_thread(_resolve_curseforge_file_urls, file_ids)
+
+            mods_dir = server_dir / "mods"
+            mods_dir.mkdir(exist_ok=True)
+            # skipped_no_url son mods con nombre de archivo conocido pero sin URL de
+            # descarga (bloqueados por el autor): se persisten en mods-pendientes.txt
+            # porque se pueden verificar por nombre más tarde (ver write_pending_mods
+            # / get_pending_mods). unresolved_ids son referencias que la API ni
+            # siquiera devolvió (fileID inválido/borrado) — no hay nombre de archivo
+            # con el que comprobar si ya se resolvieron a mano, así que solo se
+            # avisan en el log: persistirlas dejaría el modpack bloqueado para
+            # arrancar para siempre, sin ninguna forma de que el autoborrado lo detecte.
+            unresolved_ids = []
+            for ref in file_refs:
+                info = resolved.get(ref.get("fileID"))
+                if not info or not info.get("downloadUrl"):
+                    if info and info.get("fileName"):
+                        skipped_no_url.append(info["fileName"])
+                    else:
+                        unresolved_ids.append(str(ref.get("fileID")))
+                    continue
+                dest = _safe_join(mods_dir, info["fileName"])
+                file_bytes = await asyncio.to_thread(download_bytes, info["downloadUrl"])
+                dest.write_bytes(file_bytes)
+
+            if skipped_no_url:
+                yield {"type": "log", "message": f"⚠️ {len(skipped_no_url)} mod(s) no se pudieron descargar automáticamente (el autor bloqueó la distribución por terceros): {', '.join(skipped_no_url[:10])}"}
+                await asyncio.to_thread(write_pending_mods, server_name, skipped_no_url)
+            if unresolved_ids:
+                yield {"type": "log", "message": f"⚠️ {len(unresolved_ids)} referencia(s) de mod no se pudieron resolver en absoluto (ID inválido o borrado en CurseForge): {', '.join(unresolved_ids[:10])}"}
+
+            yield {"type": "log", "message": "Aplicando overrides de configuración..."}
+            overrides_folder = manifest.get("overrides", "overrides")
+            prefix = overrides_folder + "/"
+            for name in zf.namelist():
+                if not name.startswith(prefix) or name.endswith("/"):
+                    continue
+                rel = name[len(prefix):]
+                if not rel:
+                    continue
+                dest = _safe_join(server_dir, rel)
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                dest.write_bytes(zf.read(name))
+
         zf.close()
 
         await asyncio.to_thread(_bootstrap_common_files, server_dir, mc_version, loader_key, loader_version)
