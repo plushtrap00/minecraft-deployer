@@ -23,7 +23,6 @@ from services.players import (
     validate_player_name, validate_ip, sanitize_reason,
     PLAYER_FILES,
 )
-from services.process import mc_running_modpack
 
 router = APIRouter(prefix="/api/players", tags=["players"])
 
@@ -190,14 +189,15 @@ async def unban_ip(ip: str):
 async def sync_all():
     """Fuerza la sincronización de todos los archivos globales a todos los modpacks."""
     results = {}
+    skipped = []
     for fname in PLAYER_FILES:
         data = read_global_file(fname)
-        synced, _ = sync_to_all_modpacks(fname, data)
+        synced, skipped = sync_to_all_modpacks(fname, data)
         results[fname] = synced
     warning = None
-    if mc_running_modpack:
+    if skipped:
         warning = (
-            f"El servidor '{mc_running_modpack}' estaba activo y no se sincronizó "
+            f"El servidor '{skipped[0]}' estaba activo y no se sincronizó "
             "para no interrumpirlo. Usa los comandos de consola en su lugar."
         )
     return JSONResponse({"success": True, "results": results, "warning": warning})
