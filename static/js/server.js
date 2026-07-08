@@ -231,11 +231,10 @@ function recheckPendingModsThenStart(modpack) {
     settled = true;
     checkSource.close();
     if (pendingMods && pendingMods.length) {
-      applyServerState(false, null);
-      showAlert(
+      offerForceStart(
+        modpack,
         'Este modpack dio error al descargar estos mods: ' + pendingMods.join(', ')
-          + '. Instálalos manualmente en Gestionar → Mods → importar carpeta/mods uno a uno.',
-        '⏳'
+          + '. Instálalos manualmente en Gestionar → Mods → importar carpeta/mods uno a uno.'
       );
       return;
     }
@@ -263,11 +262,30 @@ function recheckPendingModsThenStart(modpack) {
   };
 }
 
-function _launchServer(modpack) {
+// El aviso de mods pendientes nunca desaparece del todo (vuelve a salir en
+// cada intento de arranque hasta que se instalen de verdad), pero no todo
+// mod pendiente hace falta para jugar — puede ser opcional, o el admin ya
+// sabe que no lo necesita. "Iniciar de todas formas" manda force=1 a
+// /api/server/start, que se salta ESE chequeo puntual sin dejar de avisar
+// la próxima vez.
+function offerForceStart(modpack, message) {
+  applyServerState(false, null);
+  showConfirm(
+    'Mods pendientes de instalar',
+    message + ' ¿Quieres iniciar el servidor de todas formas?',
+    function() { _launchServer(modpack, true); },
+    { icon: '⏳', confirmLabel: 'Iniciar de todas formas', cancelLabel: 'Cancelar', confirmColor: 'var(--yellow)' }
+  );
+}
+
+function _launchServer(modpack, force) {
   document.getElementById('status-text').textContent = 'Iniciando ' + modpack + '...';
 
   var form = new FormData();
   form.append('modpack', modpack);
+  if (force) {
+    form.append('force', '1');
+  }
   apiFetch('/api/server/start', { method: 'POST', body: form })
     .then(function(response) {
       return response.json().then(function(data) {
@@ -280,12 +298,8 @@ function _launchServer(modpack) {
         applyServerState(true, modpack);
       } else {
         applyServerState(false, null);
-        // pending_mods viene con la lista completa aparte de detail (ver
-        // routes/server.py) justo para poder mostrarla en un aviso persistente:
-        // un toast de 3s no es tiempo suficiente para leer/copiar varios
-        // nombres de mod antes de que desaparezca solo.
         if (result.data.pending_mods && result.data.pending_mods.length) {
-          showAlert(result.data.detail, '⏳');
+          offerForceStart(modpack, result.data.detail);
         } else {
           showToast(result.data.detail || 'Error al iniciar', 'error');
         }

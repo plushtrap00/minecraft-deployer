@@ -50,7 +50,7 @@ async def server_status():
 
 
 @router.post("/start")
-async def server_start(modpack: str = Form(...)):
+async def server_start(modpack: str = Form(...), force: str = Form("0")):
     with mc_process_lock:
         if proc_module.mc_process is not None and proc_module.mc_process.poll() is None:
             raise HTTPException(status_code=400, detail="Ya hay un servidor en marcha")
@@ -62,12 +62,15 @@ async def server_start(modpack: str = Form(...)):
             raise HTTPException(status_code=403, detail="Ruta no permitida")
 
         # Modpacks de CurseForge instalados con algún mod bloqueado por el autor
-        # para descarga por terceros (ver services/modpack_install.py) no
-        # arrancan hasta que esos mods se instalen a mano — un servidor a medias
-        # lanzado sin darse cuenta es peor que no dejarlo arrancar.
-        # get_pending_mods() es solo una lectura de mods-pendientes.json (ver
-        # services/modpack.py), no reescanea mods/, así que es instantánea.
-        pending_mods = get_pending_mods(modpack)
+        # para descarga por terceros (ver services/modpack_install.py) avisan
+        # antes de arrancar — pero no todo mod pendiente hace falta de verdad
+        # para jugar (puede que sea opcional, o que el admin ya sepa que no lo
+        # necesita), así que el bloqueo se puede saltar a propósito con
+        # force=1: el aviso seguirá apareciendo en cada intento hasta que se
+        # instalen, pero no obliga. get_pending_mods() es solo una lectura de
+        # mods-pendientes.json (ver services/modpack.py), no reescanea mods/,
+        # así que es instantánea.
+        pending_mods = [] if force == "1" else get_pending_mods(modpack)
         if pending_mods:
             return JSONResponse(status_code=409, content={
                 "detail": (

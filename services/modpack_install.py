@@ -37,7 +37,7 @@ from app_constants import (
 )
 from services.mod_search import (
     _http_get_json, download_bytes, _curseforge_headers, _HTTP_TIMEOUT, CURSEFORGE_GAME_ID,
-    MODRINTH_LOADERS, CURSEFORGE_LOADER_TYPES,
+    MODRINTH_LOADERS, CURSEFORGE_LOADER_TYPES, CURSEFORGE_MOD_CLASS_ID,
 )
 from services.modloader import _http_get, _installer_url, LOADER_DISPLAY_NAMES
 from services.server_create import validate_new_server_name, _write_run_script, _bootstrap_common_files, _vanilla_server_jar_url
@@ -431,6 +431,33 @@ def _resolve_curseforge_file_urls(file_ids: list) -> dict:
     return result
 
 
+def _resolve_curseforge_project_classes(project_ids: list) -> dict:
+    """
+    POST /v1/mods (bulk) -> {projectID: classId}. El manifest.json de un
+    modpack de CurseForge mezcla en "files" referencias a mods (classId=6,
+    CURSEFORGE_MOD_CLASS_ID) CON resource packs, shaders y cualquier otro tipo
+    de proyecto, sin distinguirlos — esto es lo único que permite separarlos
+    antes de decidir qué va a mods/ y qué no hace falta en absoluto para un
+    servidor (un resource pack o shader no lo usa el server, son 100% del
+    lado cliente).
+    """
+    headers = _curseforge_headers()
+    result = {}
+    for i in range(0, len(project_ids), _CURSEFORGE_BULK_FILES_CHUNK):
+        chunk = project_ids[i:i + _CURSEFORGE_BULK_FILES_CHUNK]
+        body = json.dumps({"modIds": chunk}).encode("utf-8")
+        req = urllib.request.Request(
+            "https://api.curseforge.com/v1/mods",
+            data=body, method="POST",
+            headers={**headers, "Content-Type": "application/json"},
+        )
+        with urllib.request.urlopen(req, timeout=_HTTP_TIMEOUT) as resp:
+            data = json.loads(resp.read().decode("utf-8", errors="replace"))
+        for m in data.get("data", []):
+            result[m["id"]] = m.get("classId")
+    return result
+
+
 def _parse_curseforge_loader(mod_loader_id: str) -> tuple:
     """'forge-47.2.0' -> ('forge', '47.2.0'); 'neoforge-20.1.57' -> ('neoforge', '20.1.57')."""
     for prefix, key in (("neoforge-", "neoforge"), ("forge-", "forge"), ("fabric-", "fabric"), ("quilt-", "quilt")):
@@ -541,7 +568,23 @@ async def install_curseforge_modpack_stream(mod_id, file_id, server_name: str, r
             else:
                 yield {"type": "log", "message": "Este modpack no tiene Server Pack — se instalarán los mods uno por uno."}
 
-            file_refs = manifest.get("files", [])
+            all_file_refs = manifest.get("files", [])
+            # manifest.json mezcla en "files" referencias a mods CON resource
+            # packs, shaders y cualquier otro tipo de proyecto de CurseForge,
+            # sin ninguna marca que los distinga ahí mismo — solo el classId
+            # del proyecto (no del archivo) lo dice. Sin filtrar esto, un
+            # resource pack bloqueado para terceros (algo frecuente, ni
+            # siquiera es un mod que el servidor vaya a usar) terminaba
+            # tratado igual que un mod real: bloqueando el arranque del
+            # servidor hasta "instalarlo", cuando en realidad no hacía falta
+            # en absoluto en un servidor.
+            project_ids = list({f["projectID"] for f in all_file_refs if f.get("projectID")})
+            project_classes = await asyncio.to_thread(_resolve_curseforge_project_classes, project_ids) if project_ids else {}
+            file_refs = [f for f in all_file_refs if project_classes.get(f.get("projectID"), CURSEFORGE_MOD_CLASS_ID) == CURSEFORGE_MOD_CLASS_ID]
+            skipped_non_mod_count = len(all_file_refs) - len(file_refs)
+            if skipped_non_mod_count:
+                yield {"type": "log", "message": f"ℹ️ {skipped_non_mod_count} archivo(s) que no son mods (resource packs, shaders...) se omiten: no hacen falta en un servidor."}
+
             yield {"type": "log", "message": f"Resolviendo descargas de {len(file_refs)} mod(s)..."}
             file_ids = [f["fileID"] for f in file_refs if f.get("fileID")]
             resolved = await asyncio.to_thread(_resolve_curseforge_file_urls, file_ids)
