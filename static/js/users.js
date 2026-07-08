@@ -57,7 +57,7 @@ function validateNewUsername(val) {
 
 function validateNewPassword(val) {
   if (!val) return 'La contraseña es obligatoria';
-  if (val.length < 3) return 'Mínimo 3 caracteres';
+  if (val.length < 8) return 'Mínimo 8 caracteres';
   if (!PRINTABLE_RE.test(val)) return 'Solo se permiten caracteres estándar (sin emojis ni símbolos raros)';
   return '';
 }
