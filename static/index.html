@@ -387,9 +387,39 @@
               <hr class="section-sep">
               <div class="section-toolbar">
                 <span class="section-toolbar-title">Mundos instalados</span>
-                <button id="btn-new-world" class="btn-sm">+ Nuevo mundo</button>
+                <div style="display:flex;gap:8px">
+                  <button id="btn-upload-world" class="btn-sm">⬆️ Subir mundo</button>
+                  <button id="btn-new-world" class="btn-sm">+ Nuevo mundo</button>
+                </div>
               </div>
               <div id="worlds-list"><p class="empty-msg">Cargando...</p></div>
+
+              <!-- Subir mundo existente (inline, sin modal) -->
+              <div id="upload-world-form" class="new-world-form" style="display:none">
+                <div style="font-size:.85rem;font-weight:600;margin-bottom:12px">⬆️ Subir mundo existente</div>
+                <div class="props-grid" style="margin-bottom:12px">
+                  <div class="prop-field full-width">
+                    <label class="prop-label">Archivo (.zip, .tar.gz, .tar.bz2, .tar, .rar) <span class="req">*</span></label>
+                    <input type="file" id="uw-file" accept=".zip,.tar.gz,.tgz,.tar.bz2,.tar,.rar">
+                    <span class="hint">Puede ser una carpeta de mundo comprimida directamente o un zip con la carpeta dentro.</span>
+                  </div>
+                  <div class="prop-field">
+                    <label class="prop-label">Nombre de carpeta <span class="req">*</span></label>
+                    <input type="text" id="uw-name" placeholder="ej: mundo_importado">
+                    <span class="hint">Solo letras, números, _ y -</span>
+                  </div>
+                </div>
+                <div class="toggle-row" style="margin-bottom:12px">
+                  <div class="toggle-track on" id="uw-activate-toggle"><div class="toggle-thumb"></div></div>
+                  <span style="font-size:.83rem">Activar este mundo (cambia <code>level-name</code>)</span>
+                </div>
+                <div id="uw-progress" style="display:none;margin-bottom:12px;font-size:.82rem;color:var(--muted)"></div>
+                <div class="warn-box" style="margin-bottom:12px">⚠️ Si el servidor está corriendo, detenlo antes de activar el mundo subido.</div>
+                <div style="display:flex;gap:8px;justify-content:flex-end">
+                  <button class="btn-secondary" id="uw-cancel-inline">Cancelar</button>
+                  <button id="uw-confirm">⬆️ Subir mundo</button>
+                </div>
+              </div>
 
               <!-- Crear nuevo mundo (inline, sin modal) -->
               <div id="new-world-form" class="new-world-form" style="display:none">

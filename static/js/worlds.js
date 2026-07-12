@@ -135,7 +135,11 @@ var typeDescs = {
 
   btnNew.addEventListener('click', function() {
     var form = document.getElementById('new-world-form');
+    var uploadForm = document.getElementById('upload-world-form');
     var isOpen = form.style.display !== 'none';
+    if (!isOpen && uploadForm) {
+      uploadForm.style.display = 'none';
+    }
     form.style.display = isOpen ? 'none' : 'block';
     if (!isOpen && currentModpack) {
       apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/detected-mods')
@@ -232,6 +236,105 @@ var typeDescs = {
       .catch(function() { showToast('Error al crear mundo', 'error'); });
   });
 })();
+
+// -- Subir mundo existente (inline, sin modal) --------------------------------
+var uwActivate = true;
+
+(function() {
+  var btnUpload = document.getElementById('btn-upload-world');
+  if (!btnUpload) {
+    return;
+  }
+
+  btnUpload.addEventListener('click', function() {
+    var form = document.getElementById('upload-world-form');
+    var newWorldForm = document.getElementById('new-world-form');
+    var isOpen = form.style.display !== 'none';
+    if (!isOpen) {
+      newWorldForm.style.display = 'none';
+    }
+    form.style.display = isOpen ? 'none' : 'block';
+  });
+
+  document.getElementById('uw-cancel-inline').addEventListener('click', function() {
+    document.getElementById('upload-world-form').style.display = 'none';
+  });
+
+  document.getElementById('uw-activate-toggle').addEventListener('click', function() {
+    uwActivate = !uwActivate;
+    this.classList.toggle('on', uwActivate);
+  });
+
+  document.getElementById('uw-file').addEventListener('change', function() {
+    if (!this.files.length) {
+      return;
+    }
+    var nameField = document.getElementById('uw-name');
+    if (!nameField.value.trim()) {
+      var base = this.files[0].name.replace(/\.(zip|tar\.gz|tgz|tar\.bz2|tar|rar)$/i, '');
+      nameField.value = base.replace(/[^a-zA-Z0-9_\-]/g, '_');
+    }
+  });
+
+  document.getElementById('uw-confirm').addEventListener('click', function() {
+    var fileInput = document.getElementById('uw-file');
+    var file = fileInput.files[0];
+    if (!file) {
+      showAlert('Selecciona un archivo de mundo (.zip, .tar.gz...)');
+      return;
+    }
+    var worldName = document.getElementById('uw-name').value.trim();
+    if (!worldName) {
+      showAlert('Escribe un nombre para el mundo');
+      return;
+    }
+
+    var confirmBtn = document.getElementById('uw-confirm');
+    var progress = document.getElementById('uw-progress');
+    confirmBtn.disabled = true;
+    progress.style.display = 'block';
+    progress.style.color = 'var(--muted)';
+    progress.textContent = 'Subiendo ' + file.name + '... 0%';
+
+    var form = new FormData();
+    form.append('file', file);
+    form.append('world_name', worldName);
+    form.append('activate', uwActivate ? '1' : '0');
+
+    xhrPostFormData(
+      '/api/modpacks/' + encodeURIComponent(currentModpack) + '/worlds/upload',
+      form,
+      function(loaded) {
+        var pct = Math.min(100, Math.round((loaded / file.size) * 100));
+        progress.textContent = 'Subiendo ' + file.name + '... ' + pct + '%';
+      }
+    )
+      .then(function(result) {
+        confirmBtn.disabled = false;
+        if (result.ok && result.data.success) {
+          progress.textContent = '';
+          progress.style.display = 'none';
+          showToast('Mundo subido (' + result.data.size_mb + ' MB)', 'success');
+          document.getElementById('upload-world-form').style.display = 'none';
+          fileInput.value = '';
+          document.getElementById('uw-name').value = '';
+          loadWorlds();
+          if (uwActivate) {
+            loadServerProps();
+          }
+        } else {
+          progress.style.color = 'var(--red)';
+          progress.textContent = result.data.detail || 'Error al subir el mundo';
+        }
+      })
+      .catch(function() {
+        confirmBtn.disabled = false;
+        progress.style.color = 'var(--red)';
+        progress.textContent = 'Error de red al subir el mundo';
+      });
+  });
+})();
+
 
 function updateTypeDesc() {
   var sel = document.getElementById('nw-type-select');

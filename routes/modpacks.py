@@ -27,6 +27,7 @@ Rutas:
 - GET       /api/modpacks/{modpack}/worlds
 - POST      /api/modpacks/{modpack}/worlds/activate
 - POST      /api/modpacks/{modpack}/worlds/create
+- POST      /api/modpacks/{modpack}/worlds/upload
 - DELETE    /api/modpacks/{modpack}/worlds/{world_name}
 - GET       /api/modpacks/{modpack}/world-files
 - GET/POST  /api/modpacks/{modpack}/world-file
@@ -889,6 +890,105 @@ async def create_world(
     if activate == "1":
         save_server_property(modpack, "level-name", world_name)
     return JSONResponse({"success": True, "world_name": world_name, "message": "Mundo configurado. Se generará al iniciar el servidor."})
+
+
+@router.post("/{modpack}/worlds/upload")
+async def upload_world(
+    modpack: str,
+    file: UploadFile = File(...),
+    world_name: str = Form(...),
+    activate: str = Form("1"),
+):
+    """
+    Sube un mundo ya existente (partida de un jugador, backup de otro
+    servidor...) empaquetado en .zip/.tar.gz/.tar.bz2/.tar/.rar y lo registra
+    como carpeta de mundo de este modpack. Reutiliza extract_archive (mismos
+    formatos que /api/upload-and-extract) y detecta si el archivo trae el
+    mundo envuelto en una carpeta propia (ej. al comprimir la carpeta del
+    mundo directamente) o con level.dat ya en la raíz del zip (ej. al
+    comprimir *el contenido* de la carpeta).
+    """
+    import tempfile
+
+    if not re.match(r'^[a-zA-Z0-9_\-]+$', world_name):
+        raise HTTPException(status_code=400, detail="Nombre de mundo inválido (solo letras, números, _ y -)")
+    base = DEFAULT_SERVERS_PATH / modpack
+    if not base.exists():
+        raise HTTPException(status_code=404, detail="Modpack no encontrado")
+    dest = base / world_name
+    if dest.exists():
+        raise HTTPException(status_code=400, detail="Ya existe una carpeta con ese nombre")
+
+    with BusyGuard(f"subiendo mundo a '{modpack}'"):
+        tmp_dir = Path(tempfile.mkdtemp())
+        try:
+            archive_name = Path(file.filename).name if file.filename else "world.zip"
+            temp_archive = tmp_dir / archive_name
+
+            def _write_temp():
+                with open(temp_archive, "wb") as buffer:
+                    shutil.copyfileobj(file.file, buffer)
+
+            await asyncio.to_thread(_write_temp)
+
+            extract_dir = tmp_dir / "extracted"
+            result = await asyncio.to_thread(extract_archive, temp_archive, extract_dir)
+
+            def _is_world_dir(d: Path) -> bool:
+                return (d / "level.dat").exists() or (d / "region").exists()
+
+            def _find_world_root_or_error() -> Path:
+                entries = list(extract_dir.iterdir())
+                if not entries:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Subida errónea: el archivo está vacío, no se pudo extraer ningún contenido.",
+                    )
+                if _is_world_dir(extract_dir):
+                    return extract_dir
+
+                subdirs = [d for d in entries if d.is_dir()]
+                if len(subdirs) == 1 and _is_world_dir(subdirs[0]):
+                    return subdirs[0]
+
+                names = ", ".join(sorted(e.name for e in entries)[:10])
+                if len(subdirs) > 1:
+                    detail = (
+                        "Subida errónea: el archivo contiene varias carpetas de nivel superior "
+                        f"({names}) y ninguna es una carpeta de mundo válida (falta level.dat o region/ "
+                        "dentro de ella). Comprime solo la carpeta del mundo, o su contenido directamente."
+                    )
+                else:
+                    detail = (
+                        "Subida errónea: no se encontró un mundo de Minecraft válido en el archivo "
+                        f"(falta level.dat o region/). Contenido detectado en la raíz: {names}."
+                    )
+                raise HTTPException(status_code=400, detail=detail)
+
+            world_root = await asyncio.to_thread(_find_world_root_or_error)
+
+            await asyncio.to_thread(shutil.move, str(world_root), str(dest))
+
+            size_mb = await asyncio.to_thread(
+                lambda: sum(f.stat().st_size for f in dest.rglob("*") if f.is_file()) / (1024 * 1024)
+            )
+
+            if activate == "1":
+                save_server_property(modpack, "level-name", world_name)
+
+            return JSONResponse({
+                "success": True,
+                "world_name": world_name,
+                "size_mb": round(size_mb, 1),
+                "files_extracted": result["files_extracted"],
+                "activated": activate == "1",
+            })
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+        finally:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
 
 
 @router.get("/{modpack}/worlds/{world_name}/download")
