@@ -126,7 +126,7 @@ document.getElementById('dialog-overlay').addEventListener('click', function(eve
 
 // -- Overlay de reinicio: bloquea toda la app hasta que vuelva a responder ----
 // El estado real ("¿está reiniciando?") vive en sysmon.js (beginRestartWatch),
-// que ya corre siempre en segundo plano desde que carga la página -- acá solo
+// que ya corre siempre en segundo plano desde que carga la página -- aquí solo
 // las funciones de mostrar/ocultar, para que cualquier archivo pueda usarlas
 // sin duplicar el overlay ni su poll.
 function showRestartOverlay(title, sub) {

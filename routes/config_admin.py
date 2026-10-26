@@ -10,7 +10,7 @@ si hay un servidor de Minecraft corriendo o una operación en curso).
 
 Rutas:
 - GET  /api/admin/env        → variables de .env conocidas (sin hashes de contraseña)
-- POST /api/admin/env        → guarda cambios; una nueva contraseña (opcional) se hashea acá
+- POST /api/admin/env        → guarda cambios; una nueva contraseña (opcional) se hashea aquí
 - GET  /api/admin/constants  → valores + descripciones de .APP_CONSTANTS
 - POST /api/admin/constants  → guarda cambios
 - POST /api/admin/restart    → reinicia la app para aplicar lo anterior
@@ -34,7 +34,7 @@ _ENV_PATH = Path(__file__).parent.parent / ".env"
 # Claves de .env que expone el formulario. APP_PASSWORD_HASH/PABLO_PASSWORD_HASH
 # quedan afuera a propósito: no tiene sentido pegar un hash bcrypt a mano — el
 # cambio de contraseña usa su propio campo de texto plano (ver new_password),
-# que se hashea acá mismo antes de guardarlo.
+# que se hashea aquí mismo antes de guardarlo.
 _ENV_EDITABLE_KEYS = [
     "APP_USERNAME", "JWT_SECRET", "WEB_PORT", "SERVERS_PATH", "MC_DOMAIN",
     "CURSEFORGE_API_KEY", "AUTO_UPDATE_ENABLED", "AUTO_UPDATE_INTERVAL_SECONDS",
@@ -94,7 +94,7 @@ async def update_env(request: Request, body: EnvUpdateBody):
     except OSError as e:
         # dotenv.set_key() escribe de forma atómica (archivo temporal + os.replace);
         # si .env no se puede escribir (p.ej. montado ":ro" en Docker), esto lanza
-        # sin que quede rastro en ningún lado si no se captura explícitamente acá.
+        # sin que quede rastro en ningún lado si no se captura explícitamente aquí.
         print(f"[config-admin] No se pudo escribir {_ENV_PATH}: {e}", flush=True)
         raise HTTPException(
             status_code=500,

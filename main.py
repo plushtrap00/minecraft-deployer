@@ -335,6 +335,6 @@ if __name__ == "__main__":
     # se queda esperando a que esas conexiones se cierren solas ANTES de que
     # el proceso llegue siquiera a enterarse del apagado (uvicorn espera esto
     # primero y recién después dispara el evento "shutdown" de la app — para
-    # entonces ya es tarde para acortar la espera desde acá). Pasado este
+    # entonces ya es tarde para acortar la espera desde aquí). Pasado este
     # tiempo, uvicorn cancela las conexiones que sigan abiertas a la fuerza.
     uvicorn.run(app, host="0.0.0.0", port=WEB_PORT, reload=False, timeout_graceful_shutdown=3)

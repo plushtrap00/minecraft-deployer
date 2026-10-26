@@ -161,7 +161,7 @@ var typeDescs = {
             skyblock.textContent = '🏝️ Skyblock (SkyblockBuilder)' + (data.has_skyblockbuilder ? ' — detectado' : ' — mod no detectado');
             // A diferencia de BOP/TerraForged (cosméticos, cualquiera de los
             // dos sirve como terreno "normal" si se elige mal), elegir el
-            // tipo equivocado acá no es solo distinto: SkyblockBuilder
+            // tipo equivocado aquí no es solo distinto: SkyblockBuilder
             // simplemente no crea equipo/isla y el jugador aparece en
             // terreno vanilla sin ningún aviso — visto de primera mano con
             // este modpack. Si el mod está instalado, no tiene sentido que

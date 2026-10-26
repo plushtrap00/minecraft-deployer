@@ -103,7 +103,7 @@ async def set_server_property(modpack: str, key: str = Form(...), value: str = F
 
 # ── RAM de la JVM ──────────────────────────────────────────────────────────────
 # La misma comprobación en tres pasos que ya usaba la importación de modpacks
-# (configure_jvm_ram/detect_jvm_ram en services/utils.py), reutilizada acá
+# (configure_jvm_ram/detect_jvm_ram en services/utils.py), reutilizada aquí
 # para poder cambiar la RAM DESPUÉS de creado el servidor, no solo al crearlo.
 
 _RAM_VALUE_RE = re.compile(r'^\d+[MG]$', re.IGNORECASE)
@@ -410,7 +410,7 @@ async def delete_modpack(modpack: str):
     """
     Borra la carpeta entera del modpack (mundos, config, kubejs, mods, logs...
     todo). La triple confirmación ("¿seguro? / los mundos y config se pierden /
-    última oportunidad") vive en el frontend (manage.js) — acá solo quedan las
+    última oportunidad") vive en el frontend (manage.js) — aquí solo quedan las
     comprobaciones de que sea seguro hacerlo ya mismo, mismo criterio que
     auto_update.restart_now(): ni con el servidor de este modpack en marcha ni
     con una operación en curso (subida/instalación de mods, creación de otro

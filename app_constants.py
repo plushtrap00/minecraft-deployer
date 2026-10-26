@@ -24,7 +24,7 @@ from pathlib import Path
 _CONSTANTS_PATH = Path(__file__).parent / ".APP_CONSTANTS"
 
 # Valores por defecto y única fuente de verdad de qué claves existen: save()
-# rechaza cualquier clave que no esté acá, y _load() ignora las que sobren en
+# rechaza cualquier clave que no esté aquí, y _load() ignora las que sobren en
 # el archivo (por si quedó una clave vieja de una versión anterior).
 DEFAULTS = {
     "MAX_LOG_LINES": 500,

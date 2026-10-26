@@ -138,7 +138,7 @@ def check_now() -> dict:
     Fuerza una comprobación inmediata contra GitHub (botón "Comprobar ahora"
     del panel) — a diferencia de _check_and_update_once() (el bucle en
     segundo plano), SIEMPRE vuelve a preguntarle a GitHub aunque ya se supiera
-    de una actualización pendiente, porque acá es el usuario quien lo pide
+    de una actualización pendiente, porque aquí es el usuario quien lo pide
     explícitamente. Funciona aunque AUTO_UPDATE_ENABLED esté en false: revisar
     a mano es una acción independiente de que el chequeo automático esté
     activado.

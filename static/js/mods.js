@@ -91,7 +91,7 @@ function loadModsList() {
   }
   list.innerHTML = '<p class="empty-msg">Cargando...</p>';
   document.getElementById('mods-count').textContent = '';
-  // Se reengancha acá (en vez de en cada sitio que llama a loadModsList() tras
+  // Se reengancha aquí (en vez de en cada sitio que llama a loadModsList() tras
   // subir/borrar/togglear un mod) para que la lista de pendientes se
   // refresque sola cada vez que la de mods cambia, sin tener que acordarse de
   // añadirlo en cada punto nuevo que toque mods/.
@@ -601,7 +601,7 @@ var MOD_MODAL_PAGE_SIZE = 10;
 // needs_confirmation mezcla dos motivos bien distintos (item.reason):
 // "downgrade" (versión más antigua que la instalada) y "client_only" (mod
 // que parece ser solo de cliente) — mismo criterio que ya usaba
-// openDowngradeModal() para el título del modal de detalle, reusado acá para
+// openDowngradeModal() para el título del modal de detalle, reusado aquí para
 // que el resumen de arriba (antes de entrar al detalle) también diga lo
 // correcto en vez de asumir siempre "versión anterior".
 var NEEDS_CONFIRMATION_LABELS = {
@@ -1028,7 +1028,7 @@ function renderDowngradeResult(data) {
 
 // El modal "📦 Subida de mods" (mod-upload-modal) se queda abierto DEBAJO de
 // este todo el rato — nunca se cierra al abrir el de confirmación — así que
-// si no se actualiza acá, al volver a él (o si sigue visible detrás) seguía
+// si no se actualiza aquí, al volver a él (o si sigue visible detrás) seguía
 // mostrando "N mods necesitan confirmación" con un enlace que reabre el
 // mismo lote ya resuelto (y borrado) en el servidor, dando "El lote ya no
 // existe o expiró" en cualquier acción. Se reemplaza needs_confirmation por

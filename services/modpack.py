@@ -581,7 +581,7 @@ def _dedup_fingerprint(filename: str) -> str:
     Huella agresiva para agrupar por parecido de nombre: todo lo que viene
     antes del primer número de versión o palabra de loader/MC, en minúsculas
     y sin separadores. A diferencia de mod_display_name (pensado para verse
-    bien), acá el separador antes de la palabra de loader puede ser un
+    bien), aquí el separador antes de la palabra de loader puede ser un
     espacio ("Custom Nether Portals - Neoforge - MC 1.21.1- 2.0.0" también
     calza con "custom_nether_portals-neoforge-1.21.1-1.0.0").
     """
@@ -598,7 +598,7 @@ def _dedup_fingerprint(filename: str) -> str:
 # único que queda guardado en mods-pendientes.json) hace falta normalizar
 # ambos lados con el mismo criterio, o un caso como "euphoria_patcher"
 # (fingerprint "euphoriapatcher", sin guion bajo) nunca calzaría. Se define
-# acá abajo, no junto al dict de arriba, porque necesita _dedup_fingerprint()
+# aquí abajo, no junto al dict de arriba, porque necesita _dedup_fingerprint()
 # ya declarada.
 _KNOWN_CLIENT_ONLY_FINGERPRINTS = {
     _dedup_fingerprint(mod_id): reason for mod_id, reason in _KNOWN_CLIENT_ONLY_MOD_IDS.items()
@@ -1042,7 +1042,7 @@ def prune_old_logs_and_crashes(modpack: str, keep: int = LOG_CRASH_RETENTION_COU
 # Cuando el autor de un modpack de CurseForge bloquea la descarga por terceros
 # para un mod concreto, la API no da ninguna URL con la que resolverlo (ver
 # skipped_no_url en services/modpack_install.py) — el resto del modpack se
-# instala igual, pero ese mod se queda fuera. Estos nombres se guardan acá para
+# instala igual, pero ese mod se queda fuera. Estos nombres se guardan aquí para
 # que server_start() (routes/server.py) se niegue a arrancar ese modpack
 # mientras sigan sin estar de verdad en mods/, en vez de dejar arrancar un
 # servidor a medias sin que nadie se dé cuenta hasta que un jugador lo note.
@@ -1154,7 +1154,7 @@ def resolve_pending_mods(modpack: str, filename: str, mod_id: str | None, mod_ve
     """
     Se llama justo después de instalar un mod (subida individual, en lote, o
     al confirmar un lote — ver routes/modpacks.py) con su metadata YA leída
-    por ese mismo flujo (process_mod_jar), sin abrir el jar de nuevo acá.
+    por ese mismo flujo (process_mod_jar), sin abrir el jar de nuevo aquí.
     Devuelve la lista de pendientes que queda tras esto.
     """
     path = DEFAULT_SERVERS_PATH / modpack / PENDING_MODS_FILENAME

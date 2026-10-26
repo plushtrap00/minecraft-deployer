@@ -27,7 +27,7 @@ CONFIG_EXTENSIONS = {".toml", ".cfg", ".json", ".yaml", ".yml", ".properties"}
 
 # MAX_LOG_LINES, LOG_CRASH_RETENTION_COUNT, GRACEFUL_STOP_TIMEOUT_SECONDS y el
 # resto de números de ajuste (timeouts, tamaños de caché...) viven en
-# app_constants.py / .APP_CONSTANTS, no acá: a diferencia de este archivo (que
+# app_constants.py / .APP_CONSTANTS, no aquí: a diferencia de este archivo (que
 # lee .env, con secretos y config específica de esta instalación, en
 # gitignore), esos son compartidos por todas las instalaciones y se pueden
 # editar desde el panel de administración.

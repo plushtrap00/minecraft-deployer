@@ -332,7 +332,7 @@
 
 /* Columna de resultados: la lista scrollea (reusa .modal-scroll) y la
    paginación queda pegada abajo dentro del mismo ancho, no del modal
-   entero — por eso vive acá dentro en vez de en el .modal-footer global. */
+   entero — por eso vive aquí dentro en vez de en el .modal-footer global. */
 .mod-search-results-col {
   flex: 1;
   min-width: 0;

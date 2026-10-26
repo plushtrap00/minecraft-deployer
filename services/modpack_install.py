@@ -88,7 +88,7 @@ def _known_client_only_reason(filename: str) -> str | None:
 async def _run_loader_installer(server_dir: Path, loader_key: str, mc_version: str, loader_version: str, ram_min: str, ram_max: str):
     """
     Descarga y ejecuta el instalador oficial del loader elegido, igual que
-    create_server_stream — se repite acá (en vez de compartir función) porque
+    create_server_stream — se repite aquí (en vez de compartir función) porque
     ese generador hace su PROPIO bootstrap final, que en este flujo llega
     después de instalar los archivos del modpack, no antes.
     """

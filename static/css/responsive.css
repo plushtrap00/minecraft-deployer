@@ -100,7 +100,7 @@
   /* Buscar mods online: la columna de categorías se apila arriba de los
      resultados en vez de vivir al lado (no hay ancho para las dos), con
      su propio tope de alto + scroll y la flecha de colapsar visible de
-     nuevo, ya que acá sí vuelve a competir por espacio vertical. */
+     nuevo, ya que aquí sí vuelve a competir por espacio vertical. */
   .mod-search-columns {
     flex-direction: column;
   }

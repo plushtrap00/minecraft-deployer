@@ -172,7 +172,7 @@ document.getElementById('sysmon-body').addEventListener('click', function(event)
 
 // Botón "🔍 Comprobar ahora" — antes vivía arriba junto a CPU/RAM (donde solo
 // forzaba un refresco de un stream que ya se actualiza solo), reaprovechado
-// acá para forzar una comprobación real contra GitHub sin esperar al próximo
+// aquí para forzar una comprobación real contra GitHub sin esperar al próximo
 // ciclo del bucle en segundo plano.
 function checkForUpdatesNow() {
   autoUpdateChecking = true;

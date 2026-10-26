@@ -275,7 +275,7 @@ def get_curseforge_categories() -> list:
     categoría trae parentCategoryId. Las de primer nivel tienen
     parentCategoryId == classId (6, la propia clase "mods"); las
     subcategorías tienen parentCategoryId == id de su categoría padre.
-    Acá se arma el árbol de 2 niveles a partir de esa lista.
+    Aquí se arma el árbol de 2 niveles a partir de esa lista.
     """
     now = time.time()
     if _curseforge_categories_cache["data"] and now - _curseforge_categories_cache["ts"] < _CATEGORIES_CACHE_TTL:
