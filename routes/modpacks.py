@@ -14,6 +14,7 @@ Rutas:
 - GET       /api/modpacks/{modpack}/pending-mods
 - GET       /api/modpacks/{modpack}/pending-mods/stream
 - GET       /api/modpacks/{modpack}/mods
+- GET       /api/modpacks/{modpack}/mods/download
 - GET       /api/modpacks/{modpack}/mods/duplicates
 - POST      /api/modpacks/{modpack}/mods/upload
 - POST      /api/modpacks/{modpack}/mods/upload-bulk
@@ -493,6 +494,67 @@ async def list_mods(modpack: str):
             continue
         mods.append({"name": mod_display_name(f.name), "filename": f.name, "enabled": not f.name.endswith(".disabled")})
     return JSONResponse({"mods": mods, "exists": True, "count": len(mods)})
+
+
+@router.get("/{modpack}/mods/download")
+async def download_mods(modpack: str, include_disabled: int = 0):
+    import os
+    import tempfile
+
+    base = DEFAULT_SERVERS_PATH / modpack
+    try:
+        base.resolve().relative_to(DEFAULT_SERVERS_PATH.resolve())
+    except ValueError:
+        raise HTTPException(status_code=403, detail="Ruta no permitida")
+
+    mods_dir = base / "mods"
+    if not mods_dir.exists():
+        raise HTTPException(status_code=404, detail="Este modpack no tiene carpeta mods/")
+
+    # Mismo filtro que list_mods(). Los deshabilitados conservan su ".disabled"
+    # dentro del zip: así el modloader los sigue ignorando si se copian tal cual.
+    files = []
+    for f in sorted(mods_dir.iterdir(), key=lambda x: x.name.lower()):
+        if not f.is_file():
+            continue
+        low = f.name.lower()
+        if low.endswith(".jar.disabled"):
+            if include_disabled:
+                files.append(f)
+        elif low.endswith(".jar") or low.endswith(".zip"):
+            files.append(f)
+    if not files:
+        raise HTTPException(status_code=404, detail="No hay mods que descargar")
+
+    # Mismo patrón temporal que download_kubejs(). ZIP_STORED: los .jar ya van
+    # comprimidos, recomprimirlos solo gasta CPU sin ahorrar apenas espacio.
+    tmp_dir = tempfile.mkdtemp()
+    archive_path = os.path.join(tmp_dir, "mods.zip")
+
+    def build():
+        with zipfile.ZipFile(archive_path, "w", zipfile.ZIP_STORED) as zf:
+            for f in files:
+                zf.write(f, arcname="mods/" + f.name)
+
+    try:
+        await asyncio.to_thread(build)
+    except Exception as e:
+        shutil.rmtree(tmp_dir, ignore_errors=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+    def iter_and_cleanup():
+        try:
+            with open(archive_path, "rb") as f:
+                while chunk := f.read(65536):
+                    yield chunk
+        finally:
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+
+    return StreamingResponse(
+        iter_and_cleanup(),
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{modpack}-mods.zip"'},
+    )
 
 
 @router.get("/{modpack}/mods/duplicates")

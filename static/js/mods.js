@@ -255,6 +255,53 @@ document.getElementById('mod-delete-disabled-modal').addEventListener('click', f
   }
 });
 
+// -- Descargar mods como .zip -----------------------------------------------------
+document.getElementById('mod-download-btn').addEventListener('click', function() {
+  var disabledCount = allMods.filter(function(mod) { return !mod.enabled; }).length;
+  var includeDisabled = document.getElementById('mod-download-include-disabled');
+  includeDisabled.checked = false;
+  includeDisabled.disabled = !disabledCount;
+  includeDisabled.parentElement.querySelector('span').textContent = 'Incluir mods deshabilitados (' + disabledCount + ')';
+  updateModDownloadCount();
+  document.getElementById('mod-download-modal').classList.add('show');
+});
+
+function updateModDownloadCount() {
+  var includeDisabled = document.getElementById('mod-download-include-disabled').checked;
+  var count = allMods.filter(function(mod) { return mod.enabled || includeDisabled; }).length;
+  document.getElementById('mod-download-count').textContent = count + ' mod(s)';
+  document.getElementById('mod-download-confirm').disabled = !count;
+}
+
+document.getElementById('mod-download-include-disabled').addEventListener('change', updateModDownloadCount);
+
+document.getElementById('mod-download-confirm').addEventListener('click', function() {
+  // Enlace directo con ?token= (como la descarga de kubejs): el navegador
+  // gestiona la descarga en streaming sin cargar el zip entero en memoria.
+  var link = document.createElement('a');
+  link.href = '/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/download?include_disabled='
+    + (document.getElementById('mod-download-include-disabled').checked ? '1' : '0')
+    + '&token=' + encodeURIComponent(authToken);
+  link.setAttribute('download', currentModpack + '-mods.zip');
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  document.getElementById('mod-download-modal').classList.remove('show');
+  showToast('Preparando la descarga...', 'success');
+});
+
+document.getElementById('mod-download-cancel').addEventListener('click', function() {
+  document.getElementById('mod-download-modal').classList.remove('show');
+});
+document.getElementById('mod-download-modal-close').addEventListener('click', function() {
+  document.getElementById('mod-download-modal').classList.remove('show');
+});
+document.getElementById('mod-download-modal').addEventListener('click', function(event) {
+  if (event.target === this) {
+    this.classList.remove('show');
+  }
+});
+
 function deleteMod(filename) {
   showConfirm(
     'Borrar "' + filename + '"',

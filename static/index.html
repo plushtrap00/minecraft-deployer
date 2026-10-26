@@ -749,6 +749,7 @@
               <button type="button" class="mods-menu-item" id="mod-duplicates-btn">⚠️ Ver posibles duplicados</button>
               <button type="button" class="mods-menu-item" id="mod-client-only-btn">🖥️ Mods solo-cliente</button>
               <button type="button" class="mods-menu-item" id="mod-delete-disabled-btn">🗑 Borrar deshabilitados</button>
+              <button type="button" class="mods-menu-item" id="mod-download-btn">📥 Descargar mods (.zip)</button>
             </div>
           </div>
         </div>
@@ -1005,6 +1006,31 @@
       <div class="modal-footer-actions">
         <button class="btn-secondary" id="mod-delete-disabled-cancel">Cancelar</button>
         <button class="btn-danger" id="mod-delete-disabled-confirm">🗑 Borrar seleccionados</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: descargar la carpeta mods/ como .zip -->
+<div class="modal-overlay" id="mod-download-modal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <span>📥</span>
+      <span class="modal-path">Descargar mods</span>
+      <button class="modal-close" id="mod-download-modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="info-box">Se descargará un <strong>.zip</strong> con una carpeta <code>mods/</code> dentro. Los mods deshabilitados conservan la extensión <code>.disabled</code>, así que el modloader seguirá ignorándolos.</div>
+      <label style="display:flex;gap:8px;align-items:center;cursor:pointer;margin-top:10px">
+        <input type="checkbox" id="mod-download-include-disabled" style="width:16px;height:16px">
+        <span>Incluir mods deshabilitados</span>
+      </label>
+    </div>
+    <div class="modal-footer">
+      <span class="line-info" id="mod-download-count"></span>
+      <div class="modal-footer-actions">
+        <button class="btn-secondary" id="mod-download-cancel">Cancelar</button>
+        <button id="mod-download-confirm">📥 Descargar</button>
       </div>
     </div>
   </div>
