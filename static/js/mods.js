@@ -1232,7 +1232,6 @@ var modSearchQuery = '';
 var modSearchOffset = 0;
 var modSearchLimit = 20;
 var modSearchTotal = 0;
-var modSearchLastResults = [];
 var modSearchFilesState = { items: [], page: 0, mod: null };
 
 // -- Caché en memoria (LRU simple) ---------------------------------------------
@@ -1556,7 +1555,6 @@ function runModSearch(query, offset) {
 }
 
 function renderModSearchResults(results) {
-  modSearchLastResults = results;
   var body = document.getElementById('mod-search-modal-body');
   if (!results.length) {
     body.innerHTML = '<p class="empty-msg">Sin resultados para esta versión/modloader.</p>';
@@ -1685,8 +1683,9 @@ document.getElementById('mod-search-modal-body').addEventListener('click', funct
   }
   var backBtn = event.target.closest('.mod-search-back');
   if (backBtn) {
-    // Vuelve a la página de resultados ya cargada, sin volver a pedirla al servidor.
-    renderModSearchResults(modSearchLastResults);
+    // Vuelve a la misma página de resultados: sale de caché si sigue ahí, y si
+    // se vació tras instalar un mod se vuelve a pedir para que salga "✅ Instalado".
+    runModSearch(modSearchQuery, modSearchOffset);
     return;
   }
   var installBtn = event.target.closest('.mod-search-install');
@@ -1725,9 +1724,16 @@ function installSearchedMod(mod, file, buttonEl) {
       var body = document.getElementById('mod-search-modal-body');
       if (result.ok && result.data.success) {
         showToast('Mod instalado: ' + result.data.filename, 'success');
-        body.innerHTML = '<div style="background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.3);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--green)">✅ Mod instalado: '
-          + escHtml(result.data.filename) + '</div>';
-        document.getElementById('mod-search-pagination').innerHTML = '';
+        // Se vuelve a pintar la lista de versiones (con "‹ Volver a resultados")
+        // en vez de sustituirla por el aviso: si no, el modal se quedaba sin
+        // forma de volver salvo tocando los filtros.
+        mod.installed = true;
+        renderModSearchFilesPage();
+        var header = body.querySelector('.mod-search-files-header');
+        if (header) {
+          header.insertAdjacentHTML('afterend', '<div style="background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.3);border-radius:6px;padding:8px 12px;margin-bottom:10px;font-size:.82rem;color:var(--green)">✅ Mod instalado: '
+            + escHtml(result.data.filename) + '</div>');
+        }
         // El flag "installed" de otras páginas ya cacheadas puede haber
         // quedado desactualizado con este mod recién instalado.
         modSearchResultsCache.clear();
