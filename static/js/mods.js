@@ -173,6 +173,9 @@ function toggleMod(filename) {
       if (result.ok && result.data.success) {
         showToast(result.data.enabled ? 'Mod habilitado' : 'Mod deshabilitado', 'success');
         loadModsList();
+        if (result.data.enabled) {
+          checkModDependencies(false);
+        }
       } else {
         showToast(result.data.detail || 'Error al cambiar el estado del mod', 'error');
       }
@@ -252,6 +255,225 @@ document.getElementById('mod-delete-disabled-modal-close').addEventListener('cli
 document.getElementById('mod-delete-disabled-modal').addEventListener('click', function(event) {
   if (event.target === this) {
     this.classList.remove('show');
+  }
+});
+
+// -- Dependencias obligatorias que faltan --------------------------------------
+// Se comprueba solo (sin red, solo leyendo los jars) tras cada instalación, y
+// a mano desde "⋮ Más opciones". Si falta algo se instala sin preguntar: un
+// mod sin sus dependencias obligatorias impide que el servidor arranque.
+var modDepsState = { rows: [], busy: false };
+
+var MOD_DEPS_STATES = {
+  pending: { icon: '⏳', label: 'En cola' },
+  searching: { icon: '🔍', label: 'Buscando...' },
+  downloading: { icon: '⬇️', label: 'Descargando...' },
+  installed: { icon: '✅', label: 'Instalada' },
+  enabled: { icon: '🔁', label: 'Reactivada' },
+  unresolved: { icon: '⚠️', label: 'No encontrada' }
+};
+
+document.getElementById('mod-deps-btn').addEventListener('click', function() {
+  checkModDependencies(true);
+});
+
+// manual: si no falta nada, se dice igualmente (tras una instalación, en
+// cambio, no se abre nada para no molestar).
+function checkModDependencies(manual) {
+  if (!currentModpack) {
+    return;
+  }
+  if (manual) {
+    openModDepsModal(modSearchSpinnerHtml('Comprobando las dependencias de los mods instalados...'));
+  }
+  apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/dependencies')
+    .then(function(response) {
+      return response.json().then(function(data) { return { ok: response.ok, data: data }; });
+    })
+    .then(function(result) {
+      if (!result.ok) {
+        if (manual) {
+          setModDepsBody(modErrorHtml(result.data.detail || 'No se pudieron comprobar las dependencias'));
+        }
+        return;
+      }
+      var missing = result.data.missing || [];
+      if (!missing.length) {
+        if (manual) {
+          setModDepsBody('<div class="mod-deps-empty"><div class="mod-deps-empty-icon">✅</div>'
+            + '<div class="mod-deps-empty-title">No falta ninguna dependencia</div>'
+            + '<div class="mod-deps-empty-desc">Todos los mods habilitados tienen instaladas las dependencias obligatorias que declaran.</div></div>');
+        }
+        return;
+      }
+      if (!manual) {
+        openModDepsModal('');
+      }
+      installModDependencies(missing);
+    })
+    .catch(function(error) {
+      if (manual) {
+        setModDepsBody(modErrorHtml('Error de red: ' + error.message));
+      }
+    });
+}
+
+function openModDepsModal(html) {
+  setModDepsBody(html);
+  document.getElementById('mod-deps-modal').classList.add('show');
+}
+
+function setModDepsBody(html) {
+  document.getElementById('mod-deps-modal-body').innerHTML = html;
+}
+
+function setModDepsBusy(busy) {
+  modDepsState.busy = busy;
+  setModOperationBusy(busy);
+  document.getElementById('mod-deps-modal-close').style.display = busy ? 'none' : '';
+  document.getElementById('mod-deps-modal-done').disabled = busy;
+}
+
+function closeModDepsModal() {
+  if (!modDepsState.busy) {
+    document.getElementById('mod-deps-modal').classList.remove('show');
+  }
+}
+
+function modDepsRow(depId) {
+  var row = modDepsState.rows.filter(function(r) { return r.dep_id === depId; })[0];
+  if (!row) {
+    row = { dep_id: depId, requested_by: [], state: 'pending' };
+    modDepsState.rows.push(row);
+  }
+  return row;
+}
+
+function installModDependencies(missing) {
+  modDepsState.rows = missing.map(function(m) {
+    return { dep_id: m.dep_id, requested_by: m.requested_by || [], state: 'pending' };
+  });
+  setModDepsBusy(true);
+  renderModDeps('Preparando...', null);
+
+  var url = '/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/dependencies/install/stream?token=' + encodeURIComponent(authToken);
+  var source = new EventSource(url);
+  source.onmessage = function(event) {
+    var data;
+    try {
+      data = JSON.parse(event.data);
+    } catch (e) {
+      return;
+    }
+    if (data.type === 'progress') {
+      if (data.dep_id) {
+        var row = modDepsRow(data.dep_id);
+        row.state = data.state;
+        if (data.requested_by) {
+          row.requested_by = data.requested_by;
+        }
+        if (data.filename) {
+          row.filename = data.filename;
+        }
+      }
+      renderModDeps(data.message, null);
+    } else if (data.type === 'done') {
+      source.close();
+      (data.installed || []).forEach(function(it) {
+        var row = modDepsRow(it.dep_id);
+        row.state = 'installed';
+        row.filename = it.filename;
+      });
+      (data.enabled || []).forEach(function(it) {
+        var row = modDepsRow(it.dep_id);
+        row.state = 'enabled';
+        row.filename = it.filename;
+      });
+      (data.unresolved || []).forEach(function(it) {
+        var row = modDepsRow(it.dep_id);
+        row.state = 'unresolved';
+        row.reason = it.reason;
+        row.requested_by = it.requested_by || row.requested_by;
+      });
+      setModDepsBusy(false);
+      renderModDeps(null, data);
+      loadModsList();
+    } else if (data.type === 'error') {
+      source.close();
+      setModDepsBusy(false);
+      setModDepsBody(modErrorHtml(data.detail || 'Error al instalar las dependencias'));
+    }
+  };
+  source.onerror = function() {
+    source.close();
+    setModDepsBusy(false);
+    setModDepsBody(modErrorHtml('Se perdió la conexión mientras se instalaban las dependencias'));
+    loadModsList();
+  };
+}
+
+// progressText: mientras trabaja; result: el evento "done" al terminar.
+function renderModDeps(progressText, result) {
+  var summary;
+  if (result) {
+    var ok = (result.installed || []).length + (result.enabled || []).length;
+    var failed = (result.unresolved || []).length;
+    if (!failed) {
+      summary = '<div class="mod-deps-summary ok">✅ ' + (ok === 1 ? 'Se ha instalado la dependencia que faltaba.' : 'Se han instalado las ' + ok + ' dependencias que faltaban.') + '</div>';
+    } else {
+      summary = '<div class="mod-deps-summary warn">⚠️ '
+        + (ok ? ok + ' instalada' + (ok === 1 ? '' : 's') + ', pero ' : '')
+        + (failed === 1 ? 'una no se ha podido instalar sola' : failed + ' no se han podido instalar solas')
+        + '. El servidor no arrancará hasta que estén.</div>';
+    }
+  } else {
+    var n = modDepsState.rows.length;
+    summary = '<div class="mod-deps-summary info">Faltan <b>' + n + '</b> dependencia' + (n === 1 ? '' : 's') + ' obligatoria' + (n === 1 ? '' : 's') + '. Instalándola' + (n === 1 ? '' : 's') + '...</div>';
+  }
+
+  var rows = modDepsState.rows.map(function(row) {
+    var st = MOD_DEPS_STATES[row.state] || MOD_DEPS_STATES.pending;
+    var owners = row.requested_by.map(function(r) { return r.display_name || r.mod_id; });
+    var detail = owners.length ? 'Lo necesita ' + owners.join(', ') : '';
+    var extra = '';
+    if (row.filename && (row.state === 'installed' || row.state === 'enabled')) {
+      extra = '<div class="mod-deps-file">' + escHtml(row.filename) + '</div>';
+    }
+    if (row.state === 'unresolved') {
+      extra = '<div class="mod-deps-reason">' + escHtml(row.reason || '') + '</div>';
+    }
+    var action = row.state === 'unresolved'
+      ? '<button type="button" class="btn-secondary btn-sm mod-deps-search" data-dep="' + escHtml(row.dep_id) + '">🔎 Buscar</button>'
+      : '<span class="mod-deps-badge ' + row.state + '">' + st.label + '</span>';
+    return '<div class="mod-deps-item ' + row.state + '">'
+      + '<span class="mod-deps-icon">' + st.icon + '</span>'
+      + '<div class="mod-deps-info"><div class="mod-deps-name">' + escHtml(row.dep_id) + '</div>'
+      + '<div class="mod-deps-owners">' + escHtml(detail) + '</div>' + extra + '</div>'
+      + action
+      + '</div>';
+  }).join('');
+
+  var progress = progressText
+    ? '<div class="mod-deps-progress"><div class="mod-upload-spinner"></div><span>' + escHtml(progressText) + '</span></div>'
+    : '';
+  setModDepsBody(summary + '<div class="mod-deps-list">' + rows + '</div>' + progress);
+}
+
+document.getElementById('mod-deps-modal-body').addEventListener('click', function(event) {
+  var btn = event.target.closest('.mod-deps-search');
+  if (!btn) {
+    return;
+  }
+  // El buscador queda debajo de este modal en el DOM: se cierra este antes.
+  closeModDepsModal();
+  openModSearchModal(btn.dataset.dep);
+});
+
+document.getElementById('mod-deps-modal-close').addEventListener('click', closeModDepsModal);
+document.getElementById('mod-deps-modal-done').addEventListener('click', closeModDepsModal);
+document.getElementById('mod-deps-modal').addEventListener('click', function(event) {
+  if (event.target === this) {
+    closeModDepsModal();
   }
 });
 
@@ -581,6 +803,7 @@ function uploadMod(file) {
         setModUploadModalBody('<div style="background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.3);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--green)">✅ Mod instalado: '
           + escHtml(result.data.filename) + info + '</div>' + replacedMsg);
         loadModsList();
+        checkModDependencies(false);
       } else {
         setModUploadModalBody('<div style="background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.3);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--red)">❌ '
           + escHtml(result.data.detail || 'Error desconocido') + '</div>');
@@ -795,6 +1018,9 @@ function streamModsBulkProgress(jobId) {
       setModOperationBusy(false);
       renderBulkResult(data);
       loadModsList();
+      if ((data.added || []).length) {
+        checkModDependencies(false);
+      }
     } else if (data.type === 'error') {
       source.close();
       setModOperationBusy(false);
@@ -990,6 +1216,7 @@ function submitDowngradeDecision(acceptFilenames) {
         renderDowngradeResult(data);
         updateBulkDataAfterDowngrade(data);
         loadModsList();
+        checkModDependencies(false);
       } else {
         document.getElementById('mod-downgrade-modal-body').innerHTML = modErrorHtml(data.detail || 'Error al confirmar');
         document.getElementById('mod-downgrade-confirm').disabled = false;
@@ -1817,6 +2044,7 @@ function installSearchedMod(mod, file, buttonEl) {
         // quedado desactualizado con este mod recién instalado.
         modSearchResultsCache.clear();
         loadModsList();
+        checkModDependencies(false);
       } else {
         buttonEl.disabled = false;
         buttonEl.textContent = 'Instalar';

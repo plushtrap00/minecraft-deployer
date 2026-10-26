@@ -57,6 +57,20 @@ def _http_get_json(url: str, headers: dict | None = None) -> dict | list:
         raise ModSearchError(str(e.reason)) from e
 
 
+def _http_post_json(url: str, body: dict, headers: dict | None = None) -> dict | list:
+    req_headers = {"User-Agent": _USER_AGENT, "Content-Type": "application/json"}
+    req_headers.update(headers or {})
+    req = urllib.request.Request(url, data=json.dumps(body).encode("utf-8"), headers=req_headers, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=_HTTP_TIMEOUT) as resp:
+            return json.loads(resp.read().decode("utf-8", errors="replace"))
+    except urllib.error.HTTPError as e:
+        detail = e.read().decode("utf-8", errors="replace")[:300]
+        raise ModSearchError(f"HTTP {e.code}: {detail}") from e
+    except urllib.error.URLError as e:
+        raise ModSearchError(str(e.reason)) from e
+
+
 def download_bytes(url: str) -> bytes:
     req = urllib.request.Request(url, headers={"User-Agent": _USER_AGENT})
     try:
@@ -259,6 +273,7 @@ def get_curseforge_files(mod_id, mc_version: str | None, loader: str | None) -> 
             # downloadUrl viene null y el frontend debe avisar que no se puede instalar.
             "download_url": f.get("downloadUrl"),
             "game_versions": f.get("gameVersions", []),
+            "file_date": f.get("fileDate"),
         })
     return files
 

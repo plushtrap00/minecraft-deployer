@@ -15,6 +15,8 @@ Rutas:
 - GET       /api/modpacks/{modpack}/pending-mods/stream
 - GET       /api/modpacks/{modpack}/mods
 - GET       /api/modpacks/{modpack}/mods/download
+- GET       /api/modpacks/{modpack}/mods/dependencies
+- GET       /api/modpacks/{modpack}/mods/dependencies/install/stream
 - GET       /api/modpacks/{modpack}/mods/duplicates
 - POST      /api/modpacks/{modpack}/mods/upload
 - POST      /api/modpacks/{modpack}/mods/upload-bulk
@@ -66,6 +68,7 @@ from services.modpack import (
 from services.players import (
     ensure_global_dir, read_global_file, write_global_file, PLAYER_FILES,
 )
+from services.mod_dependencies import find_missing_dependencies, install_missing_dependencies
 from services.busy import BusyGuard, is_busy, busy_reasons
 from services import process as proc_module
 
@@ -557,6 +560,47 @@ async def download_mods(modpack: str, include_disabled: int = 0):
         iter_and_cleanup(),
         media_type="application/zip",
         headers={"Content-Disposition": f'attachment; filename="{modpack}-mods.zip"'},
+    )
+
+
+@router.get("/{modpack}/mods/dependencies")
+async def mods_missing_dependencies(modpack: str):
+    """Dependencias obligatorias que ningún mod habilitado aporta (solo lee disco, sin red). Ver services/mod_dependencies.py."""
+    mods_dir = DEFAULT_SERVERS_PATH / modpack / "mods"
+    missing = await asyncio.to_thread(find_missing_dependencies, mods_dir)
+    return JSONResponse({"missing": missing})
+
+
+@router.get("/{modpack}/mods/dependencies/install/stream")
+async def mods_install_dependencies_stream(modpack: str):
+    """
+    Busca e instala las dependencias que faltan, con progreso por SSE. Cada
+    paso del generador (lecturas de jars, peticiones a Modrinth/CurseForge,
+    descargas) corre en un hilo para no bloquear el resto del panel.
+    """
+    mods_dir = DEFAULT_SERVERS_PATH / modpack / "mods"
+    if not mods_dir.exists():
+        raise HTTPException(status_code=404, detail="Carpeta mods/ no encontrada en este modpack")
+
+    async def event_stream():
+        busy_guard = BusyGuard(f"instalando dependencias en '{modpack}'")
+        busy_guard.__enter__()
+        try:
+            events = install_missing_dependencies(modpack)
+            while True:
+                event = await asyncio.to_thread(next, events, None)
+                if event is None:
+                    break
+                yield f"data: {json.dumps(event)}\n\n"
+        except Exception as e:
+            yield f"data: {json.dumps({'type': 'error', 'detail': str(e)})}\n\n"
+        finally:
+            busy_guard.__exit__(None, None, None)
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
 
 

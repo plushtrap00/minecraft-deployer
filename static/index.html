@@ -748,6 +748,7 @@
             <div class="mods-menu-dropdown" id="mods-menu-dropdown">
               <button type="button" class="mods-menu-item" id="mod-duplicates-btn">⚠️ Ver posibles duplicados</button>
               <button type="button" class="mods-menu-item" id="mod-client-only-btn">🖥️ Mods solo-cliente</button>
+              <button type="button" class="mods-menu-item" id="mod-deps-btn">🔗 Instalar dependencias que faltan</button>
               <button type="button" class="mods-menu-item" id="mod-delete-disabled-btn">🗑 Borrar deshabilitados</button>
               <button type="button" class="mods-menu-item" id="mod-download-btn">📥 Descargar mods (.zip)</button>
             </div>
@@ -1093,6 +1094,25 @@
           </div>
         </div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: dependencias obligatorias que faltan. Va después del resto de
+     modales de mods para quedar por encima si se abre al terminar una subida
+     o una instalación desde el buscador. -->
+<div class="modal-overlay" id="mod-deps-modal">
+  <div class="modal mod-deps-dialog">
+    <div class="modal-header">
+      <span>🔗</span>
+      <span class="modal-path">Dependencias de los mods</span>
+      <button class="modal-close" id="mod-deps-modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-scroll" id="mod-deps-modal-body"></div>
+    </div>
+    <div class="modal-footer mod-dl-footer">
+      <button class="btn-secondary" id="mod-deps-modal-done">Cerrar</button>
     </div>
   </div>
 </div>
