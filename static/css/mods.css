@@ -570,3 +570,142 @@
 .mods-menu-item:hover {
   background: var(--border);
 }
+
+/* -- Modal "Descargar mods": opciones en tarjetas + resumen del .zip ---------- */
+.mod-dl-dialog {
+  max-width: 460px;
+}
+
+.mod-dl-label {
+  font-size: .78rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  margin-bottom: 10px;
+}
+
+.mod-dl-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mod-dl-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+
+.mod-dl-option:hover {
+  border-color: #484f58;
+}
+
+/* El radio real queda oculto: la tarjeta entera es la opción. */
+.mod-dl-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mod-dl-option:has(input:checked) {
+  border-color: var(--accent);
+  background: rgba(88, 166, 255, .08);
+  box-shadow: 0 0 0 1px var(--accent) inset;
+}
+
+.mod-dl-option:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.mod-dl-option.disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
+
+.mod-dl-option-icon {
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+
+.mod-dl-option-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.mod-dl-option-title {
+  font-weight: 600;
+  font-size: .92rem;
+}
+
+.mod-dl-option-desc {
+  font-size: .76rem;
+  color: var(--muted);
+}
+
+.mod-dl-option-stats {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: .76rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.mod-dl-option-stats strong {
+  font-size: .95rem;
+  color: var(--text);
+}
+
+.mod-dl-file {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(63, 185, 80, .07);
+  border: 1px dashed rgba(63, 185, 80, .35);
+}
+
+.mod-dl-file-icon {
+  font-size: 1.1rem;
+}
+
+.mod-dl-file-name {
+  flex: 1;
+  min-width: 0;
+  font-family: monospace;
+  font-size: .82rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mod-dl-file-size {
+  font-size: .82rem;
+  font-weight: 600;
+  color: var(--green);
+  white-space: nowrap;
+}
+
+.mod-dl-hint {
+  margin-top: 12px;
+  font-size: .74rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.mod-dl-footer {
+  justify-content: flex-end;
+  gap: 8px;
+}

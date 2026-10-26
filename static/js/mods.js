@@ -256,31 +256,63 @@ document.getElementById('mod-delete-disabled-modal').addEventListener('click', f
 });
 
 // -- Descargar mods como .zip -----------------------------------------------------
+// Cuenta y peso de un grupo de mods, para las tarjetas y el resumen del .zip.
+function modDownloadStats(mods) {
+  return {
+    count: mods.length,
+    size: mods.reduce(function(total, mod) { return total + (mod.size || 0); }, 0)
+  };
+}
+
+function modDownloadStatsHtml(stats) {
+  return '<strong>' + stats.count + ' mod' + (stats.count === 1 ? '' : 's') + '</strong>' + fmtSize(stats.size);
+}
+
+function modDownloadIncludeDisabled() {
+  return document.querySelector('input[name="mod-download-scope"]:checked').value === 'all';
+}
+
 document.getElementById('mod-download-btn').addEventListener('click', function() {
-  var disabledCount = allMods.filter(function(mod) { return !mod.enabled; }).length;
-  var includeDisabled = document.getElementById('mod-download-include-disabled');
-  includeDisabled.checked = false;
-  includeDisabled.disabled = !disabledCount;
-  includeDisabled.parentElement.querySelector('span').textContent = 'Incluir mods deshabilitados (' + disabledCount + ')';
-  updateModDownloadCount();
+  var enabled = modDownloadStats(allMods.filter(function(mod) { return mod.enabled; }));
+  var all = modDownloadStats(allMods);
+  var disabledCount = all.count - enabled.count;
+
+  document.getElementById('mod-download-stats-enabled').innerHTML = modDownloadStatsHtml(enabled);
+  document.getElementById('mod-download-stats-all').innerHTML = modDownloadStatsHtml(all);
+  document.getElementById('mod-download-desc-all').textContent = disabledCount
+    ? 'Incluye ' + disabledCount + ' deshabilitado' + (disabledCount === 1 ? '' : 's')
+    : 'No hay mods deshabilitados';
+
+  // Sin deshabilitados las dos opciones serían idénticas: se bloquea "Todos".
+  var allRadio = document.querySelector('input[name="mod-download-scope"][value="all"]');
+  allRadio.disabled = !disabledCount;
+  document.getElementById('mod-download-option-all').classList.toggle('disabled', !disabledCount);
+  document.querySelector('input[name="mod-download-scope"][value="enabled"]').checked = true;
+
+  document.getElementById('mod-download-filename').textContent = currentModpack + '-mods.zip';
+  updateModDownloadSummary();
   document.getElementById('mod-download-modal').classList.add('show');
 });
 
-function updateModDownloadCount() {
-  var includeDisabled = document.getElementById('mod-download-include-disabled').checked;
-  var count = allMods.filter(function(mod) { return mod.enabled || includeDisabled; }).length;
-  document.getElementById('mod-download-count').textContent = count + ' mod(s)';
-  document.getElementById('mod-download-confirm').disabled = !count;
+function updateModDownloadSummary() {
+  var includeDisabled = modDownloadIncludeDisabled();
+  var stats = modDownloadStats(allMods.filter(function(mod) { return mod.enabled || includeDisabled; }));
+  document.getElementById('mod-download-size').textContent = stats.count ? '≈ ' + fmtSize(stats.size) : 'Vacío';
+  var confirmBtn = document.getElementById('mod-download-confirm');
+  confirmBtn.disabled = !stats.count;
+  confirmBtn.textContent = stats.count ? '📥 Descargar ' + stats.count + ' mod' + (stats.count === 1 ? '' : 's') : 'Sin mods';
 }
 
-document.getElementById('mod-download-include-disabled').addEventListener('change', updateModDownloadCount);
+Array.prototype.forEach.call(document.querySelectorAll('input[name="mod-download-scope"]'), function(radio) {
+  radio.addEventListener('change', updateModDownloadSummary);
+});
 
 document.getElementById('mod-download-confirm').addEventListener('click', function() {
   // Enlace directo con ?token= (como la descarga de kubejs): el navegador
   // gestiona la descarga en streaming sin cargar el zip entero en memoria.
   var link = document.createElement('a');
   link.href = '/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/download?include_disabled='
-    + (document.getElementById('mod-download-include-disabled').checked ? '1' : '0')
+    + (modDownloadIncludeDisabled() ? '1' : '0')
     + '&token=' + encodeURIComponent(authToken);
   link.setAttribute('download', currentModpack + '-mods.zip');
   document.body.appendChild(link);

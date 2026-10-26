@@ -492,7 +492,10 @@ async def list_mods(modpack: str):
         low = f.name.lower()
         if not (low.endswith(".jar") or low.endswith(".zip") or low.endswith(".jar.disabled")):
             continue
-        mods.append({"name": mod_display_name(f.name), "filename": f.name, "enabled": not f.name.endswith(".disabled")})
+        mods.append({
+            "name": mod_display_name(f.name), "filename": f.name,
+            "enabled": not f.name.endswith(".disabled"), "size": f.stat().st_size,
+        })
     return JSONResponse({"mods": mods, "exists": True, "count": len(mods)})
 
 

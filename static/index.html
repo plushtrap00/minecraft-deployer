@@ -1013,25 +1013,47 @@
 
 <!-- Modal: descargar la carpeta mods/ como .zip -->
 <div class="modal-overlay" id="mod-download-modal">
-  <div class="modal modal-sm">
+  <div class="modal mod-dl-dialog">
     <div class="modal-header">
       <span>📥</span>
       <span class="modal-path">Descargar mods</span>
       <button class="modal-close" id="mod-download-modal-close">✕</button>
     </div>
     <div class="modal-body">
-      <div class="info-box">Se descargará un <strong>.zip</strong> con una carpeta <code>mods/</code> dentro. Los mods deshabilitados conservan la extensión <code>.disabled</code>, así que el modloader seguirá ignorándolos.</div>
-      <label style="display:flex;gap:8px;align-items:center;cursor:pointer;margin-top:10px">
-        <input type="checkbox" id="mod-download-include-disabled" style="width:16px;height:16px">
-        <span>Incluir mods deshabilitados</span>
-      </label>
-    </div>
-    <div class="modal-footer">
-      <span class="line-info" id="mod-download-count"></span>
-      <div class="modal-footer-actions">
-        <button class="btn-secondary" id="mod-download-cancel">Cancelar</button>
-        <button id="mod-download-confirm">📥 Descargar</button>
+      <div class="modal-scroll">
+        <div class="mod-dl-label">¿Qué quieres incluir?</div>
+        <div class="mod-dl-options" role="radiogroup">
+          <label class="mod-dl-option">
+            <input type="radio" name="mod-download-scope" value="enabled" checked>
+            <span class="mod-dl-option-icon">🧩</span>
+            <span class="mod-dl-option-text">
+              <span class="mod-dl-option-title">Solo activos</span>
+              <span class="mod-dl-option-desc">Lo que carga el servidor ahora mismo</span>
+            </span>
+            <span class="mod-dl-option-stats" id="mod-download-stats-enabled"></span>
+          </label>
+          <label class="mod-dl-option" id="mod-download-option-all">
+            <input type="radio" name="mod-download-scope" value="all">
+            <span class="mod-dl-option-icon">📦</span>
+            <span class="mod-dl-option-text">
+              <span class="mod-dl-option-title">Todos</span>
+              <span class="mod-dl-option-desc" id="mod-download-desc-all"></span>
+            </span>
+            <span class="mod-dl-option-stats" id="mod-download-stats-all"></span>
+          </label>
+        </div>
+
+        <div class="mod-dl-file">
+          <span class="mod-dl-file-icon">💾</span>
+          <span class="mod-dl-file-name" id="mod-download-filename"></span>
+          <span class="mod-dl-file-size" id="mod-download-size"></span>
+        </div>
+        <p class="mod-dl-hint">Dentro va una carpeta <code>mods/</code> lista para copiar. Los deshabilitados conservan la extensión <code>.disabled</code>, así que el modloader seguirá ignorándolos.</p>
       </div>
+    </div>
+    <div class="modal-footer mod-dl-footer">
+      <button class="btn-secondary" id="mod-download-cancel">Cancelar</button>
+      <button id="mod-download-confirm">📥 Descargar</button>
     </div>
   </div>
 </div>
