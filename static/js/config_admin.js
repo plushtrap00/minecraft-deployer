@@ -26,9 +26,9 @@ function loadAdminConfig() {
   apiFetch('/api/admin/env')
     .then(function(response) { return response.json(); })
     .then(populateEnvForm)
-    .catch(function() { showToast('Error al cargar .env', 'error'); });
+    .catch(function() { showToast('No se pudo leer el .env', 'error'); });
 
-  document.getElementById('config-constants-form').innerHTML = '<p class="empty-msg">Cargando...</p>';
+  document.getElementById('config-constants-form').innerHTML = loadingHtml();
   apiFetch('/api/admin/constants')
     .then(function(response) { return response.json(); })
     .then(renderConstantsForm)
@@ -96,7 +96,7 @@ function renderConstantsForm(data) {
       return;
     }
     html += '<details class="help-section"' + (index === 0 ? ' open' : '') + '>'
-      + '<summary>' + icon + ' ' + escHtml(category) + '</summary>'
+      + '<summary>' + escHtml(category) + '</summary>'
       + '<div class="help-section-body"><div class="props-grid">';
     items.forEach(function(item) {
       html += '<div class="prop-field">'
@@ -120,7 +120,7 @@ document.getElementById('config-env-form').addEventListener('click', function(ev
 document.getElementById('cfg-toggle-pass-vis').addEventListener('click', function() {
   var inp = document.getElementById('cfg-env-new-password');
   inp.type = inp.type === 'password' ? 'text' : 'password';
-  this.textContent = inp.type === 'password' ? '👁' : '🙈';
+  this.innerHTML = icon(inp.type === 'password' ? 'eye' : 'eye-off');
 });
 
 document.getElementById('cfg-save-env-btn').addEventListener('click', function() {
@@ -161,7 +161,7 @@ document.getElementById('cfg-save-env-btn').addEventListener('click', function()
     })
     .catch(function() {
       btn.disabled = false;
-      showToast('Error de red', 'error');
+      showToast('No se pudo conectar con el panel. Comprueba la conexión y vuelve a intentarlo.', 'error');
     });
 });
 
@@ -195,7 +195,7 @@ document.getElementById('cfg-save-constants-btn').addEventListener('click', func
     })
     .catch(function() {
       btn.disabled = false;
-      showToast('Error de red', 'error');
+      showToast('No se pudo conectar con el panel. Comprueba la conexión y vuelve a intentarlo.', 'error');
     });
 });
 
@@ -236,7 +236,7 @@ function doAppRestart(btn) {
     })
     .then(function(result) {
       if (result.ok) {
-        showToast('Reiniciando la app...', 'success');
+        showToast('Reiniciando la app…', 'success');
         beginRestartWatch('Aplicando los cambios de configuración...', 'Esto puede tardar unos segundos. No cierres esta pestaña.');
       } else {
         showToast(result.data.detail || 'No se pudo reiniciar', 'error');
@@ -248,7 +248,7 @@ function doAppRestart(btn) {
     .catch(function() {
       // La conexión cortándose aquí es justo la señal esperada de que la app
       // ya está reiniciando -- no se trata como un error real.
-      showToast('Reiniciando la app...', 'success');
+      showToast('Reiniciando la app…', 'success');
       beginRestartWatch('Aplicando los cambios de configuración...', 'Esto puede tardar unos segundos. No cierres esta pestaña.');
     });
 }

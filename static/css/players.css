@@ -21,7 +21,7 @@
   padding: 8px 10px;
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-control);
   margin-bottom: 6px;
   font-size: var(--fs-md);
 }

@@ -18,6 +18,7 @@
 <link rel="stylesheet" href="/static/css/users.css">
 <link rel="stylesheet" href="/static/css/sysmon.css">
 <link rel="stylesheet" href="/static/css/responsive.css">
+<link rel="stylesheet" href="/static/css/utilities.css">
 </head>
 <body>
 <!-- Iconos: Lucide (https://lucide.dev, licencia ISC). Se usan con icon('nombre') en JS o <svg class="icon"><use href="#i-nombre"/></svg> en HTML. -->
@@ -26,22 +27,31 @@
   <symbol id="i-ban" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/> <path d="m4.9 4.9 14.2 14.2"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
   <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-circle-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/> <path d="m9 12 2 2 4-4"/></symbol>
   <symbol id="i-circle-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/> <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/> <path d="M12 17h.01"/></symbol>
+  <symbol id="i-circle-x" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/> <path d="m15 9-6 6"/> <path d="m9 9 6 6"/></symbol>
   <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/> <polyline points="12 6 12 12 16 14"/></symbol>
   <symbol id="i-cpu" viewBox="0 0 24 24"><rect width="16" height="16" x="4" y="4" rx="2"/> <rect width="6" height="6" x="9" y="9" rx="1"/> <path d="M15 2v2"/> <path d="M15 20v2"/> <path d="M2 15h2"/> <path d="M2 9h2"/> <path d="M20 15h2"/> <path d="M20 9h2"/> <path d="M9 2v2"/> <path d="M9 20v2"/></symbol>
   <symbol id="i-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/> <polyline points="7 10 12 15 17 10"/> <line x1="12" x2="12" y1="15" y2="3"/></symbol>
+  <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/> <path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/> <path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/> <path d="m2 2 20 20"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/> <circle cx="12" cy="12" r="3"/></symbol>
   <symbol id="i-file-plus-2" viewBox="0 0 24 24"><path d="M4 22h14a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v4"/> <path d="M14 2v4a2 2 0 0 0 2 2h4"/> <path d="M3 15h6"/> <path d="M6 12v6"/></symbol>
   <symbol id="i-file-text" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/> <path d="M14 2v4a2 2 0 0 0 2 2h4"/> <path d="M10 9H8"/> <path d="M16 13H8"/> <path d="M16 17H8"/></symbol>
+  <symbol id="i-folder-up" viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/> <path d="M12 10v6"/> <path d="m9 13 3-3 3 3"/></symbol>
   <symbol id="i-folder" viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></symbol>
   <symbol id="i-gauge" viewBox="0 0 24 24"><path d="m12 14 4-4"/> <path d="M3.34 19a10 10 0 1 1 17.32 0"/></symbol>
   <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/> <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/> <path d="M2 12h20"/></symbol>
   <symbol id="i-house" viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/> <path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/> <path d="M12 16v-4"/> <path d="M12 8h.01"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/> <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
   <symbol id="i-list-checks" viewBox="0 0 24 24"><path d="m3 17 2 2 4-4"/> <path d="m3 7 2 2 4-4"/> <path d="M13 6h8"/> <path d="M13 12h8"/> <path d="M13 18h8"/></symbol>
   <symbol id="i-log-out" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/> <polyline points="16 17 21 12 16 7"/> <line x1="21" x2="9" y1="12" y2="12"/></symbol>
   <symbol id="i-map" viewBox="0 0 24 24"><path d="M14.106 5.553a2 2 0 0 0 1.788 0l3.659-1.83A1 1 0 0 1 21 4.619v12.764a1 1 0 0 1-.553.894l-4.553 2.277a2 2 0 0 1-1.788 0l-4.212-2.106a2 2 0 0 0-1.788 0l-3.659 1.83A1 1 0 0 1 3 19.381V6.618a1 1 0 0 1 .553-.894l4.553-2.277a2 2 0 0 1 1.788 0z"/> <path d="M15 5.764v15"/> <path d="M9 3.236v15"/></symbol>
   <symbol id="i-memory-stick" viewBox="0 0 24 24"><path d="M6 19v-3"/> <path d="M10 19v-3"/> <path d="M14 19v-3"/> <path d="M18 19v-3"/> <path d="M8 11V9"/> <path d="M16 11V9"/> <path d="M12 11V9"/> <path d="M2 15h20"/> <path d="M2 7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v1.1a2 2 0 0 0 0 3.837V17a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-5.1a2 2 0 0 0 0-3.837Z"/></symbol>
+  <symbol id="i-monitor" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="3" rx="2"/> <line x1="8" x2="16" y1="21" y2="21"/> <line x1="12" x2="12" y1="17" y2="21"/></symbol>
   <symbol id="i-package-plus" viewBox="0 0 24 24"><path d="M16 16h6"/> <path d="M19 13v6"/> <path d="M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l2-1.14"/> <path d="m7.5 4.27 9 5.15"/> <polyline points="3.29 7 12 12 20.71 7"/> <line x1="12" x2="12" y1="22" y2="12"/></symbol>
   <symbol id="i-package" viewBox="0 0 24 24"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z"/> <path d="M12 22V12"/> <path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7"/> <path d="m7.5 4.27 9 5.15"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><rect x="14" y="4" width="4" height="16" rx="1"/> <rect x="6" y="4" width="4" height="16" rx="1"/></symbol>
   <symbol id="i-pickaxe" viewBox="0 0 24 24"><path d="M14.531 12.469 6.619 20.38a1 1 0 1 1-3-3l7.912-7.912"/> <path d="M15.686 4.314A12.5 12.5 0 0 0 5.461 2.958 1 1 0 0 0 5.58 4.71a22 22 0 0 1 6.318 3.393"/> <path d="M17.7 3.7a1 1 0 0 0-1.4 0l-4.6 4.6a1 1 0 0 0 0 1.4l2.6 2.6a1 1 0 0 0 1.4 0l4.6-4.6a1 1 0 0 0 0-1.4z"/> <path d="M19.686 8.314a12.501 12.501 0 0 1 1.356 10.225 1 1 0 0 1-1.751-.119 22 22 0 0 0-3.393-6.319"/></symbol>
   <symbol id="i-play" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"/></symbol>
   <symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14"/> <path d="M12 5v14"/></symbol>
@@ -59,6 +69,7 @@
   <symbol id="i-terminal" viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"/> <line x1="12" x2="20" y1="19" y2="19"/></symbol>
   <symbol id="i-timer" viewBox="0 0 24 24"><line x1="10" x2="14" y1="2" y2="2"/> <line x1="12" x2="15" y1="14" y2="11"/> <circle cx="12" cy="14" r="8"/></symbol>
   <symbol id="i-trash-2" viewBox="0 0 24 24"><path d="M3 6h18"/> <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/> <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/> <line x1="10" x2="10" y1="11" y2="17"/> <line x1="14" x2="14" y1="11" y2="17"/></symbol>
+  <symbol id="i-triangle-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/> <path d="M12 9v4"/> <path d="M12 17h.01"/></symbol>
   <symbol id="i-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/> <polyline points="17 8 12 3 7 8"/> <line x1="12" x2="12" y1="3" y2="15"/></symbol>
   <symbol id="i-user-cog" viewBox="0 0 24 24"><circle cx="18" cy="15" r="3"/> <circle cx="9" cy="7" r="4"/> <path d="M10 15H6a4 4 0 0 0-4 4v2"/> <path d="m21.7 16.4-.9-.3"/> <path d="m15.2 13.9-.9-.3"/> <path d="m16.6 18.7.3-.9"/> <path d="m19.1 12.2.3-.9"/> <path d="m19.6 18.7-.4-1"/> <path d="m16.8 12.3-.4-1"/> <path d="m14.3 16.6 1-.4"/> <path d="m20.7 13.8 1-.4"/></symbol>
   <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/> <circle cx="9" cy="7" r="4"/> <path d="M22 21v-2a4 4 0 0 0-3-3.87"/> <path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
@@ -118,7 +129,7 @@
   <div class="disk-bar">
     <span class="disk-label">Espacio en disco</span>
     <div class="bar-wrap"><div class="bar-fill" id="disk-fill" style="width:0%"></div></div>
-    <span class="disk-text" id="disk-text">Cargando...</span>
+    <span class="disk-text" id="disk-text">Calculando…</span>
   </div>
 
   <div class="mgmt-tabs deploy-modes">
@@ -138,10 +149,10 @@
       <div class="dz-hint">.zip, .rar, .tar, .tar.gz o .tar.bz2</div>
     </div>
     <div class="file-badge" id="file-badge">
-      <span class="fb-icon">📦</span>
+      <span class="fb-icon"><svg class="icon"><use href="#i-package"/></svg></span>
       <span class="fb-name" id="fb-name"></span>
       <span class="fb-size" id="fb-size"></span>
-      <button class="btn-clear" id="fb-clear">✕</button>
+      <button class="btn-clear" id="fb-clear" aria-label="Quitar archivo"><svg class="icon"><use href="#i-x"/></svg></button>
     </div>
   </div>
 
@@ -219,14 +230,14 @@
         </div>
         <div class="prop-field">
           <label class="prop-label">Versión de Minecraft</label>
-          <select id="create-mc-version" class="w-full"><option value="">Cargando versiones...</option></select>
+          <select id="create-mc-version" class="w-full"><option value="">Cargando versiones…</option></select>
         </div>
         <div class="prop-field" id="create-loader-version-field" style="display:none">
           <label class="prop-label">Versión del modloader</label>
           <select id="create-loader-version" class="w-full"></select>
         </div>
       </div>
-      <p class="hint" id="create-loader-hint" style="margin-top:8px"></p>
+      <p class="hint mt-s" id="create-loader-hint"></p>
     </div>
 
     <div class="card step">
@@ -259,11 +270,11 @@
   <div id="deploy-download-section" style="display:none">
     <div class="card step">
       <h2 class="step-title"><span class="step-num" aria-hidden="true">1</span>Buscar modpack</h2>
-      <div class="mgmt-tabs" id="dl-source-tabs" style="margin-bottom:10px">
+      <div class="mgmt-tabs mb-m" id="dl-source-tabs">
         <button type="button" class="mgmt-tab active" data-source="modrinth">Modrinth</button>
         <button type="button" class="mgmt-tab" data-source="curseforge">CurseForge</button>
       </div>
-      <div class="mod-search-toolbar" style="margin:0 0 10px">
+      <div class="mod-search-toolbar dl-search-toolbar">
         <input type="text" id="dl-search-input" placeholder="Nombre del modpack…" class="w-full">
         <select id="dl-loader-filter" title="Filtrar por modloader">
           <option value="">Cualquier modloader</option>
@@ -276,7 +287,7 @@
           <option value="">Cualquier versión de MC</option>
         </select>
       </div>
-      <div class="mod-search-columns" style="margin:0;height:360px">
+      <div class="mod-search-columns dl-search-columns">
         <aside class="mod-search-sidebar" id="dl-category-panel">
           <div class="mod-search-sidebar-header" id="dl-category-panel-header">
             <span>Categorías</span>
@@ -297,7 +308,7 @@
 
     <div class="card step" id="dl-version-card" style="display:none">
       <h2 class="step-title"><span class="step-num" aria-hidden="true">2</span>Versión y nombre del servidor</h2>
-      <div id="dl-selected-pack" style="margin-bottom:12px"></div>
+      <div id="dl-selected-pack" class="mb-m"></div>
       <div class="props-grid">
         <div class="prop-field">
           <label class="prop-label">Versión del modpack</label>
@@ -346,7 +357,7 @@
       <h2>Modpacks instalados</h2>
       <button class="btn-ghost btn-sm" id="btn-refresh-packs"><svg class="icon"><use href="#i-refresh-cw"/></svg> Actualizar</button>
     </div>
-    <div id="modpack-list"><p class="empty-msg">Cargando...</p></div>
+    <div id="modpack-list"><div class="skeleton-rows" role="status" aria-label="Cargando"><div></div><div></div><div></div></div></div>
   </div>
   <div id="mgmt-panel">
     <div class="card pb-0">
@@ -370,8 +381,8 @@
       <div class="card">
         <div class="info-box">Los cambios requieren reinicio del servidor para aplicarse. Las propiedades no reconocidas aparecen en el editor avanzado al final.</div>
         <div class="card-toolbar">
-          <span class="card-toolbar-title">⚙️ server.properties</span>
-          <button id="save-props-btn">💾 Guardar cambios</button>
+          <span class="card-toolbar-title">server.properties</span>
+          <button id="save-props-btn">Guardar cambios</button>
         </div>
 
         <!-- Form sections -->
@@ -379,7 +390,7 @@
           <!-- General -->
           <div class="props-section">
             <div class="props-section-header" data-section="general">
-              <span>🌐 General</span><span class="ps-arrow">▾</span>
+              <span>General</span><span class="ps-arrow">▾</span>
             </div>
             <div class="props-section-body" id="ps-general">
               <div class="props-grid">
@@ -414,7 +425,7 @@
           <!-- Mundo -->
           <div class="props-section">
             <div class="props-section-header" data-section="mundo">
-              <span>🌍 Mundo</span><span class="ps-arrow">▾</span>
+              <span>Mundo</span><span class="ps-arrow">▾</span>
             </div>
             <div class="props-section-body" id="ps-mundo">
               <div class="props-grid">
@@ -454,17 +465,17 @@
               <hr class="section-sep">
               <div class="section-toolbar">
                 <span class="section-toolbar-title">Mundos instalados</span>
-                <div style="display:flex;gap:8px">
-                  <button id="btn-upload-world" class="btn-sm">⬆️ Subir mundo</button>
-                  <button id="btn-new-world" class="btn-sm">+ Nuevo mundo</button>
+                <div class="button-row-tight">
+                  <button id="btn-upload-world" class="btn-secondary btn-sm">Subir mundo</button>
+                  <button id="btn-new-world" class="btn-secondary btn-sm">Nuevo mundo</button>
                 </div>
               </div>
-              <div id="worlds-list"><p class="empty-msg">Cargando...</p></div>
+              <div id="worlds-list"><div class="skeleton-rows" role="status" aria-label="Cargando"><div></div><div></div><div></div></div></div>
 
               <!-- Subir mundo existente (inline, sin modal) -->
               <div id="upload-world-form" class="new-world-form" style="display:none">
-                <div style="font-size:.85rem;font-weight:600;margin-bottom:12px">⬆️ Subir mundo existente</div>
-                <div class="props-grid" style="margin-bottom:12px">
+                <div class="form-panel-title">Subir un mundo existente</div>
+                <div class="props-grid mb-m">
                   <div class="prop-field full-width">
                     <label class="prop-label">Archivo (.zip, .tar.gz, .tar.bz2, .tar, .rar) <span class="req">*</span></label>
                     <input type="file" id="uw-file" accept=".zip,.tar.gz,.tgz,.tar.bz2,.tar,.rar">
@@ -476,55 +487,55 @@
                     <span class="hint">Solo letras, números, _ y -</span>
                   </div>
                 </div>
-                <div class="toggle-row" style="margin-bottom:12px">
+                <div class="toggle-row mb-m">
                   <div class="toggle-track on" id="uw-activate-toggle"><div class="toggle-thumb"></div></div>
-                  <span style="font-size:.83rem">Activar este mundo (cambia <code>level-name</code>)</span>
+                  <span class="toggle-label">Activar este mundo (cambia <code>level-name</code>)</span>
                 </div>
-                <div id="uw-progress" style="display:none;margin-bottom:12px;font-size:.82rem;color:var(--muted)"></div>
-                <div class="warn-box" style="margin-bottom:12px">⚠️ Si el servidor está corriendo, detenlo antes de activar el mundo subido.</div>
-                <div style="display:flex;gap:8px;justify-content:flex-end">
+                <div id="uw-progress" class="form-progress" style="display:none"></div>
+                <div class="warn-box mb-m">Si el servidor está en marcha, detenlo antes de activar el mundo subido.</div>
+                <div class="form-actions">
                   <button class="btn-secondary" id="uw-cancel-inline">Cancelar</button>
-                  <button id="uw-confirm">⬆️ Subir mundo</button>
+                  <button id="uw-confirm">Subir mundo</button>
                 </div>
               </div>
 
               <!-- Crear nuevo mundo (inline, sin modal) -->
               <div id="new-world-form" class="new-world-form" style="display:none">
-                <div style="font-size:.85rem;font-weight:600;margin-bottom:12px">➕ Configurar nuevo mundo</div>
-                <div class="props-grid" style="margin-bottom:12px">
+                <div class="form-panel-title">Nuevo mundo</div>
+                <div class="props-grid mb-m">
                   <div class="prop-field">
                     <label class="prop-label">Nombre de carpeta <span class="req">*</span></label>
                     <input type="text" id="nw-name" placeholder="ej: mundo_nuevo, survival_2025...">
                     <span class="hint">Solo letras, números, _ y -</span>
                   </div>
                   <div class="prop-field">
-                    <label class="prop-label">Seed <span style="font-weight:400">(vacío = aleatorio)</span></label>
+                    <label class="prop-label">Seed <span class="label-note">(vacío = aleatorio)</span></label>
                     <input type="text" id="nw-seed" placeholder="ej: 12345, MiSeed...">
                   </div>
                   <div class="prop-field full-width">
                     <label class="prop-label">Tipo de mundo <span class="req">*</span></label>
                     <select id="nw-type-select">
-                      <option value="minecraft:normal">🌿 Normal</option>
-                      <option value="minecraft:large_biomes">🗺️ Biomas grandes</option>
-                      <option value="minecraft:amplified">⛰️ Amplificado</option>
-                      <option value="minecraft:flat">🟫 Superplano</option>
-                      <option value="biomesoplenty" id="opt-bop" disabled>🌺 Biomes O Plenty — mod no detectado</option>
-                      <option value="terraforged" id="opt-tf" disabled>🏔️ TerraForged — mod no detectado</option>
-                      <option value="skyblockbuilder:skyblock" id="opt-sky" disabled>🏝️ Skyblock (SkyblockBuilder) — mod no detectado</option>
-                      <option value="custom">✏️ Personalizado</option>
+                      <option value="minecraft:normal">Normal</option>
+                      <option value="minecraft:large_biomes">Biomas grandes</option>
+                      <option value="minecraft:amplified">Amplificado</option>
+                      <option value="minecraft:flat">Superplano</option>
+                      <option value="biomesoplenty" id="opt-bop" disabled>Biomes O Plenty (mod no detectado)</option>
+                      <option value="terraforged" id="opt-tf" disabled>TerraForged (mod no detectado)</option>
+                      <option value="skyblockbuilder:skyblock" id="opt-sky" disabled>Skyblock con SkyblockBuilder (mod no detectado)</option>
+                      <option value="custom">Personalizado</option>
                     </select>
                     <div id="nw-type-desc" class="nw-type-desc"></div>
                     <input type="text" id="nw-type-custom" class="nw-type-custom" placeholder="ej: skyblockbuilder..." style="display:none">
                   </div>
                 </div>
-                <div class="toggle-row" style="margin-bottom:12px">
+                <div class="toggle-row mb-m">
                   <div class="toggle-track on" id="nw-activate-toggle"><div class="toggle-thumb"></div></div>
-                  <span style="font-size:.83rem">Activar este mundo (cambia <code>level-name</code>)</span>
+                  <span class="toggle-label">Activar este mundo (cambia <code>level-name</code>)</span>
                 </div>
-                <div class="warn-box" style="margin-bottom:12px">⚠️ El mundo se generará al iniciar el servidor. Si está corriendo, detenlo primero.</div>
-                <div style="display:flex;gap:8px;justify-content:flex-end">
+                <div class="warn-box mb-m">El mundo se genera al iniciar el servidor. Si está en marcha, detenlo primero.</div>
+                <div class="form-actions">
                   <button class="btn-secondary" id="nw-cancel-inline">Cancelar</button>
-                  <button id="nw-confirm">🌍 Preparar mundo</button>
+                  <button id="nw-confirm">Preparar mundo</button>
                 </div>
               </div>
             </div>
@@ -533,7 +544,7 @@
           <!-- PvP -->
           <div class="props-section">
             <div class="props-section-header" data-section="pvp">
-              <span>⚔️ PvP y comportamiento</span><span class="ps-arrow">▾</span>
+              <span>PvP y comportamiento</span><span class="ps-arrow">▾</span>
             </div>
             <div class="props-section-body" id="ps-pvp">
               <div class="props-grid">
@@ -568,7 +579,7 @@
           <!-- Red -->
           <div class="props-section">
             <div class="props-section-header" data-section="red">
-              <span>📡 Red y rendimiento</span><span class="ps-arrow">▾</span>
+              <span>Red y rendimiento</span><span class="ps-arrow">▾</span>
             </div>
             <div class="props-section-body" id="ps-red">
               <div class="props-grid">
@@ -599,10 +610,10 @@
           <!-- Query -->
           <div class="props-section">
             <div class="props-section-header" data-section="rcon">
-              <span>🔍 Query</span><span class="ps-arrow">▾</span>
+              <span>Query</span><span class="ps-arrow">▾</span>
             </div>
             <div class="props-section-body" id="ps-rcon">
-              <div class="info-box" style="margin-bottom:12px">RCON se activa y configura automáticamente al arrancar el servidor (necesario para refrescar métricas sin llenar la consola), por eso no aparece aquí.</div>
+              <div class="info-box mb-m">RCON se activa y configura automáticamente al arrancar el servidor (necesario para refrescar métricas sin llenar la consola), por eso no aparece aquí.</div>
               <div class="props-grid">
                 <div class="prop-field">
                   <label class="prop-label">Activar Query</label>
@@ -619,10 +630,10 @@
           <!-- Editor avanzado -->
           <div class="props-section">
             <div class="props-section-header" data-section="raw">
-              <span>📝 Propiedades avanzadas / desconocidas</span><span class="ps-arrow">▾</span>
+              <span>Propiedades avanzadas o desconocidas</span><span class="ps-arrow">▾</span>
             </div>
             <div class="props-section-body" id="ps-raw" style="display:none">
-              <p class="hint" style="margin-bottom:10px">Propiedades no reconocidas por el formulario. Edita con cuidado.</p>
+              <p class="hint mb-m">Propiedades no reconocidas por el formulario. Edita con cuidado.</p>
               <textarea id="props-raw-editor" spellcheck="false"></textarea>
             </div>
           </div>
@@ -647,13 +658,13 @@
       <div class="card">
         <div class="info-box">Configuración de los mods instalados. Los cambios se aplican al reiniciar el servidor.</div>
         <div class="config-sidebar">
-          <div class="config-search"><input type="text" id="mod-search" placeholder="🔍 Buscar mod..."></div>
-          <div class="mod-tree-body" id="mod-tree"><p class="empty-msg" style="padding:12px">Cargando...</p></div>
+          <div class="config-search"><input type="text" id="mod-search" placeholder="Buscar mod…"></div>
+          <div class="mod-tree-body" id="mod-tree"><div class="pad-m"><div class="skeleton-rows" role="status" aria-label="Cargando"><div></div><div></div><div></div></div></div></div>
           <div class="pagination" id="mod-pagination" style="display:none">
             <button id="pg-prev">◀</button><span id="pg-info"></span><button id="pg-next">▶</button>
           </div>
         </div>
-        <p class="hint" style="margin-top:10px">Haz clic en cualquier archivo para editarlo en el editor</p>
+        <p class="hint mt-m">Haz clic en cualquier archivo para editarlo en el editor</p>
       </div>
     </div>
 
@@ -663,18 +674,18 @@
         <div class="info-box">Scripts de KubeJS para modificar el comportamiento del modpack mediante código.</div>
         <div class="config-sidebar">
           <div class="config-search kjs-search-row">
-            <input type="text" id="kubejs-search" placeholder="🔍 Buscar script...">
-            <button class="btn-sm" id="btn-new-kjs-file" title="Crear nuevo script">+ Nuevo</button>
-            <a class="btn-secondary btn-sm" id="btn-download-kjs" style="text-decoration:none" title="Descargar carpeta kubejs/ como zip">⬇ Descargar</a>
+            <input type="text" id="kubejs-search" placeholder="Buscar script…">
+            <button class="btn-secondary btn-sm" id="btn-new-kjs-file" title="Crear un script nuevo">Nuevo</button>
+            <a class="btn-secondary btn-sm" id="btn-download-kjs" title="Descargar la carpeta kubejs/ como .zip"><svg class="icon"><use href="#i-download"/></svg>Descargar</a>
           </div>
-          <div class="mod-tree-body" id="kubejs-tree"><p class="empty-msg" style="padding:12px">Cargando KubeJS...</p></div>
+          <div class="mod-tree-body" id="kubejs-tree"><div class="pad-m"><div class="skeleton-rows" role="status" aria-label="Cargando"><div></div><div></div><div></div></div></div></div>
           <div class="pagination" id="kubejs-pagination" style="display:none">
             <button id="kpg-prev">◀</button><span id="kpg-info"></span><button id="kpg-next">▶</button>
           </div>
         </div>
-        <div id="kjs-new-file-form" class="new-world-form" style="display:none;margin-top:12px">
-          <div style="font-size:.85rem;font-weight:600;margin-bottom:12px">➕ Nuevo script KubeJS</div>
-          <div class="props-grid" style="margin-bottom:12px">
+        <div id="kjs-new-file-form" class="new-world-form mt-m" style="display:none">
+          <div class="form-panel-title">Nuevo script de KubeJS</div>
+          <div class="props-grid mb-m">
             <div class="prop-field">
               <label class="prop-label">Carpeta <span class="req">*</span></label>
               <select id="kjs-subfolder">
@@ -695,12 +706,12 @@
               <span class="hint">Se añade .js si no tiene extensión</span>
             </div>
           </div>
-          <div style="display:flex;gap:8px;justify-content:flex-end">
+          <div class="form-actions">
             <button class="btn-secondary" id="kjs-cancel-new">Cancelar</button>
-            <button id="kjs-confirm-new">📄 Crear script</button>
+            <button id="kjs-confirm-new">Crear script</button>
           </div>
         </div>
-        <p class="hint" style="margin-top:10px">Haz clic en cualquier archivo para editarlo</p>
+        <p class="hint mt-m">Haz clic en cualquier archivo para editarlo</p>
       </div>
     </div>
 
@@ -710,17 +721,17 @@
         <div class="info-box">Archivos de texto editables de cada mundo: estadísticas, logros y datapacks. Los binarios (level.dat, region/, playerdata) no se muestran.</div>
         <div class="config-sidebar">
           <div class="config-search">
-            <select id="wf-world-select" style="width:100%;margin-bottom:8px">
+            <select id="wf-world-select" class="w-full mb-s">
               <option value="">Selecciona un mundo...</option>
             </select>
-            <input type="text" id="wf-search" placeholder="🔍 Buscar archivo...">
+            <input type="text" id="wf-search" placeholder="Buscar archivo…">
           </div>
-          <div class="mod-tree-body" id="wf-tree"><p class="empty-msg" style="padding:12px">Selecciona un mundo</p></div>
+          <div class="mod-tree-body" id="wf-tree"><p class="empty-msg pad-m">Selecciona un mundo</p></div>
           <div class="pagination" id="wf-pagination" style="display:none">
             <button id="wfpg-prev">◀</button><span id="wfpg-info"></span><button id="wfpg-next">▶</button>
           </div>
         </div>
-        <p class="hint" style="margin-top:10px">Haz clic en cualquier archivo para editarlo</p>
+        <p class="hint mt-m">Haz clic en cualquier archivo para editarlo</p>
       </div>
     </div>
 
@@ -734,7 +745,7 @@
           <div>
             <div class="log-section-title">Logs recientes</div>
             <div id="log-file-list" class="log-file-list-wrap">
-              <p class="empty-msg">Cargando...</p>
+              <div class="skeleton-rows" role="status" aria-label="Cargando"><div></div><div></div><div></div></div>
             </div>
             <div class="log-section-title">Crash reports</div>
             <div id="crash-file-list" class="crash-file-list-wrap">
@@ -745,7 +756,7 @@
           <!-- Main: log viewer -->
           <div class="log-main">
             <div id="crash-culprit" class="crash-culprit-box" style="display:none">
-              <div class="crash-culprit-title">⚠️ Análisis del crash</div>
+              <div class="crash-culprit-title"><svg class="icon"><use href="#i-triangle-alert"/></svg>Análisis del crash</div>
               <div id="crash-exception-summary" class="crash-exception-summary"></div>
               <div id="crash-culprit-mods" class="crash-culprit-detail"></div>
               <details id="crash-caused-by-details" class="crash-caused-by-details" style="display:none">
@@ -755,7 +766,7 @@
             </div>
 
             <div class="log-filters">
-              <input type="text" id="log-search" placeholder="🔍 Buscar en el log..." class="flex-1" style="min-width:160px">
+              <input type="text" id="log-search" placeholder="Buscar en el log…" class="flex-1 log-search">
               <select id="log-filter" class="log-filter-select">
                 <option value="all">Todas las líneas</option>
                 <option value="error">ERROR / FATAL</option>
@@ -764,7 +775,7 @@
                 <option value="info">INFO</option>
               </select>
               <span id="log-match-count" class="log-match-count"></span>
-              <a id="log-download-link" class="btn-secondary btn-sm" style="display:none;text-decoration:none" download title="Descargar archivo completo">⬇ Descargar</a>
+              <a id="log-download-link" class="btn-secondary btn-sm" download title="Descargar el archivo completo" style="display:none"><svg class="icon"><use href="#i-download"/></svg>Descargar</a>
             </div>
 
             <div id="log-placeholder" class="log-placeholder">
@@ -782,46 +793,46 @@
       <div class="card">
         <div class="mods-header">
           <span id="modpack-version-badge" style="display:none"></span>
-          <button type="button" class="btn-secondary btn-sm" id="modloader-change-btn">🔧 Cambiar versión de modloader</button>
+          <button type="button" class="btn-secondary btn-sm" id="modloader-change-btn">Cambiar versión del modloader</button>
           <div class="flex-1"></div>
           <span id="mods-count" class="mods-count"></span>
         </div>
 
         <!-- Aviso: mods que el autor del modpack bloqueó para descarga por terceros -->
-        <div class="warn-box" id="mods-pending-banner" style="display:none;margin-bottom:12px"></div>
+        <div class="warn-box mb-m" id="mods-pending-banner" style="display:none"></div>
 
         <!-- Upload zone -->
         <div class="mod-upload-zone" id="mod-upload-zone">
           <input type="file" id="mod-file-input" accept=".jar,.zip">
-          <div class="muz-icon">📦</div>
+          <svg class="icon muz-icon"><use href="#i-upload"/></svg>
           <div class="muz-text">Arrastra un <strong>.jar</strong> o un <strong>.zip</strong> con varios mods aquí, o <span class="muz-link">haz clic</span> para elegir archivo</div>
           <div class="muz-hint">Se verificará compatibilidad con la versión del servidor</div>
         </div>
         <input type="file" id="mod-folder-input" webkitdirectory directory multiple style="display:none">
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0">
-          <button type="button" class="btn-secondary btn-sm" id="mod-folder-btn">📁 Subir carpeta de mods</button>
-          <button type="button" class="btn-secondary btn-sm" id="mod-search-btn">🔎 Buscar mods online</button>
+        <div class="button-row">
+          <button type="button" class="btn-secondary btn-sm" id="mod-folder-btn"><svg class="icon"><use href="#i-folder-up"/></svg>Subir carpeta de mods</button>
+          <button type="button" class="btn-secondary btn-sm" id="mod-search-btn"><svg class="icon"><use href="#i-search"/></svg>Buscar mods online</button>
         </div>
 
-        <div style="display:flex;gap:8px;align-items:center">
-          <input type="text" id="mods-search" placeholder="🔍 Buscar mod por nombre..." class="w-full">
-          <select id="mods-status-filter" class="btn-secondary btn-sm" style="flex-shrink:0">
+        <div class="filter-row">
+          <input type="text" id="mods-search" placeholder="Buscar mod por nombre…" class="w-full">
+          <select id="mods-status-filter" class="btn-secondary btn-sm shrink-0">
             <option value="all">Mostrar todos</option>
             <option value="hide-disabled">Ocultar deshabilitados</option>
             <option value="only-disabled">Solo deshabilitados</option>
           </select>
           <div class="mods-menu" id="mods-menu">
-            <button type="button" class="btn-secondary btn-sm" id="mods-menu-btn" title="Más opciones" aria-haspopup="true" aria-expanded="false">⋮ Más opciones</button>
+            <button type="button" class="btn-secondary btn-sm" id="mods-menu-btn" title="Más opciones" aria-haspopup="true" aria-expanded="false">Más opciones <svg class="icon" aria-hidden="true"><use href="#i-chevron-down"/></svg></button>
             <div class="mods-menu-dropdown" id="mods-menu-dropdown">
-              <button type="button" class="mods-menu-item" id="mod-duplicates-btn">⚠️ Ver posibles duplicados</button>
-              <button type="button" class="mods-menu-item" id="mod-client-only-btn">🖥️ Mods solo-cliente</button>
-              <button type="button" class="mods-menu-item" id="mod-deps-btn">🔗 Instalar dependencias que faltan</button>
-              <button type="button" class="mods-menu-item" id="mod-delete-disabled-btn">🗑 Borrar deshabilitados</button>
-              <button type="button" class="mods-menu-item" id="mod-download-btn">📥 Descargar mods (.zip)</button>
+              <button type="button" class="mods-menu-item" id="mod-duplicates-btn"><svg class="icon"><use href="#i-triangle-alert"/></svg>Ver posibles duplicados</button>
+              <button type="button" class="mods-menu-item" id="mod-client-only-btn"><svg class="icon"><use href="#i-monitor"/></svg>Mods solo de cliente</button>
+              <button type="button" class="mods-menu-item" id="mod-deps-btn"><svg class="icon"><use href="#i-link"/></svg>Instalar dependencias que faltan</button>
+              <button type="button" class="mods-menu-item" id="mod-delete-disabled-btn"><svg class="icon"><use href="#i-trash-2"/></svg>Borrar deshabilitados</button>
+              <button type="button" class="mods-menu-item" id="mod-download-btn"><svg class="icon"><use href="#i-download"/></svg>Descargar mods (.zip)</button>
             </div>
           </div>
         </div>
-        <div id="mods-list"><p class="empty-msg">Cargando...</p></div>
+        <div id="mods-list"><div class="skeleton-rows" role="status" aria-label="Cargando"><div></div><div></div><div></div></div></div>
       </div>
     </div>
 
@@ -912,14 +923,14 @@
 <div class="modal-overlay" id="editor-modal">
   <div class="modal">
     <div class="modal-header">
-      <span>🔧</span>
+      <span class="modal-icon"><svg class="icon"><use href="#i-file-text"/></svg></span>
       <span class="modal-path" id="modal-path"></span>
-      <button class="modal-close" id="modal-close-btn">✕</button>
+      <button class="modal-close" id="modal-close-btn" aria-label="Cerrar"><svg class="icon"><use href="#i-x"/></svg></button>
     </div>
     <div class="modal-body">
       <div class="cfg-toolbar" id="cfg-toolbar">
-        <button class="cfg-mode-btn active" id="cfg-btn-form">📋 Formulario</button>
-        <button class="cfg-mode-btn" id="cfg-btn-raw">📝 Texto plano</button>
+        <button class="cfg-mode-btn active" id="cfg-btn-form">Formulario</button>
+        <button class="cfg-mode-btn" id="cfg-btn-raw">Texto plano</button>
         <span class="cfg-mode-hint" id="cfg-mode-hint"></span>
       </div>
       <div id="cfg-form-view" class="cfg-form-view">
@@ -931,9 +942,9 @@
           <textarea class="modal-textarea" id="config-editor" spellcheck="false"></textarea>
         </div>
       </div>
-      <div id="kjs-move-form" class="new-world-form" style="display:none;margin-top:12px">
-        <div style="font-size:.85rem;font-weight:600;margin-bottom:12px">📂 Mover / renombrar script</div>
-        <div class="props-grid" style="margin-bottom:12px">
+      <div id="kjs-move-form" class="new-world-form mt-m" style="display:none">
+        <div class="form-panel-title">Mover o renombrar el script</div>
+        <div class="props-grid mb-m">
           <div class="prop-field">
             <label class="prop-label">Carpeta destino <span class="req">*</span></label>
             <select id="kjs-move-subfolder">
@@ -953,19 +964,19 @@
             <input type="text" id="kjs-move-filename">
           </div>
         </div>
-        <div style="display:flex;gap:8px;justify-content:flex-end">
+        <div class="form-actions">
           <button class="btn-secondary" id="kjs-move-cancel">Cancelar</button>
-          <button id="kjs-move-confirm">📂 Mover / renombrar</button>
+          <button id="kjs-move-confirm">Mover o renombrar</button>
         </div>
       </div>
     </div>
     <div class="modal-footer">
       <span class="line-info" id="line-info">Línea 1</span>
       <div class="modal-footer-actions">
-        <button class="btn-danger" id="modal-kjs-delete-btn" style="display:none">🗑 Borrar</button>
-        <button class="btn-secondary" id="modal-kjs-move-btn" style="display:none">📂 Mover/Renombrar</button>
+        <button class="btn-danger" id="modal-kjs-delete-btn" style="display:none">Borrar</button>
+        <button class="btn-secondary" id="modal-kjs-move-btn" style="display:none">Mover o renombrar</button>
         <button class="btn-secondary" id="modal-close-btn2">Cerrar</button>
-        <button id="modal-save-btn">💾 Guardar cambios</button>
+        <button id="modal-save-btn">Guardar cambios</button>
       </div>
     </div>
   </div>
@@ -975,9 +986,9 @@
 <div class="modal-overlay" id="mod-upload-modal">
   <div class="modal modal-sm">
     <div class="modal-header">
-      <span id="mod-upload-modal-icon">📦</span>
+      <span class="modal-icon" id="mod-upload-modal-icon"><svg class="icon"><use href="#i-package"/></svg></span>
       <span class="modal-path" id="mod-upload-modal-title">Subida de mods</span>
-      <button class="modal-close" id="mod-upload-modal-close">✕</button>
+      <button class="modal-close" id="mod-upload-modal-close" aria-label="Cerrar"><svg class="icon"><use href="#i-x"/></svg></button>
     </div>
     <div class="modal-body">
       <div class="modal-scroll" id="mod-upload-modal-body"></div>
@@ -989,9 +1000,9 @@
 <div class="modal-overlay" id="mod-list-modal">
   <div class="modal modal-sm">
     <div class="modal-header">
-      <span id="mod-list-modal-icon">📦</span>
+      <span class="modal-icon" id="mod-list-modal-icon"><svg class="icon"><use href="#i-package"/></svg></span>
       <span class="modal-path" id="mod-list-modal-title"></span>
-      <button class="modal-close" id="mod-list-modal-close">✕</button>
+      <button class="modal-close" id="mod-list-modal-close" aria-label="Cerrar"><svg class="icon"><use href="#i-x"/></svg></button>
     </div>
     <div class="modal-body">
       <div class="modal-scroll" id="mod-list-modal-body"></div>
@@ -1009,9 +1020,9 @@
 <div class="modal-overlay" id="mod-downgrade-modal">
   <div class="modal modal-sm">
     <div class="modal-header">
-      <span>⚠️</span>
+      <span class="modal-icon"><svg class="icon"><use href="#i-triangle-alert"/></svg></span>
       <span class="modal-path" id="mod-downgrade-modal-title">Mods que necesitan confirmación</span>
-      <button class="modal-close" id="mod-downgrade-modal-close">✕</button>
+      <button class="modal-close" id="mod-downgrade-modal-close" aria-label="Cerrar"><svg class="icon"><use href="#i-x"/></svg></button>
     </div>
     <div class="modal-body">
       <div class="modal-scroll" id="mod-downgrade-modal-body"></div>
@@ -1030,9 +1041,9 @@
 <div class="modal-overlay" id="modloader-modal">
   <div class="modal modal-sm">
     <div class="modal-header">
-      <span>🔧</span>
-      <span class="modal-path">Cambiar versión de modloader</span>
-      <button class="modal-close" id="modloader-modal-close">✕</button>
+      <span class="modal-icon"><svg class="icon"><use href="#i-wrench"/></svg></span>
+      <span class="modal-path">Cambiar versión del modloader</span>
+      <button class="modal-close" id="modloader-modal-close" aria-label="Cerrar"><svg class="icon"><use href="#i-x"/></svg></button>
     </div>
     <div class="modal-body">
       <div class="modal-scroll" id="modloader-modal-body"></div>
@@ -1051,9 +1062,9 @@
 <div class="modal-overlay" id="mod-duplicates-modal">
   <div class="modal modal-sm">
     <div class="modal-header">
-      <span>⚠️</span>
+      <span class="modal-icon"><svg class="icon"><use href="#i-triangle-alert"/></svg></span>
       <span class="modal-path">Posibles mods duplicados</span>
-      <button class="modal-close" id="mod-duplicates-modal-close">✕</button>
+      <button class="modal-close" id="mod-duplicates-modal-close" aria-label="Cerrar"><svg class="icon"><use href="#i-x"/></svg></button>
     </div>
     <div class="modal-body">
       <div class="modal-scroll" id="mod-duplicates-modal-body"></div>
@@ -1065,9 +1076,9 @@
 <div class="modal-overlay" id="mod-client-only-modal">
   <div class="modal modal-sm">
     <div class="modal-header">
-      <span>🖥️</span>
-      <span class="modal-path">Mods solo-cliente</span>
-      <button class="modal-close" id="mod-client-only-modal-close">✕</button>
+      <span class="modal-icon"><svg class="icon"><use href="#i-monitor"/></svg></span>
+      <span class="modal-path">Mods solo de cliente</span>
+      <button class="modal-close" id="mod-client-only-modal-close" aria-label="Cerrar"><svg class="icon"><use href="#i-x"/></svg></button>
     </div>
     <div class="modal-body">
       <div class="info-box">Los mods marcados como "solo cliente" no necesitan estar en la carpeta mods/ del servidor — no es un error que falten aquí, es lo esperado. La detección se basa en metadata que el propio mod declara, así que "sin detectar" no significa necesariamente que haga falta en el servidor.</div>
@@ -1080,9 +1091,9 @@
 <div class="modal-overlay" id="mod-delete-disabled-modal">
   <div class="modal modal-sm">
     <div class="modal-header">
-      <span>🗑</span>
+      <span class="modal-icon"><svg class="icon"><use href="#i-trash-2"/></svg></span>
       <span class="modal-path">Borrar mods deshabilitados</span>
-      <button class="modal-close" id="mod-delete-disabled-modal-close">✕</button>
+      <button class="modal-close" id="mod-delete-disabled-modal-close" aria-label="Cerrar"><svg class="icon"><use href="#i-x"/></svg></button>
     </div>
     <div class="modal-body">
       <div class="info-box">Elige cuáles de los mods deshabilitados quieres borrar de verdad. Esta acción no se puede deshacer.</div>
@@ -1092,7 +1103,7 @@
       <span class="line-info" id="mod-delete-disabled-count">0 seleccionados</span>
       <div class="modal-footer-actions">
         <button class="btn-secondary" id="mod-delete-disabled-cancel">Cancelar</button>
-        <button class="btn-danger" id="mod-delete-disabled-confirm">🗑 Borrar seleccionados</button>
+        <button class="btn-danger" id="mod-delete-disabled-confirm">Borrar seleccionados</button>
       </div>
     </div>
   </div>
@@ -1102,9 +1113,9 @@
 <div class="modal-overlay" id="mod-download-modal">
   <div class="modal mod-dl-dialog">
     <div class="modal-header">
-      <span>📥</span>
+      <span class="modal-icon"><svg class="icon"><use href="#i-download"/></svg></span>
       <span class="modal-path">Descargar mods</span>
-      <button class="modal-close" id="mod-download-modal-close">✕</button>
+      <button class="modal-close" id="mod-download-modal-close" aria-label="Cerrar"><svg class="icon"><use href="#i-x"/></svg></button>
     </div>
     <div class="modal-body">
       <div class="modal-scroll">
@@ -1112,7 +1123,7 @@
         <div class="mod-dl-options" role="radiogroup">
           <label class="mod-dl-option">
             <input type="radio" name="mod-download-scope" value="enabled" checked>
-            <span class="mod-dl-option-icon">🧩</span>
+            <span class="mod-dl-option-icon"><svg class="icon"><use href="#i-puzzle"/></svg></span>
             <span class="mod-dl-option-text">
               <span class="mod-dl-option-title">Solo activos</span>
               <span class="mod-dl-option-desc">Lo que carga el servidor ahora mismo</span>
@@ -1121,7 +1132,7 @@
           </label>
           <label class="mod-dl-option" id="mod-download-option-all">
             <input type="radio" name="mod-download-scope" value="all">
-            <span class="mod-dl-option-icon">📦</span>
+            <span class="mod-dl-option-icon"><svg class="icon"><use href="#i-package"/></svg></span>
             <span class="mod-dl-option-text">
               <span class="mod-dl-option-title">Todos</span>
               <span class="mod-dl-option-desc" id="mod-download-desc-all"></span>
@@ -1131,7 +1142,7 @@
         </div>
 
         <div class="mod-dl-file">
-          <span class="mod-dl-file-icon">💾</span>
+          <span class="mod-dl-file-icon"><svg class="icon"><use href="#i-file-text"/></svg></span>
           <span class="mod-dl-file-name" id="mod-download-filename"></span>
           <span class="mod-dl-file-size" id="mod-download-size"></span>
         </div>
@@ -1140,7 +1151,7 @@
     </div>
     <div class="modal-footer mod-dl-footer">
       <button class="btn-secondary" id="mod-download-cancel">Cancelar</button>
-      <button id="mod-download-confirm">📥 Descargar</button>
+      <button id="mod-download-confirm">Descargar</button>
     </div>
   </div>
 </div>
@@ -1149,17 +1160,17 @@
 <div class="modal-overlay" id="mod-search-modal">
   <div class="modal mod-search-dialog">
     <div class="modal-header">
-      <span>🔎</span>
+      <span class="modal-icon"><svg class="icon"><use href="#i-search"/></svg></span>
       <span class="modal-path">Buscar mods online</span>
-      <button class="modal-close" id="mod-search-modal-close">✕</button>
+      <button class="modal-close" id="mod-search-modal-close" aria-label="Cerrar"><svg class="icon"><use href="#i-x"/></svg></button>
     </div>
     <div class="modal-body">
-      <div class="mgmt-tabs" id="mod-search-tabs" style="margin-bottom:10px">
+      <div class="mgmt-tabs mb-m" id="mod-search-tabs">
         <button type="button" class="mgmt-tab active" data-source="modrinth">Modrinth</button>
         <button type="button" class="mgmt-tab" data-source="curseforge">CurseForge</button>
       </div>
       <div class="mod-search-toolbar">
-        <input type="text" id="mod-search-input" placeholder="🔍 Buscar mod por nombre..." class="w-full">
+        <input type="text" id="mod-search-input" placeholder="Buscar mod por nombre…" class="w-full">
       </div>
 
       <div class="mod-search-columns">
@@ -1173,7 +1184,7 @@
 
         <div class="mod-search-results-col">
           <div class="modal-scroll" id="mod-search-modal-body">
-            <p class="empty-msg">Cargando...</p>
+            <div class="skeleton-rows" role="status" aria-label="Cargando"><div></div><div></div><div></div></div>
           </div>
           <div class="modal-footer mod-search-results-footer">
             <div class="mod-modal-pagination" id="mod-search-pagination"></div>
@@ -1190,9 +1201,9 @@
 <div class="modal-overlay" id="mod-deps-modal">
   <div class="modal mod-deps-dialog">
     <div class="modal-header">
-      <span>🔗</span>
+      <span class="modal-icon"><svg class="icon"><use href="#i-link"/></svg></span>
       <span class="modal-path">Dependencias de los mods</span>
-      <button class="modal-close" id="mod-deps-modal-close">✕</button>
+      <button class="modal-close" id="mod-deps-modal-close" aria-label="Cerrar"><svg class="icon"><use href="#i-x"/></svg></button>
     </div>
     <div class="modal-body">
       <div class="modal-scroll" id="mod-deps-modal-body"></div>
@@ -1207,54 +1218,54 @@
 <div class="page" id="page-players">
   <div class="card">
     <div class="players-header">
-      <h2>👥 Gestión global de jugadores</h2>
-      <button class="btn-secondary btn-sm" id="btn-sync-all">🔄 Sincronizar a todos los servers</button>
+      <h2>Jugadores de todos los servidores</h2>
+      <button class="btn-secondary btn-sm" id="btn-sync-all"><svg class="icon"><use href="#i-refresh-cw"/></svg>Sincronizar con todos los servidores</button>
     </div>
-    <div class="info-box" style="margin-top:12px">Los cambios se aplican a <strong>todos los modpacks</strong> automáticamente. Si el servidor está corriendo, usa los comandos de consola para que surtan efecto inmediato.</div>
+    <div class="info-box mt-m">Los cambios se aplican a <strong>todos los modpacks</strong> automáticamente. Si el servidor está corriendo, usa los comandos de consola para que surtan efecto inmediato.</div>
   </div>
 
   <div class="players-grid">
 
     <!-- OPS -->
     <div class="card">
-      <h2>⭐ Operadores (ops)</h2>
+      <h2>Operadores (ops)</h2>
       <div class="input-flex">
         <input type="text" id="op-name-input" placeholder="Nombre del jugador" class="flex-1">
-        <button id="btn-add-op">+ Añadir op</button>
+        <button class="btn-secondary" id="btn-add-op">Añadir</button>
       </div>
-      <div id="ops-list"><p class="empty-msg">Cargando...</p></div>
+      <div id="ops-list"><div class="skeleton-rows" role="status" aria-label="Cargando"><div></div><div></div><div></div></div></div>
     </div>
 
     <!-- WHITELIST -->
     <div class="card">
-      <h2>✅ Whitelist</h2>
+      <h2>Whitelist</h2>
       <div class="input-flex">
         <input type="text" id="wl-name-input" placeholder="Nombre del jugador" class="flex-1">
-        <button id="btn-add-wl">+ Añadir</button>
+        <button class="btn-secondary" id="btn-add-wl">Añadir</button>
       </div>
-      <div id="whitelist-list"><p class="empty-msg">Cargando...</p></div>
+      <div id="whitelist-list"><div class="skeleton-rows" role="status" aria-label="Cargando"><div></div><div></div><div></div></div></div>
     </div>
 
     <!-- BANS JUGADORES -->
     <div class="card">
-      <h2>🚫 Jugadores baneados</h2>
-      <div class="input-flex" style="margin-bottom:8px">
+      <h2>Jugadores baneados</h2>
+      <div class="input-flex mb-s">
         <input type="text" id="ban-name-input" placeholder="Nombre del jugador" class="flex-1">
         <button id="btn-ban-player" class="btn-danger">Banear</button>
       </div>
-      <input type="text" id="ban-reason-input" placeholder="Motivo (opcional)" class="w-full" style="margin-bottom:14px">
-      <div id="banned-list"><p class="empty-msg">Cargando...</p></div>
+      <input type="text" id="ban-reason-input" placeholder="Motivo (opcional)" class="w-full mb-l">
+      <div id="banned-list"><div class="skeleton-rows" role="status" aria-label="Cargando"><div></div><div></div><div></div></div></div>
     </div>
 
     <!-- BANS IPS -->
     <div class="card">
-      <h2>🌐 IPs baneadas</h2>
-      <div class="input-flex" style="margin-bottom:8px">
+      <h2>IPs baneadas</h2>
+      <div class="input-flex mb-s">
         <input type="text" id="ban-ip-input" placeholder="IP (ej: 192.168.1.50)" class="flex-1">
         <button id="btn-ban-ip" class="btn-danger">Banear IP</button>
       </div>
-      <input type="text" id="ban-ip-reason-input" placeholder="Motivo (opcional)" class="w-full" style="margin-bottom:14px">
-      <div id="banned-ips-list"><p class="empty-msg">Cargando...</p></div>
+      <input type="text" id="ban-ip-reason-input" placeholder="Motivo (opcional)" class="w-full mb-l">
+      <div id="banned-ips-list"><div class="skeleton-rows" role="status" aria-label="Cargando"><div></div><div></div><div></div></div></div>
     </div>
 
   </div>
@@ -1263,42 +1274,42 @@
 <!-- ══ AYUDA ══════════════════════════════════════════════ -->
 <div class="page" id="page-help">
   <div class="card">
-    <h2>❓ Cómo usar Minecraft Server Deployer</h2>
+    <h2>Cómo usar MC Deployer</h2>
     <div class="info-box">Cada apartado se puede desplegar por separado. Si es la primera vez que usas la app, empieza por «Crear tu primer servidor».</div>
 
     <details class="help-section" open>
-      <summary>🆕 Crear tu primer servidor</summary>
+      <summary>Crear tu primer servidor</summary>
       <div class="help-section-body">
-        <p>Desde la pestaña <b>⛏️ Instalar modpack</b> tienes tres formas de conseguir un servidor, según lo que ya tengas:</p>
+        <p>Desde la pestaña <b>Instalar</b> tienes tres formas de conseguir un servidor, según lo que ya tengas:</p>
         <ul>
-          <li><b>📦 Importar modpack existente</b> — si ya tienes un modpack descargado (un <code>.zip</code>, por ejemplo exportado de CurseForge/Modrinth, o los «server files» de un modpack), súbelo aquí y la app lo descomprime y lo deja listo.</li>
-          <li><b>🆕 Crear servidor nuevo</b> — arranca desde cero: eliges versión de Minecraft, modloader (Forge, NeoForge, Fabric, Quilt o ninguno) y su versión, sin mods todavía. Útil para modpacks sin server files disponibles: creas el servidor con el modloader correcto y luego añades los mods a mano.</li>
-          <li><b>🌐 Descargar modpack</b> — busca un modpack en Modrinth o CurseForge y la app se encarga de todo: descarga el modloader, los mods y la configuración. Antes de instalar comprueba si ese modpack ya se parece a uno que tengas instalado, para no duplicarlo por error.</li>
+          <li><b>Subir un modpack</b>: si ya tienes un modpack descargado (un <code>.zip</code>, por ejemplo exportado de CurseForge/Modrinth, o los «server files» de un modpack), súbelo aquí y la app lo descomprime y lo deja listo.</li>
+          <li><b>Crear desde cero</b>: arranca desde cero: eliges versión de Minecraft, modloader (Forge, NeoForge, Fabric, Quilt o ninguno) y su versión, sin mods todavía. Útil para modpacks sin server files disponibles: creas el servidor con el modloader correcto y luego añades los mods a mano.</li>
+          <li><b>Buscar y descargar</b>: busca un modpack en Modrinth o CurseForge y la app se encarga de todo: descarga el modloader, los mods y la configuración. Antes de instalar comprueba si ese modpack ya se parece a uno que tengas instalado, para no duplicarlo por error.</li>
         </ul>
         <p>En los tres casos eliges también cuánta RAM mínima/máxima (<code>-Xms</code>/<code>-Xmx</code>) tendrá el servidor.</p>
       </div>
     </details>
 
     <details class="help-section">
-      <summary>📦 Gestión de modpacks</summary>
+      <summary>Modpacks</summary>
       <div class="help-section-body">
         <p>Elige un servidor arriba para ver sus pestañas:</p>
         <ul>
-          <li><b>🧩 Mods</b> — lista de mods instalados (activar/desactivar/borrar), subir mods sueltos o una carpeta entera, y buscar mods nuevos online (con detección de compatibilidad de versión y aviso si ya está instalado). El menú «⋮» tiene además: ver posibles duplicados, ver mods que son solo de cliente, y borrar en lote los deshabilitados.</li>
-          <li><b>📄 server.properties</b> — editor con formulario para los ajustes más comunes (dificultad, modo de juego, whitelist, MOTD...) o en texto plano para todo lo demás.</li>
-          <li><b>🔧 Config de mods</b> — edita los archivos de configuración de cada mod (<code>config/</code>) desde el navegador.</li>
-          <li><b>📜 KubeJS</b> — si el modpack usa KubeJS, gestiona sus scripts (crear, editar, mover/renombrar, borrar).</li>
-          <li><b>🗺️ Archivos de mundo</b> — crea un mundo nuevo, cambia el activo, o borra los que ya no uses (menos el que está activo).</li>
-          <li><b>📋 Logs</b> — consulta logs rotados y crash reports; si hay un crash, la app intenta identificar qué mod lo causó.</li>
-          <li><b>🔧 Cambiar versión de modloader</b> (botón junto al nombre del modpack) — sube o baja la versión del modloader sin tocar mods ni mundo, avisando antes si algún mod dejaría de ser compatible.</li>
+          <li><b>Mods</b>: lista de mods instalados (activar/desactivar/borrar), subir mods sueltos o una carpeta entera, y buscar mods nuevos online (con detección de compatibilidad de versión y aviso si ya está instalado). El menú «⋮» tiene además: ver posibles duplicados, ver mods que son solo de cliente, y borrar en lote los deshabilitados.</li>
+          <li><b>server.properties</b>: editor con formulario para los ajustes más comunes (dificultad, modo de juego, whitelist, MOTD...) o en texto plano para todo lo demás.</li>
+          <li><b>Config de mods</b>: edita los archivos de configuración de cada mod (<code>config/</code>) desde el navegador.</li>
+          <li><b>KubeJS</b>: si el modpack usa KubeJS, gestiona sus scripts (crear, editar, mover/renombrar, borrar).</li>
+          <li><b>Archivos de mundo</b>: crea un mundo nuevo, cambia el activo, o borra los que ya no uses (menos el que está activo).</li>
+          <li><b>Logs</b>: consulta logs rotados y crash reports; si hay un crash, la app intenta identificar qué mod lo causó.</li>
+          <li><b>Cambiar versión del modloader</b> (botón de la pestaña Mods): sube o baja la versión del modloader sin tocar mods ni mundo, avisando antes si algún mod dejaría de ser compatible.</li>
         </ul>
       </div>
     </details>
 
     <details class="help-section">
-      <summary>🖥️ Servidor (arrancar, consola, red)</summary>
+      <summary>Servidor: arrancar, consola y red</summary>
       <div class="help-section-body">
-        <p>Desde la pestaña <b>🖥️ Servidor</b> eliges qué modpack arrancar (si hay más de uno) y decides si acepta conexiones solo de tu red local o de cualquier IP.</p>
+        <p>Desde la pestaña <b>Servidor</b> eliges qué modpack arrancar (si hay más de uno) y decides si acepta conexiones solo de tu red local o de cualquier IP.</p>
         <ul>
           <li><b>Consola en vivo</b> — ves el log del servidor en tiempo real y puedes enviar comandos (<code>say</code>, <code>list</code>, <code>stop</code>...) directamente.</li>
           <li><b>Métricas</b> — TPS y MSPT en vivo (vía RCON, en Forge/NeoForge) y jugadores conectados, mientras el servidor está en marcha.</li>
@@ -1308,28 +1319,28 @@
     </details>
 
     <details class="help-section">
-      <summary>👥 Jugadores</summary>
+      <summary>Jugadores</summary>
       <div class="help-section-body">
         <p>Gestión global de jugadores, aplicada a <b>todos los servidores a la vez</b>: operadores (ops), whitelist, y baneos de jugador o de IP. Si el servidor está corriendo en ese momento, usa los comandos de la consola para que el cambio surta efecto inmediato (los archivos por sí solos no expulsan/aceptan a nadie en caliente).</p>
       </div>
     </details>
 
     <details class="help-section">
-      <summary>👤 Usuarios <span style="font-weight:400;color:var(--muted)">(solo administrador)</span></summary>
+      <summary>Usuarios <span class="label-note">(solo administrador)</span></summary>
       <div class="help-section-body">
         <p>Crea cuentas adicionales para otras personas que quieras que puedan usar el panel. Solo el administrador puede crear o borrar usuarios, y no puede borrarse a sí mismo.</p>
       </div>
     </details>
 
     <details class="help-section">
-      <summary>⚙️ Configuración <span style="font-weight:400;color:var(--muted)">(solo administrador)</span></summary>
+      <summary>Configuración <span class="label-note">(solo administrador)</span></summary>
       <div class="help-section-body">
         <p>Edita las variables de entorno (usuario, puertos, dominio, clave de CurseForge, auto-actualización...) y los números de ajuste internos de la app (timeouts, límites, tamaños de página...) directamente desde el navegador. Los cambios no se aplican en caliente: al guardar, el panel te ofrece reiniciar la app en el momento para aplicarlos (no reinicia si hay un servidor de Minecraft corriendo o una operación en curso).</p>
       </div>
     </details>
 
     <details class="help-section">
-      <summary>💻 Sistema</summary>
+      <summary>Sistema</summary>
       <div class="help-section-body">
         <p>Monitor de recursos del equipo donde corre la app: CPU, RAM y disco en tiempo real, además de comprobar si hay una actualización de la propia app disponible en GitHub.</p>
       </div>
@@ -1340,12 +1351,15 @@
 <!-- ══ USUARIOS (solo admin) ══════════════════════════════ -->
 <div class="page" id="page-users">
   <div class="card">
-    <h2>👤 Usuarios del sistema <button class="btn-secondary btn-sm" style="margin-left:8px" id="btn-refresh-users">↻ Actualizar</button></h2>
+    <div class="card-head">
+      <h2>Usuarios del panel</h2>
+      <button class="btn-ghost btn-sm" id="btn-refresh-users"><svg class="icon"><use href="#i-refresh-cw"/></svg> Actualizar</button>
+    </div>
     <div class="info-box">Como administrador puedes crear y eliminar usuarios. El administrador no puede eliminarse a sí mismo.</div>
-    <div id="users-list"><p class="empty-msg">Cargando...</p></div>
+    <div id="users-list"><div class="skeleton-rows" role="status" aria-label="Cargando"><div></div><div></div><div></div></div></div>
   </div>
   <div class="card">
-    <h2>➕ Añadir usuario</h2>
+    <h2>Añadir usuario</h2>
     <div class="users-form">
       <div>
         <label class="field-label">Nombre de usuario <span class="req">*</span></label>
@@ -1357,12 +1371,12 @@
         <label class="field-label">Contraseña <span class="req">*</span></label>
         <div class="pass-wrapper">
           <input type="password" id="new-user-pass" placeholder="mín. 8 caracteres" class="w-full" autocomplete="new-password">
-          <button type="button" id="toggle-pass-vis" class="btn-pass-toggle" title="Mostrar/ocultar">👁</button>
+          <button type="button" id="toggle-pass-vis" class="btn-pass-toggle" title="Mostrar u ocultar la contraseña" aria-label="Mostrar u ocultar la contraseña"><svg class="icon"><use href="#i-eye"/></svg></button>
         </div>
         <div id="new-user-pass-err" class="field-error"></div>
         <div class="field-hint">Solo caracteres estándar (sin emojis) · mín. 8 caracteres</div>
       </div>
-      <button id="add-user-btn" class="add-user-btn" disabled>+ Crear usuario</button>
+      <button id="add-user-btn" class="add-user-btn" disabled>Crear usuario</button>
     </div>
   </div>
 </div>
@@ -1371,8 +1385,8 @@
 <div class="page" id="page-config">
   <div class="card pb-0">
     <div class="mgmt-tabs" id="cfg-tabs">
-      <button class="mgmt-tab active" id="cfgtab-env">⚙️ Variables de entorno</button>
-      <button class="mgmt-tab" id="cfgtab-constants">🔧 Constantes de la app</button>
+      <button class="mgmt-tab active" id="cfgtab-env"><svg class="icon"><use href="#i-settings"/></svg>Variables de entorno</button>
+      <button class="mgmt-tab" id="cfgtab-constants"><svg class="icon"><use href="#i-sliders-horizontal"/></svg>Constantes de la app</button>
     </div>
   </div>
 
@@ -1385,25 +1399,25 @@
           <input type="text" id="cfg-env-APP_USERNAME" class="w-full" autocomplete="off" spellcheck="false">
         </div>
         <div class="prop-field">
-          <label class="prop-label">Nueva contraseña <span style="color:var(--muted);font-weight:400">(opcional)</span></label>
+          <label class="prop-label">Nueva contraseña <span class="label-note">(opcional)</span></label>
           <div class="pass-wrapper">
             <input type="password" id="cfg-env-new-password" class="w-full" placeholder="mín. 8 caracteres" autocomplete="new-password">
-            <button type="button" id="cfg-toggle-pass-vis" class="btn-pass-toggle" title="Mostrar/ocultar">👁</button>
+            <button type="button" id="cfg-toggle-pass-vis" class="btn-pass-toggle" title="Mostrar u ocultar la contraseña" aria-label="Mostrar u ocultar la contraseña"><svg class="icon"><use href="#i-eye"/></svg></button>
           </div>
         </div>
         <div class="prop-field">
-          <label class="prop-label">JWT_SECRET <span style="color:var(--yellow);font-weight:400">(reinicia todas las sesiones)</span></label>
+          <label class="prop-label">JWT_SECRET <span class="label-note label-note-warn">(reinicia todas las sesiones)</span></label>
           <input type="text" id="cfg-env-JWT_SECRET" class="w-full" autocomplete="off" spellcheck="false">
         </div>
         <div class="prop-field">
           <label class="prop-label">Puerto web</label>
           <input type="number" id="cfg-env-WEB_PORT" class="w-full" min="1" max="65535">
-          <div class="field-hint" id="cfg-env-WEB_PORT-hint" style="display:none;color:var(--yellow)"></div>
+          <div class="field-hint field-hint-warn" id="cfg-env-WEB_PORT-hint" style="display:none"></div>
         </div>
         <div class="prop-field">
           <label class="prop-label">Carpeta de servidores</label>
           <input type="text" id="cfg-env-SERVERS_PATH" class="w-full" placeholder="~/servers-minecraft" autocomplete="off" spellcheck="false">
-          <div class="field-hint" id="cfg-env-SERVERS_PATH-hint" style="display:none;color:var(--yellow)"></div>
+          <div class="field-hint field-hint-warn" id="cfg-env-SERVERS_PATH-hint" style="display:none"></div>
         </div>
         <div class="prop-field">
           <label class="prop-label">Dominio de Minecraft</label>
@@ -1422,15 +1436,15 @@
           <input type="number" id="cfg-env-AUTO_UPDATE_INTERVAL_SECONDS" class="w-full" min="30">
         </div>
       </div>
-      <button id="cfg-save-env-btn" class="add-user-btn" style="margin-top:14px">💾 Guardar .env</button>
+      <button id="cfg-save-env-btn" class="add-user-btn mt-l">Guardar .env</button>
     </div>
   </div>
 
   <div class="cfg-tab-content" id="cfg-content-constants">
     <div class="card">
       <div class="info-box">Números de ajuste (timeouts, límites, tamaños de caché) compartidos por todas las instalaciones — a diferencia del .env, este archivo no tiene secretos y sí se versiona en git. Los cambios <strong>no se aplican en caliente</strong> — al guardar se te ofrecerá reiniciar la app para aplicarlos.</div>
-      <div id="config-constants-form"><p class="empty-msg">Cargando...</p></div>
-      <button id="cfg-save-constants-btn" class="add-user-btn" style="margin-top:14px">💾 Guardar constantes</button>
+      <div id="config-constants-form"><div class="skeleton-rows" role="status" aria-label="Cargando"><div></div><div></div><div></div></div></div>
+      <button id="cfg-save-constants-btn" class="add-user-btn mt-l">Guardar constantes</button>
     </div>
   </div>
 </div>
@@ -1439,7 +1453,7 @@
 <div class="modal-overlay" id="dialog-overlay">
   <div class="modal modal-dialog">
     <div class="modal-header">
-      <span id="dialog-icon">ℹ️</span>
+      <span class="modal-icon" id="dialog-icon"></span>
       <span class="dialog-title" id="dialog-title">Aviso</span>
     </div>
     <div class="dialog-body" id="dialog-msg"></div>
@@ -1469,14 +1483,14 @@
 <!-- ══ PANEL SISTEMA ════════════════════════════════════ -->
 <div id="sysmon-panel">
   <div class="sysmon-header">
-    <span class="sysmon-title">💻 Monitor del sistema</span>
+    <span class="sysmon-title"><svg class="icon"><use href="#i-cpu"/></svg>Sistema</span>
     <div class="sysmon-header-right">
       <span id="sysmon-updated" class="sysmon-updated"></span>
-      <button id="sysmon-close-btn" class="sysmon-close-btn">✕</button>
+      <button id="sysmon-close-btn" class="sysmon-close-btn" aria-label="Cerrar"><svg class="icon"><use href="#i-x"/></svg></button>
     </div>
   </div>
   <div class="sysmon-body" id="sysmon-body">
-    <p style="color:var(--muted);font-size:.85rem">Cargando...</p>
+    <div class="skeleton-rows" role="status" aria-label="Cargando"><div></div><div></div><div></div></div>
   </div>
 </div>
 <script src="/static/js/utils.js"></script>

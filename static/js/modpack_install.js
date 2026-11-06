@@ -102,7 +102,7 @@ function loadDlCategories(source) {
     dlCategoryPanelBody.innerHTML = renderModSearchCategoryOptions(cached) || '<p class="empty-msg" style="padding:6px">Sin categorías</p>';
     return;
   }
-  dlCategoryPanelBody.innerHTML = '<p class="empty-msg" style="padding:6px">Cargando...</p>';
+  dlCategoryPanelBody.innerHTML = loadingHtml();
   apiFetch('/api/modpack-install/categories?source=' + encodeURIComponent(source))
     .then(function(response) {
       return response.json().then(function(data) { return { ok: response.ok, data: data }; });
@@ -219,7 +219,7 @@ function runDlSearch(query, offset) {
       if (requestToken !== dlRequestToken) {
         return;
       }
-      body.innerHTML = modErrorHtml('Error de red: ' + error.message);
+      body.innerHTML = modErrorHtml('No se pudo conectar con el panel: ' + error.message);
     });
 }
 
@@ -290,7 +290,7 @@ function selectModpackToInstall(pack) {
   updateDlInstallBtnAppearance();
 
   var versionSelect = document.getElementById('dl-version-select');
-  versionSelect.innerHTML = '<option value="">Cargando versiones...</option>';
+  versionSelect.innerHTML = '<option value="">Cargando versiones…</option>';
 
   apiFetch('/api/modpack-install/versions?source=' + encodeURIComponent(pack.source) + '&project_id=' + encodeURIComponent(pack.id))
     .then(function(response) {

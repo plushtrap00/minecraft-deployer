@@ -20,6 +20,12 @@ function icon(name) {
   return '<svg class="icon" aria-hidden="true"><use href="#i-' + name + '"/></svg>';
 }
 
+// Bloque de carga con la forma aproximada de una lista (ver .skeleton-rows en
+// base.css), en lugar de un "Cargando..." suelto.
+function loadingHtml() {
+  return '<div class="skeleton-rows" role="status" aria-label="Cargando"><div></div><div></div><div></div></div>';
+}
+
 // "hace 3 días", "ayer", "hace 2 h"... para fechas en segundos epoch.
 function formatRelativeDate(epochSeconds) {
   var sec = Math.max(0, Math.floor(Date.now() / 1000 - epochSeconds));
@@ -37,6 +43,22 @@ function formatRelativeDate(epochSeconds) {
     return 'hace ' + days + ' días';
   }
   return new Date(epochSeconds * 1000).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+// Los diálogos y modales reciben su icono como emoji desde muchos sitios
+// (showConfirm(..., { icon: '⏳' }), openModListModal(title, '✅', ...)): aquí
+// se traducen al icono SVG equivalente para que todo use el mismo juego. Un
+// emoji sin equivalente se muestra tal cual.
+var EMOJI_ICONS = {
+  '📦': 'package', '⚠️': 'triangle-alert', '⚠': 'triangle-alert', '✅': 'circle-check',
+  '❌': 'circle-x', '🔧': 'wrench', '🖥️': 'monitor', '📥': 'download', '⬇️': 'download',
+  '🔗': 'link', '🗑': 'trash-2', '🗑️': 'trash-2', '⏳': 'clock', '🔄': 'refresh-cw',
+  'ℹ️': 'info', '⏹': 'square', '⏻': 'log-out', '🧩': 'puzzle', '🔎': 'search', '🔍': 'search'
+};
+
+function emojiIcon(emoji) {
+  var name = EMOJI_ICONS[emoji];
+  return name ? icon(name) : escHtml(emoji || '');
 }
 
 // Etiqueta de modloader con su color propio (ver .loader-tag en server.css).
@@ -112,7 +134,7 @@ function enableCodeEditorTab(textarea) {
 // -- Dialog (alert / confirm) -------------------------------------------------
 function showAlert(msg, icon) {
   var overlay = document.getElementById('dialog-overlay');
-  document.getElementById('dialog-icon').textContent = icon || 'ℹ️';
+  document.getElementById('dialog-icon').innerHTML = emojiIcon(icon || 'ℹ️');
   document.getElementById('dialog-title').textContent = 'Aviso';
   document.getElementById('dialog-msg').textContent = msg;
   var btns = document.getElementById('dialog-buttons');
@@ -130,7 +152,7 @@ function showAlert(msg, icon) {
 function showConfirm(title, msg, onConfirm, options) {
   options = options || {};
   var overlay = document.getElementById('dialog-overlay');
-  document.getElementById('dialog-icon').textContent = options.icon || '⚠️';
+  document.getElementById('dialog-icon').innerHTML = emojiIcon(options.icon || '⚠️');
   document.getElementById('dialog-title').textContent = title;
   document.getElementById('dialog-msg').textContent = msg;
   var btns = document.getElementById('dialog-buttons');

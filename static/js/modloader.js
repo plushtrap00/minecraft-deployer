@@ -15,7 +15,7 @@ function openModloaderModal() {
   }
   document.getElementById('modloader-install-btn').disabled = true;
   modloaderCheckedVersion = null;
-  document.getElementById('modloader-modal-body').innerHTML = '<p class="empty-msg">Cargando versiones disponibles...</p>';
+  document.getElementById('modloader-modal-body').innerHTML = '<p class="empty-msg">Cargando versiones disponibles…</p>';
   document.getElementById('modloader-modal').classList.add('show');
 
   apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/modloader/versions')
@@ -31,7 +31,7 @@ function openModloaderModal() {
       renderModloaderModalBody();
     })
     .catch(function(error) {
-      document.getElementById('modloader-modal-body').innerHTML = modErrorHtml('Error de red: ' + error.message);
+      document.getElementById('modloader-modal-body').innerHTML = modErrorHtml('No se pudo conectar con el panel: ' + error.message);
     });
 }
 

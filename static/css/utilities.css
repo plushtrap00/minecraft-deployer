@@ -1,0 +1,83 @@
+/* -- Utilidades -------------------------------------------------------------
+   Sustituyen a los style="..." que había en index.html. Va el último en el
+   <head> para que gane a los márgenes de los componentes con la misma
+   especificidad (p.ej. .mgmt-tabs pone margin-bottom: 0). El display:none
+   sí se queda en línea: los JS lo alternan con element.style.display. */
+.mt-s { margin-top: 8px; }
+.mt-m { margin-top: 12px; }
+.mt-l { margin-top: 16px; }
+.mb-s { margin-bottom: 8px; }
+.mb-m { margin-bottom: 12px; }
+.mb-l { margin-bottom: 16px; }
+.ml-s { margin-left: 8px; }
+.pad-m { padding: 12px; }
+.shrink-0 { flex-shrink: 0; }
+
+/* Título de un formulario desplegable dentro de una tarjeta (subir mundo,
+   nuevo script de KubeJS...). */
+.form-panel-title {
+  margin-bottom: 12px;
+  font-size: var(--fs-md);
+  font-weight: 600;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.form-progress {
+  margin-bottom: 12px;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.button-row-tight {
+  display: flex;
+  gap: 8px;
+}
+
+.filter-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Aclaración dentro de una etiqueta: "(opcional)", "(vacío = aleatorio)". */
+.label-note {
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.label-note-warn {
+  color: var(--yellow);
+}
+
+.field-hint-warn {
+  color: var(--yellow);
+}
+
+.toggle-label {
+  font-size: var(--fs-sm);
+}
+
+.log-search {
+  min-width: 160px;
+}
+
+.mod-search-toolbar.dl-search-toolbar {
+  margin: 0 0 10px;
+}
+
+.mod-search-columns.dl-search-columns {
+  margin: 0;
+  height: 360px;
+}

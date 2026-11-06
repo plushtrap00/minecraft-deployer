@@ -43,7 +43,7 @@ function startSysmonStream() {
   if (sysmonSSE) {
     return;
   }
-  document.getElementById('sysmon-body').innerHTML = '<p style="color:var(--muted);font-size:.82rem">Cargando...</p>';
+  document.getElementById('sysmon-body').innerHTML = loadingHtml();
   sysmonSSE = new EventSource('/api/system-stats/stream?token=' + encodeURIComponent(authToken));
   sysmonSSE.onmessage = function(event) {
     var data;
@@ -100,7 +100,7 @@ function loadAutoUpdateStatus() {
         // solo refrescar el panel.
         autoUpdateRestarting = false;
         hideRestartOverlay();
-        showToast('✅ Actualizado. Recargando la página...', 'success');
+        showToast('Actualizado. Recargando la página…', 'success');
         setTimeout(function() { window.location.reload(); }, 800);
         return;
       }
@@ -176,7 +176,7 @@ document.getElementById('sysmon-body').addEventListener('click', function(event)
   }
 });
 
-// Botón "🔍 Comprobar ahora" — antes vivía arriba junto a CPU/RAM (donde solo
+// Botón "Comprobar ahora" — antes vivía arriba junto a CPU/RAM (donde solo
 // forzaba un refresco de un stream que ya se actualiza solo), reaprovechado
 // aquí para forzar una comprobación real contra GitHub sin esperar al próximo
 // ciclo del bucle en segundo plano.
@@ -228,20 +228,20 @@ function applyAutoUpdate() {
     })
     .then(function(result) {
       if (result.ok) {
-        showToast('Actualización aplicada. Reiniciando la app...', 'success');
+        showToast('Actualización aplicada. Reiniciando la app…', 'success');
         beginRestartWatch('Aplicando la actualización...', 'Esto puede tardar unos segundos. No cierres esta pestaña.');
       } else {
         showToast(result.data.detail || 'No se pudo actualizar', 'error');
         if (btn) {
           btn.disabled = false;
-          btn.textContent = '⬇ Actualizar ahora';
+          btn.textContent = 'Actualizar ahora';
         }
       }
     })
     .catch(function() {
       // La conexión cortándose aquí es justo la señal esperada de que la app
       // ya está reiniciando -- no se trata como un error real.
-      showToast('Actualización enviada. Reiniciando la app...', 'success');
+      showToast('Actualización enviada. Reiniciando la app…', 'success');
       beginRestartWatch('Aplicando la actualización...', 'Esto puede tardar unos segundos. No cierres esta pestaña.');
     });
 }
@@ -292,17 +292,17 @@ function renderSysmon(stats) {
   var html = '';
 
   html += '<div class="sysmon-section">';
-  html += '<div class="sysmon-section-title">⚙️ CPU</div>';
+  html += '<div class="sysmon-section-title">CPU</div>';
   html += sysBar('CPU', stats.cpu.total_percent, stats.cpu.total_percent.toFixed(0) + '%');
   html += '</div>';
 
   html += '<div class="sysmon-section">';
-  html += '<div class="sysmon-section-title">🧠 RAM</div>';
+  html += '<div class="sysmon-section-title">RAM</div>';
   html += sysBar('RAM', stats.ram.percent, stats.ram.used_gb.toFixed(1) + ' / ' + stats.ram.total_gb.toFixed(1) + ' GB');
   html += '</div>';
 
   html += '<div class="sysmon-section">';
-  html += '<div class="sysmon-section-title">🌡️ Temperatura</div>';
+  html += '<div class="sysmon-section-title">Temperatura</div>';
   if (stats.cpu_temp === null && stats.gpu_temp === null) {
     html += '<span class="sysmon-no-temps">Sin sensores detectados. '
       + 'Instala: <code>sudo apt install lm-sensors && sudo sensors-detect --auto</code></span>';
@@ -337,11 +337,11 @@ function renderRestartPendingSection() {
     : (status.busy ? status.busy_reasons.join(', ') : null);
 
   var html = '<div class="sysmon-section">';
-  html += '<div class="sysmon-section-title">⚡ Reinicio pendiente</div>';
+  html += '<div class="sysmon-section-title">Reinicio pendiente</div>';
   html += '<span class="sysmon-no-temps">Guardaste cambios de .env o de constantes que todavía no se aplicaron.</span>';
   html += '<div style="margin-top:6px;display:flex;flex-direction:column;gap:4px;align-items:flex-start">';
   html += '<button type="button" class="btn-secondary btn-sm" id="sysmon-restart-btn"'
-    + (blockedReason ? ' disabled' : '') + '>🔄 Reiniciar ahora</button>';
+    + (blockedReason ? ' disabled' : '') + '>Reiniciar ahora</button>';
   if (blockedReason) {
     html += '<span class="sysmon-no-temps">Bloqueado: ' + escHtml(blockedReason) + '</span>';
   }
@@ -360,7 +360,7 @@ function autoUpdateRow(label, value, valueColor) {
 function renderAutoUpdateSection() {
   var status = lastAutoUpdateStatus;
   var html = '<div class="sysmon-section">';
-  html += '<div class="sysmon-section-title">🔄 Auto-actualización</div>';
+  html += '<div class="sysmon-section-title">Actualizaciones de la app</div>';
 
   if (autoUpdateRestarting) {
     html += '<span class="sysmon-no-temps">⏳ Actualización aplicada, esperando a que la app vuelva a responder...</span></div>';
@@ -368,7 +368,7 @@ function renderAutoUpdateSection() {
   }
 
   if (!status) {
-    html += '<span class="sysmon-no-temps">Cargando...</span></div>';
+    html += '<span class="sysmon-no-temps">Cargando…</span></div>';
     return html;
   }
 
@@ -387,7 +387,7 @@ function renderAutoUpdateSection() {
 
     html += '<div style="margin-top:6px;display:flex;flex-direction:column;gap:4px;align-items:flex-start">';
     html += '<button type="button" class="btn-secondary btn-sm" id="auto-update-apply-btn"'
-      + (blockedReason ? ' disabled' : '') + '>⬇ Actualizar ahora</button>';
+      + (blockedReason ? ' disabled' : '') + '>Actualizar ahora</button>';
     if (blockedReason) {
       html += '<span class="sysmon-no-temps">Bloqueado: ' + escHtml(blockedReason) + '</span>';
     }
@@ -413,7 +413,7 @@ function renderAutoUpdateSection() {
 
   html += '<div style="margin-top:6px">'
     + '<button type="button" class="btn-secondary btn-xs" id="auto-update-check-btn"' + (autoUpdateChecking ? ' disabled' : '') + '>'
-    + (autoUpdateChecking ? '↻ Comprobando...' : '🔍 Comprobar ahora') + '</button>'
+    + (autoUpdateChecking ? 'Comprobando…' : 'Comprobar ahora') + '</button>'
     + '</div>';
 
   html += '</div>';

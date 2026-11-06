@@ -87,7 +87,7 @@ document.getElementById('new-user-pass').addEventListener('input', function() {
 document.getElementById('toggle-pass-vis').addEventListener('click', function() {
   var inp = document.getElementById('new-user-pass');
   inp.type = inp.type === 'password' ? 'text' : 'password';
-  this.textContent = inp.type === 'password' ? '👁' : '🙈';
+  this.innerHTML = icon(inp.type === 'password' ? 'eye' : 'eye-off');
 });
 
 document.getElementById('add-user-btn').addEventListener('click', function() {
@@ -124,7 +124,7 @@ document.getElementById('add-user-btn').addEventListener('click', function() {
       }
     })
     .catch(function() {
-      showToast('Error de red', 'error');
+      showToast('No se pudo conectar con el panel. Comprueba la conexión y vuelve a intentarlo.', 'error');
       document.getElementById('add-user-btn').disabled = false;
     });
 });

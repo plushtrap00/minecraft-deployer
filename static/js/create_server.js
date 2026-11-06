@@ -64,7 +64,7 @@ function onCreateLoaderOrVersionChange() {
 
   versionField.style.display = '';
   var loaderSelect = document.getElementById('create-loader-version');
-  loaderSelect.innerHTML = '<option value="">Cargando...</option>';
+  loaderSelect.innerHTML = '<option value="">Cargando…</option>';
   hint.textContent = '';
   if (!mcVersion) {
     return;
@@ -76,7 +76,7 @@ function onCreateLoaderOrVersionChange() {
     })
     .then(function(result) {
       if (!result.ok) {
-        loaderSelect.innerHTML = '<option value="">Error</option>';
+        loaderSelect.innerHTML = '<option value="">No se pudieron cargar</option>';
         hint.textContent = result.data.detail || 'Error al consultar versiones';
         return;
       }

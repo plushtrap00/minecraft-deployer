@@ -257,7 +257,7 @@ function toggleNetMode() {
     .catch(function(error) {
       track.style.opacity = '';
       track.style.pointerEvents = '';
-      showToast('Error de red: ' + error.message, 'error');
+      showToast('No se pudo conectar con el panel: ' + error.message, 'error');
     });
 }
 

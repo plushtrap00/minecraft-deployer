@@ -372,7 +372,7 @@ function deleteModpack(name) {
       }
     })
     .catch(function() {
-      showToast('Error de red', 'error');
+      showToast('No se pudo conectar con el panel. Comprueba la conexión y vuelve a intentarlo.', 'error');
     });
 }
 
@@ -580,10 +580,10 @@ document.getElementById('save-props-btn').addEventListener('click', function() {
     .then(function(data) {
       if (data.success) {
         originalPropsText = newText;
-        showToast('✅ server.properties guardado', 'success');
+        showToast('server.properties guardado', 'success');
       }
     })
-    .catch(function() { showToast('❌ Error al guardar', 'error'); });
+    .catch(function() { showToast('No se pudo guardar server.properties', 'error'); });
 });
 
 
@@ -683,21 +683,21 @@ function saveRamConfig() {
     .then(function(result) {
       btn.disabled = false;
       if (result.ok) {
-        showToast('✅ RAM guardada en ' + result.data.source + ' — reinicia el servidor para aplicarla', 'success');
+        showToast('RAM guardada en ' + result.data.source + ' — reinicia el servidor para aplicarla', 'success');
       } else {
         showToast(result.data.detail || 'Error al guardar', 'error');
       }
     })
     .catch(function() {
       btn.disabled = false;
-      showToast('Error de red', 'error');
+      showToast('No se pudo conectar con el panel. Comprueba la conexión y vuelve a intentarlo.', 'error');
     });
 }
 
 
 // -- Config de mods -----------------------------------------------------------
 function loadModConfigs() {
-  document.getElementById('mod-tree').innerHTML = '<p class="empty-msg" style="padding:12px">Cargando...</p>';
+  document.getElementById('mod-tree').innerHTML = loadingHtml();
   apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/configs')
     .then(function(response) { return response.json(); })
     .then(function(data) {
@@ -708,7 +708,7 @@ function loadModConfigs() {
     })
     .catch(function() {
       document.getElementById('mod-tree').innerHTML =
-        '<p class="empty-msg" style="padding:12px;color:var(--red)">Error</p>';
+        '<p class="empty-msg error-msg pad-m">No se pudieron cargar los archivos de config. Vuelve a abrir la pestaña para reintentarlo.</p>';
     });
 }
 
@@ -902,7 +902,7 @@ function openFile(path, type) {
   });
   var pathPrefix = type === 'kjs' ? 'kubejs/' : (type === 'wf' ? selectedWfWorld + '/' : 'config/');
   document.getElementById('modal-path').textContent = pathPrefix + path;
-  document.getElementById('config-editor').value = 'Cargando...';
+  document.getElementById('config-editor').value = 'Cargando…';
   cfgParsed = null;
   cfgRawText = '';
   var isKjsFile = type === 'kjs';
@@ -990,7 +990,7 @@ document.getElementById('modal-save-btn').addEventListener('click', function() {
         showToast('Archivo guardado', 'success');
       }
     })
-    .catch(function() { showToast('Error al guardar', 'error'); });
+    .catch(function() { showToast('No se pudo guardar el archivo', 'error'); });
 });
 
 var ta = document.getElementById('config-editor');
@@ -1071,7 +1071,7 @@ document.getElementById('kjs-confirm-new').addEventListener('click', function() 
     .then(function(data) {
       document.getElementById('kjs-new-file-form').style.display = 'none';
       document.getElementById('kjs-new-filename').value = '';
-      showToast('✅ Archivo creado', 'success');
+      showToast('Archivo creado', 'success');
       apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/kubejs')
         .then(function(r) { return r.json(); })
         .then(function(kdata) {
@@ -1084,7 +1084,7 @@ document.getElementById('kjs-confirm-new').addEventListener('click', function() 
         });
     })
     .catch(function(err) {
-      showToast('❌ ' + err.message, 'error');
+      showToast(err.message, 'error');
     });
 });
 
@@ -1112,7 +1112,7 @@ document.getElementById('modal-kjs-delete-btn').addEventListener('click', functi
           showToast(result.data.detail || 'Error al borrar', 'error');
         }
       })
-      .catch(function() { showToast('Error de red', 'error'); });
+      .catch(function() { showToast('No se pudo conectar con el panel. Comprueba la conexión y vuelve a intentarlo.', 'error'); });
   });
 });
 
@@ -1188,12 +1188,12 @@ document.getElementById('kjs-move-confirm').addEventListener('click', function()
       return r.json();
     })
     .then(function() {
-      showToast('✅ Archivo movido', 'success');
+      showToast('Archivo movido', 'success');
       document.getElementById('kjs-move-form').style.display = 'none';
       closeModal();
       loadKubejs();
     })
     .catch(function(err) {
-      showToast('❌ ' + err.message, 'error');
+      showToast(err.message, 'error');
     });
 });

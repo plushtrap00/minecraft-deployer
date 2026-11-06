@@ -3,7 +3,7 @@ apiFetch('/api/disk-usage')
   .then(function(response) { return response.json(); })
   .then(function(data) {
     if (data.error) {
-      document.getElementById('disk-text').textContent = 'Error';
+      document.getElementById('disk-text').textContent = 'No disponible';
       return;
     }
     var fillBar = document.getElementById('disk-fill');
@@ -215,7 +215,7 @@ document.getElementById('deploy-btn').addEventListener('click', function() {
     })
     .catch(function(error) {
       status.textContent = '❌ Error';
-      showResult('error', 'Error de red', error.message, []);
+      showResult('error', 'No se pudo conectar con el panel', error.message, []);
     })
     .finally(function() {
       clearInterval(timer);

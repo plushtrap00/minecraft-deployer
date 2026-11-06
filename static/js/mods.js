@@ -89,7 +89,7 @@ function loadModsList() {
   if (!list) {
     return;
   }
-  list.innerHTML = '<p class="empty-msg">Cargando...</p>';
+  list.innerHTML = loadingHtml();
   document.getElementById('mods-count').textContent = '';
   // Se reengancha aquí (en vez de en cada sitio que llama a loadModsList() tras
   // subir/borrar/togglear un mod) para que la lista de pendientes se
@@ -121,24 +121,22 @@ function renderModsList(mods) {
     count.textContent = mods.length + ' / ' + allMods.length + ' mods';
   }
   if (!mods.length) {
-    list.innerHTML = '<p class="empty-msg" style="padding:16px">Sin resultados</p>';
+    list.innerHTML = '<p class="empty-msg pad-m">Ningún mod coincide con la búsqueda o el filtro.</p>';
     return;
   }
   var html = '<div class="mods-table-wrap">';
   mods.forEach(function(mod) {
-    var icon = mod.enabled ? '🧩' : '⬜';
     var opacityStyle = mod.enabled ? '' : ' style="opacity:.45"';
-    var disabledLabel = mod.enabled ? '' : '<span style="font-size:.72rem;color:var(--muted)">desactivado</span>';
+    var disabledLabel = mod.enabled ? '' : '<span class="mod-disabled-label">desactivado</span>';
     var toggleTitle = mod.enabled ? 'Deshabilitar mod' : 'Habilitar mod';
-    var toggleIcon = mod.enabled ? '⏸' : '▶';
     html += '<div class="mod-list-item"' + opacityStyle + '>'
-      + '<span class="mod-icon">' + icon + '</span>'
+      + '<span class="mod-icon">' + icon('puzzle') + '</span>'
       + '<div class="mod-info"><div class="mod-display">' + escHtml(mod.name) + '</div>'
       + '<div class="mod-file">' + escHtml(mod.filename) + '</div></div>'
       + disabledLabel
-      + '<button type="button" class="btn-secondary mod-change-version" title="Cambiar versión" data-name="' + escHtml(mod.name) + '" style="font-size:.78rem;padding:4px 8px;flex-shrink:0">🔄</button>'
-      + '<button type="button" class="btn-secondary mod-toggle" title="' + toggleTitle + '" data-filename="' + escHtml(mod.filename) + '" style="font-size:.78rem;padding:4px 8px;flex-shrink:0">' + toggleIcon + '</button>'
-      + '<button type="button" class="btn-danger mod-delete" title="Borrar mod" data-filename="' + escHtml(mod.filename) + '" style="opacity:1;font-size:.78rem;padding:4px 8px;flex-shrink:0">🗑</button>'
+      + '<button type="button" class="btn-ghost mod-row-btn mod-change-version" title="Cambiar versión" aria-label="Cambiar versión de ' + escHtml(mod.name) + '" data-name="' + escHtml(mod.name) + '">' + icon('refresh-cw') + '</button>'
+      + '<button type="button" class="btn-ghost mod-row-btn mod-toggle" title="' + toggleTitle + '" aria-label="' + toggleTitle + ' ' + escHtml(mod.name) + '" data-filename="' + escHtml(mod.filename) + '">' + icon(mod.enabled ? 'pause' : 'play') + '</button>'
+      + '<button type="button" class="btn-ghost mod-row-btn mod-row-btn-danger mod-delete" title="Borrar mod" aria-label="Borrar ' + escHtml(mod.name) + '" data-filename="' + escHtml(mod.filename) + '">' + icon('trash-2') + '</button>'
       + '</div>';
   });
   html += '</div>';
@@ -180,7 +178,7 @@ function toggleMod(filename) {
         showToast(result.data.detail || 'Error al cambiar el estado del mod', 'error');
       }
     })
-    .catch(function() { showToast('Error de red', 'error'); });
+    .catch(function() { showToast('No se pudo conectar con el panel. Comprueba la conexión y vuelve a intentarlo.', 'error'); });
 }
 
 
@@ -243,7 +241,7 @@ document.getElementById('mod-delete-disabled-confirm').addEventListener('click',
       }
       loadModsList();
     })
-    .catch(function() { showToast('Error de red', 'error'); });
+    .catch(function() { showToast('No se pudo conectar con el panel. Comprueba la conexión y vuelve a intentarlo.', 'error'); });
 });
 
 document.getElementById('mod-delete-disabled-cancel').addEventListener('click', function() {
@@ -260,7 +258,7 @@ document.getElementById('mod-delete-disabled-modal').addEventListener('click', f
 
 // -- Dependencias obligatorias que faltan --------------------------------------
 // Se comprueba solo (sin red, solo leyendo los jars) tras cada instalación, y
-// a mano desde "⋮ Más opciones". Si falta algo se instala sin preguntar: un
+// a mano desde "Más opciones". Si falta algo se instala sin preguntar: un
 // mod sin sus dependencias obligatorias impide que el servidor arranque.
 var modDepsState = { rows: [], busy: false };
 
@@ -313,7 +311,7 @@ function checkModDependencies(manual) {
     })
     .catch(function(error) {
       if (manual) {
-        setModDepsBody(modErrorHtml('Error de red: ' + error.message));
+        setModDepsBody(modErrorHtml('No se pudo conectar con el panel: ' + error.message));
       }
     });
 }
@@ -541,7 +539,7 @@ document.getElementById('mod-download-confirm').addEventListener('click', functi
   link.click();
   link.remove();
   document.getElementById('mod-download-modal').classList.remove('show');
-  showToast('Preparando la descarga...', 'success');
+  showToast('Preparando la descarga…', 'success');
 });
 
 document.getElementById('mod-download-cancel').addEventListener('click', function() {
@@ -580,7 +578,7 @@ function doDeleteMod(filename) {
         showToast(data.detail || 'Error al borrar', 'error');
       }
     })
-    .catch(function() { showToast('Error de red', 'error'); });
+    .catch(function() { showToast('No se pudo conectar con el panel. Comprueba la conexión y vuelve a intentarlo.', 'error'); });
 }
 
 function applyModsFilters() {
@@ -619,7 +617,7 @@ var modUploadModalCloseBtn = document.getElementById('mod-upload-modal-close');
 
 function openModUploadModal(html, title, icon) {
   document.getElementById('mod-upload-modal-title').textContent = title || 'Subida de mods';
-  document.getElementById('mod-upload-modal-icon').textContent = icon || '📦';
+  document.getElementById('mod-upload-modal-icon').innerHTML = emojiIcon(icon || '📦');
   modUploadModalBody.innerHTML = html;
   modUploadModal.classList.add('show');
   updateModUploadModalLock();
@@ -995,7 +993,7 @@ function uploadModsBulk(fileList) {
     })
     .catch(function(error) {
       setModOperationBusy(false);
-      setModUploadModalBody(modErrorHtml('Error de red: ' + error.message));
+      setModUploadModalBody(modErrorHtml('No se pudo conectar con el panel: ' + error.message));
     });
 }
 
@@ -1112,7 +1110,7 @@ var modListState = { items: [], page: 0 };
 
 function openModListModal(title, icon, items) {
   document.getElementById('mod-list-modal-title').textContent = title;
-  document.getElementById('mod-list-modal-icon').textContent = icon;
+  document.getElementById('mod-list-modal-icon').innerHTML = emojiIcon(icon);
   modListState = { items: items, page: 0 };
   renderModListModalPage();
   document.getElementById('mod-list-modal').classList.add('show');
@@ -1224,7 +1222,7 @@ function submitDowngradeDecision(acceptFilenames) {
       }
     })
     .catch(function() {
-      document.getElementById('mod-downgrade-modal-body').innerHTML = modErrorHtml('Error de red');
+      document.getElementById('mod-downgrade-modal-body').innerHTML = modErrorHtml('No se pudo conectar con el panel. Vuelve a intentarlo.');
       document.getElementById('mod-downgrade-confirm').disabled = false;
       document.getElementById('mod-downgrade-reject-all').disabled = false;
     })
@@ -1313,7 +1311,7 @@ function openDuplicatesModal() {
       renderDuplicatesModal(data.groups || []);
     })
     .catch(function(error) {
-      document.getElementById('mod-duplicates-modal-body').innerHTML = modErrorHtml('Error de red: ' + error.message);
+      document.getElementById('mod-duplicates-modal-body').innerHTML = modErrorHtml('No se pudo conectar con el panel: ' + error.message);
     });
 }
 
@@ -1375,7 +1373,7 @@ function openClientOnlyModal() {
       renderClientOnlyModal(data);
     })
     .catch(function(error) {
-      document.getElementById('mod-client-only-modal-body').innerHTML = modErrorHtml('Error de red: ' + error.message);
+      document.getElementById('mod-client-only-modal-body').innerHTML = modErrorHtml('No se pudo conectar con el panel: ' + error.message);
     });
 }
 
@@ -1452,7 +1450,7 @@ function clientOnlyToggleMod(filename) {
         showToast(result.data.detail || 'Error al cambiar el estado del mod', 'error');
       }
     })
-    .catch(function() { showToast('Error de red', 'error'); });
+    .catch(function() { showToast('No se pudo conectar con el panel. Comprueba la conexión y vuelve a intentarlo.', 'error'); });
 }
 
 function clientOnlyDeleteMod(filename) {
@@ -1472,7 +1470,7 @@ function clientOnlyDeleteMod(filename) {
             showToast(data.detail || 'Error al borrar', 'error');
           }
         })
-        .catch(function() { showToast('Error de red', 'error'); });
+        .catch(function() { showToast('No se pudo conectar con el panel. Comprueba la conexión y vuelve a intentarlo.', 'error'); });
     }
   );
 }
@@ -1741,7 +1739,7 @@ function loadModSearchCategories(source) {
     modSearchCategoryPanelBody.innerHTML = renderModSearchCategoryOptions(cached) || '<p class="empty-msg" style="padding:6px">Sin categorías</p>';
     return;
   }
-  modSearchCategoryPanelBody.innerHTML = '<p class="empty-msg" style="padding:6px">Cargando...</p>';
+  modSearchCategoryPanelBody.innerHTML = loadingHtml();
   apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/search/categories?source=' + encodeURIComponent(source))
     .then(function(response) {
       return response.json().then(function(data) { return { ok: response.ok, data: data }; });
@@ -1856,7 +1854,7 @@ function runModSearch(query, offset) {
       if (requestToken !== modSearchRequestToken) {
         return;
       }
-      body.innerHTML = modErrorHtml('Error de red: ' + error.message);
+      body.innerHTML = modErrorHtml('No se pudo conectar con el panel: ' + error.message);
     });
 }
 
@@ -1931,7 +1929,7 @@ function openModSearchFiles(mod) {
       renderModSearchFilesPage();
     })
     .catch(function(error) {
-      body.innerHTML = modSearchBackButtonHtml() + modErrorHtml('Error de red: ' + error.message);
+      body.innerHTML = modSearchBackButtonHtml() + modErrorHtml('No se pudo conectar con el panel: ' + error.message);
     });
 }
 
@@ -2055,6 +2053,6 @@ function installSearchedMod(mod, file, buttonEl) {
       modSearchBusy = false;
       buttonEl.disabled = false;
       buttonEl.textContent = 'Instalar';
-      showToast('Error de red: ' + error.message, 'error');
+      showToast('No se pudo conectar con el panel: ' + error.message, 'error');
     });
 }

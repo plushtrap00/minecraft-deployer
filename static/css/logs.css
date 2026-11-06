@@ -18,7 +18,7 @@
 .log-file-btn {
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-control);
   padding: 6px 10px;
   font-size: var(--fs-sm);
   cursor: pointer;
@@ -91,11 +91,13 @@
 .crash-culprit-box {
   background: rgba(var(--red-rgb), .1);
   border: 1px solid rgba(var(--red-rgb), .4);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   padding: 12px 16px;
 }
 
 .crash-culprit-title {
+  display: flex;
+  align-items: center;
   font-weight: 700;
   color: var(--red);
   margin-bottom: 6px;
@@ -138,13 +140,13 @@
   text-align: center;
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
 }
 
 .log-viewer {
   background: var(--console-bg);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   font-family: var(--font-mono);
   font-size: var(--fs-sm);
   line-height: 1.5;
@@ -183,7 +185,7 @@
   font-size: var(--fs-sm);
   color: var(--text);
   background: rgba(0, 0, 0, .2);
-  border-radius: 6px;
+  border-radius: var(--radius-control);
   padding: 6px 10px;
   margin-bottom: 8px;
   word-break: break-word;

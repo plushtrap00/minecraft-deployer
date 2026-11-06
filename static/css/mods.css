@@ -1,6 +1,6 @@
 .mod-upload-zone {
   border: 2px dashed var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   padding: 20px;
   text-align: center;
   cursor: pointer;
@@ -36,7 +36,7 @@
   padding: 12px 14px;
   border: 1px solid var(--accent);
   background: rgba(var(--accent-rgb), .08);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   font-size: var(--fs-md);
 }
 
@@ -55,8 +55,10 @@
 }
 
 .muz-icon {
-  font-size: var(--fs-2xl);
-  margin-bottom: 4px;
+  width: 24px;
+  height: 24px;
+  margin-bottom: 6px;
+  color: var(--accent);
 }
 
 .muz-text {
@@ -127,7 +129,7 @@
 .mods-table-wrap {
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   overflow: hidden;
   max-height: 600px;
   overflow-y: auto;
@@ -162,7 +164,7 @@
 .bulk-result-row.clickable {
   cursor: pointer;
   padding: 8px 10px;
-  border-radius: 6px;
+  border-radius: var(--radius-control);
   background: rgba(var(--accent-rgb), .07);
   border: 1px solid rgba(var(--accent-rgb), .3);
   transition: background .15s, border-color .15s;
@@ -274,7 +276,7 @@
   min-height: 0;
   margin: 0 20px 16px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   overflow: hidden;
 }
 
@@ -359,7 +361,7 @@
   align-items: center;
   gap: 8px;
   padding: 6px 8px;
-  border-radius: 6px;
+  border-radius: var(--radius-control);
   font-size: var(--fs-sm);
   color: var(--text);
   cursor: pointer;
@@ -433,7 +435,7 @@
 .mod-search-icon {
   width: 40px;
   height: 40px;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   flex-shrink: 0;
   object-fit: cover;
   background: var(--bg);
@@ -460,7 +462,7 @@
   font-size: var(--fs-2xs);
   font-weight: 600;
   padding: 1px 7px;
-  border-radius: 10px;
+  border-radius: var(--radius);
   white-space: nowrap;
   background: rgba(var(--green-rgb), .15);
   color: var(--green);
@@ -521,16 +523,16 @@
   text-align: right;
 }
 
-/* -- Menú "⋮" de acciones de mods (duplicados / solo-cliente / borrar deshabilitados) -- */
+/* -- Menú "Más opciones" de acciones de mods (duplicados / solo-cliente / borrar deshabilitados) -- */
 .mods-menu {
   position: relative;
   flex-shrink: 0;
 }
 
 #mods-menu-btn {
-  padding: 6px 12px;
-  font-size: var(--fs-lg);
-  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .mods-menu-dropdown {
@@ -541,7 +543,7 @@
   min-width: 220px;
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   box-shadow: 0 8px 24px rgba(0, 0, 0, .35);
   padding: 6px;
   z-index: 30;
@@ -562,7 +564,7 @@
   color: var(--text);
   font-size: var(--fs-sm);
   padding: 8px 10px;
-  border-radius: 6px;
+  border-radius: var(--radius-control);
   cursor: pointer;
   white-space: nowrap;
 }
@@ -628,8 +630,14 @@
 }
 
 .mod-dl-option-icon {
-  font-size: var(--fs-2xl);
+  display: inline-flex;
   flex-shrink: 0;
+  color: var(--muted);
+}
+
+.mod-dl-option-icon .icon {
+  width: 22px;
+  height: 22px;
 }
 
 .mod-dl-option-text {
@@ -670,13 +678,14 @@
   gap: 10px;
   margin-top: 16px;
   padding: 10px 12px;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   background: rgba(var(--green-rgb), .07);
   border: 1px dashed rgba(var(--green-rgb), .35);
 }
 
 .mod-dl-file-icon {
-  font-size: var(--fs-xl);
+  display: inline-flex;
+  color: var(--muted);
 }
 
 .mod-dl-file-name {
@@ -717,7 +726,7 @@
   font-size: var(--fs-sm);
   line-height: 1.45;
   padding: 10px 12px;
-  border-radius: 8px;
+  border-radius: var(--radius-control);
   margin-bottom: 14px;
 }
 
@@ -870,4 +879,24 @@
 
 .mod-deps-reason::first-letter {
   text-transform: uppercase;
+}
+
+/* Acciones de cada mod: iconos discretos; borrar se pone rojo al pasar. */
+.mod-list-item .mod-icon .icon {
+  color: var(--muted);
+}
+
+.mod-row-btn {
+  flex-shrink: 0;
+  padding: 5px 7px;
+}
+
+.mod-row-btn-danger:hover {
+  color: var(--red);
+  background: rgba(var(--red-rgb), .1);
+}
+
+.mod-disabled-label {
+  font-size: var(--fs-xs);
+  color: var(--muted);
 }

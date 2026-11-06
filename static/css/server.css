@@ -484,7 +484,7 @@
 .net-toggle-track {
   width: 44px;
   height: 24px;
-  border-radius: 12px;
+  border-radius: var(--radius);
   background: var(--border);
   position: relative;
   cursor: pointer;

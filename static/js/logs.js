@@ -13,14 +13,14 @@ function loadLogList() {
   if (!currentModpack) {
     return;
   }
-  document.getElementById('log-file-list').innerHTML = '<p class="empty-msg">Cargando...</p>';
-  document.getElementById('crash-file-list').innerHTML = '<p class="empty-msg">Cargando...</p>';
+  document.getElementById('log-file-list').innerHTML = loadingHtml();
+  document.getElementById('crash-file-list').innerHTML = loadingHtml();
   apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/logs')
     .then(function(response) { return response.json(); })
     .then(function(data) { renderLogFileList(data.logs, data.crashes); })
     .catch(function() {
       document.getElementById('log-file-list').innerHTML =
-        '<p class="empty-msg" style="color:var(--red)">Error</p>';
+        '<p class="empty-msg error-msg">No se pudo cargar la lista de logs. Vuelve a abrir la pestaña para reintentarlo.</p>';
     });
 }
 
@@ -103,7 +103,7 @@ function loadLogFile(filename) {
   var placeholder = document.getElementById('log-placeholder');
   var culpritBox = document.getElementById('crash-culprit');
   var downloadLink = document.getElementById('log-download-link');
-  viewer.innerHTML = '<span style="color:var(--muted)">Cargando...</span>';
+  viewer.innerHTML = loadingHtml();
   placeholder.style.display = 'none';
   viewer.style.display = 'block';
   culpritBox.style.display = 'none';

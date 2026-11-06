@@ -4,7 +4,7 @@ function loadWorlds() {
   if (!list) {
     return;
   }
-  list.innerHTML = '<p class="empty-msg">Cargando...</p>';
+  list.innerHTML = loadingHtml();
   apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/worlds')
     .then(function(response) { return response.json(); })
     .then(function(data) { renderWorlds(data); })
@@ -87,7 +87,7 @@ function doActivateWorld(name) {
         loadServerProps();
       }
     })
-    .catch(function() { showToast('Error', 'error'); });
+    .catch(function() { showToast('No se pudo activar el mundo', 'error'); });
 }
 
 function deleteWorld(name) {
@@ -109,7 +109,7 @@ function doDeleteWorld(name) {
         loadWorlds();
       }
     })
-    .catch(function() { showToast('Error al borrar', 'error'); });
+    .catch(function() { showToast('No se pudo borrar el mundo', 'error'); });
 }
 
 
@@ -233,7 +233,7 @@ var typeDescs = {
           showToast(result.data.detail || 'Error', 'error');
         }
       })
-      .catch(function() { showToast('Error al crear mundo', 'error'); });
+      .catch(function() { showToast('No se pudo preparar el mundo', 'error'); });
   });
 })();
 
@@ -393,7 +393,7 @@ document.getElementById('wf-world-select').addEventListener('change', function()
 
 function loadWorldFiles(worldName) {
   selectedWfWorld = worldName;
-  document.getElementById('wf-tree').innerHTML = '<p class="empty-msg" style="padding:12px">Cargando...</p>';
+  document.getElementById('wf-tree').innerHTML = loadingHtml();
   apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/world-files?world_name=' + encodeURIComponent(worldName))
     .then(function(response) { return response.json(); })
     .then(function(data) {

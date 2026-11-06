@@ -65,10 +65,15 @@
   color: var(--text);
 }
 
-.nav-tab.active,
-.nav-action.active {
+.nav-tab.active {
   color: var(--text);
   border-bottom-color: var(--accent);
+}
+
+/* "Sistema" abre un panel, no cambia de página: abierto se marca solo con
+   el color, sin la línea de pestaña activa. */
+.nav-action.active {
+  color: var(--text);
 }
 
 .nav-tab.active .icon,

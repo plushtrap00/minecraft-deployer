@@ -105,7 +105,8 @@
 }
 
 .fb-icon {
-  font-size: var(--fs-xl);
+  display: inline-flex;
+  color: var(--green);
 }
 
 .fb-name {

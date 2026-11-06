@@ -10,7 +10,7 @@ function loadPlayers() {
       renderBanList('banned-list', data.banned_players, 'player');
       renderBanList('banned-ips-list', data.banned_ips, 'ip');
     })
-    .catch(function() { showToast('Error al cargar jugadores', 'error'); });
+    .catch(function() { showToast('No se pudo cargar la lista de jugadores', 'error'); });
 }
 
 function renderPlayerList(containerId, players, type, extraFn) {
@@ -97,10 +97,10 @@ function apiCall(method, url, body, successMsg) {
         showToast(successMsg + ' (' + syncedCount + ' servers)', 'success');
         loadPlayers();
       } else {
-        showToast('Error: ' + (result.data.detail || 'desconocido'), 'error');
+        showToast(result.data.detail || 'No se pudo guardar el cambio', 'error');
       }
     })
-    .catch(function(error) { showToast('Error: ' + error.message, 'error'); });
+    .catch(function(error) { showToast('No se pudo conectar con el panel: ' + error.message, 'error'); });
 }
 
 // Add op
@@ -235,7 +235,7 @@ document.getElementById('btn-sync-all').addEventListener('click', function() {
         showToast('Sincronizado a todos los servers', 'success');
       }
     })
-    .catch(function() { showToast('Error al sincronizar', 'error'); });
+    .catch(function() { showToast('No se pudo sincronizar con los servidores', 'error'); });
 });
 
 document.getElementById('tab-players').addEventListener('click', loadPlayers);
