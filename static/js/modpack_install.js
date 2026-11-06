@@ -232,15 +232,15 @@ function renderDlResults(results) {
     return;
   }
   body.innerHTML = results.map(function(item, i) {
-    var icon = item.icon_url
+    var iconHtml = item.icon_url
       ? '<img class="mod-search-icon" data-icon-url="' + escHtml(item.icon_url) + '" alt="" loading="lazy" decoding="async">'
       : '<span class="mod-search-icon mod-search-icon-empty">' + icon('package') + '</span>';
     var desc = item.description ? '<div class="mod-search-desc">' + escHtml(item.description) + '</div>' : '';
-    var link = item.page_url
+    var link = isWebUrl(item.page_url)
       ? '<a class="mod-search-link" href="' + escHtml(item.page_url) + '" target="_blank" rel="noopener" title="Ver página del modpack" onclick="event.stopPropagation()">↗</a>'
       : '';
     return '<div class="mod-search-result-item" data-index="' + i + '" style="cursor:pointer">'
-      + icon
+      + iconHtml
       + '<div class="mod-search-info">'
       + '<div class="mod-search-title-row"><span class="mod-search-title">' + escHtml(item.title) + '</span></div>'
       + desc
@@ -418,7 +418,7 @@ function dlDuplicateWarningHtml(matches) {
 }
 
 function dlBlockedHtml(reason) {
-  var pageLink = dlSelectedPack && dlSelectedPack.page_url
+  var pageLink = dlSelectedPack && isWebUrl(dlSelectedPack.page_url)
     ? '<a href="' + escHtml(dlSelectedPack.page_url) + '" target="_blank" rel="noopener">la página del modpack en CurseForge</a>'
     : 'la página del modpack en CurseForge';
   return '<div class="notice notice-error notice-block">'

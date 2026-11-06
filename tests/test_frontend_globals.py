@@ -23,6 +23,18 @@ class FrontendGlobalsTest(unittest.TestCase):
         duplicates = {name: files for name, files in seen.items() if len(files) > 1}
         self.assertEqual(duplicates, {}, "Nombres globales declarados más de una vez")
 
+    def test_no_local_shadows_global_function(self):
+        # Un "var icon = ..." dentro de una función tapa la función global
+        # icon() en toda esa función (hoisting), y cualquier icon('x') de ahí
+        # revienta con "icon is not a function".
+        sources = {p.name: p.read_text(encoding="utf-8") for p in (STATIC / "js").glob("*.js")}
+        functions = {m.group(1) for text in sources.values()
+                     for m in re.finditer(r"^function\s+([A-Za-z_$][\w$]*)", text, re.M)}
+        local_re = re.compile(r"^\s+(?:var|let|const)\s+([A-Za-z_$][\w$]*)", re.M)
+        shadows = sorted(f"{name}: {m.group(1)}" for name, text in sources.items()
+                         for m in local_re.finditer(text) if m.group(1) in functions)
+        self.assertEqual(shadows, [], "Variables locales que tapan una función global")
+
     def test_index_loads_every_script(self):
         html = (STATIC / "index.html").read_text(encoding="utf-8")
         loaded = set(re.findall(r'<script src="/static/js/([\w.-]+\.js)"', html))

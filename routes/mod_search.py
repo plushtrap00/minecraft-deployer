@@ -108,6 +108,12 @@ def install_searched_mod(modpack: str, body: InstallBody):
             detail="Este mod no tiene descarga directa disponible (el autor la deshabilitó para terceros)."
         )
 
+    # El nombre llega del navegador: sin carpetas, para que no pueda escribir
+    # fuera de mods/ (p. ej. "../start.sh").
+    filename = body.filename.replace("\\", "/").rsplit("/", 1)[-1]
+    if not filename.lower().endswith(".jar") or filename.startswith("."):
+        raise HTTPException(status_code=400, detail="Nombre de archivo de mod inválido")
+
     mods_dir = DEFAULT_SERVERS_PATH / modpack / "mods"
     if not mods_dir.exists():
         raise HTTPException(status_code=404, detail="Carpeta mods/ no encontrada en este modpack")
@@ -119,7 +125,6 @@ def install_searched_mod(modpack: str, body: InstallBody):
 
     server_info = detect_modpack_version(modpack)
     server_mc = server_info.get("mc_version")
-    filename = body.filename
 
     # Mismo flujo (y mismas formas de respuesta) que /mods/upload, para que el
     # frontend pueda reusar exactamente la misma lógica de resultado.

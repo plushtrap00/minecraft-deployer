@@ -1,13 +1,20 @@
 // -- Utility helpers ----------------------------------------------------------
 function escHtml(str) {
-  if (!str) {
+  if (str === null || str === undefined) {
     return '';
   }
   return String(str)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// Solo enlaces http(s): los page_url vienen de Modrinth/CurseForge y un
+// "javascript:" en un href se ejecutaría al hacer clic.
+function isWebUrl(url) {
+  return typeof url === 'string' && /^https?:\/\//i.test(url);
 }
 
 function escRegex(str) {

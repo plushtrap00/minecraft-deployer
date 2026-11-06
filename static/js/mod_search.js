@@ -345,16 +345,16 @@ function renderModSearchResults(results) {
   body.innerHTML = results.map(function(mod, i) {
     // Sin src todavía: applyModSearchImage() lo completa abajo, desde caché
     // (blob ya descargado) o disparando la descarga una sola vez.
-    var icon = mod.icon_url
+    var iconHtml = mod.icon_url
       ? '<img class="mod-search-icon" data-icon-url="' + escHtml(mod.icon_url) + '" alt="" loading="lazy" decoding="async">'
       : '<span class="mod-search-icon mod-search-icon-empty">' + icon('puzzle') + '</span>';
     var badge = mod.installed ? '<span class="mod-search-badge">Instalado</span>' : '';
     var desc = mod.description ? '<div class="mod-search-desc">' + escHtml(mod.description) + '</div>' : '';
-    var link = mod.page_url
+    var link = isWebUrl(mod.page_url)
       ? '<a class="mod-search-link" href="' + escHtml(mod.page_url) + '" target="_blank" rel="noopener" title="Ver página del mod" onclick="event.stopPropagation()">↗</a>'
       : '';
     return '<div class="mod-search-result-item" data-index="' + i + '">'
-      + icon
+      + iconHtml
       + '<div class="mod-search-info">'
       + '<div class="mod-search-title-row"><span class="mod-search-title">' + escHtml(mod.title) + '</span>' + badge + '</div>'
       + desc

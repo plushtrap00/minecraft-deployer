@@ -18,8 +18,8 @@ function renderWorlds(data) {
   var worlds = data.worlds;
   if (!worlds || !worlds.length) {
     list.innerHTML = '<p class="empty-msg">No se detectaron mundos generados aún.</p>'
-      + '<p class="hint" style="margin-top:6px">Mundo configurado: <code>' + (data.active || 'world') + '</code>'
-      + ' · Tipo: <code>' + (data.level_type || 'minecraft:normal') + '</code></p>';
+      + '<p class="hint" style="margin-top:6px">Mundo configurado: <code>' + escHtml(data.active || 'world') + '</code>'
+      + ' · Tipo: <code>' + escHtml(data.level_type || 'minecraft:normal') + '</code></p>';
     return;
   }
   var html = '';
@@ -40,14 +40,14 @@ function renderWorlds(data) {
     html += '<div class="world-card' + activeClass + '">'
       + '<span class="world-icon">' + worldIcon + '</span>'
       + '<div style="flex:1">'
-      + '<div style="font-weight:600">' + world.name + ' ' + activeBadge + '</div>'
-      + '<div style="font-size:.78rem;color:var(--muted)">' + world.size_mb + ' MB en disco</div>'
+      + '<div style="font-weight:600">' + escHtml(world.name) + ' ' + activeBadge + '</div>'
+      + '<div style="font-size:.78rem;color:var(--muted)">' + escHtml(world.size_mb) + ' MB en disco</div>'
       + '</div>'
       + '<div class="wc-actions">' + activateBtn + downloadBtn + deleteBtn + '</div>'
       + '</div>';
   });
-  var seedHint = data.seed ? ' · Seed: <code>' + data.seed + '</code>' : '';
-  html += '<p class="hint" style="margin-top:8px">Tipo actual: <code>' + (data.level_type || 'minecraft:normal') + '</code>'
+  var seedHint = data.seed ? ' · Seed: <code>' + escHtml(data.seed) + '</code>' : '';
+  html += '<p class="hint" style="margin-top:8px">Tipo actual: <code>' + escHtml(data.level_type || 'minecraft:normal') + '</code>'
     + seedHint + '</p>';
   list.innerHTML = html;
 }
@@ -365,7 +365,7 @@ function loadWorldFilesTab() {
       var worlds = data.worlds || [];
       var prev = select.value;
       select.innerHTML = '<option value="">Selecciona un mundo...</option>' + worlds.map(function(w) {
-        return '<option value="' + w.name + '">' + w.name + (w.active ? ' (activo)' : '') + '</option>';
+        return '<option value="' + escHtml(w.name) + '">' + escHtml(w.name) + (w.active ? ' (activo)' : '') + '</option>';
       }).join('');
       var keepPrev = worlds.some(function(w) { return w.name === prev; });
       if (keepPrev) {
@@ -477,25 +477,25 @@ function renderWfTreePage() {
     var files = wfGetFilteredFiles(allFiles, key, activeWfFilter);
     var openClass = hasFilter ? ' open' : '';
     html += '<div class="mod-group">'
-      + '<div class="mod-group-header' + openClass + '"><span>' + label
+      + '<div class="mod-group-header' + openClass + '"><span>' + escHtml(label)
       + ' <span style="color:var(--muted);font-weight:400">(' + files.length
       + (allFiles.length !== files.length ? '/' + allFiles.length : '') + ')</span></span>'
       + '<span class="mg-arrow">▶</span></div>'
       + '<div class="mod-file-list' + openClass + '">';
     files.forEach(function(filePath) {
       var fname = filePath.split('/').pop();
-      var display = fname;
+      var display = escHtml(fname);
       if (hasFilter) {
         var filterLower = activeWfFilter.toLowerCase();
         var matchIndex = fname.toLowerCase().indexOf(filterLower);
         if (matchIndex !== -1) {
-          display = fname.substring(0, matchIndex)
+          display = escHtml(fname.substring(0, matchIndex))
             + '<mark style="background:rgba(var(--yellow-rgb), .35);color:var(--text);border-radius:2px">'
-            + fname.substring(matchIndex, matchIndex + activeWfFilter.length) + '</mark>'
-            + fname.substring(matchIndex + activeWfFilter.length);
+            + escHtml(fname.substring(matchIndex, matchIndex + activeWfFilter.length)) + '</mark>'
+            + escHtml(fname.substring(matchIndex + activeWfFilter.length));
         }
       }
-      html += '<div class="cfg-file-item mod-file-item" data-path="' + filePath + '" data-type="wf">'
+      html += '<div class="cfg-file-item mod-file-item" data-path="' + escHtml(filePath) + '" data-type="wf">'
         + display + '</div>';
     });
     html += '</div></div>';

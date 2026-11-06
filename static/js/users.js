@@ -14,7 +14,7 @@ function loadUsers() {
           ? '<span class="role-badge role-admin">Admin</span>'
           : '<span class="role-badge role-user">Usuario</span>';
         var actions = isAdmin ? '' :
-          '<div class="pe-actions"><button class="btn-danger" style="padding:4px 10px;font-size:.78rem" onclick="deleteUser(\'' + escHtml(u.username) + '\')">Eliminar</button></div>';
+          '<div class="pe-actions"><button class="btn-danger user-delete-btn" style="padding:4px 10px;font-size:.78rem" data-user="' + escHtml(u.username) + '">Eliminar</button></div>';
         return '<div class="player-entry">'
           + '<span class="pe-name">' + escHtml(u.username) + '</span>'
           + badge + actions
@@ -43,6 +43,12 @@ function deleteUser(username) {
 }
 
 document.getElementById('btn-refresh-users').addEventListener('click', loadUsers);
+document.getElementById('users-list').addEventListener('click', function(event) {
+  var btn = event.target.closest('.user-delete-btn');
+  if (btn) {
+    deleteUser(btn.dataset.user);
+  }
+});
 
 // Validación del formulario de nuevo usuario
 var USERNAME_RE = /^[a-zA-Z0-9_-]+$/;

@@ -844,25 +844,25 @@ function renderTreePage(which) {
     var files = getFilteredFiles(allFiles, key, filter);
     var openClass = hasFilter ? ' open' : '';
     html += '<div class="mod-group">'
-      + '<div class="mod-group-header' + openClass + '"><span>' + label
+      + '<div class="mod-group-header' + openClass + '"><span>' + escHtml(label)
       + ' <span style="color:var(--muted);font-weight:400">(' + files.length
       + (allFiles.length !== files.length ? '/' + allFiles.length : '') + ')</span></span>'
       + '<span class="mg-arrow">▶</span></div>'
       + '<div class="mod-file-list' + openClass + '">';
     files.forEach(function(filePath) {
       var fname = filePath.split('/').pop();
-      var display = fname;
+      var display = escHtml(fname);
       if (hasFilter) {
         var filterLower = filter.toLowerCase();
         var matchIndex = fname.toLowerCase().indexOf(filterLower);
         if (matchIndex !== -1) {
-          display = fname.substring(0, matchIndex)
+          display = escHtml(fname.substring(0, matchIndex))
             + '<mark style="background:rgba(var(--yellow-rgb), .35);color:var(--text);border-radius:2px">'
-            + fname.substring(matchIndex, matchIndex + filter.length) + '</mark>'
-            + fname.substring(matchIndex + filter.length);
+            + escHtml(fname.substring(matchIndex, matchIndex + filter.length)) + '</mark>'
+            + escHtml(fname.substring(matchIndex + filter.length));
         }
       }
-      html += '<div class="' + itemClass + '" data-path="' + filePath + '" data-type="' + (isKjs ? 'kjs' : 'cfg') + '">'
+      html += '<div class="' + itemClass + '" data-path="' + escHtml(filePath) + '" data-type="' + (isKjs ? 'kjs' : 'cfg') + '">'
         + display + '</div>';
     });
     html += '</div></div>';

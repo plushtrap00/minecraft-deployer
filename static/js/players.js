@@ -50,11 +50,11 @@ function renderBanList(containerId, bans, type) {
     var reasonHtml = reason ? '<div class="pe-meta">' + escHtml(reason) + '</div>' : '';
     html += '<div class="player-entry">'
       + '<span class="pe-icon">' + entryIcon + '</span>'
-      + '<div style="flex:1"><div class="pe-name">' + name + '</div>'
+      + '<div style="flex:1"><div class="pe-name">' + escHtml(name) + '</div>'
       + reasonHtml
       + '</div>'
       + '<div class="pe-actions">'
-      + '<button class="btn-secondary player-unban-btn" data-type="' + type + '" data-name="' + name + '" style="padding:3px 10px;font-size:.75rem">Desbanear</button>'
+      + '<button class="btn-secondary player-unban-btn" data-type="' + type + '" data-name="' + escHtml(name) + '" style="padding:3px 10px;font-size:.75rem">Desbanear</button>'
       + '</div></div>';
   });
   el.innerHTML = html;

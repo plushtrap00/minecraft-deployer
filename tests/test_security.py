@@ -15,6 +15,7 @@ from config import DEFAULT_SERVERS_PATH
 from routes import auth
 from routes.deps import modpack_path, world_path
 from routes.firewall import parse_ufw_mode
+from services.mod_search import ModSearchError, download_bytes
 from services.players import sanitize_reason, validate_ip, validate_player_name
 from services.utils import extract_archive
 
@@ -78,6 +79,13 @@ class ArchiveTest(unittest.TestCase):
     def test_symlink_outside_rejected(self):
         with self.assertRaises(HTTPException):
             extract_archive(self._tar("enlace", link_to="/etc/passwd"), self.tmp / "out")
+
+
+class DownloadSchemeTest(unittest.TestCase):
+    def test_only_http_and_https(self):
+        for url in ["file:///etc/passwd", "ftp://example.com/x.jar", "C:/Windows/win.ini", ""]:
+            with self.subTest(url=url), self.assertRaises(ModSearchError):
+                download_bytes(url)
 
 
 class PlayerInputTest(unittest.TestCase):

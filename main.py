@@ -48,16 +48,29 @@ from services import auto_update
 
 PUBLIC_PATHS = {"/", "/api/auth/login", "/api/auth/logout", "/api/auth/verify"}
 
+# Cabeceras que el navegador aplica a todo: el panel no se puede meter en un
+# <iframe> de otra web (clickjacking), no adivina tipos de archivo y no manda
+# la URL del panel a las webs de mods que se abren desde él.
+SECURITY_HEADERS = {
+    "X-Frame-Options": "DENY",
+    "Content-Security-Policy": "frame-ancestors 'none'",
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "same-origin",
+}
+
+
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
+        response = await self._authorize(request, call_next)
+        for name, value in SECURITY_HEADERS.items():
+            response.headers.setdefault(name, value)
+        return response
+
+    async def _authorize(self, request: Request, call_next):
         path = request.url.path
 
         # Dejar pasar rutas públicas y archivos estáticos (CSS/JS/iconos)
         if path in PUBLIC_PATHS or path.startswith("/static/") or path.startswith("/icon/"):
-            return await call_next(request)
-
-        # Dejar pasar OPTIONS (preflight CORS)
-        if request.method == "OPTIONS":
             return await call_next(request)
 
         # La sesión llega en la cookie (también en EventSource y descargas,

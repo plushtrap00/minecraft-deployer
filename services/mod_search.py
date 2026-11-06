@@ -72,6 +72,10 @@ def _http_post_json(url: str, body: dict, headers: dict | None = None) -> dict |
 
 
 def download_bytes(url: str) -> bytes:
+    # Las URLs vienen de Modrinth/CurseForge, de un .mrpack o del navegador:
+    # sin esto, urllib también abriría file:///... y leería archivos locales.
+    if urllib.parse.urlsplit(url).scheme.lower() not in ("http", "https"):
+        raise ModSearchError("Solo se pueden descargar archivos por http o https")
     req = urllib.request.Request(url, headers={"User-Agent": _USER_AGENT})
     try:
         with urllib.request.urlopen(req, timeout=_DOWNLOAD_TIMEOUT) as resp:

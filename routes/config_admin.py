@@ -78,6 +78,12 @@ async def update_env(request: Request, body: EnvUpdateBody):
     if not changed:
         return JSONResponse({"success": True, "changed": False})
 
+    # Sin comillas en el .env, un salto de línea en un valor colaría otra
+    # variable (p. ej. APP_PASSWORD_HASH) en la línea siguiente.
+    for key, value in body.values.items():
+        if key in _ENV_EDITABLE_KEYS and any(ch in str(value) for ch in "\r\n\x00"):
+            raise HTTPException(status_code=400, detail=f"{key} no puede contener saltos de línea")
+
     try:
         if body.new_password:
             if len(body.new_password) < 8:

@@ -230,7 +230,7 @@ function showResult(type, title, msg, items) {
   document.getElementById('result-msg').textContent = msg;
   var gridHtml = '';
   items.forEach(function(item) {
-    gridHtml += '<div class="result-item">' + item[0] + ': <span>' + item[1] + '</span></div>';
+    gridHtml += '<div class="result-item">' + escHtml(item[0]) + ': <span>' + escHtml(item[1]) + '</span></div>';
   });
   document.getElementById('result-grid').innerHTML = gridHtml;
 }
