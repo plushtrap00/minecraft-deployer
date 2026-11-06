@@ -22,31 +22,31 @@
    confunden. Cada color tiene su versión -rgb para poder hacer tintes con
    rgba(var(--x-rgb), alfa). */
 :root {
-  --bg: #17191e;
-  --card: #21242b;
-  --surface-raised: #2a2e36;
-  --border: #353a44;
-  --border-strong: #4a505c;
-  --text: #ebe8e2;
-  --muted: #9da2ad;
-  --muted-rgb: 157, 162, 173;
+  --bg: #18161c;
+  --card: #221f28;
+  --surface-raised: #2b2733;
+  --border: #393342;
+  --border-strong: #4f475b;
+  --text: #ece8f1;
+  --muted: #a49dae;
+  --muted-rgb: 164, 157, 174;
 
-  --accent: #4fd6c8;
-  --accent-rgb: 79, 214, 200;
-  --accent-hover: #7ae3d8;
-  --on-accent: #0c2623;
+  --accent: #b792f4;
+  --accent-rgb: 183, 146, 244;
+  --accent-hover: #cdb1f8;
+  --on-accent: #1d0f33;
 
-  --green: #7cc251;
-  --green-rgb: 124, 194, 81;
-  --red: #f0614f;
-  --red-rgb: 240, 97, 79;
-  --red-strong: #ff8473;
-  --yellow: #e9b440;
-  --yellow-rgb: 233, 180, 64;
+  --green: #74c46a;
+  --green-rgb: 116, 196, 106;
+  --red: #f0646a;
+  --red-rgb: 240, 100, 106;
+  --red-strong: #ff8a8f;
+  --yellow: #e8b54a;
+  --yellow-rgb: 232, 181, 74;
   --info: #8fb8f0;
 
-  --console-bg: #101216;
-  --console-text: #d2d0ca;
+  --console-bg: #110f14;
+  --console-text: #d6d0de;
 
   /* Escala tipográfica (11, 12, 13, 14, 15, 17, 20, 28 y 36 px) */
   --fs-2xs: .6875rem;

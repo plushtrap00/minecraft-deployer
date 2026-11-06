@@ -42,8 +42,8 @@
 
 .version-badge.quilt,
 .loader-tag[data-loader="quilt"] {
-  --loader: #c3a2ec;
-  --loader-rgb: 195, 162, 236;
+  --loader: #ec9cc8;
+  --loader-rgb: 236, 156, 200;
 }
 
 /* -- Cabecera de estado ----------------------------------------------------
