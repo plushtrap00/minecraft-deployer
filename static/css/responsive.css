@@ -2,26 +2,7 @@
 
 @media (max-width: 640px) {
 
-  /* Nav: scroll horizontal en lugar de overflow */
-  .nav {
-    padding: 10px 12px 0;
-    gap: 2px;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    flex-wrap: nowrap;
-  }
-
-  .nav::-webkit-scrollbar {
-    display: none;
-  }
-
-  .nav-tab {
-    padding: 8px 10px;
-    font-size: var(--fs-sm);
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
+  /* La navegación móvil (barra inferior + menú "Más") está en nav.css. */
 
   /* Páginas: menos padding */
   .page {
@@ -114,7 +95,7 @@
   .toast {
     left: 12px;
     right: 12px;
-    bottom: 12px;
+    bottom: calc(76px + env(safe-area-inset-bottom));
   }
 }
 

@@ -54,8 +54,8 @@ function cancelFetchesMatching(prefix) {
 
 function applyRoleUI() {
   var isAdmin = currentRole === 'admin';
-  document.getElementById('tab-users').style.display = isAdmin ? 'inline-block' : 'none';
-  document.getElementById('tab-config').style.display = isAdmin ? 'inline-block' : 'none';
+  document.getElementById('tab-users').style.display = isAdmin ? 'inline-flex' : 'none';
+  document.getElementById('tab-config').style.display = isAdmin ? 'inline-flex' : 'none';
 }
 
 function logout() {

@@ -3,9 +3,9 @@ var sysmonOpen = false;
 var sysmonSSE = null;
 
 document.getElementById('btn-logout').addEventListener('click', function() {
-  if (confirm('¿Cerrar sesión?')) {
-    logout();
-  }
+  showConfirm('¿Cerrar sesión?', 'Tendrás que volver a entrar con tu usuario y contraseña.', logout, {
+    icon: '⏻', confirmLabel: 'Cerrar sesión'
+  });
 });
 
 document.getElementById('btn-sysmon').addEventListener('click', function() {
@@ -153,6 +153,12 @@ function updateSysmonBadge() {
   var status = lastAutoUpdateStatus;
   var hasUpdate = !autoUpdateRestarting && !!(status && ((status.enabled && status.commits_behind > 0) || status.restart_pending));
   badge.style.display = hasUpdate ? '' : 'none';
+  // En móvil "Sistema" vive dentro del menú "Más": el aviso se repite en
+  // ese botón para que no quede escondido.
+  var moreBadge = document.getElementById('nav-more-badge');
+  if (moreBadge) {
+    moreBadge.style.display = hasUpdate ? '' : 'none';
+  }
 }
 
 // El botón "Actualizar ahora" se recrea en cada render de renderAutoUpdateSection()

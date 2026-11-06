@@ -1,4 +1,5 @@
-#tab-users {
+#tab-users,
+#tab-config {
   display: none;
 }
 

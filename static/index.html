@@ -85,17 +85,30 @@
   </div>
 </div>
 
-<div class="nav">
-  <button class="nav-tab" id="tab-deploy">⛏️ Instalar modpack</button>
-  <button class="nav-tab" id="tab-manage">📦 Gestión de modpacks</button>
-  <button class="nav-tab active" id="tab-server">🖥️ Servidor</button>
-  <button class="nav-tab" id="tab-players">👥 Jugadores</button>
-  <button class="nav-tab" id="tab-help">❓ Ayuda</button>
-  <button class="nav-tab" id="tab-users">👤 Usuarios</button>
-  <button class="nav-tab" id="tab-config">⚙️ Configuración</button>
-  <button class="nav-tab ml-auto" id="btn-sysmon">💻 Sistema<span class="nav-badge" id="sysmon-nav-badge" style="display:none">1</span></button>
-  <button class="nav-tab nav-tab-danger" id="btn-logout" title="Cerrar sesión">⏻ Salir</button>
-</div>
+<!-- Navegación: a la izquierda las secciones de uso diario, a la derecha
+     las de administración. En móvil las diarias pasan a una barra inferior
+     y el resto a un menú "Más" (ver nav.css). Los ids tab-* los usa
+     main.js para cambiar de página. -->
+<header class="nav" id="nav">
+  <div class="nav-brand">
+    <svg class="icon"><use href="#i-pickaxe"/></svg>
+    <span>MC Deployer</span>
+  </div>
+  <nav class="nav-main" aria-label="Secciones">
+    <button class="nav-tab active" id="tab-server"><svg class="icon"><use href="#i-server"/></svg><span>Servidor</span></button>
+    <button class="nav-tab" id="tab-players"><svg class="icon"><use href="#i-users"/></svg><span>Jugadores</span></button>
+    <button class="nav-tab" id="tab-manage"><svg class="icon"><use href="#i-package"/></svg><span>Modpacks</span></button>
+    <button class="nav-tab" id="tab-deploy"><svg class="icon"><use href="#i-package-plus"/></svg><span>Instalar</span></button>
+    <button class="nav-tab nav-more-btn" id="nav-more-btn" aria-expanded="false" aria-controls="nav-aside"><svg class="icon"><use href="#i-sliders-horizontal"/></svg><span>Más</span><span class="nav-badge nav-more-badge" id="nav-more-badge" style="display:none"></span></button>
+  </nav>
+  <div class="nav-aside" id="nav-aside">
+    <button class="nav-action" id="btn-sysmon"><svg class="icon"><use href="#i-cpu"/></svg><span>Sistema</span><span class="nav-badge" id="sysmon-nav-badge" style="display:none">1</span></button>
+    <button class="nav-tab nav-admin" id="tab-users"><svg class="icon"><use href="#i-user-cog"/></svg><span>Usuarios</span></button>
+    <button class="nav-tab nav-admin" id="tab-config"><svg class="icon"><use href="#i-settings"/></svg><span>Configuración</span></button>
+    <button class="nav-tab" id="tab-help"><svg class="icon"><use href="#i-circle-help"/></svg><span>Ayuda</span></button>
+    <button class="nav-action nav-logout" id="btn-logout" title="Cerrar sesión"><svg class="icon"><use href="#i-log-out"/></svg><span>Salir</span></button>
+  </div>
+</header>
 
 <!-- ══ INSTALAR ══════════════════════════════════════════ -->
 <div class="page" id="page-deploy">

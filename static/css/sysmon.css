@@ -197,3 +197,15 @@
   color: var(--muted);
   font-style: italic;
 }
+
+/* Móvil: el panel sube desde la barra inferior a todo el ancho. */
+@media (max-width: 760px) {
+  #sysmon-panel {
+    top: auto;
+    right: 8px;
+    left: 8px;
+    bottom: calc(70px + env(safe-area-inset-bottom));
+    width: auto;
+    max-height: 70vh;
+  }
+}

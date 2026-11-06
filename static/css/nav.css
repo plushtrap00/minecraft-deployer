@@ -1,57 +1,106 @@
+/* -- Barra superior ---------------------------------------------------------
+   Marca, secciones de uso diario y, a la derecha, administración. Las
+   pestañas activas se marcan con una línea diamante debajo. */
 .nav {
-  display: flex;
-  gap: 4px;
-  padding: 16px 24px 0;
-  border-bottom: 1px solid var(--border);
   position: sticky;
   top: 0;
   z-index: 50;
+  display: flex;
+  align-items: stretch;
+  gap: 24px;
+  padding: 0 24px;
   background: var(--bg);
-  /* Con todas las pestañas que fue sumando la app (Configuración es la
-     última), la barra ya no entra en una pantalla angosta. En vez de que
-     los botones se achiquen/corten o se apilen raro con el margin-left:auto
-     de .ml-auto, la barra entera scrollea horizontal y cada pestaña
-     mantiene su tamaño de siempre. */
-  overflow-x: auto;
-  overflow-y: hidden;
-  flex-wrap: nowrap;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
+  border-bottom: 1px solid var(--border);
 }
 
-.nav-tab {
-  position: relative;
-  flex-shrink: 0;
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: var(--fs-md);
+  color: var(--text);
   white-space: nowrap;
+}
+
+.nav-brand .icon {
+  color: var(--accent);
+  width: 18px;
+  height: 18px;
+}
+
+.nav-main,
+.nav-aside {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+}
+
+.nav-aside {
+  margin-left: auto;
+}
+
+.nav-tab,
+.nav-action {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+  padding: 16px 12px 14px;
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
+  border-radius: 0;
   color: var(--muted);
-  padding: 10px 18px;
   font-size: var(--fs-md);
-  font-weight: 600;
-  cursor: pointer;
-  border-radius: 6px 6px 0 0;
-  margin-bottom: -1px;
-  transition: color .15s;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: color .15s, border-color .15s;
 }
 
-@media (max-width: 640px) {
-  .nav {
-    padding: 10px 12px 0;
-    gap: 2px;
-  }
+.nav-tab:hover,
+.nav-action:hover {
+  background: none;
+  color: var(--text);
+}
 
-  .nav-tab {
-    padding: 8px 12px;
-    font-size: var(--fs-sm);
-  }
+.nav-tab.active,
+.nav-action.active {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
+.nav-tab.active .icon,
+.nav-action.active .icon {
+  color: var(--accent);
+}
+
+.nav-tab:focus-visible,
+.nav-action:focus-visible {
+  outline-offset: -4px;
+}
+
+/* La administración pesa menos que las secciones diarias. */
+.nav-aside .nav-tab,
+.nav-aside .nav-action {
+  font-size: var(--fs-sm);
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+.nav-logout:hover {
+  color: var(--red);
+}
+
+.nav-more-btn {
+  display: none;
 }
 
 .nav-badge {
   position: absolute;
-  top: 3px;
-  right: 6px;
+  top: 8px;
+  right: 2px;
   min-width: 15px;
   height: 15px;
   padding: 0 3px;
@@ -64,22 +113,117 @@
   text-align: center;
 }
 
-.nav-tab:hover {
-  color: var(--text);
-  background: none;
+/* Pantallas medianas: sin texto en la administración, solo iconos (con
+   title/aria-label para saber qué es cada uno). */
+@media (max-width: 1060px) {
+  .nav {
+    gap: 12px;
+  }
+
+  .nav-aside .nav-tab span:not(.nav-badge),
+  .nav-aside .nav-action span:not(.nav-badge) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
 }
 
-.nav-tab.active {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
-  background: none;
-}
+/* -- Móvil: barra inferior + menú "Más" ------------------------------------ */
+@media (max-width: 760px) {
+  body {
+    padding-bottom: calc(64px + env(safe-area-inset-bottom));
+  }
 
-.nav-tab-danger {
-  color: var(--red);
-}
+  .nav {
+    position: static;
+    padding: 12px 16px;
+  }
 
-.nav-tab-danger:hover {
-  color: var(--red);
-  background: rgba(var(--red-rgb), .07);
+  .nav-main {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 60;
+    justify-content: space-around;
+    gap: 0;
+    padding-bottom: env(safe-area-inset-bottom);
+    background: var(--card);
+    border-top: 1px solid var(--border);
+  }
+
+  .nav-main .nav-tab {
+    flex: 1;
+    flex-direction: column;
+    gap: 3px;
+    padding: 9px 4px 8px;
+    border-bottom: none;
+    border-top: 2px solid transparent;
+    font-size: var(--fs-2xs);
+  }
+
+  .nav-main .nav-tab .icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .nav-main .nav-tab.active {
+    border-top-color: var(--accent);
+  }
+
+  .nav-more-btn {
+    display: inline-flex;
+  }
+
+  .nav-more-badge {
+    top: 4px;
+    right: calc(50% - 20px);
+  }
+
+  /* El menú "Más" sube desde la barra inferior. */
+  .nav-aside {
+    position: fixed;
+    inset: auto 8px calc(70px + env(safe-area-inset-bottom));
+    z-index: 61;
+    display: none;
+    flex-direction: column;
+    gap: 0;
+    margin: 0;
+    padding: 6px;
+    background: var(--surface-raised);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, .45);
+  }
+
+  .nav.more-open .nav-aside {
+    display: flex;
+  }
+
+  .nav-aside .nav-tab,
+  .nav-aside .nav-action {
+    padding: 12px;
+    border-bottom: none;
+    border-radius: var(--radius-control);
+    font-size: var(--fs-md);
+  }
+
+  .nav-aside .nav-tab span:not(.nav-badge),
+  .nav-aside .nav-action span:not(.nav-badge) {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip: auto;
+  }
+
+  .nav-aside .nav-tab.active,
+  .nav-aside .nav-action.active {
+    background: rgba(var(--accent-rgb), .1);
+  }
+
+  .nav-aside .nav-badge {
+    position: static;
+    margin-left: auto;
+  }
 }
