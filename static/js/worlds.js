@@ -25,20 +25,20 @@ function renderWorlds(data) {
   var html = '';
   worlds.forEach(function(world) {
     var activeBadge = world.active
-      ? '<span style="font-size:.72rem;background:rgba(var(--green-rgb), .15);color:var(--green);padding:2px 8px;border-radius:99px;font-weight:600">✓ Activo</span>'
+      ? '<span class="world-active-badge">Activo</span>'
       : '';
     var activateBtn = !world.active
-      ? '<button class="btn-secondary wc-activate" data-world="' + world.name + '" style="font-size:.78rem;padding:5px 10px">Activar</button>'
+      ? '<button class="btn-secondary wc-activate" data-world="' + escHtml(world.name) + '" style="font-size:.78rem;padding:5px 10px">Activar</button>'
       : '';
     var deleteBtn = !world.active
-      ? '<button class="btn-danger wc-delete" data-world="' + world.name + '" style="font-size:.78rem;padding:5px 10px">🗑 Borrar</button>'
+      ? '<button class="btn-danger wc-delete" data-world="' + escHtml(world.name) + '" style="font-size:.78rem;padding:5px 10px">' + icon('trash-2') + 'Borrar</button>'
       : '';
-    var downloadUrl = '/api/modpacks/' + encodeURIComponent(currentModpack) + '/worlds/' + encodeURIComponent(world.name) + '/download?token=' + encodeURIComponent(authToken);
-    var downloadBtn = '<a href="' + downloadUrl + '" download="' + world.name + '.zip" class="btn-secondary" style="font-size:.78rem;padding:5px 10px;text-decoration:none">⬇ Descargar</a>';
-    var worldIcon = world.active ? '🟢' : '🌍';
+    var downloadUrl = '/api/modpacks/' + encodeURIComponent(currentModpack) + '/worlds/' + encodeURIComponent(world.name) + '/download';
+    var downloadBtn = '<a href="' + downloadUrl + '" download="' + escHtml(world.name) + '.zip" class="btn-secondary" style="font-size:.78rem;padding:5px 10px;text-decoration:none">' + icon('download') + 'Descargar</a>';
+    var worldIcon = icon('map');
     var activeClass = world.active ? ' active-world' : '';
     html += '<div class="world-card' + activeClass + '">'
-      + '<span style="font-size:1.5rem">' + worldIcon + '</span>'
+      + '<span class="world-icon">' + worldIcon + '</span>'
       + '<div style="flex:1">'
       + '<div style="font-weight:600">' + world.name + ' ' + activeBadge + '</div>'
       + '<div style="font-size:.78rem;color:var(--muted)">' + world.size_mb + ' MB en disco</div>'
@@ -150,15 +150,15 @@ var typeDescs = {
           var skyblock = document.getElementById('opt-sky');
           if (bop) {
             bop.disabled = !data.has_biomesoplenty;
-            bop.textContent = '🌺 Biomes O Plenty' + (data.has_biomesoplenty ? ' — detectado' : ' — mod no detectado');
+            bop.textContent = 'Biomes O Plenty' + (data.has_biomesoplenty ? ' — detectado' : ' — mod no detectado');
           }
           if (terraForged) {
             terraForged.disabled = !data.has_terraforged;
-            terraForged.textContent = '🏔️ TerraForged' + (data.has_terraforged ? ' — detectado' : ' — mod no detectado');
+            terraForged.textContent = 'TerraForged' + (data.has_terraforged ? ' — detectado' : ' — mod no detectado');
           }
           if (skyblock) {
             skyblock.disabled = !data.has_skyblockbuilder;
-            skyblock.textContent = '🏝️ Skyblock (SkyblockBuilder)' + (data.has_skyblockbuilder ? ' — detectado' : ' — mod no detectado');
+            skyblock.textContent = 'Skyblock (SkyblockBuilder)' + (data.has_skyblockbuilder ? ' — detectado' : ' — mod no detectado');
             // A diferencia de BOP/TerraForged (cosméticos, cualquiera de los
             // dos sirve como terreno "normal" si se elige mal), elegir el
             // tipo equivocado aquí no es solo distinto: SkyblockBuilder
@@ -472,7 +472,7 @@ function renderWfTreePage() {
   var end = Math.min(start + PAGE_SIZE, total);
   var html = '';
   filteredWfKeys.slice(start, end).forEach(function(key) {
-    var label = key === '__root__' ? '📄 Raíz del mundo' : '📁 ' + key;
+    var label = key === '__root__' ? 'Raíz del mundo' : key;
     var allFiles = worldFiles[key];
     var files = wfGetFilteredFiles(allFiles, key, activeWfFilter);
     var openClass = hasFilter ? ' open' : '';

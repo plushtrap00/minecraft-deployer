@@ -77,7 +77,7 @@ function renderLogFileList(logs, crashes) {
     });
   }
   if (!crashes || !crashes.length) {
-    crashList.innerHTML = '<p class="empty-msg">Sin crashes 🎉</p>';
+    crashList.innerHTML = '<p class="empty-msg">Sin crash reports.</p>';
   } else {
     crashList.innerHTML = '';
     crashes.forEach(function(file) {
@@ -117,7 +117,7 @@ function loadLogFile(filename) {
       renderLog(true);
 
       downloadLink.href = '/api/modpacks/' + encodeURIComponent(currentModpack) + '/logs/' + encodeURIComponent(filename)
-        + '/download?token=' + encodeURIComponent(authToken);
+        + '/download';
       downloadLink.style.display = '';
 
       renderCrashInfo(data.crash_info);

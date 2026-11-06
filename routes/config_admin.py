@@ -42,7 +42,7 @@ _ENV_EDITABLE_KEYS = [
 
 
 @router.get("/env")
-async def get_env(request: Request):
+def get_env(request: Request):
     _require_admin(request)
     values = dotenv_values(_ENV_PATH) if _ENV_PATH.exists() else {}
     result = {key: values.get(key, "") for key in _ENV_EDITABLE_KEYS}
@@ -114,7 +114,7 @@ async def update_env(request: Request, body: EnvUpdateBody):
 
 
 @router.get("/constants")
-async def get_constants(request: Request):
+def get_constants(request: Request):
     _require_admin(request)
     return JSONResponse(app_constants.get_all())
 

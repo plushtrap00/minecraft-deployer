@@ -48,7 +48,8 @@ function formatRelativeDate(epochSeconds) {
 // Los diálogos y modales reciben su icono como emoji desde muchos sitios
 // (showConfirm(..., { icon: '⏳' }), openModListModal(title, '✅', ...)): aquí
 // se traducen al icono SVG equivalente para que todo use el mismo juego. Un
-// emoji sin equivalente se muestra tal cual.
+// emoji sin equivalente se muestra tal cual. También aceptan directamente el
+// nombre de un icono del sprite ('circle-check').
 var EMOJI_ICONS = {
   '📦': 'package', '⚠️': 'triangle-alert', '⚠': 'triangle-alert', '✅': 'circle-check',
   '❌': 'circle-x', '🔧': 'wrench', '🖥️': 'monitor', '📥': 'download', '⬇️': 'download',
@@ -57,8 +58,16 @@ var EMOJI_ICONS = {
 };
 
 function emojiIcon(emoji) {
-  var name = EMOJI_ICONS[emoji];
+  var name = EMOJI_ICONS[emoji] || (/^[a-z0-9-]+$/.test(emoji || '') ? emoji : null);
   return name ? icon(name) : escHtml(emoji || '');
+}
+
+// Aviso en línea con su icono: kind es 'ok', 'warn', 'error' o 'info' (ver
+// .notice en base.css). html ya tiene que venir escapado.
+var NOTICE_ICONS = { ok: 'circle-check', warn: 'triangle-alert', error: 'circle-x', info: 'info' };
+
+function noticeHtml(kind, html) {
+  return '<div class="notice notice-' + kind + '">' + icon(NOTICE_ICONS[kind]) + '<div>' + html + '</div></div>';
 }
 
 // Etiqueta de modloader con su color propio (ver .loader-tag en server.css).

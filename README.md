@@ -8,7 +8,7 @@ Panel web (FastAPI + JavaScript sin frameworks) para crear y gestionar servidore
 - Acceso `sudo` para la instalación nativa (crea un servicio `systemd`).
 - Docker + Docker Compose para la instalación en contenedor.
 
-Python y Java se instalan solos si faltan (en instalación nativa y en modo "Contenedor" de `install.sh`); en la imagen Docker ya vienen incluidos.
+Hace falta Python 3.10 o posterior (Ubuntu 22.04 o Debian 12 en adelante ya lo traen). Python y Java se instalan solos si faltan (en instalación nativa y en modo "Contenedor" de `install.sh`); en la imagen Docker ya vienen incluidos.
 
 ## Instalación en Linux nativo (recomendada)
 
@@ -105,5 +105,16 @@ Elige `1) Contenedor` cuando te lo pregunte. Hace exactamente lo mismo que el mo
 ## Después de instalar
 
 - **Primer acceso**: con el usuario y la contraseña que configuraste durante la instalación (en cualquiera de las opciones).
-- **CurseForge**: si no añadiste la clave de API durante la instalación, puedes añadirla luego desde **⚙️ Configuración** dentro de la propia app (solo administrador), sin tocar nada por consola.
-- **Tutorial dentro de la app**: pestaña **❓ Ayuda**, con una explicación de cada sección del panel.
+- **CurseForge**: si no añadiste la clave de API durante la instalación, puedes añadirla luego desde **Configuración** dentro de la propia app (solo administrador), sin tocar nada por consola.
+- **Tutorial dentro de la app**: pestaña **Ayuda**, con una explicación de cada sección del panel.
+- **Sesión**: el inicio de sesión se guarda en una cookie del navegador (HttpOnly). Al cambiar la contraseña de una cuenta o borrarla, sus sesiones abiertas dejan de valer.
+
+## Desarrollo y pruebas
+
+Las pruebas usan solo la biblioteca estándar y no tocan tus servidores (apuntan `SERVERS_PATH` a una carpeta temporal). Desde la raíz del repositorio, con las dependencias de `requirements.txt` instaladas:
+
+```bash
+python -m unittest discover -s tests -t .
+```
+
+Cubren la validación de rutas y nombres, la extracción segura de archivos, las sesiones, el parseo del firewall, la RAM de la JVM y que los scripts de `static/js` no se pisen nombres globales entre sí.

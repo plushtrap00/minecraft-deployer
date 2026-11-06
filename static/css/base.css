@@ -491,6 +491,38 @@ a.btn-ghost {
   margin-top: 10px;
 }
 
+/* Avisos generados desde JS con noticeHtml(kind, html) (utils.js). */
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  border: 1px solid;
+  border-radius: var(--radius-control);
+  padding: 8px 12px;
+  font-size: var(--fs-sm);
+  line-height: 1.5;
+}
+
+.notice + .notice {
+  margin-top: 8px;
+}
+
+.notice > .icon {
+  flex-shrink: 0;
+  margin-top: 3px;
+}
+
+.notice-ok { background: rgba(var(--green-rgb), .1); border-color: rgba(var(--green-rgb), .3); color: var(--green); }
+.notice-warn { background: rgba(var(--yellow-rgb), .1); border-color: rgba(var(--yellow-rgb), .35); color: var(--yellow); }
+.notice-error { background: rgba(var(--red-rgb), .1); border-color: rgba(var(--red-rgb), .3); color: var(--red); }
+.notice-info { background: rgba(var(--accent-rgb), .07); border-color: rgba(var(--accent-rgb), .2); color: var(--muted); }
+
+/* Variante con título y pasos (p. ej. modpack con descarga bloqueada). */
+.notice-block { display: block; padding: 10px 14px; }
+.notice-title { display: flex; align-items: center; gap: 8px; font-weight: 600; margin-bottom: 8px; }
+.notice-body { color: var(--muted); }
+.notice-steps { margin: 6px 0 0 18px; padding: 0; color: var(--muted); line-height: 1.6; }
+
 /* -- Página de ayuda: secciones plegables (<details>/<summary> nativos) --- */
 .help-section {
   border: 1px solid var(--border);

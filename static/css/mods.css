@@ -900,3 +900,30 @@
   font-size: var(--fs-xs);
   color: var(--muted);
 }
+
+/* Hueco del icono cuando el resultado no trae imagen propia. */
+.mod-search-icon-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+}
+
+.mod-upload-keep-open {
+  font-size: var(--fs-xs);
+  color: var(--yellow);
+  margin-top: 2px;
+}
+
+/* Punto de color según lo seguro que es que dos mods estén duplicados. */
+.dup-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.dup-dot.dup-high { background: var(--red); }
+.dup-dot.dup-medium { background: var(--yellow); }

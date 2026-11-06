@@ -194,7 +194,7 @@ document.getElementById('deploy-btn').addEventListener('click', function() {
       fill.style.width = '100%';
       if (result.ok && result.data.success) {
         fill.classList.add('done');
-        status.textContent = '✅ Completado';
+        status.textContent = 'Completado';
         var extractedCount = result.data.files_extracted === -1 ? '—' : result.data.files_extracted;
         var items = [
           ['Archivo', result.data.filename],
@@ -209,12 +209,12 @@ document.getElementById('deploy-btn').addEventListener('click', function() {
         showResult('success', '¡Listo!', 'Modpack instalado correctamente', items);
       } else {
         fill.classList.add('error');
-        status.textContent = '❌ Error';
+        status.textContent = 'Error';
         showResult('error', 'Error', result.data.detail || 'Error desconocido', []);
       }
     })
     .catch(function(error) {
-      status.textContent = '❌ Error';
+      status.textContent = 'Error';
       showResult('error', 'No se pudo conectar con el panel', error.message, []);
     })
     .finally(function() {

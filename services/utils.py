@@ -165,10 +165,43 @@ def get_world_files(modpack_name: str, world_name: str) -> dict:
     return groups
 
 
+def _safe_tar_extract(tf: tarfile.TarFile, dest_path: Path) -> None:
+    """
+    Sin filtro, en Python < 3.14 una entrada con "../", una ruta absoluta o un
+    enlace simbólico dentro del .tar puede escribir fuera de dest_path. Con
+    Python 3.12+ (y las versiones parcheadas de 3.10/3.11) se usa el filtro
+    "data" de la librería estándar; en versiones sin él, se rechaza el archivo
+    entero si alguna entrada saldría de la carpeta o es un enlace.
+    """
+    if hasattr(tarfile, "data_filter"):
+        try:
+            tf.extractall(dest_path, filter="data")
+        except tarfile.FilterError as e:
+            member = getattr(e, "tarinfo", None)
+            name = member.name if member else "?"
+            raise HTTPException(
+                status_code=400,
+                detail=f"El archivo intenta escribir fuera de su carpeta o contiene un enlace no permitido ({name})",
+            )
+        return
+    base = dest_path.resolve()
+    for member in tf.getmembers():
+        if member.issym() or member.islnk():
+            raise HTTPException(status_code=400, detail=f"El archivo contiene un enlace ({member.name}); no se extrae por seguridad")
+        try:
+            (dest_path / member.name).resolve().relative_to(base)
+        except ValueError:
+            raise HTTPException(status_code=400, detail=f"El archivo intenta escribir fuera de su carpeta ({member.name})")
+    tf.extractall(dest_path)
+
+
 def extract_archive(archive_path: Path, dest_path: Path) -> dict:
     """
     Descomprime un archivo en dest_path.
     Soporta: .zip, .tar.gz, .tgz, .tar.bz2, .tar, .rar
+
+    Los .tar pasan por _safe_tar_extract (ver abajo); zipfile ya descarta por
+    su cuenta las rutas que intentan salir de dest_path.
     """
     dest_path.mkdir(parents=True, exist_ok=True)
     filename = archive_path.name.lower()
@@ -182,19 +215,19 @@ def extract_archive(archive_path: Path, dest_path: Path) -> dict:
     elif filename.endswith((".tar.gz", ".tgz")):
         with tarfile.open(archive_path, "r:gz") as tf:
             total = len(tf.getnames())
-            tf.extractall(dest_path)
+            _safe_tar_extract(tf, dest_path)
         return {"files_extracted": total, "format": "TAR.GZ"}
 
     elif filename.endswith(".tar.bz2"):
         with tarfile.open(archive_path, "r:bz2") as tf:
             total = len(tf.getnames())
-            tf.extractall(dest_path)
+            _safe_tar_extract(tf, dest_path)
         return {"files_extracted": total, "format": "TAR.BZ2"}
 
     elif filename.endswith(".tar"):
         with tarfile.open(archive_path, "r:") as tf:
             total = len(tf.getnames())
-            tf.extractall(dest_path)
+            _safe_tar_extract(tf, dest_path)
         return {"files_extracted": total, "format": "TAR"}
 
     elif filename.endswith(".rar"):

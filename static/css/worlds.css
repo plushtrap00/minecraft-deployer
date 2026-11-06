@@ -19,3 +19,18 @@
   gap: 6px;
   margin-left: auto;
 }
+
+.world-icon {
+  display: flex;
+  color: var(--accent);
+  font-size: 1.25rem;
+}
+
+.world-active-badge {
+  font-size: var(--fs-xs);
+  background: rgba(var(--green-rgb), .15);
+  color: var(--green);
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-weight: 600;
+}

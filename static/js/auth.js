@@ -1,19 +1,13 @@
 // ── Auth / Login ──────────────────────────────────────────────────────────────
-var authToken = localStorage.getItem('mc_token') || '';
-var currentRole = localStorage.getItem('mc_role') || 'user';
-
-function authHeaders() {
-  if (authToken) {
-    return { 'Authorization': 'Bearer ' + authToken };
-  }
-  return {};
-}
+// La sesión vive en una cookie HttpOnly que pone el servidor al entrar: el
+// navegador la manda sola en fetch, EventSource, XMLHttpRequest y enlaces de
+// descarga, así que aquí no se guarda ni se pasa ningún token.
+var currentRole = 'user';
 
 var _pendingFetches = {};
 
 function apiFetch(url, opts) {
   opts = opts || {};
-  opts.headers = Object.assign({}, opts.headers || {}, authHeaders());
 
   // GET requests: cancel any previous in-flight request to the same URL
   var requestKey = (opts.method || 'GET') + ':' + url;
@@ -58,10 +52,10 @@ function applyRoleUI() {
   document.getElementById('tab-config').style.display = isAdmin ? 'inline-flex' : 'none';
 }
 
+// Vuelve a la pantalla de login. La llama apiFetch al recibir un 401 (la
+// sesión ya no vale, no hace falta avisar al servidor) y endSession() al
+// pulsar "Salir".
 function logout() {
-  localStorage.removeItem('mc_token');
-  localStorage.removeItem('mc_role');
-  authToken = '';
   currentRole = 'user';
   applyRoleUI();
   document.getElementById('login-screen').classList.remove('hidden');
@@ -69,11 +63,12 @@ function logout() {
   document.getElementById('login-error').textContent = '';
 }
 
-function onLoginSuccess(token, role) {
-  authToken = token;
+function endSession() {
+  fetch('/api/auth/logout', { method: 'POST' }).finally(logout);
+}
+
+function onLoginSuccess(role) {
   currentRole = role || 'user';
-  localStorage.setItem('mc_token', token);
-  localStorage.setItem('mc_role', currentRole);
   document.getElementById('login-screen').classList.add('hidden');
   applyRoleUI();
   // El primer intento de sysmon.js de comprobar auto-actualización sale
@@ -126,7 +121,7 @@ function doLogin() {
         errorEl.textContent = result.data.detail || 'Usuario o contraseña incorrectos.';
         return;
       }
-      onLoginSuccess(result.data.token, result.data.role);
+      onLoginSuccess(result.data.role);
     })
     .catch(function(error) {
       btn.disabled = false;
@@ -152,12 +147,9 @@ document.getElementById('login-user').addEventListener('keydown', function(event
   }
 });
 
-// Verificar token existente al arrancar
-(function checkExistingToken() {
-  if (!authToken) {
-    return;
-  }
-  fetch('/api/auth/verify', { headers: authHeaders() })
+// Si ya hay una sesión abierta (la cookie sigue valiendo), entrar directamente.
+(function checkExistingSession() {
+  fetch('/api/auth/verify')
     .then(function(response) {
       return response.json().then(function(data) {
         return { ok: response.ok, data: data };
@@ -165,13 +157,7 @@ document.getElementById('login-user').addEventListener('keydown', function(event
     })
     .then(function(result) {
       if (result.ok) {
-        currentRole = result.data.role || 'user';
-        localStorage.setItem('mc_role', currentRole);
-        document.getElementById('login-screen').classList.add('hidden');
-        applyRoleUI();
-        if (typeof loadServerPageData === 'function') {
-          loadServerPageData();
-        }
+        onLoginSuccess(result.data.role);
       } else {
         logout();
       }

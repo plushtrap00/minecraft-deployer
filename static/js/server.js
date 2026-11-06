@@ -175,6 +175,9 @@ function loadServerPickList() {
 
 // ── Toggle público/LAN ────────────────────────────────────────────────────────
 var netPublic = false;
+// Red local y puertos reales, tal y como los devuelve /api/firewall/status.
+var netSubnet = '';
+var netPorts = [];
 
 function applyNetToggleUI(isPublic) {
   var track = document.getElementById('net-toggle-track');
@@ -185,14 +188,14 @@ function applyNetToggleUI(isPublic) {
     track.classList.add('on');
     label.textContent = 'Abierto a internet';
     if (mcDomain) {
-      desc.textContent = 'Se puede entrar desde fuera de casa en ' + mcDomain + ':25565';
+      desc.textContent = 'Se puede entrar desde fuera de casa en ' + mcDomain + ':' + (netPorts[0] || 25565);
     } else {
       desc.textContent = 'Se puede entrar desde fuera de casa';
     }
   } else {
     track.classList.remove('on');
     label.textContent = 'Solo red local';
-    desc.textContent = 'Solo se puede entrar desde tu red de casa (192.168.1.x)';
+    desc.textContent = 'Solo se puede entrar desde tu red de casa' + (netSubnet ? ' (' + netSubnet + ')' : '');
   }
 }
 
@@ -214,6 +217,8 @@ function loadFirewallStatus() {
         desc.textContent = 'En Docker, el acceso público o solo LAN se controla desde el mapeo de puertos de docker-compose.yml.';
         return;
       }
+      netSubnet = data.subnet || '';
+      netPorts = data.ports || [];
       track.classList.remove('disabled');
       track.style.pointerEvents = '';
       track.removeAttribute('aria-disabled');
@@ -244,6 +249,8 @@ function toggleNetMode() {
       track.style.pointerEvents = '';
       if (result.ok) {
         netPublic = (result.data.mode === 'public');
+        netSubnet = result.data.subnet || netSubnet;
+        netPorts = result.data.ports || netPorts;
         applyNetToggleUI(netPublic);
         if (netPublic) {
           showToast('Servidor abierto a internet', 'success');
@@ -302,7 +309,7 @@ function startServer(modpack) {
 function recheckPendingModsThenStart(modpack) {
   document.getElementById('status-text').textContent = 'Comprobando mods pendientes…';
 
-  var streamUrl = '/api/modpacks/' + encodeURIComponent(modpack) + '/pending-mods/stream?token=' + encodeURIComponent(authToken);
+  var streamUrl = '/api/modpacks/' + encodeURIComponent(modpack) + '/pending-mods/stream';
   var checkSource = new EventSource(streamUrl);
   var settled = false;
 
@@ -476,7 +483,7 @@ function sendServerCommand(cmd) {
 }
 
 function startSSE() {
-  sseSource = new EventSource('/api/server/logs?token=' + encodeURIComponent(authToken));
+  sseSource = new EventSource('/api/server/logs');
   sseSource.onmessage = function(event) {
     if (event.data === '__STOPPED__') {
       applyServerState(false, null);

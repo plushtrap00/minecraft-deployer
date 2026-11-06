@@ -74,7 +74,7 @@ document.getElementById('modloader-verify-btn').addEventListener('click', functi
   modloaderCheckedVersion = null;
 
   var url = '/api/modpacks/' + encodeURIComponent(currentModpack) + '/modloader/check/stream'
-    + '?version=' + encodeURIComponent(version) + '&token=' + encodeURIComponent(authToken);
+    + '?version=' + encodeURIComponent(version);
   var source = new EventSource(url);
 
   source.onmessage = function(event) {
@@ -90,8 +90,7 @@ document.getElementById('modloader-verify-btn').addEventListener('click', functi
     } else if (data.type === 'result') {
       source.close();
       if (data.compatible) {
-        resultEl.innerHTML = '<div style="background:rgba(var(--green-rgb), .1);border:1px solid rgba(var(--green-rgb), .3);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--green)">'
-          + '✅ Todos los mods siguen siendo compatibles.</div>';
+        resultEl.innerHTML = noticeHtml('ok', 'Todos los mods siguen siendo compatibles.');
         modloaderCheckedVersion = version;
         document.getElementById('modloader-install-btn').disabled = false;
       } else {
@@ -197,7 +196,7 @@ function startModloaderInstall(version) {
   );
 
   var url = '/api/modpacks/' + encodeURIComponent(currentModpack) + '/modloader/install/stream'
-    + '?version=' + encodeURIComponent(version) + '&token=' + encodeURIComponent(authToken);
+    + '?version=' + encodeURIComponent(version);
   var source = new EventSource(url);
 
   source.onmessage = function(event) {
@@ -214,8 +213,7 @@ function startModloaderInstall(version) {
       source.close();
       setModOperationBusy(false);
       var resultHtml = data.success
-        ? '<div style="background:rgba(var(--green-rgb), .1);border:1px solid rgba(var(--green-rgb), .3);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--green)">'
-          + '✅ Modloader actualizado a ' + escHtml(data.version) + '.</div>'
+        ? noticeHtml('ok', 'Modloader actualizado a ' + escHtml(data.version) + '.')
         : modErrorHtml(data.detail || 'Error desconocido');
       finish(resultHtml);
       if (data.success) {

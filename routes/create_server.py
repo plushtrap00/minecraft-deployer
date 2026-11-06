@@ -41,7 +41,7 @@ async def loader_versions(loader: str, mc_version: str):
 
 
 @router.get("/stream")
-async def create_server_sse(
+def create_server_sse(
     name: str, mc_version: str, ram_min: str, ram_max: str,
     loader: str = "vanilla", loader_version: str = "",
 ):

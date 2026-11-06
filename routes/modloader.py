@@ -9,8 +9,9 @@ Rutas:
 Solo se puede cambiar entre versiones del MISMO tipo de loader detectado y la
 MISMA versión de Minecraft del modpack — nunca de tipo de loader ni de MC.
 """
+import asyncio
 import json
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from config import DEFAULT_SERVERS_PATH
@@ -21,8 +22,9 @@ from services.modloader import (
 )
 from services import process as proc_module
 from services.busy import BusyGuard
+from routes.deps import valid_modpack
 
-router = APIRouter(prefix="/api/modpacks", tags=["modloader"])
+router = APIRouter(prefix="/api/modpacks", tags=["modloader"], dependencies=[Depends(valid_modpack)])
 
 
 def _current_loader(modpack: str) -> tuple:
@@ -40,7 +42,7 @@ def _current_loader(modpack: str) -> tuple:
 
 
 @router.get("/{modpack}/modloader/versions")
-async def modloader_versions(modpack: str):
+def modloader_versions(modpack: str):
     loader_key, mc_version, current_version = _current_loader(modpack)
     try:
         available = get_available_versions(loader_key, mc_version)
@@ -57,7 +59,7 @@ async def modloader_versions(modpack: str):
 
 
 @router.get("/{modpack}/modloader/check/stream")
-async def modloader_check_stream(modpack: str, version: str):
+def modloader_check_stream(modpack: str, version: str):
     """
     Revisa, con progreso en vivo, si los mods instalados siguen siendo
     compatibles con `version`. Con packs grandes leer y parsear cada jar
@@ -82,7 +84,7 @@ async def modloader_check_stream(modpack: str, version: str):
 
 
 @router.get("/{modpack}/modloader/install/stream")
-async def modloader_install_stream(modpack: str, version: str):
+def modloader_install_stream(modpack: str, version: str):
     """
     Antes de instalar, revalida todo lo que ya validó /check (por si cambió algo
     entre medio, p.ej. se agregó un mod). Como EventSource no puede leer el body
@@ -100,7 +102,7 @@ async def modloader_install_stream(modpack: str, version: str):
                 return
 
             try:
-                available = get_available_versions(loader_key, mc_version)
+                available = await asyncio.to_thread(get_available_versions, loader_key, mc_version)
             except Exception as e:
                 yield "data: " + json.dumps({"type": "error", "detail": f"No se pudo consultar las versiones disponibles: {e}"}) + "\n\n"
                 return

@@ -40,3 +40,13 @@
 .add-user-btn {
   align-self: flex-start;
 }
+
+.role-badge {
+  border-radius: 99px;
+  padding: 2px 9px;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+}
+
+.role-admin { background: rgba(var(--accent-rgb), .15); color: var(--accent); }
+.role-user { background: rgba(var(--green-rgb), .15); color: var(--green); }

@@ -1,7 +1,13 @@
-fastapi
-uvicorn
-python-multipart
-python-jose[cryptography]
-bcrypt
-python-dotenv
-psutil
+# Versiones fijas: sin ellas, cada instalación nueva (o cada rebuild del
+# Docker) bajaba la última versión de todo, y cualquier cambio incompatible
+# de FastAPI/Starlette podía romper el panel sin haber tocado nada. Son las
+# versiones con las que está probado; para actualizarlas, cambiarlas aquí y
+# volver a probar. Requieren Python 3.10 o superior.
+fastapi==0.139.0
+starlette==1.3.1
+pydantic==2.13.4
+uvicorn==0.50.0
+python-multipart==0.0.32
+bcrypt==5.0.0
+python-dotenv==1.2.2
+psutil==7.2.2

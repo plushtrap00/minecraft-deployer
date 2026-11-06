@@ -1,5 +1,5 @@
 // -- Descargar e instalar un modpack completo desde Modrinth/CurseForge -------
-// Mismo patrón visual/funcional que "Buscar mods online" (mods.js): pestañas
+// Mismo patrón visual/funcional que "Buscar mods online" (mod_search.js): pestañas
 // de fuente, panel de categorías colapsable y resultados paginados. Reusa
 // varias funciones genéricas ya definidas ahí (renderModModalPagination,
 // applyModSearchImage, formatDownloads, createModSearchLru,
@@ -234,7 +234,7 @@ function renderDlResults(results) {
   body.innerHTML = results.map(function(item, i) {
     var icon = item.icon_url
       ? '<img class="mod-search-icon" data-icon-url="' + escHtml(item.icon_url) + '" alt="" loading="lazy" decoding="async">'
-      : '<span class="mod-search-icon" style="display:flex;align-items:center;justify-content:center;font-size:1.2rem">📦</span>';
+      : '<span class="mod-search-icon mod-search-icon-empty">' + icon('package') + '</span>';
     var desc = item.description ? '<div class="mod-search-desc">' + escHtml(item.description) + '</div>' : '';
     var link = item.page_url
       ? '<a class="mod-search-link" href="' + escHtml(item.page_url) + '" target="_blank" rel="noopener" title="Ver página del modpack" onclick="event.stopPropagation()">↗</a>'
@@ -244,7 +244,7 @@ function renderDlResults(results) {
       + '<div class="mod-search-info">'
       + '<div class="mod-search-title-row"><span class="mod-search-title">' + escHtml(item.title) + '</span></div>'
       + desc
-      + '<div class="mod-search-meta">' + escHtml(item.author || '') + ' · ⬇ ' + formatDownloads(item.downloads) + '</div>'
+      + '<div class="mod-search-meta">' + escHtml(item.author || '') + ' · ' + formatDownloads(item.downloads) + ' descargas' + '</div>'
       + '</div>'
       + link
       + '</div>';
@@ -275,7 +275,7 @@ function renderDlResults(results) {
 function selectModpackToInstall(pack) {
   dlSelectedPack = pack;
   document.getElementById('dl-selected-pack').innerHTML =
-    '<div class="mod-list-item"><span class="mod-icon">📦</span>'
+    '<div class="mod-list-item"><span class="mod-icon">' + icon('package') + '</span>'
     + '<div class="mod-info"><div class="mod-display">' + escHtml(pack.title) + '</div>'
     + '<div class="mod-file">' + escHtml(pack.author || '') + '</div></div></div>';
 
@@ -322,7 +322,7 @@ function selectModpackToInstall(pack) {
 // find_similar_installed_modpacks() en services/modpack_install.py. Mientras
 // se comprueba, el botón de instalar queda bloqueado (para que no dé tiempo a
 // pulsarlo antes de saber el resultado); si encuentra coincidencia, el botón
-// se marca con ⚠️ pero sigue permitiendo instalar igualmente (puede haber más
+// se marca con un aviso pero sigue permitiendo instalar igualmente (puede haber más
 // de un servidor legítimo con el mismo modpack: mundos separados, pruebas...).
 var dlDuplicateCheckToken = 0;
 var dlDuplicateCheckPending = false;
@@ -343,14 +343,14 @@ function updateDlInstallBtnAppearance() {
   // sin este texto en el propio botón, mientras se comprueba solo se veía
   // deshabilitado sin ninguna pista de por qué, como si estuviera roto.
   if (dlDuplicateCheckPending) {
-    btn.innerHTML = '🔍 Comprobando si ya está instalado...';
+    btn.textContent = 'Comprobando si ya está instalado…';
     return;
   }
   if (dlInstallBlocked) {
-    btn.innerHTML = '🚫 Descarga bloqueada por el autor';
+    btn.textContent = 'Descarga bloqueada por el autor';
     return;
   }
-  btn.innerHTML = dlDuplicateMatches.length ? '⚠️ Descargar e instalar' : '🌐 Descargar e instalar';
+  btn.textContent = 'Descargar e instalar';
 }
 
 function checkDlDuplicate() {
@@ -370,7 +370,7 @@ function checkDlDuplicate() {
   dlDuplicateMatches = [];
   dlInstallBlocked = false;
   updateDlInstallBtnAppearance();
-  warningEl.innerHTML = '<p class="empty-msg" style="padding:6px 0;font-size:.78rem">🔍 Comprobando si ya está instalado...</p>';
+  warningEl.innerHTML = '<p class="empty-msg">Comprobando si ya está instalado…</p>';
 
   var url = '/api/modpack-install/check-existing?source=' + encodeURIComponent(dlSelectedPack.source)
     + '&project_id=' + encodeURIComponent(dlSelectedPack.id) + '&version_id=' + encodeURIComponent(versionId);
@@ -392,7 +392,7 @@ function checkDlDuplicate() {
       } else if (dlDuplicateMatches.length) {
         warningEl.innerHTML = dlDuplicateWarningHtml(dlDuplicateMatches);
       } else if (result.ok && data.checked === false) {
-        warningEl.innerHTML = '<p class="empty-msg" style="padding:6px 0;font-size:.78rem">ℹ️ No se pudo comprobar si ya está instalado (' + escHtml(data.reason || 'motivo desconocido') + ').</p>';
+        warningEl.innerHTML = '<p class="empty-msg">No se pudo comprobar si ya está instalado (' + escHtml(data.reason || 'motivo desconocido') + ').</p>';
       } else {
         warningEl.innerHTML = '';
       }
@@ -414,21 +414,20 @@ function dlDuplicateWarningHtml(matches) {
   var lines = matches.map(function(m) {
     return '«' + escHtml(m.server_name) + '» (' + m.overlap_pct + '% de mods coinciden)';
   }).join(', ');
-  return '<div style="background:rgba(var(--yellow-rgb), .12);border:1px solid rgba(var(--yellow-rgb), .35);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--yellow);margin-top:10px">'
-    + '⚠️ Esta versión se parece a lo ya instalado en ' + lines + '. Puede que ya la tengas — revisa antes de crear otro servidor.</div>';
+  return '<div class="mt-s">' + noticeHtml('warn', 'Esta versión se parece a lo ya instalado en ' + lines + '. Puede que ya la tengas: revísalo antes de crear otro servidor.') + '</div>';
 }
 
 function dlBlockedHtml(reason) {
   var pageLink = dlSelectedPack && dlSelectedPack.page_url
     ? '<a href="' + escHtml(dlSelectedPack.page_url) + '" target="_blank" rel="noopener">la página del modpack en CurseForge</a>'
     : 'la página del modpack en CurseForge';
-  return '<div style="background:rgba(var(--red-rgb), .1);border:1px solid rgba(var(--red-rgb), .3);border-radius:6px;padding:10px 14px;font-size:.82rem">'
-    + '<div style="color:var(--red);font-weight:600;margin-bottom:8px">🚫 ' + escHtml(reason || 'El autor bloqueó la descarga de este modpack por terceros.') + '</div>'
-    + '<div style="color:var(--muted)">Cómo instalarlo de todas formas:</div>'
-    + '<ol style="margin:6px 0 0 18px;padding:0;color:var(--muted);line-height:1.6">'
+  return '<div class="notice notice-error notice-block">'
+    + '<div class="notice-title">' + icon('ban') + escHtml(reason || 'El autor bloqueó la descarga de este modpack por terceros.') + '</div>'
+    + '<div class="notice-body">Cómo instalarlo de todas formas:</div>'
+    + '<ol class="notice-steps">'
     + '<li>Entra en ' + pageLink + ' y ve a la pestaña <b>Files</b>.</li>'
-    + '<li>Si esa versión tiene un archivo de <b>«Server Files»</b> aparte del pack normal, descárgalo y súbelo aquí con <b>«📦 Importar modpack existente»</b>.</li>'
-    + '<li>Si no hay server files, crea un servidor vacío con <b>«🆕 Crear servidor nuevo»</b> usando el modloader y la versión de Minecraft que se ven en el desplegable de arriba, y añade los mods a mano (subiéndolos o con «🔎 Buscar mods online» una vez creado).</li>'
+    + '<li>Si esa versión tiene un archivo de <b>«Server Files»</b> aparte del pack normal, descárgalo y súbelo aquí con <b>«Subir un modpack»</b>.</li>'
+    + '<li>Si no hay server files, crea un servidor vacío con <b>«Crear desde cero»</b> usando el modloader y la versión de Minecraft que se ven en el desplegable de arriba, y añade los mods a mano (subiéndolos o con «Buscar mods online» una vez creado).</li>'
     + '</ol></div>';
 }
 
@@ -509,8 +508,7 @@ document.getElementById('dl-install-btn').addEventListener('click', function() {
     + '&version_id=' + encodeURIComponent(versionId)
     + '&name=' + encodeURIComponent(serverName)
     + '&ram_min=' + encodeURIComponent(ramMin)
-    + '&ram_max=' + encodeURIComponent(ramMax)
-    + '&token=' + encodeURIComponent(authToken);
+    + '&ram_max=' + encodeURIComponent(ramMax);
   var source = new EventSource(url);
 
   source.onmessage = function(event) {
@@ -526,7 +524,7 @@ document.getElementById('dl-install-btn').addEventListener('click', function() {
     } else if (data.type === 'done') {
       source.close();
       var resultHtml = data.success
-        ? '<div style="background:rgba(var(--green-rgb), .1);border:1px solid rgba(var(--green-rgb), .3);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--green)">✅ Servidor "' + escHtml(data.name) + '" creado a partir del modpack.</div>'
+        ? noticeHtml('ok', 'Servidor «' + escHtml(data.name) + '» creado a partir del modpack.')
         : modErrorHtml(data.detail || 'Error desconocido');
       finish(resultHtml);
       if (data.success) {

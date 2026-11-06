@@ -11,8 +11,8 @@ function loadUsers() {
       list.innerHTML = users.map(function(u) {
         var isAdmin = u.role === 'admin';
         var badge = isAdmin
-          ? '<span style="background:rgba(var(--accent-rgb), .15);color:var(--accent);border-radius:99px;padding:2px 9px;font-size:.72rem;font-weight:700">Admin</span>'
-          : '<span style="background:rgba(var(--green-rgb), .15);color:var(--green);border-radius:99px;padding:2px 9px;font-size:.72rem;font-weight:700">Usuario</span>';
+          ? '<span class="role-badge role-admin">Admin</span>'
+          : '<span class="role-badge role-user">Usuario</span>';
         var actions = isAdmin ? '' :
           '<div class="pe-actions"><button class="btn-danger" style="padding:4px 10px;font-size:.78rem" onclick="deleteUser(\'' + escHtml(u.username) + '\')">Eliminar</button></div>';
         return '<div class="player-entry">'

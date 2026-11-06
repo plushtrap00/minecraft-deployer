@@ -12,7 +12,7 @@ compatibilidad de MC y de mod ya instalado / versión más antigua.
 """
 import json
 import secrets
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
@@ -25,9 +25,10 @@ from services.mod_search import (
     get_modrinth_versions, get_curseforge_files, download_bytes,
     get_modrinth_categories, get_curseforge_categories, mark_installed,
 )
-from routes.modpacks import BATCH_ROOT
+from routes.mods import BATCH_ROOT
+from routes.deps import valid_modpack
 
-router = APIRouter(prefix="/api/modpacks", tags=["mod-search"])
+router = APIRouter(prefix="/api/modpacks", tags=["mod-search"], dependencies=[Depends(valid_modpack)])
 
 VALID_SOURCES = {"modrinth", "curseforge"}
 SEARCH_PAGE_SIZE = MOD_SEARCH_PAGE_SIZE
@@ -39,7 +40,7 @@ def _server_context(modpack: str) -> tuple:
 
 
 @router.get("/{modpack}/mods/search")
-async def search_mods(modpack: str, query: str = "", source: str = "modrinth", category: str = "", offset: int = 0):
+def search_mods(modpack: str, query: str = "", source: str = "modrinth", category: str = "", offset: int = 0):
     if source not in VALID_SOURCES:
         raise HTTPException(status_code=400, detail="source debe ser 'modrinth' o 'curseforge'")
     query = query.strip()
@@ -64,7 +65,7 @@ async def search_mods(modpack: str, query: str = "", source: str = "modrinth", c
 
 
 @router.get("/{modpack}/mods/search/categories")
-async def search_mod_categories(modpack: str, source: str = "modrinth"):
+def search_mod_categories(modpack: str, source: str = "modrinth"):
     if source not in VALID_SOURCES:
         raise HTTPException(status_code=400, detail="source debe ser 'modrinth' o 'curseforge'")
     try:
@@ -75,7 +76,7 @@ async def search_mod_categories(modpack: str, source: str = "modrinth"):
 
 
 @router.get("/{modpack}/mods/search/{source}/{project_id}/files")
-async def search_mod_files(modpack: str, source: str, project_id: str):
+def search_mod_files(modpack: str, source: str, project_id: str):
     if source not in VALID_SOURCES:
         raise HTTPException(status_code=400, detail="source debe ser 'modrinth' o 'curseforge'")
 
@@ -98,7 +99,7 @@ class InstallBody(BaseModel):
 
 
 @router.post("/{modpack}/mods/search/install")
-async def install_searched_mod(modpack: str, body: InstallBody):
+def install_searched_mod(modpack: str, body: InstallBody):
     if body.source not in VALID_SOURCES:
         raise HTTPException(status_code=400, detail="source debe ser 'modrinth' o 'curseforge'")
     if not body.download_url:

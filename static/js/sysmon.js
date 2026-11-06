@@ -3,7 +3,7 @@ var sysmonOpen = false;
 var sysmonSSE = null;
 
 document.getElementById('btn-logout').addEventListener('click', function() {
-  showConfirm('¿Cerrar sesión?', 'Tendrás que volver a entrar con tu usuario y contraseña.', logout, {
+  showConfirm('¿Cerrar sesión?', 'Tendrás que volver a entrar con tu usuario y contraseña.', endSession, {
     icon: '⏻', confirmLabel: 'Cerrar sesión'
   });
 });
@@ -44,7 +44,7 @@ function startSysmonStream() {
     return;
   }
   document.getElementById('sysmon-body').innerHTML = loadingHtml();
-  sysmonSSE = new EventSource('/api/system-stats/stream?token=' + encodeURIComponent(authToken));
+  sysmonSSE = new EventSource('/api/system-stats/stream');
   sysmonSSE.onmessage = function(event) {
     var data;
     try {
@@ -196,8 +196,8 @@ function checkForUpdatesNow() {
         updateSysmonBadge();
         showToast(
           result.data.commits_behind > 0
-            ? '🔔 Hay ' + result.data.commits_behind + ' commit(s) nuevos disponibles'
-            : '✅ Ya tienes la última versión',
+            ? 'Hay ' + result.data.commits_behind + ' commit(s) nuevos disponibles'
+            : 'Ya tienes la última versión',
           'success'
         );
       } else {
@@ -363,7 +363,7 @@ function renderAutoUpdateSection() {
   html += '<div class="sysmon-section-title">Actualizaciones de la app</div>';
 
   if (autoUpdateRestarting) {
-    html += '<span class="sysmon-no-temps">⏳ Actualización aplicada, esperando a que la app vuelva a responder...</span></div>';
+    html += '<span class="sysmon-no-temps">Actualización aplicada, esperando a que la app vuelva a responder...</span></div>';
     return html;
   }
 
@@ -379,7 +379,7 @@ function renderAutoUpdateSection() {
   }
 
   if (status.commits_behind > 0) {
-    html += autoUpdateRow('Estado', '🔔 ' + status.commits_behind + ' commit(s) nuevos disponibles', 'var(--yellow)');
+    html += autoUpdateRow('Estado', status.commits_behind + ' commit(s) nuevos disponibles', 'var(--yellow)');
 
     var blockedReason = status.server_running
       ? 'hay un servidor de Minecraft en marcha'
@@ -396,7 +396,7 @@ function renderAutoUpdateSection() {
     // Solo "al día" si ya se comprobó de verdad alguna vez (automático o a
     // mano) — si nunca se comprobó, commits_behind sigue en su valor inicial
     // 0 y mostrar "al día" sería un falso positivo.
-    html += autoUpdateRow('Estado', '✅ Al día', 'var(--green)');
+    html += autoUpdateRow('Estado', 'Al día', 'var(--green)');
   }
 
   if (status.last_check) {

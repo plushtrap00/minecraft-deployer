@@ -61,21 +61,21 @@ function populateEnvForm(data) {
     input.disabled = !!data.in_docker;
     hint.style.display = data.in_docker ? '' : 'none';
     hint.textContent = data.in_docker
-      ? '⚠️ En Docker esto se controla desde docker-compose.yml, no desde aquí.'
+      ? 'En Docker esto se controla desde docker-compose.yml, no desde aquí.'
       : '';
   });
 }
 
-// Orden e icono de cada sección en la que se agrupan las constantes, para no
+// Orden de las secciones en las que se agrupan las constantes, para no
 // mostrarlas todas juntas en una lista larga (ver campo "category" que manda
 // app_constants.py junto a cada valor).
 var CFG_CONSTANT_CATEGORY_ORDER = [
-  ['Logs', '📋'],
-  ['Servidor de Minecraft', '🖥️'],
-  ['Auto-actualización', '🔄'],
-  ['Mods y modpacks', '🧩'],
-  ['Sesión y login', '🔐'],
-  ['Otros', '🗄️'],
+  ['Logs'],
+  ['Servidor de Minecraft'],
+  ['Auto-actualización'],
+  ['Mods y modpacks'],
+  ['Sesión y login'],
+  ['Otros'],
 ];
 
 function renderConstantsForm(data) {
@@ -90,7 +90,6 @@ function renderConstantsForm(data) {
   var html = '';
   CFG_CONSTANT_CATEGORY_ORDER.forEach(function(pair, index) {
     var category = pair[0];
-    var icon = pair[1];
     var items = byCategory[category];
     if (!items || !items.length) {
       return;
@@ -211,7 +210,7 @@ function offerAppRestart(savedMessage) {
     'Los cambios no se aplican hasta reiniciar la app. ¿Reiniciarla ahora? (no reinicia si hay un servidor de Minecraft corriendo o una operación en curso)',
     doAppRestart,
     {
-      icon: '✅',
+      icon: '🔄',
       confirmLabel: 'Reiniciar ahora',
       cancelLabel: 'Más tarde',
       confirmColor: 'var(--accent)',

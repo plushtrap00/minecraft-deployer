@@ -614,7 +614,7 @@ function loadRamConfig() {
 function renderRamConfig(data) {
   var body = document.getElementById('ram-cfg-body');
   if (!data.source) {
-    body.innerHTML = '<div class="warn-box">⚠️ No se pudo detectar dónde configura este modpack la RAM '
+    body.innerHTML = '<div class="warn-box">No se pudo detectar dónde configura este modpack la RAM '
       + '(no tiene <code>user_jvm_args.txt</code>, <code>variables.txt</code>, ni <code>-Xms</code>/<code>-Xmx</code> '
       + 'en su script de arranque). Puede que use un lanzador propio — edítala a mano en la carpeta del servidor.</div>';
     return;
@@ -634,7 +634,7 @@ function renderRamConfig(data) {
     + '<option value="M"' + (max.unit === 'M' ? ' selected' : '') + '>MB</option></select></div></div>'
     + '</div>'
     + '<p id="ram-cfg-warn" class="ram-warn" style="display:none"></p>'
-    + '<button id="ram-cfg-save-btn" class="add-user-btn" style="margin-top:12px">💾 Guardar RAM</button>';
+    + '<button id="ram-cfg-save-btn" class="add-user-btn mt-m">Guardar RAM</button>';
 
   ['ram-cfg-min-val', 'ram-cfg-max-val', 'ram-cfg-min-unit', 'ram-cfg-max-unit'].forEach(function(id) {
     document.getElementById(id).addEventListener('input', checkRamCfg);
@@ -744,7 +744,7 @@ function loadKubejs() {
         renderTreePage('kjs');
         var downloadBtn = document.getElementById('btn-download-kjs');
         downloadBtn.href = '/api/modpacks/' + encodeURIComponent(currentModpack)
-          + '/kubejs/download?token=' + encodeURIComponent(authToken);
+          + '/kubejs/download';
         downloadBtn.setAttribute('download', currentModpack + '-kubejs.zip');
       } else {
         tab.style.display = 'none';
@@ -836,9 +836,9 @@ function renderTreePage(which) {
   keys.slice(start, end).forEach(function(key) {
     var label;
     if (key === '__root__') {
-      label = isKjs ? '📄 Raíz de kubejs' : '📄 Raíz de config';
+      label = isKjs ? 'Raíz de kubejs' : 'Raíz de config';
     } else {
-      label = '📁 ' + key;
+      label = key;
     }
     var allFiles = data[key];
     var files = getFilteredFiles(allFiles, key, filter);

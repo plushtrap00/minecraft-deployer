@@ -25,11 +25,11 @@ function renderPlayerList(containerId, players, type, extraFn) {
     var extra = extraFn ? extraFn(player) : '';
     var removeLabel = type === 'op' ? 'Quitar op' : 'Eliminar';
     html += '<div class="player-entry">'
-      + '<span style="font-size:1.1rem">👤</span>'
-      + '<span class="pe-name">' + name + '</span>'
+      + '<span class="pe-icon">' + icon('users') + '</span>'
+      + '<span class="pe-name">' + escHtml(name) + '</span>'
       + extra
       + '<div class="pe-actions">'
-      + '<button class="btn-danger player-remove-btn" data-type="' + type + '" data-name="' + name + '" style="padding:3px 10px;font-size:.75rem">'
+      + '<button class="btn-danger player-remove-btn" data-type="' + type + '" data-name="' + escHtml(name) + '" style="padding:3px 10px;font-size:.75rem">'
       + removeLabel + '</button>'
       + '</div></div>';
   });
@@ -46,10 +46,10 @@ function renderBanList(containerId, bans, type) {
   bans.forEach(function(ban) {
     var name = type === 'ip' ? ban.ip : (ban.name || ban.uuid || '?');
     var reason = ban.reason || '';
-    var icon = type === 'ip' ? '🌐' : '👤';
-    var reasonHtml = reason ? '<div class="pe-meta">' + reason + '</div>' : '';
+    var entryIcon = icon(type === 'ip' ? 'globe' : 'users');
+    var reasonHtml = reason ? '<div class="pe-meta">' + escHtml(reason) + '</div>' : '';
     html += '<div class="player-entry">'
-      + '<span style="font-size:1.1rem">' + icon + '</span>'
+      + '<span class="pe-icon">' + entryIcon + '</span>'
       + '<div style="flex:1"><div class="pe-name">' + name + '</div>'
       + reasonHtml
       + '</div>'
@@ -85,7 +85,7 @@ document.addEventListener('click', function(event) {
 });
 
 function apiCall(method, url, body, successMsg) {
-  return fetch(url, { method: method, body: body, headers: authHeaders() })
+  return apiFetch(url, { method: method, body: body })
     .then(function(response) {
       return response.json().then(function(data) {
         return { ok: response.ok, data: data };

@@ -55,3 +55,8 @@
 .players-header h2 {
   margin-bottom: 0;
 }
+
+.player-entry .pe-icon {
+  display: flex;
+  color: var(--muted);
+}

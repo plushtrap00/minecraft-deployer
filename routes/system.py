@@ -43,7 +43,7 @@ _STATIC_ASSET_RE = re.compile(r'(href|src)="(/static/[^"]+)"')
 
 
 @router.get("/", response_class=HTMLResponse)
-async def index():
+def index():
     html = _STATIC_INDEX.read_text(encoding="utf-8")
     html = _STATIC_ASSET_RE.sub(rf'\1="\2?v={_ASSET_VERSION}"', html)
     return HTMLResponse(
@@ -53,7 +53,7 @@ async def index():
 
 
 @router.get("/api/system-info")
-async def system_info():
+def system_info():
     ram_gb = get_system_ram_gb()
     max_allowed = round(ram_gb * 0.8, 1) if ram_gb else None
     return JSONResponse({
@@ -64,7 +64,7 @@ async def system_info():
 
 
 @router.get("/api/disk-usage")
-async def disk_usage():
+def disk_usage():
     try:
         total, used, free = shutil.disk_usage(DEFAULT_SERVERS_PATH)
         gb = 1024 ** 3
@@ -79,7 +79,7 @@ async def disk_usage():
 
 
 @router.get("/api/modpacks")
-async def list_modpacks():
+def list_modpacks():
     packs = get_modpacks()
     result = []
     for name in packs:
@@ -156,7 +156,7 @@ async def modpack_size(name: str):
 
 
 @router.get("/api/auto-update/status")
-async def auto_update_status():
+def auto_update_status():
     return JSONResponse(auto_update.get_status())
 
 
@@ -197,7 +197,7 @@ async def system_stats():
 
 
 @router.get("/api/system-stats/stream")
-async def system_stats_stream():
+def system_stats_stream():
     """
     SSE: empuja cada ~2s solo lo que pinta el panel flotante (CPU total, RAM,
     temperaturas). Se omite a propósito lo que ese panel no usa (cores por

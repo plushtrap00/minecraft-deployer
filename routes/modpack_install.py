@@ -57,7 +57,7 @@ async def search(
 
 
 @router.get("/categories")
-async def categories_endpoint(source: str):
+def categories_endpoint(source: str):
     if source not in _SOURCES:
         raise HTTPException(status_code=400, detail="source inválido")
     try:
@@ -118,7 +118,7 @@ async def check_existing(source: str, project_id: str, version_id: str):
 
 
 @router.get("/stream")
-async def install_stream(source: str, project_id: str, version_id: str, name: str, ram_min: str, ram_max: str):
+def install_stream(source: str, project_id: str, version_id: str, name: str, ram_min: str, ram_max: str):
     async def event_stream():
         # Igual que routes/create_server.py: la validación previa se manda como
         # evento "error" dentro del stream, porque EventSource no puede leer el

@@ -26,13 +26,13 @@ class CreateUserBody(BaseModel):
 
 
 @router.get("")
-async def get_users(request: Request):
+def get_users(request: Request):
     _require_admin(request)
     return JSONResponse(list_users())
 
 
 @router.post("", status_code=201)
-async def add_user(request: Request, body: CreateUserBody):
+def add_user(request: Request, body: CreateUserBody):
     _require_admin(request)
     username = body.username.strip()
     if not _USERNAME_RE.match(username):
@@ -47,7 +47,7 @@ async def add_user(request: Request, body: CreateUserBody):
 
 
 @router.delete("/{username}")
-async def remove_user(username: str, request: Request):
+def remove_user(username: str, request: Request):
     _require_admin(request)
     try:
         found = delete_user(username)

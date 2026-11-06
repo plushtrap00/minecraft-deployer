@@ -33,13 +33,14 @@ from services import metrics as metrics_module
 from services.metrics import mc_metrics, read_proc_ram, _parse_metrics_line
 from services.modpack import ensure_rcon_enabled, detect_modpack_version, prune_old_logs_and_crashes, get_pending_mods
 from services.rcon import RconConnection, RconError
+from routes.deps import modpack_path
 import datetime
 
 router = APIRouter(prefix="/api/server", tags=["server"])
 
 
 @router.get("/status")
-async def server_status():
+def server_status():
     with mc_process_lock:
         proc = proc_module.mc_process
         running = proc is not None and proc.poll() is None
@@ -50,16 +51,12 @@ async def server_status():
 
 
 @router.post("/start")
-async def server_start(modpack: str = Form(...), force: str = Form("0")):
+def server_start(modpack: str = Form(...), force: str = Form("0")):
     with mc_process_lock:
         if proc_module.mc_process is not None and proc_module.mc_process.poll() is None:
             raise HTTPException(status_code=400, detail="Ya hay un servidor en marcha")
 
-        server_dir = DEFAULT_SERVERS_PATH / modpack
-        try:
-            server_dir.resolve().relative_to(DEFAULT_SERVERS_PATH.resolve())
-        except ValueError:
-            raise HTTPException(status_code=403, detail="Ruta no permitida")
+        server_dir = modpack_path(modpack)
 
         # Modpacks de CurseForge instalados con algún mod bloqueado por el autor
         # para descarga por terceros (ver services/modpack_install.py) avisan
@@ -216,7 +213,7 @@ async def server_stop():
 
 
 @router.post("/command")
-async def server_command(cmd: str = Form(...)):
+def server_command(cmd: str = Form(...)):
     with mc_process_lock:
         proc = proc_module.mc_process
         if proc is None or proc.poll() is not None:
@@ -230,7 +227,7 @@ async def server_command(cmd: str = Form(...)):
 
 
 @router.get("/metrics")
-async def get_metrics():
+def get_metrics():
     import datetime as dt
     uptime = None
     if metrics_module.mc_start_time:
@@ -298,35 +295,32 @@ async def refresh_metrics():
 
 
 @router.get("/logs")
-async def server_logs():
+def server_logs():
     """SSE endpoint: envía el historial de logs y luego hace streaming de nuevas líneas."""
-    import queue
-
-    q = queue.Queue()
-    with mc_sse_lock:
-        mc_sse_clients.add(q)
-
-    with mc_output_lock:
-        history = list(mc_output_lines)
 
     async def event_stream():
+        client = (asyncio.get_running_loop(), asyncio.Queue())
+        with mc_sse_lock:
+            mc_sse_clients.add(client)
+        with mc_output_lock:
+            history = list(mc_output_lines)
         try:
             for line in history:
                 yield "data: " + line + "\n\n"
-            loop = asyncio.get_event_loop()
             while True:
                 try:
-                    line = await loop.run_in_executor(None, lambda: q.get(timeout=15))
-                    if line == "__APP_SHUTDOWN__":
-                        break
-                    yield "data: " + line + "\n\n"
-                    if line == "__STOPPED__":
-                        break
-                except Exception:
+                    line = await asyncio.wait_for(client[1].get(), timeout=15)
+                except asyncio.TimeoutError:
                     yield ": keepalive\n\n"
+                    continue
+                if line == "__APP_SHUTDOWN__":
+                    break
+                yield "data: " + line + "\n\n"
+                if line == "__STOPPED__":
+                    break
         finally:
             with mc_sse_lock:
-                mc_sse_clients.discard(q)
+                mc_sse_clients.discard(client)
 
     return StreamingResponse(
         event_stream(),

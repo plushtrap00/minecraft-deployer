@@ -171,8 +171,7 @@ document.getElementById('create-server-btn').addEventListener('click', function(
     + '&loader=' + encodeURIComponent(loader)
     + '&loader_version=' + encodeURIComponent(loaderVersion)
     + '&ram_min=' + encodeURIComponent(ramMin)
-    + '&ram_max=' + encodeURIComponent(ramMax)
-    + '&token=' + encodeURIComponent(authToken);
+    + '&ram_max=' + encodeURIComponent(ramMax);
   var source = new EventSource(url);
 
   source.onmessage = function(event) {
@@ -188,7 +187,7 @@ document.getElementById('create-server-btn').addEventListener('click', function(
     } else if (data.type === 'done') {
       source.close();
       var resultHtml = data.success
-        ? '<div style="background:rgba(var(--green-rgb), .1);border:1px solid rgba(var(--green-rgb), .3);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--green)">✅ Servidor "' + escHtml(data.name) + '" creado. Ya puedes subirle mods desde Gestión de modpacks.</div>'
+        ? noticeHtml('ok', 'Servidor «' + escHtml(data.name) + '» creado. Ya puedes subirle mods desde Modpacks.')
         : modErrorHtml(data.detail || 'Error desconocido');
       finish(resultHtml);
       if (data.success) {

@@ -27,8 +27,23 @@ mc_process_lock = threading.Lock()
 mc_output_lines: deque = deque(maxlen=MAX_LOG_LINES)
 mc_output_lock = threading.Lock()
 
+# Cada cliente de la consola en directo es un par (event loop, asyncio.Queue).
+# Las líneas llegan desde el hilo lector del proceso, así que se meten en la
+# cola con call_soon_threadsafe. Antes cada cliente era un queue.Queue que el
+# endpoint esperaba con run_in_executor: cada pestaña abierta ocupaba un hilo
+# del pool que comparten todos los asyncio.to_thread del panel.
 mc_sse_clients: set = set()
 mc_sse_lock = threading.Lock()
+
+
+def _send_to_client(client, line: str) -> bool:
+    """Encola una línea para un cliente SSE. False si su event loop ya no existe."""
+    loop, queue = client
+    try:
+        loop.call_soon_threadsafe(queue.put_nowait, line)
+        return True
+    except RuntimeError:
+        return False
 
 mc_running_modpack: str | None = None
 
@@ -116,11 +131,8 @@ def notify_app_shutdown():
     antes de que la app pueda terminar de cerrarse.
     """
     with mc_sse_lock:
-        for q in mc_sse_clients:
-            try:
-                q.put_nowait("__APP_SHUTDOWN__")
-            except Exception:
-                pass
+        for client in mc_sse_clients:
+            _send_to_client(client, "__APP_SHUTDOWN__")
 
 
 # ── Broadcast ──────────────────────────────────────────────────────────────────
@@ -129,12 +141,7 @@ def _broadcast(line: str):
     with mc_output_lock:
         mc_output_lines.append(line)
     with mc_sse_lock:
-        dead = set()
-        for q in mc_sse_clients:
-            try:
-                q.put_nowait(line)
-            except Exception:
-                dead.add(q)
+        dead = {client for client in mc_sse_clients if not _send_to_client(client, line)}
         mc_sse_clients.difference_update(dead)
 
 
@@ -170,12 +177,9 @@ def _notify_stopped():
     with mc_output_lock:
         mc_output_lines.append(line)
     with mc_sse_lock:
-        for q in mc_sse_clients:
-            try:
-                q.put_nowait(line)
-                q.put_nowait("__STOPPED__")
-            except Exception:
-                pass
+        for client in mc_sse_clients:
+            _send_to_client(client, line)
+            _send_to_client(client, "__STOPPED__")
 
 
 # ── Reader thread ──────────────────────────────────────────────────────────────

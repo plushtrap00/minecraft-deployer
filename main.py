@@ -9,6 +9,7 @@ import os
 import re
 import time
 import subprocess
+from contextlib import asynccontextmanager
 from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -24,14 +25,19 @@ if not _ENV_PATH.exists():
 load_dotenv(_ENV_PATH, override=True)
 
 from routes.system import router as system_router
-from routes.modpacks import router as modpacks_router, upload_router, firewall_router
+from routes.modpacks import router as modpacks_router, upload_router
+from routes.mod_files import router as mod_files_router
+from routes.mods import router as mods_router
+from routes.worlds import router as worlds_router
+from routes.logs import router as logs_router
+from routes.firewall import router as firewall_router
 from routes.modloader import router as modloader_router
 from routes.create_server import router as create_server_router
 from routes.modpack_install import router as modpack_install_router
 from routes.mod_search import router as mod_search_router
 from routes.players import router as players_router
 from routes.server import router as server_router
-from routes.auth import router as auth_router, verify_token
+from routes.auth import router as auth_router, verify_token, token_from_request
 from routes.users import router as users_router
 from routes.config_admin import router as config_admin_router
 from services.lifecycle import shutdown_event
@@ -40,7 +46,7 @@ from services import auto_update
 
 # ── Middleware de autenticación ────────────────────────────────────────────────
 
-PUBLIC_PATHS = {"/", "/api/auth/login"}
+PUBLIC_PATHS = {"/", "/api/auth/login", "/api/auth/logout", "/api/auth/verify"}
 
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
@@ -54,12 +60,9 @@ class AuthMiddleware(BaseHTTPMiddleware):
         if request.method == "OPTIONS":
             return await call_next(request)
 
-        # Verificar token — acepta header Authorization o query param ?token= (para SSE)
-        auth = request.headers.get("Authorization", "")
-        token = auth.removeprefix("Bearer ").strip()
-        if not token:
-            token = request.query_params.get("token", "")
-
+        # La sesión llega en la cookie (también en EventSource y descargas,
+        # que el navegador manda solas) o en una cabecera Authorization.
+        token = token_from_request(request)
         user_info = verify_token(token) if token else None
         if not user_info:
             return JSONResponse({"detail": "No autorizado"}, status_code=401)
@@ -70,7 +73,20 @@ class AuthMiddleware(BaseHTTPMiddleware):
         return await call_next(request)
 
 
-app = FastAPI(title="Minecraft Server Deployer")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    auto_update.start()
+    yield
+    # Uvicorn llega aquí DESPUÉS de esperar a que las conexiones se cierren
+    # solas (ver timeout_graceful_shutdown más abajo): para entonces los
+    # streams SSE de consola/sysmon ya se cortaron por esa espera (o fueron
+    # cancelados a la fuerza al agotarse el timeout). Esto solo limpia el
+    # estado en memoria antes de que el proceso termine.
+    shutdown_event.set()
+    notify_app_shutdown()
+
+
+app = FastAPI(title="Minecraft Server Deployer", lifespan=lifespan)
 app.add_middleware(GZipMiddleware, minimum_size=500)
 app.add_middleware(AuthMiddleware)
 # Las fuentes de static/fonts/: sin esto algunos sistemas las sirven como
@@ -84,6 +100,10 @@ app.include_router(users_router)
 app.include_router(config_admin_router)
 app.include_router(system_router)
 app.include_router(modpacks_router)
+app.include_router(mod_files_router)
+app.include_router(mods_router)
+app.include_router(worlds_router)
+app.include_router(logs_router)
 app.include_router(modloader_router)
 app.include_router(create_server_router)
 app.include_router(modpack_install_router)
@@ -94,64 +114,83 @@ app.include_router(players_router)
 app.include_router(server_router)
 
 
-@app.on_event("startup")
-async def _on_startup():
-    auto_update.start()
-
-
-@app.on_event("shutdown")
-async def _on_shutdown():
-    """
-    Uvicorn llama este evento DESPUÉS de esperar a que las conexiones se
-    cierren solas (ver timeout_graceful_shutdown más abajo) — para cuando
-    esto se ejecuta, los streams SSE de consola/sysmon ya se cortaron por esa
-    espera (o fueron cancelados a la fuerza al agotarse el timeout). Esto solo
-    limpia el estado en memoria antes de que el proceso termine.
-    """
-    shutdown_event.set()
-    notify_app_shutdown()
-
-
 # ── Limpieza al arrancar ───────────────────────────────────────────────────────
 
-def kill_port(port: int) -> list:
-    """Mata cualquier proceso que ocupe el puerto TCP indicado."""
-    killed = []
+_APP_DIR = Path(__file__).resolve().parent
+
+
+def _proc_cwd(pid) -> Path | None:
     try:
-        result = subprocess.run(
-            ["ss", "-tlnp", "sport", "=", f":{port}"],
-            capture_output=True, text=True,
-        )
+        return Path(os.readlink(f"/proc/{pid}/cwd")).resolve()
+    except (OSError, ValueError):
+        return None
+
+
+def _proc_cmdline(pid) -> str:
+    try:
+        return Path(f"/proc/{pid}/cmdline").read_bytes().replace(b"\0", b" ").decode(errors="replace")
+    except OSError:
+        return ""
+
+
+def _is_under(path: Path | None, base: Path) -> bool:
+    if path is None:
+        return False
+    try:
+        path.relative_to(base.resolve())
+        return True
+    except ValueError:
+        return False
+
+
+def _is_previous_panel(pid) -> bool:
+    """Otra instancia de este mismo panel (python .../main.py desde esta carpeta)."""
+    cmdline = _proc_cmdline(pid)
+    return "main.py" in cmdline and (_proc_cwd(pid) == _APP_DIR or str(_APP_DIR) in cmdline)
+
+
+def _is_our_minecraft(pid) -> bool:
+    """Un proceso lanzado dentro de la carpeta de servidores del panel."""
+    from config import DEFAULT_SERVERS_PATH
+    return _is_under(_proc_cwd(pid), DEFAULT_SERVERS_PATH)
+
+
+def _pids_on_port(port: int) -> list:
+    pids = []
+    try:
+        result = subprocess.run(["ss", "-tlnp", "sport", "=", f":{port}"], capture_output=True, text=True)
         for line in result.stdout.splitlines():
-            if str(port) in line and "pid=" in line:
-                for pid_str in re.findall(r'pid=(\d+)', line):
-                    try:
-                        os.kill(int(pid_str), 9)
-                        killed.append(int(pid_str))
-                    except Exception:
-                        pass
-    except Exception:
+            if str(port) in line:
+                pids.extend(int(p) for p in re.findall(r'pid=(\d+)', line))
+    except (OSError, ValueError):
         pass
-    # Fallback con fuser
-    if not killed:
+    if not pids:
         try:
-            result = subprocess.run(
-                ["fuser", f"{port}/tcp"],
-                capture_output=True, text=True,
-            )
-            for pid_str in result.stdout.split():
-                try:
-                    os.kill(int(pid_str.strip()), 9)
-                    killed.append(int(pid_str.strip()))
-                except Exception:
-                    pass
-        except Exception:
+            result = subprocess.run(["fuser", f"{port}/tcp"], capture_output=True, text=True)
+            pids.extend(int(p) for p in result.stdout.split() if p.strip().isdigit())
+        except OSError:
             pass
-    return killed
+    return sorted(set(pid for pid in pids if pid != os.getpid()))
 
 
-def kill_port_25565() -> list:
-    return kill_port(25565)
+def kill_port(port: int, is_ours) -> tuple[list, list]:
+    """
+    Libera el puerto TCP matando los procesos que lo ocupan, pero SOLO los que
+    is_ours(pid) reconoce como propios. Antes se mataba cualquier cosa que
+    estuviera en el puerto (otra aplicación, o un servidor de Minecraft que no
+    había lanzado el panel). Devuelve (matados, ajenos que se dejaron vivos).
+    """
+    killed, foreign = [], []
+    for pid in _pids_on_port(port):
+        if not is_ours(pid):
+            foreign.append(pid)
+            continue
+        try:
+            os.kill(pid, 9)
+            killed.append(pid)
+        except OSError:
+            pass
+    return killed, foreign
 
 
 def _pid_alive(pid) -> bool:
@@ -220,49 +259,28 @@ def _graceful_stop_orphan(pid: str) -> bool:
 def kill_orphan_servers() -> list:
     """
     Limpia procesos Java residuales de ejecuciones anteriores del servidor
-    Minecraft. Antes de matarlos con SIGKILL, intenta un apagado limpio por
-    RCON (save-all + stop) — sin esto, cada simple reinicio del panel
-    (systemctl restart, redeploy, etc.) mataba en frío cualquier partida en
-    curso, con riesgo real de corromper el mundo.
+    Minecraft. Solo toca los que corren DENTRO de la carpeta de servidores del
+    panel: antes bastaba con que la línea de comandos mencionara "minecraft"
+    o "forge", y se llevaba por delante cualquier otro servidor del equipo.
+    Antes de matarlos con SIGKILL, intenta un apagado limpio por RCON
+    (save-all + stop) para no arriesgar el mundo en cada reinicio del panel.
     """
     killed = []
-    mc_keywords = ["forge", "neoforge", "fabric", "quilt", "minecraft", "server.jar", "startserver", "ServerStarterJar"]
     try:
-        result = subprocess.run(["pgrep", "-f", "-l", "java"], capture_output=True, text=True)
-        for line in result.stdout.strip().split("\n"):
-            if not line.strip():
-                continue
-            parts = line.split(None, 1)
-            if len(parts) < 2:
-                continue
-            pid, cmdline = parts[0], parts[1]
-            if any(k.lower() in cmdline.lower() for k in mc_keywords):
-                stopped_gracefully = _graceful_stop_orphan(pid)
-                if not stopped_gracefully and _pid_alive(pid):
-                    try:
-                        subprocess.run(["kill", "-9", pid], capture_output=True)
-                    except Exception:
-                        pass
-                tag = "apagado limpio" if stopped_gracefully else "SIGKILL"
-                killed.append(f"{pid} ({cmdline[:60]}) [{tag}]")
-    except FileNotFoundError:
-        try:
-            result = subprocess.run(["ps", "aux"], capture_output=True, text=True)
-            for line in result.stdout.split("\n"):
-                if "java" not in line.lower():
-                    continue
-                if any(k.lower() in line.lower() for k in mc_keywords):
-                    pid = line.split()[1]
-                    stopped_gracefully = _graceful_stop_orphan(pid)
-                    if not stopped_gracefully and _pid_alive(pid):
-                        try:
-                            subprocess.run(["kill", "-9", pid], capture_output=True)
-                        except Exception:
-                            pass
-                    tag = "apagado limpio" if stopped_gracefully else "SIGKILL"
-                    killed.append(f"{pid} [{tag}]")
-        except Exception:
-            pass
+        result = subprocess.run(["pgrep", "-x", "java"], capture_output=True, text=True)
+    except OSError:
+        return killed
+    for pid in result.stdout.split():
+        if not pid.isdigit() or not _is_our_minecraft(pid):
+            continue
+        stopped_gracefully = _graceful_stop_orphan(pid)
+        if not stopped_gracefully and _pid_alive(pid):
+            try:
+                os.kill(int(pid), 9)
+            except OSError:
+                pass
+        tag = "apagado limpio" if stopped_gracefully else "SIGKILL"
+        killed.append(f"{pid} ({_proc_cmdline(pid)[:60]}) [{tag}]")
     return killed
 
 
@@ -293,18 +311,21 @@ if __name__ == "__main__":
 
     print("Minecraft Server Deployer arrancando...")
 
-    print(f"Liberando puerto {WEB_PORT} si está ocupado...")
-    web_killed = kill_port(WEB_PORT)
+    print(f"Liberando puerto {WEB_PORT} si lo ocupa una instancia anterior del panel...")
+    web_killed, web_foreign = kill_port(WEB_PORT, _is_previous_panel)
     if web_killed:
         print(f"  Eliminados {len(web_killed)} proceso(s) en el puerto {WEB_PORT}: {web_killed}")
         time.sleep(1)
-    else:
+    if web_foreign:
+        print(f"  ⚠️  El puerto {WEB_PORT} lo usa otro programa (PID {web_foreign}); no se toca. "
+              "Cambia WEB_PORT en .env si el panel no puede arrancar.")
+    if not web_killed and not web_foreign:
         print(f"  Puerto {WEB_PORT} libre.")
 
     # Antes del kill duro por puerto: intenta un apagado limpio (save-all +
     # stop por RCON) de cualquier server huérfano, para no arriesgar el mundo
-    # en cada simple reinicio del panel. kill_port_25565 de abajo queda como
-    # red de seguridad final para lo que no haya podido pararse solo.
+    # en cada simple reinicio del panel. El kill por puerto de abajo queda
+    # como red de seguridad final para lo que no haya podido pararse solo.
     print("Buscando procesos huérfanos de servidores anteriores...")
     killed = kill_orphan_servers()
     if killed:
@@ -314,12 +335,14 @@ if __name__ == "__main__":
     else:
         print("  No se encontraron procesos huérfanos.")
 
-    print("Liberando puerto 25565 si está ocupado...")
-    port_killed = kill_port_25565()
+    print("Liberando puerto 25565 si lo ocupa un servidor del panel...")
+    port_killed, port_foreign = kill_port(25565, _is_our_minecraft)
     if port_killed:
         print(f"  Eliminados {len(port_killed)} proceso(s) en el puerto 25565: {port_killed}")
         time.sleep(1)
-    else:
+    if port_foreign:
+        print(f"  ⚠️  El puerto 25565 lo usa un programa ajeno al panel (PID {port_foreign}); no se toca.")
+    if not port_killed and not port_foreign:
         print("  Puerto 25565 libre.")
 
     print("Limpiando session.lock abandonados...")

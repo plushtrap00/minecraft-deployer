@@ -28,7 +28,7 @@ router = APIRouter(prefix="/api/players", tags=["players"])
 
 
 @router.get("")
-async def get_all_players():
+def get_all_players():
     ensure_global_dir()
     return JSONResponse({
         "ops": read_global_file("ops.json"),
@@ -39,7 +39,7 @@ async def get_all_players():
 
 
 @router.post("/op")
-async def add_op(name: str = Form(...), uuid: str = Form(""), level: int = Form(4)):
+def add_op(name: str = Form(...), uuid: str = Form(""), level: int = Form(4)):
     try:
         name = validate_player_name(name)
     except ValueError as e:
@@ -55,7 +55,7 @@ async def add_op(name: str = Form(...), uuid: str = Form(""), level: int = Form(
 
 
 @router.delete("/op/{name}")
-async def remove_op(name: str):
+def remove_op(name: str):
     try:
         name = validate_player_name(name)
     except ValueError as e:
@@ -72,7 +72,7 @@ async def remove_op(name: str):
 
 
 @router.post("/whitelist")
-async def add_whitelist(name: str = Form(...), uuid: str = Form("")):
+def add_whitelist(name: str = Form(...), uuid: str = Form("")):
     try:
         name = validate_player_name(name)
     except ValueError as e:
@@ -88,7 +88,7 @@ async def add_whitelist(name: str = Form(...), uuid: str = Form("")):
 
 
 @router.delete("/whitelist/{name}")
-async def remove_whitelist(name: str):
+def remove_whitelist(name: str):
     try:
         name = validate_player_name(name)
     except ValueError as e:
@@ -105,7 +105,7 @@ async def remove_whitelist(name: str):
 
 
 @router.post("/ban")
-async def ban_player(name: str = Form(...), uuid: str = Form(""), reason: str = Form("Banned by admin")):
+def ban_player(name: str = Form(...), uuid: str = Form(""), reason: str = Form("Banned by admin")):
     try:
         name = validate_player_name(name)
     except ValueError as e:
@@ -129,7 +129,7 @@ async def ban_player(name: str = Form(...), uuid: str = Form(""), reason: str = 
 
 
 @router.delete("/ban/{name}")
-async def unban_player(name: str):
+def unban_player(name: str):
     try:
         name = validate_player_name(name)
     except ValueError as e:
@@ -146,7 +146,7 @@ async def unban_player(name: str):
 
 
 @router.post("/ban-ip")
-async def ban_ip(ip: str = Form(...), reason: str = Form("Banned by admin")):
+def ban_ip(ip: str = Form(...), reason: str = Form("Banned by admin")):
     try:
         ip = validate_ip(ip)
     except ValueError as e:
@@ -169,7 +169,7 @@ async def ban_ip(ip: str = Form(...), reason: str = Form("Banned by admin")):
 
 
 @router.delete("/ban-ip/{ip}")
-async def unban_ip(ip: str):
+def unban_ip(ip: str):
     try:
         ip = validate_ip(ip)
     except ValueError as e:
@@ -186,7 +186,7 @@ async def unban_ip(ip: str):
 
 
 @router.post("/sync")
-async def sync_all():
+def sync_all():
     """Fuerza la sincronización de todos los archivos globales a todos los modpacks."""
     results = {}
     skipped = []

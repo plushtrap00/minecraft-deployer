@@ -4,6 +4,7 @@ services/users.py - Gestión de usuarios del sistema.
 El admin está definido en .env (APP_USERNAME + APP_PASSWORD_HASH).
 Los usuarios normales se almacenan en users.json junto al .env.
 """
+import hashlib
 import json
 import os
 import bcrypt
@@ -57,6 +58,27 @@ def authenticate(username: str, password: str) -> str | None:
                 return "user"
             return None
     return None
+
+
+def password_fingerprint(username: str) -> str | None:
+    """
+    Huella corta del hash de contraseña actual del usuario, o None si el
+    usuario ya no existe. Va dentro de cada token de sesión: si se borra el
+    usuario o cambia su contraseña, la huella deja de coincidir y todas sus
+    sesiones abiertas dejan de valer, sin tener que guardar una lista de
+    tokens revocados.
+    """
+    if username == _admin_username():
+        h = _admin_hash()
+    else:
+        h = next((u["password_hash"] for u in _load() if u["username"] == username), None)
+    if not h:
+        return None
+    return hashlib.sha256(h.encode()).hexdigest()[:16]
+
+
+def role_of(username: str) -> str:
+    return "admin" if username == _admin_username() else "user"
 
 
 def create_user(username: str, password: str) -> dict:
