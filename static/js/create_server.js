@@ -188,7 +188,7 @@ document.getElementById('create-server-btn').addEventListener('click', function(
     } else if (data.type === 'done') {
       source.close();
       var resultHtml = data.success
-        ? '<div style="background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.3);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--green)">✅ Servidor "' + escHtml(data.name) + '" creado. Ya puedes subirle mods desde Gestión de modpacks.</div>'
+        ? '<div style="background:rgba(var(--green-rgb), .1);border:1px solid rgba(var(--green-rgb), .3);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--green)">✅ Servidor "' + escHtml(data.name) + '" creado. Ya puedes subirle mods desde Gestión de modpacks.</div>'
         : modErrorHtml(data.detail || 'Error desconocido');
       finish(resultHtml);
       if (data.success) {

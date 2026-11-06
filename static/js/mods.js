@@ -800,12 +800,12 @@ function uploadMod(file) {
             + 'Se reemplazó ' + escHtml(result.data.replaced_filename)
             + ' (v' + escHtml(result.data.previous_version) + ' → v' + escHtml(result.data.mod_version) + ')</div>';
         }
-        setModUploadModalBody('<div style="background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.3);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--green)">✅ Mod instalado: '
+        setModUploadModalBody('<div style="background:rgba(var(--green-rgb), .1);border:1px solid rgba(var(--green-rgb), .3);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--green)">✅ Mod instalado: '
           + escHtml(result.data.filename) + info + '</div>' + replacedMsg);
         loadModsList();
         checkModDependencies(false);
       } else {
-        setModUploadModalBody('<div style="background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.3);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--red)">❌ '
+        setModUploadModalBody('<div style="background:rgba(var(--red-rgb), .1);border:1px solid rgba(var(--red-rgb), .3);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--red)">❌ '
           + escHtml(result.data.detail || 'Error desconocido') + '</div>');
       }
     })
@@ -916,7 +916,7 @@ var BULK_CATEGORIES = [
 ];
 
 function modErrorHtml(msg) {
-  return '<div style="background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.3);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--red)">❌ '
+  return '<div style="background:rgba(var(--red-rgb), .1);border:1px solid rgba(var(--red-rgb), .3);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--red)">❌ '
     + escHtml(msg) + '</div>';
 }
 
@@ -2037,7 +2037,7 @@ function installSearchedMod(mod, file, buttonEl) {
         renderModSearchFilesPage();
         var header = body.querySelector('.mod-search-files-header');
         if (header) {
-          header.insertAdjacentHTML('afterend', '<div style="background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.3);border-radius:6px;padding:8px 12px;margin-bottom:10px;font-size:.82rem;color:var(--green)">✅ Mod instalado: '
+          header.insertAdjacentHTML('afterend', '<div style="background:rgba(var(--green-rgb), .1);border:1px solid rgba(var(--green-rgb), .3);border-radius:6px;padding:8px 12px;margin-bottom:10px;font-size:.82rem;color:var(--green)">✅ Mod instalado: '
             + escHtml(result.data.filename) + '</div>');
         }
         // El flag "installed" de otras páginas ya cacheadas puede haber

@@ -7,11 +7,11 @@
 }
 
 .log-line-info {
-  color: #79b8ff;
+  color: var(--info);
 }
 
 .log-line-fatal {
-  color: #ff6b6b;
+  color: var(--red-strong);
   font-weight: 700;
 }
 
@@ -20,7 +20,7 @@
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 6px 10px;
-  font-size: .78rem;
+  font-size: var(--fs-sm);
   cursor: pointer;
   text-align: left;
   color: var(--text);
@@ -37,7 +37,7 @@
 
 .log-file-btn.active {
   border-color: var(--accent);
-  background: rgba(88, 166, 255, .07);
+  background: rgba(var(--accent-rgb), .07);
   color: var(--accent);
 }
 
@@ -47,7 +47,7 @@
 
 .log-file-btn.crash-btn.active {
   border-color: var(--red);
-  background: rgba(248, 81, 73, .07);
+  background: rgba(var(--red-rgb), .07);
   color: var(--red);
 }
 
@@ -58,11 +58,9 @@
 }
 
 .log-section-title {
-  font-size: .78rem;
+  font-size: var(--fs-sm);
   font-weight: 700;
   color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: .05em;
   margin-bottom: 8px;
 }
 
@@ -91,8 +89,8 @@
 }
 
 .crash-culprit-box {
-  background: rgba(248, 81, 73, .1);
-  border: 1px solid rgba(248, 81, 73, .4);
+  background: rgba(var(--red-rgb), .1);
+  border: 1px solid rgba(var(--red-rgb), .4);
   border-radius: 8px;
   padding: 12px 16px;
 }
@@ -104,15 +102,15 @@
 }
 
 .crash-culprit-detail {
-  font-size: .83rem;
+  font-size: var(--fs-sm);
   color: var(--text);
 }
 
 .crash-caused-by {
-  font-size: .78rem;
+  font-size: var(--fs-sm);
   color: var(--muted);
   margin-top: 6px;
-  font-family: monospace;
+  font-family: var(--font-mono);
 }
 
 .log-filters {
@@ -127,14 +125,14 @@
 }
 
 .log-match-count {
-  font-size: .78rem;
+  font-size: var(--fs-sm);
   color: var(--muted);
   white-space: nowrap;
 }
 
 .log-placeholder {
   color: var(--muted);
-  font-size: .85rem;
+  font-size: var(--fs-md);
   font-style: italic;
   padding: 40px;
   text-align: center;
@@ -144,11 +142,11 @@
 }
 
 .log-viewer {
-  background: #010409;
+  background: var(--console-bg);
   border: 1px solid var(--border);
   border-radius: 8px;
-  font-family: Consolas, Monaco, monospace;
-  font-size: .78rem;
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
   line-height: 1.5;
   height: 500px;
   overflow-y: auto;
@@ -181,8 +179,8 @@
 }
 
 .crash-exception-summary {
-  font-family: Consolas, Monaco, monospace;
-  font-size: .82rem;
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
   color: var(--text);
   background: rgba(0, 0, 0, .2);
   border-radius: 6px;
@@ -197,7 +195,7 @@
 
 .crash-caused-by-details summary {
   cursor: pointer;
-  font-size: .78rem;
+  font-size: var(--fs-sm);
   color: var(--muted);
   user-select: none;
 }

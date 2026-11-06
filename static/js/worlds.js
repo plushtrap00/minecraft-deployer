@@ -25,7 +25,7 @@ function renderWorlds(data) {
   var html = '';
   worlds.forEach(function(world) {
     var activeBadge = world.active
-      ? '<span style="font-size:.72rem;background:rgba(63,185,80,.15);color:var(--green);padding:2px 8px;border-radius:99px;font-weight:600">✓ Activo</span>'
+      ? '<span style="font-size:.72rem;background:rgba(var(--green-rgb), .15);color:var(--green);padding:2px 8px;border-radius:99px;font-weight:600">✓ Activo</span>'
       : '';
     var activateBtn = !world.active
       ? '<button class="btn-secondary wc-activate" data-world="' + world.name + '" style="font-size:.78rem;padding:5px 10px">Activar</button>'
@@ -490,7 +490,7 @@ function renderWfTreePage() {
         var matchIndex = fname.toLowerCase().indexOf(filterLower);
         if (matchIndex !== -1) {
           display = fname.substring(0, matchIndex)
-            + '<mark style="background:rgba(210,153,34,.35);color:var(--text);border-radius:2px">'
+            + '<mark style="background:rgba(var(--yellow-rgb), .35);color:var(--text);border-radius:2px">'
             + fname.substring(matchIndex, matchIndex + activeWfFilter.length) + '</mark>'
             + fname.substring(matchIndex + activeWfFilter.length);
         }

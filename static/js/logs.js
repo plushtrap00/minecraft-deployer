@@ -145,7 +145,7 @@ function renderCrashInfo(crashInfo) {
   var modsEl = document.getElementById('crash-culprit-mods');
   if (crashInfo.culprit_mods.length) {
     modsEl.innerHTML = crashInfo.culprit_mods.map(function(name) {
-      return '<code style="display:inline-block;margin:2px 4px 2px 0;background:rgba(248,81,73,.15);color:var(--red);padding:1px 6px;border-radius:4px">'
+      return '<code style="display:inline-block;margin:2px 4px 2px 0;background:rgba(var(--red-rgb), .15);color:var(--red);padding:1px 6px;border-radius:4px">'
         + escHtml(name) + '</code>';
     }).join('');
   } else {
@@ -230,7 +230,7 @@ function renderLogPage() {
     var escaped = escHtml(item.text);
     if (search) {
       var re = new RegExp('(' + escRegex(search) + ')', 'gi');
-      escaped = escaped.replace(re, '<mark style="background:rgba(210,153,34,.4);color:var(--text)">$1</mark>');
+      escaped = escaped.replace(re, '<mark style="background:rgba(var(--yellow-rgb), .4);color:var(--text)">$1</mark>');
     }
     html += '<div class="log-line ' + cls + '"><span class="log-line-num">' + item.num + '</span><span class="log-line-text">' + escaped + '</span></div>';
   });

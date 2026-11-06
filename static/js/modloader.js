@@ -90,7 +90,7 @@ document.getElementById('modloader-verify-btn').addEventListener('click', functi
     } else if (data.type === 'result') {
       source.close();
       if (data.compatible) {
-        resultEl.innerHTML = '<div style="background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.3);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--green)">'
+        resultEl.innerHTML = '<div style="background:rgba(var(--green-rgb), .1);border:1px solid rgba(var(--green-rgb), .3);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--green)">'
           + '✅ Todos los mods siguen siendo compatibles.</div>';
         modloaderCheckedVersion = version;
         document.getElementById('modloader-install-btn').disabled = false;
@@ -214,7 +214,7 @@ function startModloaderInstall(version) {
       source.close();
       setModOperationBusy(false);
       var resultHtml = data.success
-        ? '<div style="background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.3);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--green)">'
+        ? '<div style="background:rgba(var(--green-rgb), .1);border:1px solid rgba(var(--green-rgb), .3);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--green)">'
           + '✅ Modloader actualizado a ' + escHtml(data.version) + '.</div>'
         : modErrorHtml(data.detail || 'Error desconocido');
       finish(resultHtml);

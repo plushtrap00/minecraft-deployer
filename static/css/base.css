@@ -1,15 +1,74 @@
+/* -- Fuentes (servidas desde la propia app: funciona sin internet) --------
+   IBM Plex Sans para toda la interfaz, IBM Plex Mono para consola/código, y
+   Pixelify Sans SOLO para el nombre y el estado del servidor (página
+   Servidor) y el título del login -- es el único guiño "de bloque" a
+   Minecraft, a propósito no se usa en ningún otro sitio. Licencias OFL en
+   static/fonts/. */
+@font-face { font-family: 'Plex Sans'; src: url('/static/fonts/plex-sans-400.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Plex Sans'; src: url('/static/fonts/plex-sans-400-italic.woff2') format('woff2'); font-weight: 400; font-style: italic; font-display: swap; }
+@font-face { font-family: 'Plex Sans'; src: url('/static/fonts/plex-sans-500.woff2') format('woff2'); font-weight: 500; font-display: swap; }
+@font-face { font-family: 'Plex Sans'; src: url('/static/fonts/plex-sans-600.woff2') format('woff2'); font-weight: 600; font-display: swap; }
+@font-face { font-family: 'Plex Sans'; src: url('/static/fonts/plex-sans-700.woff2') format('woff2'); font-weight: 700; font-display: swap; }
+@font-face { font-family: 'Plex Mono'; src: url('/static/fonts/plex-mono-400.woff2') format('woff2'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Plex Mono'; src: url('/static/fonts/plex-mono-600.woff2') format('woff2'); font-weight: 600; font-display: swap; }
+@font-face { font-family: 'Pixelify Sans'; src: url('/static/fonts/pixelify-sans-500.woff2') format('woff2'); font-weight: 500; font-display: swap; }
+@font-face { font-family: 'Pixelify Sans'; src: url('/static/fonts/pixelify-sans-700.woff2') format('woff2'); font-weight: 700; font-display: swap; }
+
+/* -- Paleta: materiales de Minecraft, sin texturas --------------------------
+   Fondo de pizarra profunda (deepslate), acento diamante para acciones y
+   selección, y colores de estado con significado propio: hierba = en
+   marcha / correcto, redstone = parado / error, oro = aviso. El acento ya no
+   es verde ni azul de estado, así que "seleccionado" y "encendido" no se
+   confunden. Cada color tiene su versión -rgb para poder hacer tintes con
+   rgba(var(--x-rgb), alfa). */
 :root {
-  --bg: #0d1117;
-  --card: #161b22;
-  --border: #30363d;
-  --accent: #58a6ff;
-  --accent-hover: #79b8ff;
-  --green: #3fb950;
-  --red: #f85149;
-  --yellow: #d29922;
-  --text: #e6edf3;
-  --muted: #8b949e;
+  --bg: #17191e;
+  --card: #21242b;
+  --surface-raised: #2a2e36;
+  --border: #353a44;
+  --border-strong: #4a505c;
+  --text: #ebe8e2;
+  --muted: #9da2ad;
+  --muted-rgb: 157, 162, 173;
+
+  --accent: #4fd6c8;
+  --accent-rgb: 79, 214, 200;
+  --accent-hover: #7ae3d8;
+  --on-accent: #0c2623;
+
+  --green: #7cc251;
+  --green-rgb: 124, 194, 81;
+  --red: #f0614f;
+  --red-rgb: 240, 97, 79;
+  --red-strong: #ff8473;
+  --yellow: #e9b440;
+  --yellow-rgb: 233, 180, 64;
+  --info: #8fb8f0;
+
+  --console-bg: #101216;
+  --console-text: #d2d0ca;
+
+  /* Escala tipográfica (11 · 12 · 13 · 14 · 15 · 17 · 20 · 28 px) */
+  --fs-2xs: .6875rem;
+  --fs-xs: .75rem;
+  --fs-sm: .8125rem;
+  --fs-md: .875rem;
+  --fs-lg: .9375rem;
+  --fs-xl: 1.0625rem;
+  --fs-2xl: 1.25rem;
+  --fs-3xl: 1.75rem;
+
+  --font-ui: 'Plex Sans', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'Plex Mono', 'Consolas', 'Monaco', monospace;
+  --font-display: 'Pixelify Sans', 'Plex Sans', system-ui, sans-serif;
+
+  /* Radios por jerarquía: contenedores grandes más redondeados que los
+     controles, y las etiquetas casi cuadradas. */
   --radius: 10px;
+  --radius-control: 6px;
+  --radius-tag: 4px;
+
+  color-scheme: dark;
 }
 
 * {
@@ -21,8 +80,36 @@
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-family: var(--font-ui);
+  font-size: var(--fs-md);
+  line-height: 1.5;
   min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+/* Foco de teclado visible en todo lo interactivo; con ratón no se ve
+   (:focus-visible), así que no molesta al hacer clic. */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 .page {
@@ -63,12 +150,10 @@ body {
 }
 
 .card h2 {
-  font-size: .85rem;
+  font-size: var(--fs-lg);
   font-weight: 600;
   margin-bottom: 16px;
-  color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: .05em;
+  color: var(--text);
 }
 
 .card.pb-0 {
@@ -82,13 +167,18 @@ select,
 textarea {
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: var(--radius-control);
   color: var(--text);
   padding: 9px 12px;
-  font-size: .88rem;
-  outline: none;
-  transition: border-color .2s;
+  font-size: var(--fs-md);
+  transition: border-color .15s, box-shadow .15s;
   font-family: inherit;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--muted);
+  opacity: .75;
 }
 
 input[type=text]:focus,
@@ -97,6 +187,8 @@ input[type=password]:focus,
 select:focus,
 textarea:focus {
   border-color: var(--accent);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), .18);
 }
 
 input[type=password].input-error,
@@ -113,21 +205,26 @@ textarea {
   width: 100%;
   resize: vertical;
   min-height: 300px;
-  font-family: 'Consolas', 'Monaco', monospace;
-  font-size: .82rem;
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
   line-height: 1.5;
 }
 
+/* Jerarquía de botones: el <button> sin clase es la acción principal
+   (relleno diamante); .btn-secondary es la acción normal (superficie con
+   borde); .btn-ghost solo texto; .btn-danger para borrar/parar. La regla
+   es una acción principal por vista -- el resto, secundarias. */
 button {
   background: var(--accent);
-  color: #0d1117;
-  border: none;
-  border-radius: 6px;
-  padding: 9px 16px;
-  font-size: .88rem;
+  color: var(--on-accent);
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  padding: 8px 16px;
+  font-size: var(--fs-md);
   font-weight: 600;
+  line-height: 1.35;
   cursor: pointer;
-  transition: background .2s;
+  transition: background .15s, border-color .15s, color .15s;
   white-space: nowrap;
 }
 
@@ -135,29 +232,43 @@ button:hover {
   background: var(--accent-hover);
 }
 
-button:disabled {
-  background: var(--border);
+button:disabled,
+button:disabled:hover {
+  background: var(--surface-raised);
+  border-color: transparent;
   color: var(--muted);
   cursor: not-allowed;
 }
 
 .btn-secondary {
-  background: var(--border);
+  background: var(--surface-raised);
+  border-color: var(--border);
   color: var(--text);
 }
 
 .btn-secondary:hover {
-  background: #3d444d;
+  background: var(--border);
+  border-color: var(--border-strong);
+}
+
+.btn-ghost {
+  background: none;
+  color: var(--muted);
+}
+
+.btn-ghost:hover {
+  background: rgba(var(--muted-rgb), .1);
+  color: var(--text);
 }
 
 .btn-danger {
-  background: rgba(248, 81, 73, .15);
+  background: rgba(var(--red-rgb), .15);
   color: var(--red);
-  border: 1px solid rgba(248, 81, 73, .3);
+  border: 1px solid rgba(var(--red-rgb), .3);
 }
 
 .btn-danger:hover {
-  background: rgba(248, 81, 73, .25);
+  background: rgba(var(--red-rgb), .25);
 }
 
 .btn-clear {
@@ -165,7 +276,7 @@ button:disabled {
   border: none;
   color: var(--muted);
   cursor: pointer;
-  font-size: 1rem;
+  font-size: var(--fs-lg);
   padding: 2px 6px;
   border-radius: 4px;
 }
@@ -177,12 +288,12 @@ button:disabled {
 
 .btn-sm {
   padding: 5px 12px;
-  font-size: .78rem;
+  font-size: var(--fs-sm);
 }
 
 .btn-xs {
   padding: 3px 10px;
-  font-size: .75rem;
+  font-size: var(--fs-xs);
 }
 
 .req {
@@ -192,21 +303,21 @@ button:disabled {
 }
 
 .field-label {
-  font-size: .8rem;
+  font-size: var(--fs-sm);
   color: var(--muted);
   display: block;
   margin-bottom: 5px;
 }
 
 .field-error {
-  font-size: .75rem;
+  font-size: var(--fs-xs);
   color: var(--red);
   margin-top: 5px;
   min-height: 14px;
 }
 
 .field-hint {
-  font-size: .72rem;
+  font-size: var(--fs-xs);
   color: var(--muted);
   margin-top: 3px;
 }
@@ -214,7 +325,7 @@ button:disabled {
 .h2-note {
   color: var(--muted);
   font-weight: 400;
-  font-size: .75rem;
+  font-size: var(--fs-xs);
   text-transform: none;
   letter-spacing: 0;
 }
@@ -246,7 +357,7 @@ button:disabled {
 }
 
 .section-toolbar-title {
-  font-size: .85rem;
+  font-size: var(--fs-md);
   font-weight: 600;
 }
 
@@ -288,21 +399,21 @@ button:disabled {
 }
 
 .info-box {
-  background: rgba(88, 166, 255, .07);
-  border: 1px solid rgba(88, 166, 255, .2);
+  background: rgba(var(--accent-rgb), .07);
+  border: 1px solid rgba(var(--accent-rgb), .2);
   border-radius: 8px;
   padding: 10px 14px;
-  font-size: .8rem;
+  font-size: var(--fs-sm);
   color: var(--muted);
   margin-bottom: 14px;
 }
 
 .warn-box {
-  background: rgba(210, 153, 34, .07);
-  border: 1px solid rgba(210, 153, 34, .3);
+  background: rgba(var(--yellow-rgb), .07);
+  border: 1px solid rgba(var(--yellow-rgb), .3);
   border-radius: 8px;
   padding: 10px 14px;
-  font-size: .8rem;
+  font-size: var(--fs-sm);
   color: var(--yellow);
   margin-top: 10px;
 }
@@ -323,7 +434,7 @@ button:disabled {
   cursor: pointer;
   padding: 12px 16px;
   font-weight: 600;
-  font-size: .88rem;
+  font-size: var(--fs-md);
   list-style: none;
   user-select: none;
 }
@@ -347,7 +458,7 @@ button:disabled {
 .help-section-body {
   padding: 0 16px 14px;
   color: var(--muted);
-  font-size: .85rem;
+  font-size: var(--fs-md);
   line-height: 1.65;
 }
 
@@ -380,13 +491,13 @@ button:disabled {
 
 .empty-msg {
   color: var(--muted);
-  font-size: .85rem;
+  font-size: var(--fs-md);
   font-style: italic;
   padding: 8px 4px;
 }
 
 .hint {
-  font-size: .78rem;
+  font-size: var(--fs-sm);
   color: var(--muted);
   margin-top: 5px;
 }
@@ -396,7 +507,7 @@ code {
   padding: 1px 5px;
   border-radius: 4px;
   color: var(--accent);
-  font-size: .82rem;
+  font-size: var(--fs-sm);
 }
 
 .section-sep {
@@ -466,14 +577,14 @@ code {
 }
 
 .restart-overlay-title {
-  font-size: 1rem;
+  font-size: var(--fs-lg);
   font-weight: 700;
   color: var(--text);
   margin-bottom: 6px;
 }
 
 .restart-overlay-sub {
-  font-size: .82rem;
+  font-size: var(--fs-sm);
   color: var(--muted);
 }
 
@@ -507,9 +618,9 @@ code {
 }
 
 .modal-path {
-  font-size: .78rem;
+  font-size: var(--fs-sm);
   color: var(--muted);
-  font-family: monospace;
+  font-family: var(--font-mono);
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -520,7 +631,7 @@ code {
   background: none;
   border: none;
   color: var(--muted);
-  font-size: 1.2rem;
+  font-size: var(--fs-2xl);
   cursor: pointer;
   padding: 2px 8px;
   border-radius: 4px;
@@ -528,7 +639,7 @@ code {
 
 .modal-close:hover {
   color: var(--red);
-  background: rgba(248, 81, 73, .1);
+  background: rgba(var(--red-rgb), .1);
 }
 
 .modal-body {
@@ -559,7 +670,7 @@ code {
 }
 
 .line-info {
-  font-size: .78rem;
+  font-size: var(--fs-sm);
   color: var(--muted);
 }
 
@@ -570,7 +681,7 @@ code {
 
 .dialog-body {
   padding: 20px 22px;
-  font-size: .9rem;
+  font-size: var(--fs-md);
   color: var(--text);
   line-height: 1.5;
 }
@@ -591,7 +702,7 @@ code {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 12px 18px;
-  font-size: .85rem;
+  font-size: var(--fs-md);
   transform: translateY(80px);
   opacity: 0;
   transition: all .3s;
@@ -604,11 +715,11 @@ code {
 }
 
 .toast.success {
-  border-color: rgba(63, 185, 80, .5);
+  border-color: rgba(var(--green-rgb), .5);
   color: var(--green);
 }
 
 .toast.error {
-  border-color: rgba(248, 81, 73, .5);
+  border-color: rgba(var(--red-rgb), .5);
   color: var(--red);
 }

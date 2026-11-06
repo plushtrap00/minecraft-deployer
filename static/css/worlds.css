@@ -11,7 +11,7 @@
 
 .world-card.active-world {
   border-color: var(--green);
-  background: rgba(63, 185, 80, .05);
+  background: rgba(var(--green-rgb), .05);
 }
 
 .wc-actions {

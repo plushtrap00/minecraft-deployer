@@ -256,16 +256,16 @@ function renderModpacks(packs) {
       badges += '<span class="badge badge-kjs">KubeJS</span> ';
     }
     if (!pack.start_script) {
-      badges += '<span class="badge" style="background:rgba(248,81,73,.15);color:var(--red)">⚠ sin script arranque</span>';
+      badges += '<span class="badge" style="background:rgba(var(--red-rgb), .15);color:var(--red)">⚠ sin script arranque</span>';
     }
     if (pack.mc_version) {
-      badges += ' <span class="badge" style="background:rgba(88,166,255,.1);color:var(--accent)">MC ' + pack.mc_version + '</span>';
+      badges += ' <span class="badge" style="background:rgba(var(--accent-rgb), .1);color:var(--accent)">MC ' + pack.mc_version + '</span>';
     }
     if (pack.modloader) {
-      badges += ' <span class="badge" style="background:rgba(210,153,34,.1);color:var(--yellow)">' + pack.modloader + '</span>';
+      badges += ' <span class="badge" style="background:rgba(var(--yellow-rgb), .1);color:var(--yellow)">' + pack.modloader + '</span>';
     }
     if (pack.pending_mods && pack.pending_mods.length) {
-      badges += ' <span class="badge" style="background:rgba(248,81,73,.15);color:var(--red)" title="' + escHtml(pack.pending_mods.join(', ')) + '">⏳ ' + pack.pending_mods.length + ' mod(s) pendiente(s)</span>';
+      badges += ' <span class="badge" style="background:rgba(var(--red-rgb), .15);color:var(--red)" title="' + escHtml(pack.pending_mods.join(', ')) + '">⏳ ' + pack.pending_mods.length + ' mod(s) pendiente(s)</span>';
     }
     var element = document.createElement('div');
     element.className = 'modpack-card';
@@ -836,7 +836,7 @@ function renderTreePage(which) {
         var matchIndex = fname.toLowerCase().indexOf(filterLower);
         if (matchIndex !== -1) {
           display = fname.substring(0, matchIndex)
-            + '<mark style="background:rgba(210,153,34,.35);color:var(--text);border-radius:2px">'
+            + '<mark style="background:rgba(var(--yellow-rgb), .35);color:var(--text);border-radius:2px">'
             + fname.substring(matchIndex, matchIndex + filter.length) + '</mark>'
             + fname.substring(matchIndex + filter.length);
         }

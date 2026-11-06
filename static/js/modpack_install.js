@@ -414,7 +414,7 @@ function dlDuplicateWarningHtml(matches) {
   var lines = matches.map(function(m) {
     return '«' + escHtml(m.server_name) + '» (' + m.overlap_pct + '% de mods coinciden)';
   }).join(', ');
-  return '<div style="background:rgba(210,153,34,.12);border:1px solid rgba(210,153,34,.35);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--yellow);margin-top:10px">'
+  return '<div style="background:rgba(var(--yellow-rgb), .12);border:1px solid rgba(var(--yellow-rgb), .35);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--yellow);margin-top:10px">'
     + '⚠️ Esta versión se parece a lo ya instalado en ' + lines + '. Puede que ya la tengas — revisa antes de crear otro servidor.</div>';
 }
 
@@ -422,7 +422,7 @@ function dlBlockedHtml(reason) {
   var pageLink = dlSelectedPack && dlSelectedPack.page_url
     ? '<a href="' + escHtml(dlSelectedPack.page_url) + '" target="_blank" rel="noopener">la página del modpack en CurseForge</a>'
     : 'la página del modpack en CurseForge';
-  return '<div style="background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.3);border-radius:6px;padding:10px 14px;font-size:.82rem">'
+  return '<div style="background:rgba(var(--red-rgb), .1);border:1px solid rgba(var(--red-rgb), .3);border-radius:6px;padding:10px 14px;font-size:.82rem">'
     + '<div style="color:var(--red);font-weight:600;margin-bottom:8px">🚫 ' + escHtml(reason || 'El autor bloqueó la descarga de este modpack por terceros.') + '</div>'
     + '<div style="color:var(--muted)">Cómo instalarlo de todas formas:</div>'
     + '<ol style="margin:6px 0 0 18px;padding:0;color:var(--muted);line-height:1.6">'
@@ -526,7 +526,7 @@ document.getElementById('dl-install-btn').addEventListener('click', function() {
     } else if (data.type === 'done') {
       source.close();
       var resultHtml = data.success
-        ? '<div style="background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.3);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--green)">✅ Servidor "' + escHtml(data.name) + '" creado a partir del modpack.</div>'
+        ? '<div style="background:rgba(var(--green-rgb), .1);border:1px solid rgba(var(--green-rgb), .3);border-radius:6px;padding:8px 12px;font-size:.82rem;color:var(--green)">✅ Servidor "' + escHtml(data.name) + '" creado a partir del modpack.</div>'
         : modErrorHtml(data.detail || 'Error desconocido');
       finish(resultHtml);
       if (data.success) {

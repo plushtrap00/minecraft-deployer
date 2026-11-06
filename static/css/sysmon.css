@@ -32,7 +32,7 @@
 
 .sysmon-title {
   font-weight: 700;
-  font-size: .9rem;
+  font-size: var(--fs-md);
 }
 
 .sysmon-header-right {
@@ -42,7 +42,7 @@
 }
 
 .sysmon-updated {
-  font-size: .7rem;
+  font-size: var(--fs-2xs);
   color: var(--muted);
 }
 
@@ -51,7 +51,7 @@
   border: none;
   color: var(--muted);
   cursor: pointer;
-  font-size: 1.1rem;
+  font-size: var(--fs-xl);
   padding: 2px 4px;
 }
 
@@ -74,25 +74,23 @@
 }
 
 .sysmon-section-title {
-  font-size: .72rem;
+  font-size: var(--fs-xs);
   font-weight: 700;
   color: var(--muted);
-  text-transform: uppercase;
-  letter-spacing: .05em;
 }
 
 .sysmon-bar-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: .8rem;
+  font-size: var(--fs-sm);
 }
 
 .sysmon-bar-label {
   width: 80px;
   flex-shrink: 0;
   color: var(--muted);
-  font-size: .75rem;
+  font-size: var(--fs-xs);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -127,7 +125,7 @@
 .sysmon-bar-val {
   width: 52px;
   text-align: right;
-  font-size: .78rem;
+  font-size: var(--fs-sm);
   flex-shrink: 0;
 }
 
@@ -138,7 +136,7 @@
 }
 
 .sysmon-temp-chip {
-  font-size: .72rem;
+  font-size: var(--fs-xs);
   color: var(--muted);
   margin-top: 4px;
   font-weight: 600;
@@ -151,7 +149,7 @@
   background: rgba(255, 255, 255, .04);
   border-radius: 5px;
   padding: 4px 8px;
-  font-size: .78rem;
+  font-size: var(--fs-sm);
 }
 
 .sysmon-temp-deg {
@@ -174,7 +172,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: .76rem;
+  font-size: var(--fs-xs);
   padding: 3px 0;
   border-bottom: 1px solid rgba(255, 255, 255, .04);
 }
@@ -195,7 +193,7 @@
 }
 
 .sysmon-no-temps {
-  font-size: .78rem;
+  font-size: var(--fs-sm);
   color: var(--muted);
   font-style: italic;
 }
