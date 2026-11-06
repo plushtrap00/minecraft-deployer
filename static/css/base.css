@@ -48,7 +48,7 @@
   --console-bg: #101216;
   --console-text: #d2d0ca;
 
-  /* Escala tipográfica (11 · 12 · 13 · 14 · 15 · 17 · 20 · 28 px) */
+  /* Escala tipográfica (11, 12, 13, 14, 15, 17, 20, 28 y 36 px) */
   --fs-2xs: .6875rem;
   --fs-xs: .75rem;
   --fs-sm: .8125rem;
@@ -57,6 +57,7 @@
   --fs-xl: 1.0625rem;
   --fs-2xl: 1.25rem;
   --fs-3xl: 1.75rem;
+  --fs-display: 2.25rem;
 
   --font-ui: 'Plex Sans', 'Segoe UI', system-ui, sans-serif;
   --font-mono: 'Plex Mono', 'Consolas', 'Monaco', monospace;
@@ -92,6 +93,23 @@ input,
 select,
 textarea {
   font-family: inherit;
+}
+
+/* Iconos del sprite de index.html (Lucide). Heredan el color del texto. */
+.icon {
+  width: 1.1em;
+  height: 1.1em;
+  flex-shrink: 0;
+  vertical-align: -.2em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+button .icon {
+  vertical-align: -.22em;
 }
 
 /* Foco de teclado visible en todo lo interactivo; con ratón no se ve
@@ -492,8 +510,55 @@ button:disabled:hover {
 .empty-msg {
   color: var(--muted);
   font-size: var(--fs-md);
-  font-style: italic;
   padding: 8px 4px;
+}
+
+.empty-msg.error-msg {
+  color: var(--red);
+}
+
+/* Estado vacío con acción: en vez de solo "no hay nada", qué hacer. */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 8px 0 4px;
+  color: var(--muted);
+}
+
+.empty-state button .icon {
+  margin-right: 6px;
+}
+
+/* Carga: barras con la forma aproximada del contenido en vez de un
+   "Cargando..." suelto. */
+.skeleton-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 0;
+}
+
+.skeleton-rows > div {
+  height: 38px;
+  border-radius: var(--radius-control);
+  background: linear-gradient(90deg, var(--surface-raised) 0%, var(--border) 50%, var(--surface-raised) 100%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+
+.skeleton-rows > div:nth-child(2) {
+  width: 82%;
+}
+
+.skeleton-rows > div:nth-child(3) {
+  width: 64%;
+}
+
+@keyframes skeleton-shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
 }
 
 .hint {

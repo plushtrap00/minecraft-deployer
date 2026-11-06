@@ -6,12 +6,12 @@
 }
 
 .player-chip {
-  background: rgba(var(--accent-rgb), .1);
-  border: 1px solid rgba(var(--accent-rgb), .2);
-  border-radius: 99px;
-  padding: 3px 10px;
-  font-size: var(--fs-sm);
-  color: var(--accent);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-tag);
+  padding: 1px 8px;
+  font-size: var(--fs-xs);
+  color: var(--text);
 }
 
 .player-entry {

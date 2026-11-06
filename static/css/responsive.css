@@ -43,17 +43,6 @@
     grid-template-columns: 1fr;
   }
 
-  /* Métricas: 2x2 en lugar de 4x1 */
-  .metrics-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-  }
-
-  /* Consola menos alta */
-  .console-wrap {
-    height: 280px;
-  }
-
   /* World cards: acciones en nueva fila */
   .world-card {
     flex-wrap: wrap;
@@ -116,11 +105,6 @@
     display: block;
   }
 
-  /* Barra de comandos */
-  .cmd-row {
-    flex-direction: column;
-  }
-
   /* Input flex (buscar, etc.) */
   .input-flex {
     flex-direction: column;
@@ -132,20 +116,11 @@
     right: 12px;
     bottom: 12px;
   }
-
-  /* Server pick: ocultar badges en pantallas muy pequeñas */
-  .server-pick-item {
-    flex-wrap: wrap;
-  }
 }
 
 /* ── Breakpoint medio: tablets (641–880px) ───────────────────────────────────── */
 
 @media (min-width: 641px) and (max-width: 880px) {
-  .metrics-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
   .page {
     padding: 16px;
   }

@@ -1,147 +1,436 @@
-.server-pick-item {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 14px 16px;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-bottom: 8px;
-}
-
-.server-pick-item.no-script {
-  opacity: .6;
-}
-
-.version-badge {
+/* -- Etiquetas de modloader ------------------------------------------------
+   Colores categóricos propios (no los de estado): que Fabric no salga en
+   verde "en marcha" ni NeoForge en dorado "aviso". */
+.version-badge,
+.loader-tag {
+  --loader: var(--muted);
+  --loader-rgb: var(--muted-rgb);
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  background: rgba(var(--accent-rgb), .1);
-  border: 1px solid rgba(var(--accent-rgb), .2);
-  border-radius: 6px;
-  padding: 3px 10px;
+  background: rgba(var(--loader-rgb), .1);
+  border: 1px solid rgba(var(--loader-rgb), .28);
+  border-radius: var(--radius-tag);
+  padding: 1px 7px;
   font-size: var(--fs-xs);
-  color: var(--accent);
   font-weight: 600;
+  color: var(--loader);
+  white-space: nowrap;
 }
 
-.version-badge.neoforge {
-  background: rgba(var(--yellow-rgb), .1);
-  border-color: rgba(var(--yellow-rgb), .3);
-  color: var(--yellow);
+.version-badge {
+  padding: 3px 10px;
 }
 
-.version-badge.fabric {
-  background: rgba(var(--green-rgb), .1);
-  border-color: rgba(var(--green-rgb), .3);
-  color: var(--green);
+.version-badge.forge,
+.loader-tag[data-loader="forge"] {
+  --loader: #9fb6dc;
+  --loader-rgb: 159, 182, 220;
 }
 
-.version-badge.vanilla {
-  background: rgba(var(--muted-rgb), .1);
-  border-color: rgba(var(--muted-rgb), .3);
-  color: var(--muted);
+.version-badge.neoforge,
+.loader-tag[data-loader="neoforge"] {
+  --loader: #f0995a;
+  --loader-rgb: 240, 153, 90;
 }
 
-.metrics-grid {
+.version-badge.fabric,
+.loader-tag[data-loader="fabric"] {
+  --loader: #dccaa4;
+  --loader-rgb: 220, 202, 164;
+}
+
+.version-badge.quilt,
+.loader-tag[data-loader="quilt"] {
+  --loader: #c3a2ec;
+  --loader-rgb: 195, 162, 236;
+}
+
+/* -- Cabecera de estado ----------------------------------------------------
+   El único elemento llamativo de la app. data-state (stopped | starting |
+   running) lo pone server.js y decide el color de todo lo de dentro. */
+.server-hero {
+  --state: var(--muted);
+  position: relative;
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.metric-card {
-  background: var(--bg);
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px 24px;
+  align-items: start;
+  margin: 20px 0 18px;
+  padding: 26px 28px 24px;
+  background: var(--card);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 14px 16px;
-  text-align: center;
+  border-radius: var(--radius);
+  overflow: hidden;
 }
 
-.metric-card .mv {
-  font-size: 1.6rem;
+/* Franja superior del color del estado: se lee de un vistazo. */
+.server-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: var(--state);
+}
+
+.server-hero[data-state="running"] {
+  --state: var(--green);
+}
+
+.server-hero[data-state="starting"] {
+  --state: var(--yellow);
+}
+
+.server-hero.has-metrics {
+  padding-bottom: 0;
+}
+
+.server-hero-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--state);
+}
+
+.server-hero-name {
+  margin-top: 6px;
+  font-family: var(--font-display);
   font-weight: 700;
+  font-size: var(--fs-display);
+  line-height: 1.1;
   color: var(--text);
-  line-height: 1.2;
+  overflow-wrap: anywhere;
 }
 
-.metric-card .ml {
-  font-size: var(--fs-xs);
+.server-hero[data-state="stopped"] .server-hero-name {
+  font-weight: 500;
   color: var(--muted);
-  margin-top: 4px;
 }
 
-.metric-card.good .mv {
+.server-hero-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  margin-top: 10px;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+
+.server-hero-meta:empty {
+  display: none;
+}
+
+.server-hero-meta > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.server-hero-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.server-hero-actions button .icon,
+.server-pick-item button .icon {
+  margin-right: 6px;
+}
+
+#clean-stop-btn {
+  background: var(--red);
+  color: #1d0b08;
+}
+
+#clean-stop-btn:hover {
+  background: var(--red-strong);
+}
+
+#stop-btn:hover {
+  color: var(--red);
+  background: rgba(var(--red-rgb), .1);
+}
+
+/* El punto de estado es cuadrado: un bloque pequeño. */
+.status-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 1px;
+  background: var(--state, var(--muted));
+  flex-shrink: 0;
+}
+
+.server-hero[data-state="running"] .status-dot {
+  box-shadow: 0 0 0 3px rgba(var(--green-rgb), .22);
+}
+
+.server-hero[data-state="starting"] .status-dot {
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .3; }
+}
+
+/* -- Métricas (parte baja de la cabecera) ---------------------------------- */
+.server-metrics {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 6px -28px 0;
+  border-top: 1px solid var(--border);
+  background: rgba(0, 0, 0, .14);
+}
+
+.metric {
+  min-width: 0;
+  padding: 14px 20px 14px;
+}
+
+.metric:first-child {
+  padding-left: 28px;
+}
+
+.metric + .metric {
+  border-left: 1px solid var(--border);
+}
+
+.metric-label {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.metric-verdict {
+  font-weight: 500;
+}
+
+.metric-value {
+  margin-top: 2px;
+  font-size: var(--fs-2xl);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.metric-value small {
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.metric.good .metric-value,
+.metric.good .metric-verdict,
+.metric.good .metric-spark {
   color: var(--green);
 }
 
-.metric-card.warn .mv {
+.metric.warn .metric-value,
+.metric.warn .metric-verdict,
+.metric.warn .metric-spark {
   color: var(--yellow);
 }
 
-.metric-card.bad .mv {
+.metric.bad .metric-value,
+.metric.bad .metric-verdict,
+.metric.bad .metric-spark {
   color: var(--red);
 }
 
-.metrics-header {
+.metric-spark {
+  display: block;
+  width: 100%;
+  height: 22px;
+  margin-top: 6px;
+  color: var(--muted);
+  overflow: visible;
+}
+
+.metric-spark polyline {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  opacity: .75;
+}
+
+.metric .players-list {
+  margin-top: 6px;
+}
+
+.metric-bar {
+  height: 4px;
+  margin-top: 14px;
+  border-radius: 2px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.metric-bar-fill {
+  width: 0;
+  height: 100%;
+  background: var(--accent);
+  transition: width .3s;
+}
+
+.metric-bar-fill.high {
+  background: var(--yellow);
+}
+
+.server-metrics-footer {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 4px 14px 4px 28px;
+  border-top: 1px solid var(--border);
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+
+.server-metrics-footer .icon {
+  margin-right: 5px;
+}
+
+.server-metrics .warn-box {
+  grid-column: 1 / -1;
+  margin: 0 28px 14px;
+}
+
+/* -- Elegir servidor (con el servidor parado) ------------------------------ */
+.card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  margin-bottom: 14px;
+}
+
+.card-head h2 {
+  margin-bottom: 0;
+}
+
+.server-pick-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 16px;
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+}
+
+.server-pick-item:first-child {
+  border-top: none;
+  padding-top: 2px;
+}
+
+.server-pick-item:last-child {
+  padding-bottom: 0;
+}
+
+.server-pick-name {
+  font-weight: 600;
+  font-size: var(--fs-lg);
+  overflow-wrap: anywhere;
+}
+
+.server-pick-sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  margin-top: 4px;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+
+.server-pick-item.no-script .server-pick-name {
+  color: var(--muted);
+}
+
+.server-pick-warn {
+  color: var(--red);
+}
+
+.server-pick-pending {
+  color: var(--yellow);
+}
+
+/* -- Consola --------------------------------------------------------------- */
+.console-card {
+  margin-bottom: 18px;
+  background: var(--console-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.console-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  gap: 12px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
 }
 
-.metrics-title {
+.console-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-weight: 600;
-  font-size: var(--fs-md);
-}
-
-.metrics-updated {
-  font-size: var(--fs-xs);
-  color: var(--muted);
-}
-
-.metrics-footer {
-  margin-top: 10px;
-}
-
-.metrics-note {
-  font-size: var(--fs-xs);
-  color: var(--muted);
-  margin-left: 8px;
-}
-
-.metrics-players-label {
-  font-size: var(--fs-sm);
-  color: var(--muted);
-  margin-bottom: 6px;
-}
-
-.status-modpack {
-  color: var(--accent);
-  font-size: var(--fs-md);
 }
 
 .console-modpack {
-  color: var(--accent);
-  text-transform: none;
-  letter-spacing: 0;
-  font-size: var(--fs-lg);
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.console-follow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+}
+
+.console-follow input {
+  accent-color: var(--accent);
 }
 
 .console-wrap {
-  background: var(--console-bg);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 12px;
+  height: 480px;
+  padding: 12px 16px;
+  overflow-y: auto;
   font-family: var(--font-mono);
   font-size: var(--fs-sm);
-  line-height: 1.55;
-  height: 480px;
-  overflow-y: auto;
+  line-height: 1.6;
   color: var(--console-text);
   white-space: pre-wrap;
-  word-break: break-all;
+  word-break: break-word;
+}
+
+.console-wrap .ts {
+  color: var(--muted);
+}
+
+.console-wrap .src {
+  color: var(--muted);
+  opacity: .8;
 }
 
 .log-warn {
@@ -149,7 +438,8 @@
 }
 
 .log-error {
-  color: var(--red);
+  color: var(--red-strong);
+  background: rgba(var(--red-rgb), .08);
 }
 
 .log-info {
@@ -160,52 +450,48 @@
   color: var(--green);
 }
 
+.log-cmd {
+  color: var(--accent);
+}
+
 .cmd-row {
   display: flex;
+  align-items: center;
   gap: 8px;
-  margin-top: 10px;
+  padding: 6px 10px 6px 16px;
+  border-top: 1px solid var(--border);
+}
+
+.cmd-row:focus-within {
+  box-shadow: inset 0 2px 0 var(--accent);
+}
+
+.cmd-prompt {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--accent);
 }
 
 .cmd-row input {
   flex: 1;
+  min-width: 0;
+  padding-left: 2px;
+  background: transparent;
+  border-color: transparent;
   font-family: var(--font-mono);
-  font-size: var(--fs-md);
+  font-size: var(--fs-sm);
 }
 
-.status-bar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.cmd-row input:focus {
+  border-color: transparent;
+  box-shadow: none;
 }
 
-.status-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--muted);
-  flex-shrink: 0;
-}
-
-.status-dot.running {
-  background: var(--green);
-  box-shadow: 0 0 6px var(--green);
-}
-
-.status-dot.starting {
-  background: var(--yellow);
-  animation: pulse 1s infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: .3; }
-}
-
+/* -- Interruptor LAN / público --------------------------------------------- */
 .net-toggle {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin: 12px 0 4px;
 }
 
 .net-toggle-track {
@@ -252,4 +538,54 @@
   font-size: var(--fs-xs);
   color: var(--muted);
   margin-top: 2px;
+  max-width: 46ch;
+}
+
+/* -- Móvil ------------------------------------------------------------------ */
+@media (max-width: 760px) {
+  .server-hero {
+    grid-template-columns: 1fr;
+    padding: 20px 16px 18px;
+  }
+
+  .server-hero-name {
+    font-size: var(--fs-3xl);
+  }
+
+  .server-hero-actions {
+    flex-direction: row;
+    justify-content: flex-start;
+    align-items: center;
+  }
+
+  .server-metrics {
+    grid-template-columns: 1fr 1fr;
+    margin: 4px -16px 0;
+  }
+
+  .metric,
+  .metric:first-child {
+    padding: 12px 16px;
+  }
+
+  .metric:nth-child(3) {
+    border-left: none;
+  }
+
+  .metric:nth-child(n+3) {
+    border-top: 1px solid var(--border);
+  }
+
+  .server-metrics-footer {
+    padding-left: 16px;
+  }
+
+  .server-metrics .warn-box {
+    margin: 0 16px 12px;
+  }
+
+  .console-wrap {
+    height: 300px;
+    padding: 10px 12px;
+  }
 }

@@ -14,6 +14,22 @@ function escRegex(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+// Icono del sprite SVG de index.html (Lucide). Devuelve HTML para meterlo en
+// cadenas de innerHTML; hereda el color y el tamaño del texto que lo rodea.
+function icon(name) {
+  return '<svg class="icon" aria-hidden="true"><use href="#i-' + name + '"/></svg>';
+}
+
+// Etiqueta de modloader con su color propio (ver .loader-tag en server.css).
+// Vanilla o desconocido salen en gris; la versión de MC no lleva etiqueta.
+function loaderTag(modloader) {
+  if (!modloader) {
+    return '<span class="loader-tag">Vanilla</span>';
+  }
+  return '<span class="loader-tag" data-loader="' + escHtml(modloader.toLowerCase()) + '">'
+    + escHtml(modloader) + '</span>';
+}
+
 
 // -- Tab en editores de código: inserta indentación en vez de mover el foco ----
 // Reutilizable en cualquier textarea de edición de código/config (config-editor,
