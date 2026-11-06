@@ -1,45 +1,129 @@
+/* -- Lista de modpacks instalados: tabla de filas ------------------------- */
+.pack-table {
+  display: flex;
+  flex-direction: column;
+  margin: 0 -8px;
+}
+
+.pack-row {
+  display: grid;
+  /* Columnas fijas: cada fila es su propio grid, así que con "auto" no
+     quedarían alineadas entre sí. */
+  grid-template-columns: minmax(160px, 2.2fr) minmax(140px, 1.4fr) 56px minmax(110px, 1fr) 84px 96px;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 8px;
+  border-radius: var(--radius-control);
+}
+
+.pack-row + .pack-row {
+  border-top: 1px solid var(--border);
+}
+
+.pack-row-head {
+  padding-top: 0;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.pack-row-head + .pack-row {
+  border-top-color: var(--border-strong);
+}
+
 .modpack-card {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 14px 16px;
+  cursor: pointer;
+  transition: background .15s;
+}
+
+.modpack-card:hover {
+  background: rgba(var(--muted-rgb), .06);
+}
+
+/* El seleccionado se marca con una barra a la izquierda, no con un borde
+   alrededor que cambia el tamaño de la fila. */
+.modpack-card.selected {
+  background: rgba(var(--accent-rgb), .07);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.modpack-card.selected + .pack-row {
+  border-top-color: transparent;
+}
+
+.pack-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  font-weight: 600;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.pack-flag {
+  font-size: var(--fs-xs);
+  font-weight: 500;
+}
+
+.pack-flag-bad {
+  color: var(--red);
+}
+
+.pack-flag-warn {
+  color: var(--yellow);
+}
+
+.pack-version {
   display: flex;
   align-items: center;
-  gap: 12px;
-  cursor: pointer;
-  transition: border-color .15s;
-  margin-bottom: 8px;
+  gap: 8px;
+  font-size: var(--fs-sm);
+  color: var(--muted);
 }
 
-.modpack-card:hover,
-.modpack-card.selected {
-  border-color: var(--accent);
+.pack-num {
+  font-variant-numeric: tabular-nums;
+  font-size: var(--fs-sm);
 }
 
-.modpack-card.selected {
-  background: rgba(var(--accent-rgb), .05);
+.pack-muted {
+  font-size: var(--fs-sm);
+  color: var(--muted);
 }
 
-.badge {
-  font-size: var(--fs-2xs);
-  padding: 2px 7px;
-  border-radius: 99px;
-  font-weight: 600;
+.pack-actions {
+  text-align: right;
 }
 
-.badge-props {
-  background: rgba(var(--accent-rgb), .15);
-  color: var(--accent);
-}
+@media (max-width: 760px) {
+  .pack-row-head {
+    display: none;
+  }
 
-.badge-config {
-  background: rgba(var(--green-rgb), .15);
-  color: var(--green);
-}
+  .pack-row {
+    grid-template-columns: 1fr auto;
+    gap: 6px 12px;
+    padding: 12px 8px;
+  }
 
-.badge-kjs {
-  background: rgba(var(--yellow-rgb), .15);
-  color: var(--yellow);
+  .pack-name {
+    grid-column: 1;
+  }
+
+  .pack-actions {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+
+  .pack-version {
+    grid-column: 1;
+  }
+
+  .pack-num,
+  .pack-muted {
+    display: none;
+  }
 }
 
 #mgmt-panel {
@@ -59,16 +143,19 @@
 }
 
 .mgmt-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
   color: var(--muted);
   padding: 8px 14px;
   font-size: var(--fs-md);
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   margin-bottom: -1px;
-  border-radius: 6px 6px 0 0;
+  border-radius: 0;
 }
 
 .mgmt-tab:hover {
@@ -77,9 +164,13 @@
 }
 
 .mgmt-tab.active {
-  color: var(--accent);
+  color: var(--text);
   border-bottom-color: var(--accent);
   background: none;
+}
+
+.mgmt-tab.active .icon {
+  color: var(--accent);
 }
 
 .mgmt-content {
@@ -90,11 +181,23 @@
   display: block;
 }
 
+.mgmt-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.mgmt-heading-label {
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  color: var(--muted);
+}
+
 .mgmt-title {
-  color: var(--accent);
-  text-transform: none;
-  letter-spacing: 0;
-  font-size: var(--fs-lg);
+  font-size: var(--fs-xl);
+  font-weight: 700;
+  color: var(--text);
+  overflow-wrap: anywhere;
 }
 
 #mtab-kubejs {

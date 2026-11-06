@@ -6,12 +6,15 @@ Rutas:
 - GET  /api/system-info         → RAM total del sistema
 - GET  /api/disk-usage          → uso de disco
 - GET  /api/modpacks            → lista de modpacks con metadata
+- GET  /api/modpacks/{name}/size → tamaño en disco de un modpack (cacheado)
 - GET  /api/system-stats        → estadísticas del sistema (snapshot único)
 - GET  /api/system-stats/stream → SSE: estadísticas del sistema cada ~3s
 - GET  /api/auto-update/status  → estado de la auto-actualización
 - POST /api/auto-update/check   → fuerza una comprobación inmediata contra GitHub
 - POST /api/auto-update/apply   → aplica el pull pendiente y reinicia la app
 """
+import asyncio
+import os
 import re
 import shutil
 import time
@@ -97,8 +100,59 @@ async def list_modpacks():
             "modloader": ver.get("modloader"),
             "modloader_version": ver.get("modloader_version"),
             "pending_mods": get_pending_mods(name),
+            "mods_count": _count_enabled_mods(path),
+            "last_played": _last_played(path),
         })
     return JSONResponse({"modpacks": result})
+
+
+def _count_enabled_mods(path: Path) -> int | None:
+    mods_dir = path / "mods"
+    if not mods_dir.is_dir():
+        return None
+    return sum(1 for f in mods_dir.iterdir() if f.suffix == ".jar")
+
+
+def _last_played(path: Path) -> float | None:
+    """Última vez que arrancó el servidor: Minecraft reescribe logs/latest.log
+    en cada arranque y mientras está en marcha, así que su fecha sirve sin
+    tener que guardar nada aparte."""
+    latest = path / "logs" / "latest.log"
+    try:
+        return latest.stat().st_mtime
+    except OSError:
+        return None
+
+
+# El tamaño de un modpack con mundos grandes puede tardar segundos en
+# calcularse (miles de archivos), así que va en su propio endpoint -- la
+# lista se pinta sin esperarlo -- y se cachea unos minutos por modpack.
+_SIZE_CACHE_TTL_SECONDS = 300
+_size_cache: dict[str, tuple[float, int]] = {}
+
+
+def _dir_size_bytes(path: Path) -> int:
+    total = 0
+    for root, _dirs, files in os.walk(path, followlinks=False):
+        for name in files:
+            try:
+                total += os.lstat(os.path.join(root, name)).st_size
+            except OSError:
+                pass
+    return total
+
+
+@router.get("/api/modpacks/{name}/size")
+async def modpack_size(name: str):
+    if name not in get_modpacks():
+        raise HTTPException(status_code=404, detail="Modpack no encontrado")
+    cached = _size_cache.get(name)
+    if cached and time.time() - cached[0] < _SIZE_CACHE_TTL_SECONDS:
+        size = cached[1]
+    else:
+        size = await asyncio.to_thread(_dir_size_bytes, DEFAULT_SERVERS_PATH / name)
+        _size_cache[name] = (time.time(), size)
+    return JSONResponse({"size_bytes": size})
 
 
 @router.get("/api/auto-update/status")

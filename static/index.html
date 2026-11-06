@@ -69,20 +69,23 @@
 
 <!-- ══ LOGIN ════════════════════════════════════════════ -->
 <div id="login-screen">
-  <div class="login-card">
-    <div class="login-title">⛏️ MC Server Deployer</div>
-    <div class="login-subtitle">Acceso restringido</div>
+  <main class="login-card" aria-labelledby="login-title">
+    <div class="login-brand">
+      <svg class="icon"><use href="#i-pickaxe"/></svg>
+      <h1 class="login-title" id="login-title">MC Deployer</h1>
+    </div>
+    <p class="login-subtitle">Entra para gestionar tus servidores de Minecraft.</p>
     <div class="login-field">
-      <label>Usuario</label>
-      <input type="text" id="login-user" autocomplete="username">
+      <label for="login-user">Usuario</label>
+      <input type="text" id="login-user" autocomplete="username" autocapitalize="none" spellcheck="false">
     </div>
     <div class="login-field">
-      <label>Contraseña</label>
+      <label for="login-pass">Contraseña</label>
       <input type="password" id="login-pass" autocomplete="current-password">
     </div>
-    <div class="login-error" id="login-error"></div>
+    <div class="login-error" id="login-error" role="alert"></div>
     <button class="login-btn" id="login-btn">Entrar</button>
-  </div>
+  </main>
 </div>
 
 <!-- Navegación: a la izquierda las secciones de uso diario, a la derecha
@@ -113,26 +116,26 @@
 <!-- ══ INSTALAR ══════════════════════════════════════════ -->
 <div class="page" id="page-deploy">
   <div class="disk-bar">
-    <span class="disk-label">💾 Disco</span>
+    <span class="disk-label">Espacio en disco</span>
     <div class="bar-wrap"><div class="bar-fill" id="disk-fill" style="width:0%"></div></div>
     <span class="disk-text" id="disk-text">Cargando...</span>
   </div>
 
-  <div class="mgmt-tabs" style="margin-bottom:16px">
-    <button class="mgmt-tab active" id="deploy-mode-import">📦 Importar modpack existente</button>
-    <button class="mgmt-tab" id="deploy-mode-create">🆕 Crear servidor nuevo</button>
-    <button class="mgmt-tab" id="deploy-mode-download">🌐 Descargar modpack</button>
+  <div class="mgmt-tabs deploy-modes">
+    <button class="mgmt-tab active" id="deploy-mode-import"><svg class="icon"><use href="#i-upload"/></svg>Subir un modpack</button>
+    <button class="mgmt-tab" id="deploy-mode-create"><svg class="icon"><use href="#i-plus"/></svg>Crear desde cero</button>
+    <button class="mgmt-tab" id="deploy-mode-download"><svg class="icon"><use href="#i-download"/></svg>Buscar y descargar</button>
   </div>
 
   <div id="deploy-import-section">
-  <div class="card">
-    <h2>1 · Archivo comprimido <span class="req">*</span></h2>
-    <div class="info-box">Sube el archivo de server files del modpack (.zip, .rar, .tar.gz...)</div>
+  <div class="card step">
+    <h2 class="step-title"><span class="step-num" aria-hidden="true">1</span>Archivo comprimido</h2>
+    <p class="hint step-lead">Los «server files» del modpack, tal como los descargas de CurseForge o Modrinth.</p>
     <div class="drop-zone" id="drop-zone">
       <input type="file" id="file-input" accept=".zip,.rar,.tar,.tar.gz,.tgz,.tar.bz2">
-      <div class="dz-icon">📦</div>
-      <div class="dz-text">Arrastra aquí o <span class="dz-link">haz clic para seleccionar</span></div>
-      <div class="dz-hint">.zip · .rar · .tar · .tar.gz · .tar.bz2</div>
+      <svg class="icon dz-icon"><use href="#i-upload"/></svg>
+      <div class="dz-text">Arrastra aquí el archivo o <span class="dz-link">elígelo en tu equipo</span></div>
+      <div class="dz-hint">.zip, .rar, .tar, .tar.gz o .tar.bz2</div>
     </div>
     <div class="file-badge" id="file-badge">
       <span class="fb-icon">📦</span>
@@ -142,30 +145,31 @@
     </div>
   </div>
 
-  <div class="card">
-    <h2>2 · Nombre de carpeta del modpack <span class="req">*</span></h2>
+  <div class="card step">
+    <h2 class="step-title"><span class="step-num" aria-hidden="true">2</span>Nombre del servidor</h2>
     <input type="text" id="folder-name" placeholder="ej: ATM9, SkyFactory4, survival-v2..." class="w-full">
     <p class="hint">Se instalará en <code>~/servers-minecraft/<em>nombre</em></code></p>
   </div>
 
-  <div class="card">
-    <h2>3 · Configuración de RAM <span class="h2-note">(opcional — requiere <code>user_jvm_args.txt</code> o <code>variables.txt</code>)</span></h2>
+  <div class="card step">
+    <h2 class="step-title"><span class="step-num" aria-hidden="true">3</span>Memoria RAM <span class="step-optional">opcional</span></h2>
+    <p class="hint step-lead">Solo funciona si el modpack trae <code>user_jvm_args.txt</code> o <code>variables.txt</code>.</p>
     <div class="toggle-row">
       <div class="toggle-track" id="ram-toggle"><div class="toggle-thumb"></div></div>
-      <span style="font-size:.88rem">Modificar RAM después de descomprimir</span>
+      <span>Cambiar la RAM al instalar</span>
       <span id="ram-info" class="ram-info">Leyendo RAM...</span>
     </div>
     <div id="ram-inputs" style="display:none">
       <div class="ram-grid">
         <div>
-          <label class="field-label">RAM mínima <span style="color:var(--accent)">(-Xms)</span> <span class="req">*</span></label>
+          <label class="field-label">RAM mínima <span class="field-label-note">-Xms</span> <span class="req">*</span></label>
           <div class="input-row">
             <input type="number" id="ram-min-val" value="4" min="1">
             <select id="ram-min-unit"><option value="G">GB</option><option value="M">MB</option></select>
           </div>
         </div>
         <div>
-          <label class="field-label">RAM máxima <span style="color:var(--accent)">(-Xmx)</span> <span class="req">*</span></label>
+          <label class="field-label">RAM máxima <span class="field-label-note">-Xmx</span> <span class="req">*</span></label>
           <div class="input-row">
             <input type="number" id="ram-max-val" value="8" min="1">
             <select id="ram-max-unit"><option value="G">GB</option><option value="M">MB</option></select>
@@ -177,8 +181,8 @@
     </div>
   </div>
 
-  <div class="card">
-    <h2>4 · Desplegar</h2>
+  <div class="card step">
+    <h2 class="step-title"><span class="step-num" aria-hidden="true">4</span>Instalar</h2>
     <div class="progress-section" id="progress-section">
       <div class="progress-wrap"><div class="progress-fill" id="progress-fill"></div></div>
       <div class="progress-status" id="progress-status">Preparando...</div>
@@ -188,20 +192,20 @@
       <p id="result-msg" class="result-msg"></p>
       <div class="result-grid" id="result-grid"></div>
     </div>
-    <button class="deploy-btn" id="deploy-btn">🚀 Descomprimir en Ubuntu</button>
+    <div class="step-action"><span class="step-missing" data-missing-for="deploy-btn"></span><button class="deploy-btn" id="deploy-btn">Instalar servidor</button></div>
   </div>
   </div>
   <!-- /deploy-import-section -->
 
   <div id="deploy-create-section" style="display:none">
-    <div class="card">
-      <h2>1 · Nombre del servidor <span class="req">*</span></h2>
+    <div class="card step">
+      <h2 class="step-title"><span class="step-num" aria-hidden="true">1</span>Nombre del servidor</h2>
       <input type="text" id="create-name" placeholder="ej: survival-nuevo, test-fabric..." class="w-full">
       <p class="hint">Se creará en <code>~/servers-minecraft/<em>nombre</em></code></p>
     </div>
 
-    <div class="card">
-      <h2>2 · Modloader y versión de Minecraft <span class="req">*</span></h2>
+    <div class="card step">
+      <h2 class="step-title"><span class="step-num" aria-hidden="true">2</span>Modloader y versión de Minecraft</h2>
       <div class="props-grid">
         <div class="prop-field">
           <label class="prop-label">Modloader</label>
@@ -225,18 +229,18 @@
       <p class="hint" id="create-loader-hint" style="margin-top:8px"></p>
     </div>
 
-    <div class="card">
-      <h2>3 · Configuración de RAM <span class="req">*</span></h2>
+    <div class="card step">
+      <h2 class="step-title"><span class="step-num" aria-hidden="true">3</span>Memoria RAM</h2>
       <div class="ram-grid">
         <div>
-          <label class="field-label">RAM mínima <span style="color:var(--accent)">(-Xms)</span></label>
+          <label class="field-label">RAM mínima <span class="field-label-note">-Xms</span></label>
           <div class="input-row">
             <input type="number" id="create-ram-min-val" value="2" min="1">
             <select id="create-ram-min-unit"><option value="G">GB</option><option value="M">MB</option></select>
           </div>
         </div>
         <div>
-          <label class="field-label">RAM máxima <span style="color:var(--accent)">(-Xmx)</span></label>
+          <label class="field-label">RAM máxima <span class="field-label-note">-Xmx</span></label>
           <div class="input-row">
             <input type="number" id="create-ram-max-val" value="4" min="1">
             <select id="create-ram-max-unit"><option value="G">GB</option><option value="M">MB</option></select>
@@ -245,22 +249,22 @@
       </div>
     </div>
 
-    <div class="card">
-      <h2>4 · Crear servidor</h2>
+    <div class="card step">
+      <h2 class="step-title"><span class="step-num" aria-hidden="true">4</span>Crear</h2>
       <div id="create-progress-body"></div>
-      <button class="deploy-btn" id="create-server-btn">🆕 Crear servidor</button>
+      <div class="step-action"><span class="step-missing" data-missing-for="create-server-btn"></span><button class="deploy-btn" id="create-server-btn">Crear servidor</button></div>
     </div>
   </div>
 
   <div id="deploy-download-section" style="display:none">
-    <div class="card">
-      <h2>1 · Buscar modpack <span class="req">*</span></h2>
+    <div class="card step">
+      <h2 class="step-title"><span class="step-num" aria-hidden="true">1</span>Buscar modpack</h2>
       <div class="mgmt-tabs" id="dl-source-tabs" style="margin-bottom:10px">
         <button type="button" class="mgmt-tab active" data-source="modrinth">Modrinth</button>
         <button type="button" class="mgmt-tab" data-source="curseforge">CurseForge</button>
       </div>
       <div class="mod-search-toolbar" style="margin:0 0 10px">
-        <input type="text" id="dl-search-input" placeholder="🔍 Nombre del modpack..." class="w-full">
+        <input type="text" id="dl-search-input" placeholder="Nombre del modpack…" class="w-full">
         <select id="dl-loader-filter" title="Filtrar por modloader">
           <option value="">Cualquier modloader</option>
           <option value="forge">Forge</option>
@@ -291,8 +295,8 @@
       </div>
     </div>
 
-    <div class="card" id="dl-version-card" style="display:none">
-      <h2>2 · Versión y nombre del servidor <span class="req">*</span></h2>
+    <div class="card step" id="dl-version-card" style="display:none">
+      <h2 class="step-title"><span class="step-num" aria-hidden="true">2</span>Versión y nombre del servidor</h2>
       <div id="dl-selected-pack" style="margin-bottom:12px"></div>
       <div class="props-grid">
         <div class="prop-field">
@@ -307,18 +311,18 @@
       <div id="dl-duplicate-warning"></div>
     </div>
 
-    <div class="card" id="dl-ram-card" style="display:none">
-      <h2>3 · Configuración de RAM <span class="req">*</span></h2>
+    <div class="card step" id="dl-ram-card" style="display:none">
+      <h2 class="step-title"><span class="step-num" aria-hidden="true">3</span>Memoria RAM</h2>
       <div class="ram-grid">
         <div>
-          <label class="field-label">RAM mínima <span style="color:var(--accent)">(-Xms)</span></label>
+          <label class="field-label">RAM mínima <span class="field-label-note">-Xms</span></label>
           <div class="input-row">
             <input type="number" id="dl-ram-min-val" value="4" min="1">
             <select id="dl-ram-min-unit"><option value="G">GB</option><option value="M">MB</option></select>
           </div>
         </div>
         <div>
-          <label class="field-label">RAM máxima <span style="color:var(--accent)">(-Xmx)</span></label>
+          <label class="field-label">RAM máxima <span class="field-label-note">-Xmx</span></label>
           <div class="input-row">
             <input type="number" id="dl-ram-max-val" value="8" min="1">
             <select id="dl-ram-max-unit"><option value="G">GB</option><option value="M">MB</option></select>
@@ -327,10 +331,10 @@
       </div>
     </div>
 
-    <div class="card" id="dl-install-card" style="display:none">
-      <h2>4 · Instalar modpack</h2>
+    <div class="card step" id="dl-install-card" style="display:none">
+      <h2 class="step-title"><span class="step-num" aria-hidden="true">4</span>Instalar</h2>
       <div id="dl-progress-body"></div>
-      <button class="deploy-btn" id="dl-install-btn">🌐 Descargar e instalar</button>
+      <div class="step-action"><span class="step-missing" data-missing-for="dl-install-btn"></span><button class="deploy-btn" id="dl-install-btn">Descargar e instalar</button></div>
     </div>
   </div>
 </div>
@@ -338,22 +342,26 @@
 <!-- ══ GESTIÓN ═══════════════════════════════════════════ -->
 <div class="page" id="page-manage">
   <div class="card">
-    <h2>Modpacks instalados <button class="btn-secondary btn-sm" style="margin-left:8px" id="btn-refresh-packs">↻ Actualizar</button></h2>
+    <div class="card-head">
+      <h2>Modpacks instalados</h2>
+      <button class="btn-ghost btn-sm" id="btn-refresh-packs"><svg class="icon"><use href="#i-refresh-cw"/></svg> Actualizar</button>
+    </div>
     <div id="modpack-list"><p class="empty-msg">Cargando...</p></div>
   </div>
   <div id="mgmt-panel">
     <div class="card pb-0">
-      <h2>⚙️ Gestionando: <span id="mgmt-title" class="mgmt-title"></span>
-        <button class="btn-danger btn-sm" id="btn-delete-modpack" style="margin-left:10px;font-size:.78rem;padding:5px 10px">🗑️ Borrar modpack</button>
-      </h2>
+      <div class="card-head">
+        <h2 class="mgmt-heading"><span class="mgmt-heading-label">Gestionando</span> <span id="mgmt-title" class="mgmt-title"></span></h2>
+        <button class="btn-danger btn-sm" id="btn-delete-modpack"><svg class="icon"><use href="#i-trash-2"/></svg> Borrar modpack</button>
+      </div>
       <div class="mgmt-tabs" id="mgmt-panel-tabs">
-        <button class="mgmt-tab active" id="mtab-props">📄 server.properties</button>
-        <button class="mgmt-tab" id="mtab-ram">🧠 RAM</button>
-        <button class="mgmt-tab" id="mtab-configs">🔧 Config de mods</button>
-        <button class="mgmt-tab" id="mtab-kubejs">📜 KubeJS</button>
-        <button class="mgmt-tab" id="mtab-worldfiles">🗺️ Archivos de mundo</button>
-        <button class="mgmt-tab" id="mtab-logs">📋 Logs</button>
-        <button class="mgmt-tab" id="mtab-mods">🧩 Mods</button>
+        <button class="mgmt-tab active" id="mtab-props"><svg class="icon"><use href="#i-sliders-horizontal"/></svg>server.properties</button>
+        <button class="mgmt-tab" id="mtab-ram"><svg class="icon"><use href="#i-memory-stick"/></svg>RAM</button>
+        <button class="mgmt-tab" id="mtab-configs"><svg class="icon"><use href="#i-wrench"/></svg>Config de mods</button>
+        <button class="mgmt-tab" id="mtab-kubejs"><svg class="icon"><use href="#i-scroll-text"/></svg>KubeJS</button>
+        <button class="mgmt-tab" id="mtab-worldfiles"><svg class="icon"><use href="#i-map"/></svg>Archivos de mundo</button>
+        <button class="mgmt-tab" id="mtab-logs"><svg class="icon"><use href="#i-file-text"/></svg>Logs</button>
+        <button class="mgmt-tab" id="mtab-mods"><svg class="icon"><use href="#i-puzzle"/></svg>Mods</button>
       </div>
     </div>
 
@@ -1486,6 +1494,7 @@
 <script src="/static/js/users.js"></script>
 <script src="/static/js/config_admin.js"></script>
 <script src="/static/js/sysmon.js"></script>
+<script src="/static/js/steps.js"></script>
 <script src="/static/js/main.js"></script>
 
 

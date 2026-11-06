@@ -4,6 +4,7 @@ main.py - Punto de entrada de Minecraft Server Deployer.
 Crea la app FastAPI, registra todos los routers, y en __main__
 ejecuta las tareas de limpieza antes de arrancar uvicorn.
 """
+import mimetypes
 import os
 import re
 import time
@@ -72,6 +73,9 @@ class AuthMiddleware(BaseHTTPMiddleware):
 app = FastAPI(title="Minecraft Server Deployer")
 app.add_middleware(GZipMiddleware, minimum_size=500)
 app.add_middleware(AuthMiddleware)
+# Las fuentes de static/fonts/: sin esto algunos sistemas las sirven como
+# application/octet-stream.
+mimetypes.add_type("font/woff2", ".woff2")
 app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
 app.mount("/icon", StaticFiles(directory=Path(__file__).parent / "icon"), name="icon")
 

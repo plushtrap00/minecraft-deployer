@@ -228,61 +228,82 @@ document.getElementById('btn-refresh-packs').addEventListener('click', loadModpa
 
 function loadModpacks() {
   var list = document.getElementById('modpack-list');
-  list.innerHTML = '<p class="empty-msg">Cargando...</p>';
+  list.innerHTML = '<div class="skeleton-rows"><div></div><div></div><div></div></div>';
   apiFetch('/api/modpacks')
     .then(function(response) { return response.json(); })
     .then(function(data) { renderModpacks(data.modpacks); })
     .catch(function() {
-      list.innerHTML = '<p class="empty-msg" style="color:var(--red)">Error</p>';
+      list.innerHTML = '<p class="empty-msg error-msg">No se pudo cargar la lista de modpacks. Pulsa «Actualizar» para reintentarlo.</p>';
     });
 }
 
+// Una fila por modpack, en tabla, para poder comparar de un vistazo
+// modloader, versión, mods y cuándo se usó por última vez. El tamaño se pide
+// aparte (puede tardar con mundos grandes) y se rellena cuando llega.
 function renderModpacks(packs) {
   var list = document.getElementById('modpack-list');
   if (!packs || !packs.length) {
-    list.innerHTML = '<p class="empty-msg">No hay modpacks en ~/servers-minecraft</p>';
+    list.innerHTML = '<div class="empty-state">'
+      + '<p>Aún no hay modpacks instalados.</p>'
+      + '<button id="packs-empty-install">' + icon('package-plus') + 'Instalar un modpack</button>'
+      + '</div>';
+    document.getElementById('packs-empty-install').addEventListener('click', function() {
+      document.getElementById('tab-deploy').click();
+    });
     return;
   }
-  list.innerHTML = '';
+  var table = document.createElement('div');
+  table.className = 'pack-table';
+  table.setAttribute('role', 'table');
+  table.innerHTML = '<div class="pack-row pack-row-head" role="row">'
+    + '<span role="columnheader">Nombre</span>'
+    + '<span role="columnheader">Versión</span>'
+    + '<span role="columnheader">Mods</span>'
+    + '<span role="columnheader">Último arranque</span>'
+    + '<span role="columnheader">Tamaño</span>'
+    + '<span role="columnheader"><span class="visually-hidden">Acciones</span></span>'
+    + '</div>';
   packs.forEach(function(pack) {
-    var badges = '';
-    if (pack.has_server_properties) {
-      badges += '<span class="badge badge-props">server.properties</span> ';
-    }
-    if (pack.has_config) {
-      badges += '<span class="badge badge-config">config/</span> ';
-    }
-    if (pack.has_kubejs) {
-      badges += '<span class="badge badge-kjs">KubeJS</span> ';
-    }
+    var flags = [];
     if (!pack.start_script) {
-      badges += '<span class="badge" style="background:rgba(var(--red-rgb), .15);color:var(--red)">⚠ sin script arranque</span>';
-    }
-    if (pack.mc_version) {
-      badges += ' <span class="badge" style="background:rgba(var(--accent-rgb), .1);color:var(--accent)">MC ' + pack.mc_version + '</span>';
-    }
-    if (pack.modloader) {
-      badges += ' <span class="badge" style="background:rgba(var(--yellow-rgb), .1);color:var(--yellow)">' + pack.modloader + '</span>';
+      flags.push('<span class="pack-flag pack-flag-bad">No tiene script de arranque</span>');
     }
     if (pack.pending_mods && pack.pending_mods.length) {
-      badges += ' <span class="badge" style="background:rgba(var(--red-rgb), .15);color:var(--red)" title="' + escHtml(pack.pending_mods.join(', ')) + '">⏳ ' + pack.pending_mods.length + ' mod(s) pendiente(s)</span>';
+      flags.push('<span class="pack-flag pack-flag-warn" title="' + escHtml(pack.pending_mods.join(', ')) + '">'
+        + pack.pending_mods.length + (pack.pending_mods.length === 1 ? ' mod pendiente' : ' mods pendientes') + '</span>');
     }
-    var element = document.createElement('div');
-    element.className = 'modpack-card';
-    element.dataset.name = pack.name;
-    element.innerHTML = '<span style="font-size:1.4rem">🗂️</span>'
-      + '<div style="flex:1">'
-      + '<div style="font-weight:600">' + pack.name + '</div>'
-      + '<div style="margin-top:3px">' + badges + '</div>'
-      + '</div>'
-      + '<button class="btn-secondary" style="font-size:.78rem;padding:5px 10px">Gestionar →</button>';
-    element.querySelector('button').addEventListener('click', function(event) {
+    var row = document.createElement('div');
+    row.className = 'pack-row modpack-card' + (pack.name === currentModpack ? ' selected' : '');
+    row.setAttribute('role', 'row');
+    row.dataset.name = pack.name;
+    row.innerHTML = '<span class="pack-name" role="cell">' + escHtml(pack.name) + flags.join('') + '</span>'
+      + '<span class="pack-version" role="cell">' + loaderTag(pack.modloader)
+      + (pack.mc_version ? ' <span>' + escHtml(pack.mc_version) + '</span>' : '') + '</span>'
+      + '<span class="pack-num" role="cell" data-label="Mods">' + (pack.mods_count === null || pack.mods_count === undefined ? '—' : pack.mods_count) + '</span>'
+      + '<span class="pack-muted" role="cell" data-label="Último arranque">' + (pack.last_played ? formatRelativeDate(pack.last_played) : 'Nunca') + '</span>'
+      + '<span class="pack-num pack-size" role="cell" data-label="Tamaño">…</span>'
+      + '<span class="pack-actions" role="cell"><button class="btn-secondary btn-sm">Gestionar</button></span>';
+    row.querySelector('button').addEventListener('click', function(event) {
       event.stopPropagation();
       selectModpack(pack.name);
     });
-    element.addEventListener('click', function() { selectModpack(pack.name); });
-    list.appendChild(element);
+    row.addEventListener('click', function() { selectModpack(pack.name); });
+    table.appendChild(row);
+    loadModpackSize(pack.name, row.querySelector('.pack-size'));
   });
+  list.innerHTML = '';
+  list.appendChild(table);
+}
+
+function loadModpackSize(name, cell) {
+  apiFetch('/api/modpacks/' + encodeURIComponent(name) + '/size')
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      cell.textContent = data.size_bytes === undefined ? '—' : fmtSize(data.size_bytes);
+    })
+    .catch(function() {
+      cell.textContent = '—';
+    });
 }
 
 function selectModpack(name) {

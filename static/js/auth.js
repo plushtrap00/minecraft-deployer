@@ -97,12 +97,18 @@ function doLogin() {
   var password = document.getElementById('login-pass').value;
   var btn = document.getElementById('login-btn');
   var errorEl = document.getElementById('login-error');
+  if (!username) {
+    errorEl.textContent = 'Escribe tu usuario.';
+    document.getElementById('login-user').focus();
+    return;
+  }
   if (!password) {
-    errorEl.textContent = 'Introduce la contraseña';
+    errorEl.textContent = 'Escribe tu contraseña.';
+    document.getElementById('login-pass').focus();
     return;
   }
   btn.disabled = true;
-  btn.textContent = 'Entrando...';
+  btn.textContent = 'Entrando…';
   errorEl.textContent = '';
   var form = new FormData();
   form.append('username', username);
@@ -117,7 +123,7 @@ function doLogin() {
       btn.disabled = false;
       btn.textContent = 'Entrar';
       if (!result.ok) {
-        errorEl.textContent = result.data.detail || 'Error de autenticación';
+        errorEl.textContent = result.data.detail || 'Usuario o contraseña incorrectos.';
         return;
       }
       onLoginSuccess(result.data.token, result.data.role);
@@ -125,7 +131,7 @@ function doLogin() {
     .catch(function(error) {
       btn.disabled = false;
       btn.textContent = 'Entrar';
-      errorEl.textContent = 'Error de red: ' + error.message;
+      errorEl.textContent = 'No se pudo conectar con el panel. Comprueba que el equipo sigue encendido. (' + error.message + ')';
     });
 }
 
@@ -133,6 +139,16 @@ document.getElementById('login-btn').addEventListener('click', doLogin);
 document.getElementById('login-pass').addEventListener('keydown', function(event) {
   if (event.key === 'Enter') {
     doLogin();
+  }
+});
+// Enter en el usuario pasa a la contraseña (o entra, si ya está escrita).
+document.getElementById('login-user').addEventListener('keydown', function(event) {
+  if (event.key === 'Enter') {
+    if (document.getElementById('login-pass').value) {
+      doLogin();
+    } else {
+      document.getElementById('login-pass').focus();
+    }
   }
 });
 

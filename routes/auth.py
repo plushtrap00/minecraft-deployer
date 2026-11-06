@@ -108,7 +108,7 @@ async def login(request: Request, username: str = Form(...), password: str = For
     if locked_seconds is not None:
         raise HTTPException(
             status_code=429,
-            detail=f"Demasiados intentos fallidos. Probá de nuevo en {locked_seconds} segundos.",
+            detail=f"Demasiados intentos fallidos. Prueba de nuevo dentro de {locked_seconds} segundos.",
         )
 
     role = authenticate(username, password)

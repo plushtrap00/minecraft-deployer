@@ -143,12 +143,12 @@ function fmtSize(bytes) {
 // -- Deploy -------------------------------------------------------------------
 document.getElementById('deploy-btn').addEventListener('click', function() {
   if (!selectedFile) {
-    showAlert('Selecciona un archivo primero');
+    showAlert('Elige primero el archivo del modpack.');
     return;
   }
   var folderName = document.getElementById('folder-name').value.trim();
   if (!folderName) {
-    showAlert('Escribe el nombre de carpeta del modpack');
+    showAlert('Escribe un nombre para el servidor.');
     return;
   }
   var btn = document.getElementById('deploy-btn');

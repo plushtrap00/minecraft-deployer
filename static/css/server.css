@@ -308,19 +308,6 @@
 }
 
 /* -- Elegir servidor (con el servidor parado) ------------------------------ */
-.card-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px 24px;
-  margin-bottom: 14px;
-}
-
-.card-head h2 {
-  margin-bottom: 0;
-}
-
 .server-pick-item {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

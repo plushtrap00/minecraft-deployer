@@ -20,6 +20,25 @@ function icon(name) {
   return '<svg class="icon" aria-hidden="true"><use href="#i-' + name + '"/></svg>';
 }
 
+// "hace 3 días", "ayer", "hace 2 h"... para fechas en segundos epoch.
+function formatRelativeDate(epochSeconds) {
+  var sec = Math.max(0, Math.floor(Date.now() / 1000 - epochSeconds));
+  if (sec < 3600) {
+    return sec < 120 ? 'ahora mismo' : 'hace ' + Math.floor(sec / 60) + ' min';
+  }
+  if (sec < 86400) {
+    return 'hace ' + Math.floor(sec / 3600) + ' h';
+  }
+  var days = Math.floor(sec / 86400);
+  if (days === 1) {
+    return 'ayer';
+  }
+  if (days < 30) {
+    return 'hace ' + days + ' días';
+  }
+  return new Date(epochSeconds * 1000).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
 // Etiqueta de modloader con su color propio (ver .loader-tag en server.css).
 // Vanilla o desconocido salen en gris; la versión de MC no lleva etiqueta.
 function loaderTag(modloader) {

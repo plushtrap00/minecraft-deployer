@@ -12,80 +12,89 @@
   display: none;
 }
 
+/* Login: la otra única pieza con la fuente de bloque. El fondo lleva una
+   rejilla muy tenue de 32 px -- bloques, sin texturas. */
+#login-screen {
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(rgba(var(--muted-rgb), .045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(var(--muted-rgb), .045) 1px, transparent 1px);
+  background-size: 32px 32px;
+  background-position: center center;
+}
+
 .login-card {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 36px 40px;
-  width: 320px;
+  position: relative;
+  width: min(380px, calc(100vw - 32px));
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  box-shadow: 0 8px 40px rgba(0, 0, 0, .5);
+  gap: 16px;
+  padding: 34px 32px 30px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .45);
+  overflow: hidden;
+}
+
+.login-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: var(--accent);
+}
+
+.login-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.login-brand .icon {
+  width: 26px;
+  height: 26px;
+  color: var(--accent);
 }
 
 .login-title {
-  font-size: var(--fs-2xl);
-  font-weight: 700;
-  text-align: center;
+  font-family: var(--font-display);
+  font-size: var(--fs-display);
+  font-weight: 500;
+  line-height: 1;
 }
 
 .login-subtitle {
+  margin: -4px 0 6px;
   font-size: var(--fs-sm);
   color: var(--muted);
-  text-align: center;
-  margin-top: -10px;
 }
 
 .login-field {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
 }
 
 .login-field label {
   font-size: var(--fs-sm);
+  font-weight: 500;
   color: var(--muted);
 }
 
 .login-field input {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  padding: 9px 12px;
-  color: var(--text);
-  font-size: var(--fs-md);
-  outline: none;
-}
-
-.login-field input:focus {
-  border-color: var(--accent);
+  padding: 10px 12px;
+  font-size: var(--fs-lg);
 }
 
 .login-btn {
-  background: var(--accent);
-  color: var(--on-accent);
-  border: none;
-  border-radius: 7px;
-  padding: 10px;
-  font-weight: 700;
+  padding: 11px;
   font-size: var(--fs-lg);
-  cursor: pointer;
-  transition: opacity .15s;
-}
-
-.login-btn:hover {
-  opacity: .85;
-}
-
-.login-btn:disabled {
-  opacity: .5;
-  cursor: not-allowed;
 }
 
 .login-error {
   font-size: var(--fs-sm);
   color: var(--red);
-  text-align: center;
   min-height: 18px;
+  margin: -6px 0 -4px;
 }

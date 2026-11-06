@@ -1,12 +1,10 @@
+/* Espacio en disco: una línea discreta encima de los modos, no una
+   tarjeta más -- es contexto, no un paso. */
 .disk-bar {
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 12px 18px;
-  margin-bottom: 18px;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
+  margin-bottom: 14px;
 }
 
 .disk-label {
@@ -16,10 +14,10 @@
 }
 
 .bar-wrap {
-  flex: 1;
+  flex: 0 1 220px;
   background: var(--border);
   border-radius: 99px;
-  height: 8px;
+  height: 6px;
   overflow: hidden;
 }
 
@@ -70,8 +68,10 @@
 }
 
 .dz-icon {
-  font-size: 2.2rem;
-  margin-bottom: 8px;
+  width: 28px;
+  height: 28px;
+  margin-bottom: 10px;
+  color: var(--accent);
 }
 
 .dz-text {
@@ -243,9 +243,126 @@
   color: var(--text);
 }
 
+/* -- Pasos ------------------------------------------------------------------
+   Número en un cuadrado que pasa a check verde cuando el paso está completo
+   (lo calcula steps.js). Una línea vertical une los números para que se lea
+   como secuencia. */
+.mgmt-tabs.deploy-modes {
+  margin-bottom: 18px;
+}
+
+.step {
+  position: relative;
+}
+
+.step + .step::before {
+  content: '';
+  position: absolute;
+  left: 35px;
+  top: -19px;
+  height: 18px;
+  border-left: 2px solid var(--border);
+}
+
+.step.done + .step::before {
+  border-left-color: rgba(var(--green-rgb), .5);
+}
+
+.step-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.step-num {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-control);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.step.done .step-num {
+  background: rgba(var(--green-rgb), .14);
+  border-color: rgba(var(--green-rgb), .5);
+  color: transparent;
+  position: relative;
+}
+
+/* Check dibujado con bordes: no depende de que cargue el sprite. */
+.step.done .step-num::after {
+  content: '';
+  position: absolute;
+  width: 6px;
+  height: 11px;
+  margin-top: -2px;
+  border: solid var(--green);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.step-optional {
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.step-lead {
+  margin: -8px 0 14px 36px;
+}
+
+.step-action {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.step-missing {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+
 .deploy-btn {
-  width: 100%;
-  padding: 13px;
-  font-size: var(--fs-lg);
-  border-radius: 8px;
+  padding: 10px 22px;
+}
+
+/* Falta algo obligatorio: se ve inactivo, pero sigue respondiendo al clic
+   para que su propia validación diga qué falta (ver steps.js). */
+.deploy-btn.is-blocked:not(:disabled) {
+  background: var(--surface-raised);
+  border-color: var(--border);
+  color: var(--muted);
+}
+
+.field-label-note {
+  font-family: var(--font-mono);
+  font-size: var(--fs-2xs);
+  color: var(--muted);
+  margin-left: 4px;
+}
+
+@media (max-width: 640px) {
+  .step + .step::before {
+    left: 27px;
+  }
+
+  .step-lead {
+    margin-left: 0;
+  }
+
+  .step-action {
+    justify-content: stretch;
+  }
+
+  .step-action .deploy-btn {
+    width: 100%;
+  }
 }
