@@ -272,6 +272,7 @@ button .icon {
 input[type=text],
 input[type=number],
 input[type=password],
+input[type=time],
 select,
 textarea {
   background: var(--bg);
@@ -293,11 +294,143 @@ textarea::placeholder {
 input[type=text]:focus,
 input[type=number]:focus,
 input[type=password]:focus,
+input[type=time]:focus,
 select:focus,
 textarea:focus {
   border-color: var(--accent);
   outline: none;
   box-shadow: 0 0 0 3px rgba(var(--accent-rgb), .18);
+}
+
+/* -- Desplegables ----------------------------------------------------------
+   Sin la flecha del sistema (que en algunos navegadores sale con su propio
+   fondo claro): una punta de flecha pixelada dibujada con seis franjas de
+   degradado, que así puede tomar el color del tema (--chev) y cambiarlo al
+   pasar el ratón o al abrirse. Rejilla de 8x4 "píxeles" de 2px:
+     ##....##
+     .##..##.
+     ..####..
+     ...##...                                                              */
+select:not([multiple]):not([size]) {
+  --chev: var(--muted);
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 38px;
+  cursor: pointer;
+  background-image:
+    linear-gradient(var(--chev), var(--chev)),
+    linear-gradient(var(--chev), var(--chev)),
+    linear-gradient(var(--chev), var(--chev)),
+    linear-gradient(var(--chev), var(--chev)),
+    linear-gradient(var(--chev), var(--chev)),
+    linear-gradient(var(--chev), var(--chev));
+  background-size: 4px 2px, 4px 2px, 4px 2px, 4px 2px, 8px 2px, 4px 2px;
+  background-position:
+    right 24px top calc(50% - 3px),
+    right 12px top calc(50% - 3px),
+    right 22px top calc(50% - 1px),
+    right 14px top calc(50% - 1px),
+    right 16px top calc(50% + 1px),
+    right 18px top calc(50% + 3px);
+  background-repeat: no-repeat;
+}
+
+select:not([multiple]):not([size]):hover {
+  --chev: var(--text);
+}
+
+select:not([multiple]):not([size]):focus {
+  --chev: var(--accent);
+}
+
+select:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+/* Campo de hora: el reloj del sistema, en el color apagado del texto. */
+input[type=time]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: .6;
+  filter: grayscale(1);
+}
+
+input[type=time]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+/* La lista nativa (Firefox, Safari...) con los colores del tema. */
+select option {
+  background: var(--card);
+  color: var(--text);
+}
+
+/* Chromium/Edge recientes dejan vestir también la lista desplegada: panel
+   del color de las tarjetas, opción marcada en el acento y sin la flecha
+   propia del navegador (ya está la pixelada de arriba). */
+@supports (appearance: base-select) {
+  select:not([multiple]):not([size]),
+  select:not([multiple]):not([size])::picker(select) {
+    appearance: base-select;
+  }
+
+  select:not([multiple]):not([size])::picker-icon {
+    display: none;
+  }
+
+  select:not([multiple]):not([size]):open {
+    --chev: var(--accent);
+    border-color: var(--accent);
+  }
+
+  select:not([multiple]):not([size])::picker(select) {
+    margin-top: 4px;
+    padding: 4px;
+    max-height: min(320px, 60vh);
+    overflow-y: auto;
+    background: var(--surface-raised);
+    color: var(--text);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-control);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, .45);
+  }
+
+  select:not([multiple]):not([size]) option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    border-radius: var(--radius-tag);
+    background: none;
+    font-size: var(--fs-md);
+    cursor: pointer;
+  }
+
+  select:not([multiple]):not([size]) option:hover,
+  select:not([multiple]):not([size]) option:focus-visible {
+    background: rgba(var(--accent-rgb), .14);
+    outline: none;
+  }
+
+  select:not([multiple]):not([size]) option:checked {
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  /* La marca de la opción elegida: un cuadradito, como las casillas. */
+  select:not([multiple]):not([size]) option::checkmark {
+    content: '';
+    order: 1;
+    margin-left: auto;
+    width: 6px;
+    height: 6px;
+    background: var(--accent);
+  }
+
+  select:not([multiple]):not([size]) option:disabled {
+    color: var(--muted);
+    cursor: not-allowed;
+  }
 }
 
 input[type=password].input-error,
