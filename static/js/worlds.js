@@ -110,6 +110,7 @@ function doDeleteWorld(name) {
     .then(function(data) {
       if (data.success) {
         showToast('Mundo borrado', 'success');
+        unlockAchievement('tnt');
         loadWorlds();
       }
     })

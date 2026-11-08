@@ -600,6 +600,12 @@ function sendCommand() {
     if (ok && /^\/?say\s+\S/i.test(cmd)) {
       unlockAchievement('herald');
     }
+    if (ok && /^\/?stop$/i.test(cmd)) {
+      unlockAchievement('hard-stop');
+    }
+    if (ok && /^\/?(weather\s|time\s+set\s)/i.test(cmd)) {
+      unlockAchievement('weatherman');
+    }
   });
 }
 

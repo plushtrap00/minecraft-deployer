@@ -67,7 +67,13 @@ document.getElementById('theme-grid').addEventListener('click', function(event) 
   writePref('theme', option.dataset.themeId);
   applyTheme(option.dataset.themeId);
   collectForAchievement('tourist', option.dataset.themeId, THEMES.map(function(theme) { return theme.id; }));
+  var now = Date.now();
+  themeChanges = themeChanges.filter(function(at) { return now - at < 30000; }).concat(now);
+  if (themeChanges.length >= 10) {
+    unlockAchievement('dizzy');
+  }
 });
+var themeChanges = [];
 
 // Flechas para moverse entre temas, como en cualquier grupo de opciones.
 document.getElementById('theme-grid').addEventListener('keydown', function(event) {
@@ -557,6 +563,12 @@ var ACHIEVEMENTS = [
   { id: 'iron-fist', name: 'Mano dura', hint: 'Banea a alguien.', secret: true },
   { id: 'mercy', name: 'Segundas oportunidades', hint: 'Levanta un baneo.', secret: true },
   { id: 'konami', name: 'Vidas infinitas', hint: 'Arriba, arriba, abajo, abajo…', secret: true },
+  { id: 'herobrine', name: 'Él te observa', hint: 'Escribe su nombre en cualquier parte.', secret: true },
+  { id: 'hard-stop', name: 'Por las malas', hint: 'Para el servidor con stop desde la consola.', secret: true },
+  { id: 'weatherman', name: 'Hombre del tiempo', hint: 'Cambia el tiempo o la hora desde la consola.', secret: true },
+  { id: 'dizzy', name: 'Mareo interdimensional', hint: 'Cambia de tema 10 veces en medio minuto.', secret: true },
+  { id: 'touch-sky', name: 'Tocar el cielo', hint: 'Pulsa 5 veces el sol o la luna.', secret: true },
+  { id: 'tnt', name: 'Borrón y cuenta nueva', hint: 'Borra un mundo.', secret: true },
   { id: 'platinum', name: 'Platino', hint: 'Consigue todos los demás logros.' }
 ];
 
@@ -616,6 +628,34 @@ function collectForAchievement(id, value, required) {
     unlockAchievement(id);
   }
 }
+
+// Escribir «Herobrine» en cualquier campo (menos en las contraseñas).
+document.addEventListener('input', function(event) {
+  var field = event.target;
+  if (field.type !== 'password' && typeof field.value === 'string' && /herobrine/i.test(field.value)) {
+    unlockAchievement('herobrine');
+  }
+});
+
+// Pulsar el sol o la luna de la escena. La escena no recibe clics (está
+// detrás del contenido), así que se mira si el clic cae encima del astro.
+var skyClicks = [];
+document.addEventListener('click', function(event) {
+  var orbs = document.querySelectorAll('.scene-orb');
+  for (var i = 0; i < orbs.length; i++) {
+    var rect = orbs[i].getBoundingClientRect();
+    if (rect.width && event.clientX >= rect.left - 4 && event.clientX <= rect.right + 4
+        && event.clientY >= rect.top - 4 && event.clientY <= rect.bottom + 4) {
+      var now = Date.now();
+      skyClicks = skyClicks.filter(function(at) { return now - at < 4000; }).concat(now);
+      if (skyClicks.length >= 5) {
+        skyClicks = [];
+        unlockAchievement('touch-sky');
+      }
+      return;
+    }
+  }
+});
 
 // Código Konami en cualquier parte del panel (salvo escribiendo en un campo).
 var KONAMI = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];

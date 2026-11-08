@@ -1,7 +1,7 @@
 // -- Iconos de los logros -------------------------------------------------------
 // Uno pixelado de 10x10 por logro (ACHIEVEMENTS en appearance.js), dibujado
 // con pixelSvg: cada letra de las filas es un color de su paleta y el punto
-// es transparente. Bloqueado se ve como silueta gris, también en los
+// es transparente. Bloqueado se ve en grises, también en los
 // secretos: el nombre sale como «???» pero la silueta sirve de pista.
 
 var ACHIEVEMENT_ICONS = {
@@ -325,6 +325,102 @@ var ACHIEVEMENT_ICONS = {
     ],
     palette: { g: '#4a4458', w: '#d9d6cc', r: '#e0473c' }
   },
+  // Cara con los ojos en blanco
+  'herobrine': {
+    rows: [
+      'hhhhhhhhhh',
+      'hhhhhhhhhh',
+      'hhsssssshh',
+      'ssssssssss',
+      'swwsssswws',
+      'ssssssssss',
+      'sssnnnnsss',
+      'ssnmmmmnss',
+      'ssnnnnnnss',
+      'ssssssssss'
+    ],
+    palette: { h: '#3b2412', s: '#b98a62', w: '#ffffff', n: '#5a3a20', m: '#7a4a3a' }
+  },
+  // Bloque barrera
+  'hard-stop': {
+    rows: [
+      '..rrrrrr..',
+      '.rr....rr.',
+      'rr....rrrr',
+      'r....rrr.r',
+      'r...rrr..r',
+      'r..rrr...r',
+      'r.rrr....r',
+      'rrrr....rr',
+      '.rr....rr.',
+      '..rrrrrr..'
+    ],
+    palette: { r: '#e0473c' }
+  },
+  // Nube con lluvia
+  'weatherman': {
+    rows: [
+      '..........',
+      '...wwww...',
+      '..wwwwwww.',
+      '.wwwwwwwww',
+      'wwwwwwwwww',
+      '.gggggggg.',
+      '..b..b..b.',
+      '.b..b..b..',
+      '..b..b..b.',
+      '..........'
+    ],
+    palette: { w: '#e6ebef', g: '#aeb6c0', b: '#5fa8e8' }
+  },
+  // Espiral
+  'dizzy': {
+    rows: [
+      '.pppppppp.',
+      'p........p',
+      'p.pppppp.p',
+      'p.p....p.p',
+      'p.p.pp.p.p',
+      'p.p.p..p.p',
+      'p.p.pppp.p',
+      'p.p......p',
+      'p.pppppppp',
+      '..........'
+    ],
+    palette: { p: '#e78bd9' }
+  },
+  // Destello
+  'touch-sky': {
+    rows: [
+      '....y.....',
+      '....y.....',
+      '...yWy....',
+      'yyyWWWyyy.',
+      '...yWy....',
+      '....y.....',
+      '....y...y.',
+      '.......yWy',
+      '........y.',
+      '..........'
+    ],
+    palette: { y: '#ffd76a', W: '#fff8d0' }
+  },
+  // TNT
+  'tnt': {
+    rows: [
+      'rrrrrrrrrr',
+      'rdrrdrrdrr',
+      'rrrrrrrrrr',
+      'wwwwwwwwww',
+      'kkkwkkwkkk',
+      'wkwwkkwwkw',
+      'wkwwkkwwkw',
+      'wwwwwwwwww',
+      'rrrrrrrrrr',
+      'rdrrdrrdrr'
+    ],
+    palette: { r: '#d23a2a', d: '#9a2420', w: '#efe9e0', k: '#222222' }
+  },
   // Diamante
   'platinum': {
     rows: [
@@ -343,7 +439,15 @@ var ACHIEVEMENT_ICONS = {
   }
 };
 
-// Icono de un logro. Bloqueado: la misma figura en gris.
+// Gris con la misma luminosidad que el color: así la silueta conserva el
+// dibujo de dentro (las letras de la TNT, los ojos de la cara...).
+function achievementGrey(hex) {
+  var value = parseInt(hex.slice(1), 16);
+  var luma = (.299 * (value >> 16) + .587 * ((value >> 8) & 255) + .114 * (value & 255)) / 255;
+  return 'hsl(250, 6%, ' + Math.round(28 + luma * 50) + '%)';
+}
+
+// Icono de un logro. Bloqueado: la misma figura en grises.
 function achievementIconHtml(item, unlocked) {
   var art = ACHIEVEMENT_ICONS[item.id];
   if (!art) {
@@ -352,7 +456,7 @@ function achievementIconHtml(item, unlocked) {
   var palette = art.palette;
   if (!unlocked) {
     palette = {};
-    Object.keys(art.palette).forEach(function(key) { palette[key] = 'currentColor'; });
+    Object.keys(art.palette).forEach(function(key) { palette[key] = achievementGrey(art.palette[key]); });
   }
   return pixelSvg(art.rows, palette, 'achievement-art');
 }
