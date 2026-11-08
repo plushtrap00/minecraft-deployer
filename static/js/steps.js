@@ -49,7 +49,7 @@ var INSTALL_STEP_FLOWS = [
     steps: [
       { label: 'el modpack', done: function() { return !!dlSelectedPack; } },
       { label: 'la versión y el nombre', done: function() {
-        return !!stepValue('dl-version-select') && !!stepValue('dl-server-name');
+        return !!stepValue('dl-version-select') && !!dlServerName();
       } },
       { label: 'la RAM', done: function() { return ramStepDone('dl-ram'); } },
     ],

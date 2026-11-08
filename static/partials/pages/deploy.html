@@ -160,8 +160,9 @@
           <select id="dl-version-select" class="w-full"></select>
         </div>
         <div class="prop-field">
-          <label class="prop-label">Nombre del servidor</label>
-          <input type="text" id="dl-server-name" placeholder="ej: atm10, prominence2..." class="w-full">
+          <label class="prop-label" for="dl-server-name">Nombre del servidor</label>
+          <input type="text" id="dl-server-name" placeholder="ej: atm10, prominence2..." class="w-full" aria-describedby="dl-server-name-hint">
+          <p class="hint" id="dl-server-name-hint" hidden></p>
         </div>
       </div>
       <div id="dl-duplicate-warning"></div>

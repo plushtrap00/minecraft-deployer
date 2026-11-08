@@ -320,10 +320,38 @@ function selectModpackToInstall(pack) {
       versionSelect.innerHTML = '<option value="">Error de red</option>';
     });
 
-  if (!document.getElementById('dl-server-name').value) {
-    document.getElementById('dl-server-name').value = (pack.slug || pack.title || '').toLowerCase().replace(/[^a-z0-9_-]/g, '-');
-  }
+  updateDlServerNameSuggestion();
 }
+
+// -- Nombre del servidor ------------------------------------------------------
+// Si no se escribe nada, el servidor se llama como el modpack elegido: se
+// muestra como sugerencia (placeholder) y cambia al elegir otro modpack. Lo
+// que se escriba a mano se respeta aunque luego se cambie de modpack.
+function suggestedDlServerName() {
+  if (!dlSelectedPack) {
+    return '';
+  }
+  return String(dlSelectedPack.slug || dlSelectedPack.title || '')
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function dlServerName() {
+  return document.getElementById('dl-server-name').value.trim() || suggestedDlServerName();
+}
+
+function updateDlServerNameSuggestion() {
+  var input = document.getElementById('dl-server-name');
+  var hint = document.getElementById('dl-server-name-hint');
+  var suggestion = suggestedDlServerName();
+  input.placeholder = suggestion || 'ej: atm10, prominence2...';
+  var showHint = !!suggestion && !input.value.trim();
+  hint.hidden = !showHint;
+  hint.innerHTML = showHint ? 'Si lo dejas en blanco, se llamará <strong>' + escHtml(suggestion) + '</strong>.' : '';
+}
+
+document.getElementById('dl-server-name').addEventListener('input', updateDlServerNameSuggestion);
 
 // -- Aviso de posible instalación duplicada ------------------------------------
 // Compara la lista de mods de la versión elegida contra los servidores ya
@@ -453,7 +481,7 @@ document.getElementById('dl-install-btn').addEventListener('click', function() {
     showToast('Elige una versión del modpack', 'error');
     return;
   }
-  var serverName = document.getElementById('dl-server-name').value.trim();
+  var serverName = dlServerName();
   if (!serverName) {
     showToast('Escribe un nombre para el servidor', 'error');
     return;
