@@ -66,6 +66,16 @@ class FrontendGlobalsTest(unittest.TestCase):
         missing = sorted(wanted - html_ids - js_ids)
         self.assertEqual(missing, [], "getElementById a ids que no existen")
 
+    def test_assets_are_versioned_by_their_own_file(self):
+        # La versión de cada CSS/JS sale de la fecha de su archivo: un git
+        # pull sin reiniciar el panel tiene que cambiar la URL de lo cambiado.
+        from routes.system import index, _asset_version
+        html = index().body.decode("utf-8")
+        refs = re.findall(r'(?:href|src)="/static/([^"?]+)(\?v=(\d+))?"', html)
+        self.assertTrue(refs)
+        for rel_path, _, version in refs:
+            self.assertEqual(version, _asset_version(rel_path), rel_path)
+
 
 if __name__ == "__main__":
     unittest.main()

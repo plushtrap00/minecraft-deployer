@@ -33,20 +33,32 @@ from routes.deps import modpack_path
 router = APIRouter()
 
 
-# Se fija una sola vez al arrancar el proceso (no en cada request): así
-# cambia con cada reinicio real (incluido el que dispara la propia
-# auto-actualización), forzando al navegador a pedir de nuevo el JS/CSS en
-# vez de servir de caché una versión vieja — sin esto, "Configuración" podía
-# quedar sin funcionar en silencio porque el navegador seguía usando un
-# main.js cacheado de antes de que ese botón existiera.
-_ASSET_VERSION = str(int(time.time()))
-_STATIC_ASSET_RE = re.compile(r'(href|src)="(/static/[^"]+)"')
+# Cada CSS/JS se pide con ?v=<fecha de modificación de ese archivo>. Con esa
+# versión en la URL el navegador lo guarda sin volver a preguntar (ver
+# main.py), y en cuanto el archivo cambia la URL es otra y se pide de nuevo.
+# Antes la versión era la hora de arranque del proceso: tras un git pull sin
+# reiniciar el panel, el navegador seguía usando los archivos viejos de su
+# caché aunque en disco ya estuvieran los nuevos.
+_STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
+_STATIC_ASSET_RE = re.compile(r'(href|src)="/static/([^"?]+)"')
+_PROCESS_START = str(int(time.time()))
+
+
+def _asset_version(rel_path: str) -> str:
+    try:
+        return str((_STATIC_DIR / rel_path).stat().st_mtime_ns)
+    except OSError:
+        return _PROCESS_START
+
+
+def _versioned_asset(match: re.Match) -> str:
+    attr, rel_path = match.group(1), match.group(2)
+    return f'{attr}="/static/{rel_path}?v={_asset_version(rel_path)}"'
 
 
 @router.get("/", response_class=HTMLResponse)
 def index():
-    html = render_index()
-    html = _STATIC_ASSET_RE.sub(rf'\1="\2?v={_ASSET_VERSION}"', html)
+    html = _STATIC_ASSET_RE.sub(_versioned_asset, render_index())
     return HTMLResponse(
         content=html,
         headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
