@@ -1,0 +1,86 @@
+<!-- ══ AUTOMATIZACIÓN ═════════════════════════════════════ -->
+<!-- Reinicio tras una caída, copias automáticas y tareas programadas
+     (automation.js). Todo se guarda al momento en el servidor del panel y
+     funciona aunque no haya nadie con el panel abierto. -->
+<div class="page" id="page-automation">
+  <div class="auto-grid">
+    <div class="card">
+      <div class="card-head">
+        <h2><svg class="icon"><use href="#i-rotate-ccw"/></svg>Si el servidor se cae</h2>
+      </div>
+      <div class="toggle-row">
+        <div class="toggle-track" id="auto-restart-toggle" aria-labelledby="auto-restart-label"><div class="toggle-thumb"></div></div>
+        <span id="auto-restart-label">Volver a arrancarlo solo</span>
+      </div>
+      <div class="auto-inline-fields" id="auto-restart-fields">
+        <label class="auto-inline">Hasta <input type="number" id="auto-restart-attempts" min="1" max="10" class="auto-num"> intentos</label>
+        <label class="auto-inline">en <input type="number" id="auto-restart-window" min="1" max="120" class="auto-num"> minutos</label>
+      </div>
+      <p class="field-hint">Si se cae más veces en ese tiempo, se queda parado: algo va mal y conviene mirar el log. Parar el servidor desde el panel o con <code>stop</code> no cuenta como caída.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2><svg class="icon"><use href="#i-archive"/></svg>Copias automáticas</h2>
+      </div>
+      <div class="toggle-row">
+        <div class="toggle-track" id="auto-backup-toggle" aria-labelledby="auto-backup-label"><div class="toggle-thumb"></div></div>
+        <span id="auto-backup-label">Copiar el mundo mientras el servidor está encendido</span>
+      </div>
+      <div class="auto-inline-fields" id="auto-backup-fields">
+        <label class="auto-inline">Cada <input type="number" id="auto-backup-interval" min="1" max="168" class="auto-num"> horas</label>
+        <label class="auto-inline">guardando las <input type="number" id="auto-backup-keep" min="1" max="100" class="auto-num"> últimas</label>
+      </div>
+      <p class="field-hint">Se hacen sin parar el servidor. Las copias que haces a mano en Modpacks → Copias no se borran nunca solas.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <h2><svg class="icon"><use href="#i-clock"/></svg>Tareas programadas</h2>
+      <span class="h2-note" id="auto-server-time"></span>
+      <button class="btn-go btn-sm ml-auto" id="auto-new-task-btn"><svg class="icon"><use href="#i-plus"/></svg>Nueva tarea</button>
+    </div>
+
+    <form class="task-form" id="task-form" hidden>
+      <div class="task-form-title" id="task-form-title">Nueva tarea</div>
+      <div class="props-grid">
+        <div class="prop-field">
+          <label class="prop-label">Qué hacer</label>
+          <select id="task-kind" class="w-full"></select>
+        </div>
+        <div class="prop-field">
+          <label class="prop-label">A qué hora</label>
+          <input type="time" id="task-time" class="w-full" required>
+        </div>
+        <div class="prop-field" id="task-warn-field">
+          <label class="prop-label">Avisar a los jugadores antes</label>
+          <select id="task-warn" class="w-full">
+            <option value="0">Sin aviso</option>
+            <option value="1">1 minuto antes</option>
+            <option value="5">5 minutos antes</option>
+            <option value="10">10 minutos antes</option>
+            <option value="15">15 minutos antes</option>
+            <option value="30">30 minutos antes</option>
+          </select>
+        </div>
+        <div class="prop-field" id="task-modpack-field" hidden>
+          <label class="prop-label">Qué servidor</label>
+          <select id="task-modpack" class="w-full"></select>
+        </div>
+        <div class="prop-field task-command-field" id="task-command-field" hidden>
+          <label class="prop-label">Comando</label>
+          <input type="text" id="task-command" class="w-full" placeholder="say ¡Buenos días!" autocomplete="off" spellcheck="false" maxlength="400">
+        </div>
+      </div>
+      <div class="block-label mt-l" id="task-days-label">Qué días</div>
+      <div class="day-picker" id="task-days" role="group" aria-labelledby="task-days-label"></div>
+      <div class="task-form-actions">
+        <button type="button" class="btn-secondary" id="task-cancel-btn">Cancelar</button>
+        <button type="submit" class="btn-go" id="task-save-btn">Guardar tarea</button>
+      </div>
+    </form>
+
+    <div id="task-list"><div class="skeleton-rows" role="status" aria-label="Cargando"><div></div><div></div></div></div>
+  </div>
+</div>

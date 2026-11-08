@@ -1,0 +1,723 @@
+/* -- Automatización, copias, avisos, estadísticas, rendimiento y chat ------- */
+
+.card h2 .icon {
+  margin-right: 8px;
+  color: var(--accent);
+  vertical-align: -2px;
+}
+
+/* -- Automatización --------------------------------------------------------- */
+.auto-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 18px;
+}
+
+.auto-inline-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-bottom: 10px;
+  transition: opacity .2s;
+}
+
+.auto-inline-fields.is-off {
+  opacity: .45;
+}
+
+.auto-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-md);
+}
+
+input.auto-num {
+  width: 68px;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.task-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.task-row {
+  display: grid;
+  grid-template-columns: auto 74px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 4px;
+}
+
+.task-row + .task-row {
+  border-top: 1px solid var(--border);
+}
+
+.task-row.is-paused .task-time,
+.task-row.is-paused .task-main {
+  opacity: .5;
+}
+
+/* La hora es lo primero que se busca: grande y en la letra pixelada. */
+.task-time {
+  font-family: var(--font-display);
+  font-size: var(--fs-2xl);
+  color: var(--accent);
+  letter-spacing: .02em;
+}
+
+.task-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  min-width: 0;
+}
+
+.task-title span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-title .icon {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.task-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  margin-top: 4px;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+
+.day-chips {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.day-chip {
+  width: 16px;
+  height: 16px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  background: rgba(var(--muted-rgb), .12);
+  color: rgba(var(--muted-rgb), .7);
+}
+
+.day-chip.on {
+  background: rgba(var(--accent-rgb), .22);
+  color: var(--accent);
+}
+
+.task-status {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: var(--fs-xs);
+}
+
+.task-status .icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.task-status.is-ok {
+  color: var(--green);
+}
+
+.task-status.is-fail {
+  color: var(--red-strong);
+}
+
+.task-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.task-form {
+  border: 1px solid rgba(var(--accent-rgb), .35);
+  background: rgba(var(--accent-rgb), .05);
+  border-radius: var(--radius-control);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.task-form-title {
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.task-command-field {
+  grid-column: 1 / -1;
+}
+
+.day-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.day-toggle {
+  width: 40px;
+  height: 36px;
+  padding: 0;
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  background: var(--surface-raised);
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+
+.day-toggle:hover {
+  background: var(--surface-raised);
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.day-toggle[aria-pressed="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+.task-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+/* -- Modpacks → Copias ------------------------------------------------------ */
+.backup-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.backup-head .info-box {
+  flex: 1;
+}
+
+.backup-head .btn-go {
+  flex-shrink: 0;
+}
+
+.backup-summary {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.backup-table {
+  display: flex;
+  flex-direction: column;
+}
+
+.backup-row {
+  display: grid;
+  /* Columnas fijas: cada fila es su propia rejilla (como .pack-row). */
+  grid-template-columns: minmax(150px, 1.4fr) minmax(90px, 1fr) 150px 80px 190px;
+  align-items: center;
+  gap: 14px;
+  padding: 9px 4px;
+}
+
+.backup-row + .backup-row {
+  border-top: 1px solid var(--border);
+}
+
+.backup-row-head {
+  padding-top: 0;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.backup-row .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.backup-date {
+  display: flex;
+  flex-direction: column;
+}
+
+.backup-date strong {
+  font-weight: 500;
+}
+
+.backup-ago {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+
+.backup-world {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+}
+
+.backup-reason {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: var(--fs-xs);
+  background: rgba(var(--muted-rgb), .14);
+  color: var(--text);
+}
+
+.backup-reason[data-reason="manual"] {
+  background: rgba(var(--accent-rgb), .18);
+}
+
+.backup-reason[data-reason="safety"] {
+  background: rgba(var(--yellow-rgb), .18);
+}
+
+.backup-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.mgmt-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.clone-intro {
+  margin: 0 0 14px;
+  color: var(--muted);
+}
+
+.clone-world {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  cursor: pointer;
+}
+
+.clone-world input,
+.notify-event input {
+  accent-color: var(--accent);
+  width: 16px;
+  height: 16px;
+}
+
+/* -- Configuración → Avisos ------------------------------------------------- */
+.notify-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.notify-channel {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.notify-channel-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: var(--fs-lg);
+}
+
+.notify-channel-title .icon {
+  color: var(--accent);
+}
+
+.notify-channel-desc,
+.notify-steps {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+
+.notify-steps {
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.notify-steps strong {
+  color: var(--text);
+}
+
+.notify-events {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 8px 16px;
+}
+
+.notify-event {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: var(--fs-md);
+}
+
+.notify-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+/* -- Jugadores → Estadísticas ----------------------------------------------- */
+.stats-scroll {
+  overflow-x: auto;
+  margin: 0 -4px;
+}
+
+.stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+}
+
+.stats-table th,
+.stats-table td {
+  padding: 8px 10px;
+  text-align: left;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+}
+
+.stats-table thead th {
+  border-bottom-color: var(--border-strong);
+  padding-top: 0;
+}
+
+.stats-table tbody tr:last-child > * {
+  border-bottom: none;
+}
+
+.stats-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.stats-table td.active {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.stats-table td {
+  color: var(--muted);
+}
+
+.stats-sort {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.stats-sort:hover,
+.stats-sort.active {
+  background: none;
+  color: var(--text);
+}
+
+.stats-player {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+.stats-crown {
+  color: var(--yellow);
+  display: inline-flex;
+}
+
+/* -- Servidor → Rendimiento ------------------------------------------------- */
+.perf-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.segmented {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: var(--radius-control);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+}
+
+.segmented-btn {
+  padding: 4px 12px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  border-radius: calc(var(--radius-control) - 2px);
+}
+
+.segmented-btn:hover {
+  background: none;
+  color: var(--text);
+}
+
+.segmented-btn.active {
+  background: var(--card);
+  color: var(--text);
+  box-shadow: 0 0 0 1px var(--border-strong);
+}
+
+.perf-charts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.perf-charts.is-empty {
+  display: block;
+}
+
+.perf-chart {
+  margin: 0;
+  min-width: 0;
+}
+
+.perf-chart figcaption {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.perf-title {
+  font-weight: 600;
+  font-size: var(--fs-md);
+}
+
+.perf-summary {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+
+.perf-plot {
+  position: relative;
+}
+
+.perf-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  touch-action: pan-y;
+}
+
+.perf-grid {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.perf-axis {
+  fill: var(--muted);
+  font-size: 10px;
+  font-family: var(--font-ui);
+}
+
+.perf-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.perf-dot,
+.perf-focus {
+  fill: var(--accent);
+  stroke: var(--card);
+  stroke-width: 2;
+}
+
+.perf-cross {
+  stroke: var(--border-strong);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.perf-hit {
+  fill: transparent;
+  cursor: crosshair;
+}
+
+.perf-tip {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: var(--fs-xs);
+  white-space: nowrap;
+  pointer-events: none;
+  display: flex;
+  gap: 8px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .3);
+  z-index: 2;
+}
+
+.perf-tip[hidden] {
+  display: none;
+}
+
+.perf-tip span {
+  color: var(--muted);
+}
+
+/* -- Consola: vista de chat ------------------------------------------------- */
+.console-views {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.console-view {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 12px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-weight: 600;
+  border-radius: var(--radius-control);
+}
+
+.console-view:hover {
+  background: rgba(var(--muted-rgb), .1);
+  color: var(--text);
+}
+
+.console-view.active {
+  background: rgba(var(--accent-rgb), .16);
+  color: var(--text);
+}
+
+.console-head .console-modpack {
+  margin-right: auto;
+}
+
+.console-wrap.chat-only > div:not(.is-chat) {
+  display: none;
+}
+
+.console-wrap.chat-only {
+  font-family: var(--font-ui);
+  font-size: var(--fs-md);
+}
+
+.console-wrap.chat-only .ts {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  margin-right: 6px;
+}
+
+.console-wrap.chat-only .src {
+  display: none;
+}
+
+.console-wrap.chat-only:not(:has(> .is-chat))::before {
+  content: 'Aquí aparecerá lo que se diga en el chat y quién entra o sale. Escribe abajo para hablar con los jugadores.';
+  display: block;
+  color: var(--muted);
+  font-style: italic;
+  padding: 8px 0;
+}
+
+.log-say {
+  color: var(--info);
+}
+
+/* -- Pantallas estrechas ---------------------------------------------------- */
+@media (max-width: 900px) {
+  .perf-charts {
+    grid-template-columns: 1fr;
+  }
+
+  .backup-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px 12px;
+  }
+
+  .backup-row-head {
+    display: none;
+  }
+
+  .backup-row .backup-world,
+  .backup-row .num {
+    display: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .auto-grid,
+  .notify-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .backup-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .task-row {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 8px 12px;
+  }
+
+  .task-main {
+    grid-column: 1 / -1;
+  }
+
+  .task-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+  }
+
+  .console-view {
+    padding: 5px 8px;
+  }
+}

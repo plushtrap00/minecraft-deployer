@@ -238,16 +238,29 @@ function applyServerState(running, modpack, ready) {
   }
 }
 
+// Lo piden a la vez varias partes (lista para arrancar, Rendimiento,
+// Estadísticas): mientras hay una petición en curso se comparte, porque
+// apiFetch cancela un GET si sale otro igual y el primero no llegaría nunca.
+var packInfoRequest = null;
+
 function refreshServerPackInfo() {
-  return apiFetch('/api/modpacks')
+  if (packInfoRequest) {
+    return packInfoRequest;
+  }
+  packInfoRequest = apiFetch('/api/modpacks')
     .then(function(response) { return response.json(); })
     .then(function(data) {
+      packInfoRequest = null;
       serverPackInfo = {};
       (data.modpacks || []).forEach(function(pack) {
         serverPackInfo[pack.name] = pack;
       });
       return data.modpacks || [];
+    }, function(error) {
+      packInfoRequest = null;
+      throw error;
     });
+  return packInfoRequest;
 }
 
 function loadServerPickList() {
@@ -563,6 +576,45 @@ document.getElementById('stop-btn').addEventListener('click', function() {
 });
 
 // -- Consola ---------------------------------------------------------------------
+// Dos vistas de la misma consola: todo, o solo el chat (mensajes, entradas y
+// salidas y lo dicho con say). En la de chat, lo que se escribe se manda con say.
+var consoleChatMode = false;
+
+function setConsoleView(chat) {
+  consoleChatMode = chat;
+  document.getElementById('console').classList.toggle('chat-only', chat);
+  document.getElementById('console-view-log').classList.toggle('active', !chat);
+  document.getElementById('console-view-chat').classList.toggle('active', chat);
+  document.getElementById('console-view-log').setAttribute('aria-selected', chat ? 'false' : 'true');
+  document.getElementById('console-view-chat').setAttribute('aria-selected', chat ? 'true' : 'false');
+  var input = document.getElementById('cmd-input');
+  input.placeholder = chat ? 'Escribe un mensaje para los jugadores…' : 'Escribe un comando: say Hola, list, whitelist add Alex…';
+  input.setAttribute('aria-label', chat ? 'Mensaje para los jugadores' : 'Comando para el servidor');
+  document.querySelector('.cmd-prompt').textContent = chat ? '💬' : '>';
+  var consoleEl = document.getElementById('console');
+  consoleEl.scrollTop = consoleEl.scrollHeight;
+}
+
+document.getElementById('console-view-log').addEventListener('click', function() { setConsoleView(false); });
+document.getElementById('console-view-chat').addEventListener('click', function() { setConsoleView(true); });
+
+// Con el servidor parado no hay consola abierta que avise de que arranca: si
+// lo enciende una tarea programada, el reinicio tras una caída u otra
+// persona, se nota mirando el estado de vez en cuando.
+setInterval(function() {
+  if (serverRunning || document.hidden || !document.getElementById('login-screen').classList.contains('hidden')) {
+    return;
+  }
+  apiFetch('/api/server/status')
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      if (data.running && !serverRunning) {
+        applyServerState(true, data.modpack, data.ready);
+      }
+    })
+    .catch(function() {});
+}, 15000);
+
 var cmdHistory = [];
 var cmdHistoryPos = 0;
 
@@ -589,6 +641,15 @@ function sendCommand() {
     return;
   }
   input.value = '';
+  if (consoleChatMode) {
+    // En la vista Chat lo escrito es un mensaje para los jugadores.
+    sendServerCommand('say ' + cmd).then(function(ok) {
+      if (ok) {
+        unlockAchievement('herald');
+      }
+    });
+    return;
+  }
   if (cmdHistory[cmdHistory.length - 1] !== cmd) {
     cmdHistory.push(cmd);
     if (cmdHistory.length > 50) {
@@ -651,6 +712,8 @@ function startSSE() {
 var LOG_LINE_RE = /^(\[[0-9:.]+\])(\s*\[[^\]]*\/(INFO|WARN|ERROR|FATAL|DEBUG)\](?:\s*\[[^\]]*\])?:?)?(.*)$/;
 var JOIN_RE = /^\s*([A-Za-z0-9_]{1,16}) (joined|left) the game\s*$/;
 var CHAT_RE = /^(\s*(?:\[Not Secure\] )?)<([A-Za-z0-9_]{1,16})> (.*)$/;
+// Lo que se dice con say desde la consola, el panel o RCON.
+var SAY_RE = /^\s*(?:\[Not Secure\] )?\[(Server|Rcon)\] /;
 // Códigos de formato de Minecraft (§a, §l...): cada letra es un color o un
 // estilo; §r lo quita todo. §k (texto revuelto) se ignora.
 var MC_FORMAT_RE = /§([0-9a-fk-or])/gi;
@@ -707,13 +770,14 @@ function appendMcFormatted(parent, text) {
 function appendLogMessage(div, message) {
   var join = message.match(JOIN_RE);
   if (join) {
-    div.classList.add(join[2] === 'joined' ? 'log-join' : 'log-leave');
+    div.classList.add(join[2] === 'joined' ? 'log-join' : 'log-leave', 'is-chat');
     div.insertAdjacentHTML('beforeend', ' ' + headHtml(join[1], null, 'sm') + ' ');
     div.appendChild(document.createTextNode(message.trim()));
     return;
   }
   var chat = message.match(CHAT_RE);
   if (chat) {
+    div.classList.add('is-chat');
     div.appendChild(document.createTextNode(chat[1]));
     var who = document.createElement('span');
     who.className = 'log-chat-name';
@@ -722,6 +786,9 @@ function appendLogMessage(div, message) {
     div.appendChild(document.createTextNode(' '));
     appendMcFormatted(div, chat[3]);
     return;
+  }
+  if (SAY_RE.test(message)) {
+    div.classList.add('is-chat', 'log-say');
   }
   appendMcFormatted(div, message);
 }
@@ -744,6 +811,9 @@ function appendLine(line) {
     cls = 'log-done';
   } else if (clean.indexOf('[Deployer]') !== -1) {
     cls = 'log-deployer';
+    if (clean.indexOf('tras la caída') !== -1) {
+      unlockAchievement('phoenix');
+    }
   }
   var div = appendConsoleNode(null, cls);
   if (match && match[2]) {

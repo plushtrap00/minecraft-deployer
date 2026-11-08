@@ -33,6 +33,33 @@ function loadingHtml() {
   return '<div class="skeleton-rows" role="status" aria-label="Cargando"><div></div><div></div><div></div></div>';
 }
 
+// apiFetch + JSON en una sola promesa que nunca falla: { ok, status, data }.
+// Si no hay conexión, ok es false y data.detail explica el problema.
+function apiJson(url, opts) {
+  return apiFetch(url, opts)
+    .then(function(response) {
+      return response.json()
+        .catch(function() { return {}; })
+        .then(function(data) { return { ok: response.ok, status: response.status, data: data || {} }; });
+    })
+    .catch(function() {
+      return { ok: false, status: 0, data: { detail: 'No se pudo conectar con el panel. Comprueba la conexión y vuelve a intentarlo.' } };
+    });
+}
+
+// Tamaño legible: 1,4 GB, 230 MB, 12 KB.
+function formatBytes(bytes) {
+  var units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  var value = bytes || 0;
+  var unit = 0;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit += 1;
+  }
+  var digits = unit >= 2 && value < 10 ? 1 : 0;
+  return value.toLocaleString('es-ES', { maximumFractionDigits: digits }) + ' ' + units[unit];
+}
+
 // "hace 3 días", "ayer", "hace 2 h"... para fechas en segundos epoch.
 function formatRelativeDate(epochSeconds) {
   var sec = Math.max(0, Math.floor(Date.now() / 1000 - epochSeconds));

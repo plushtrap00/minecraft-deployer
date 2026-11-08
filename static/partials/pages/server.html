@@ -76,7 +76,11 @@
 
   <div class="console-card" id="console-card" style="display:none">
     <div class="console-head">
-      <span class="console-title"><svg class="icon"><use href="#i-terminal"/></svg>Consola <span id="console-modpack" class="console-modpack"></span></span>
+      <div class="console-views" role="tablist" aria-label="Vista de la consola">
+        <button class="console-view active" id="console-view-log" role="tab" aria-selected="true"><svg class="icon"><use href="#i-terminal"/></svg>Consola</button>
+        <button class="console-view" id="console-view-chat" role="tab" aria-selected="false"><svg class="icon"><use href="#i-message-square"/></svg>Chat</button>
+      </div>
+      <span id="console-modpack" class="console-modpack"></span>
       <label class="console-follow"><input type="checkbox" id="console-follow" checked> Seguir al final</label>
     </div>
     <div class="console-wrap" id="console" role="log" aria-live="off"></div>
@@ -85,5 +89,21 @@
       <input type="text" id="cmd-input" placeholder="Escribe un comando: say Hola, list, whitelist add Alex…" autocomplete="off" spellcheck="false" aria-label="Comando para el servidor">
       <button class="btn-secondary btn-sm" id="cmd-send-btn">Enviar</button>
     </div>
+  </div>
+
+  <!-- Historial de TPS, jugadores y RAM (history_charts.js). Una muestra por
+       minuto mientras el servidor está encendido; se guardan 7 días. -->
+  <div class="card" id="perf-card">
+    <div class="card-head perf-head">
+      <h2>Rendimiento</h2>
+      <div class="perf-controls">
+        <select id="perf-modpack" aria-label="Servidor"></select>
+        <div class="segmented" role="group" aria-label="Periodo">
+          <button type="button" class="segmented-btn active" data-hours="24" aria-pressed="true">24 h</button>
+          <button type="button" class="segmented-btn" data-hours="168" aria-pressed="false">7 días</button>
+        </div>
+      </div>
+    </div>
+    <div class="perf-charts" id="perf-charts"></div>
   </div>
 </div>

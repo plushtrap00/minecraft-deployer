@@ -6,11 +6,11 @@
 // curso o cambios sin guardar (confirmLeave, en utils.js).
 var PAGE_SLUGS = {
   server: 'servidor', players: 'jugadores', manage: 'modpacks', deploy: 'instalar',
-  help: 'ayuda', users: 'usuarios', config: 'configuracion'
+  help: 'ayuda', users: 'usuarios', config: 'configuracion', automation: 'automatizacion'
 };
 var MGMT_TAB_SLUGS = {
   props: 'propiedades', ram: 'ram', configs: 'config-mods', kubejs: 'kubejs',
-  worldfiles: 'archivos-mundo', logs: 'logs', mods: 'mods'
+  worldfiles: 'archivos-mundo', logs: 'logs', mods: 'mods', backups: 'copias'
 };
 var DEPLOY_MODE_SLUGS = {
   'deploy-mode-import': 'subir', 'deploy-mode-create': 'crear', 'deploy-mode-download': 'descargar'
@@ -127,6 +127,9 @@ function showPage(name) {
   }
   if (name === 'config') {
     loadAdminConfig();
+  }
+  if (name === 'automation') {
+    loadAutomation();
   }
 }
 
@@ -273,4 +276,5 @@ function loadServerPageData() {
   loadMcDomain();
   checkServerStatus();
   loadFirewallStatus();
+  loadHistoryCharts();
 }

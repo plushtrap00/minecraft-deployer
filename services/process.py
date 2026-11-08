@@ -57,7 +57,54 @@ mc_modloader: str | None = None
 # True desde que el servidor escribe «Done (12.3s)! For help, type "help"»:
 # antes de eso el proceso existe pero todavía está cargando mods o el mundo.
 mc_ready = False
+mc_ready_since: float | None = None  # time.time() del «Done»
 _DONE_LINE_RE = re.compile(r'\]: Done \(\d')
+
+# Para distinguir una caída de una parada normal: el panel marca
+# mc_stop_requested antes de pedir «stop», y si alguien escribe «stop» en la
+# consola Minecraft avisa con «Stopping the server». Si el proceso termina sin
+# ninguna de las dos cosas, se ha caído (services/server_control.py decide si
+# vuelve a arrancarlo).
+mc_stop_requested = False
+_STOPPING_RE = re.compile(r'\]: Stopping (the )?server', re.IGNORECASE)
+
+# Esperas de líneas concretas de la consola (p. ej. «Saved the game» tras un
+# save-all antes de una copia): expect_line() registra una y el hilo lector la
+# despierta al ver la línea.
+_line_waiters: list = []
+_line_waiters_lock = threading.Lock()
+
+
+class LineWaiter:
+    def __init__(self, pattern: str):
+        self.regex = re.compile(pattern, re.IGNORECASE)
+        self.event = threading.Event()
+        self.line = None
+
+    def wait(self, timeout: float) -> bool:
+        try:
+            return self.event.wait(timeout)
+        finally:
+            with _line_waiters_lock:
+                if self in _line_waiters:
+                    _line_waiters.remove(self)
+
+
+def expect_line(pattern: str) -> LineWaiter:
+    """Registra la espera ANTES de mandar el comando, para no perder la respuesta."""
+    waiter = LineWaiter(pattern)
+    with _line_waiters_lock:
+        _line_waiters.append(waiter)
+    return waiter
+
+
+def _check_line_waiters(line: str) -> None:
+    with _line_waiters_lock:
+        for waiter in list(_line_waiters):
+            if waiter.regex.search(line):
+                waiter.line = line
+                waiter.event.set()
+                _line_waiters.remove(waiter)
 
 
 # ── Espera de apagado limpio ───────────────────────────────────────────────────
@@ -201,9 +248,13 @@ def _reader_thread(proc, temp_script: str | None = None):
     from services.metrics import mc_metrics, _parse_metrics_line
     import datetime
 
-    global mc_running_modpack, mc_ready
+    global mc_running_modpack, mc_ready, mc_ready_since, mc_stop_requested
+    from services import server_control
 
     mc_ready = False
+    saw_stopping = False
+    modpack = mc_running_modpack
+    started_at = time.monotonic()
     mc_metrics["players_online"] = []
     mc_metrics["tps"] = None
     mc_metrics["mspt"] = None
@@ -220,8 +271,15 @@ def _reader_thread(proc, temp_script: str | None = None):
             line = raw.decode("utf-8", errors="replace").rstrip()
             _broadcast(line)
             _parse_metrics_line(line)
+            _check_line_waiters(line)
             if not mc_ready and _DONE_LINE_RE.search(line):
                 mc_ready = True
+                mc_ready_since = time.time()
+                server_control.on_ready(modpack)
+            elif mc_ready:
+                server_control.on_line(modpack, line)
+            if not saw_stopping and _STOPPING_RE.search(line):
+                saw_stopping = True
             if not eula_handled and "you need to agree to the eula" in line.lower():
                 eula_handled = True
                 server_dir = DEFAULT_SERVERS_PATH / mc_running_modpack
@@ -235,7 +293,18 @@ def _reader_thread(proc, temp_script: str | None = None):
             except Exception:
                 pass
         _m.mc_start_time = None
+        was_ready = mc_ready
         mc_ready = False
+        mc_ready_since = None
         mc_metrics["players_online"] = []
         mc_metrics["tps"] = None
+        requested = mc_stop_requested
+        mc_stop_requested = False
         _notify_stopped()
+        server_control.on_exit(
+            modpack,
+            crashed=not requested and not saw_stopping and not eula_handled,
+            eula_accepted=eula_handled,
+            was_ready=was_ready,
+            uptime_seconds=time.monotonic() - started_at,
+        )

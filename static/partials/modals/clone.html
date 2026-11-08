@@ -1,0 +1,25 @@
+<!-- Clonar un modpack (backups.js) -->
+<div class="modal-overlay" id="clone-modal" aria-labelledby="clone-title">
+  <div class="modal modal-dialog">
+    <div class="modal-header">
+      <span class="modal-icon"><svg class="icon"><use href="#i-copy"/></svg></span>
+      <span class="dialog-title" id="clone-title">Clonar servidor</span>
+      <button class="modal-close" id="clone-close" aria-label="Cerrar"><svg class="icon"><use href="#i-x"/></svg></button>
+    </div>
+    <form id="clone-form">
+      <div class="dialog-body">
+        <p class="clone-intro">Se copian los mods, la configuración y los scripts de <strong id="clone-source"></strong>. Va bien para probar cambios sin tocar el bueno.</p>
+        <div class="prop-field">
+          <label class="prop-label">Nombre de la copia</label>
+          <input type="text" id="clone-name" class="w-full" autocomplete="off" spellcheck="false" maxlength="64" required>
+        </div>
+        <label class="clone-world"><input type="checkbox" id="clone-world"> Copiar también el mundo</label>
+        <p class="field-hint" id="clone-hint">Sin el mundo, la copia empezará con uno nuevo la primera vez que la arranques.</p>
+      </div>
+      <div class="dialog-footer">
+        <button type="button" class="btn-secondary" id="clone-cancel">Cancelar</button>
+        <button type="submit" class="btn-go" id="clone-submit">Clonar</button>
+      </div>
+    </form>
+  </div>
+</div>

@@ -11,7 +11,10 @@
     <div class="card pb-0 mgmt-card" id="mgmt-card">
       <div class="card-head">
         <h2 class="mgmt-heading"><span class="mgmt-icon" id="mgmt-icon"></span><span class="mgmt-heading-label">Gestionando</span> <span id="mgmt-title" class="mgmt-title"></span></h2>
-        <button class="btn-danger btn-sm" id="btn-delete-modpack"><svg class="icon"><use href="#i-trash-2"/></svg> Borrar modpack</button>
+        <div class="mgmt-head-actions">
+          <button class="btn-secondary btn-sm" id="btn-clone-modpack"><svg class="icon"><use href="#i-copy"/></svg> Clonar</button>
+          <button class="btn-danger btn-sm" id="btn-delete-modpack"><svg class="icon"><use href="#i-trash-2"/></svg> Borrar modpack</button>
+        </div>
       </div>
       <div class="mgmt-tabs" id="mgmt-panel-tabs">
         <button class="mgmt-tab active" id="mtab-props"><svg class="icon"><use href="#i-sliders-horizontal"/></svg>server.properties</button>
@@ -21,6 +24,7 @@
         <button class="mgmt-tab" id="mtab-worldfiles"><svg class="icon"><use href="#i-map"/></svg>Archivos de mundo</button>
         <button class="mgmt-tab" id="mtab-logs"><svg class="icon"><use href="#i-file-text"/></svg>Logs</button>
         <button class="mgmt-tab" id="mtab-mods"><svg class="icon"><use href="#i-puzzle"/></svg>Mods</button>
+        <button class="mgmt-tab" id="mtab-backups"><svg class="icon"><use href="#i-archive"/></svg>Copias</button>
       </div>
     </div>
 
@@ -31,6 +35,7 @@
     <!-- include: partials/manage/worldfiles.html -->
     <!-- include: partials/manage/logs.html -->
     <!-- include: partials/manage/mods.html -->
+    <!-- include: partials/manage/backups.html -->
 
   </div>
 </div>

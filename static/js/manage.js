@@ -206,7 +206,7 @@ function deleteModpack(name) {
     });
 }
 
-['props', 'ram', 'configs', 'kubejs', 'worldfiles', 'logs', 'mods'].forEach(function(name) {
+['props', 'ram', 'configs', 'kubejs', 'worldfiles', 'logs', 'mods', 'backups'].forEach(function(name) {
   document.getElementById('mtab-' + name).addEventListener('click', function() {
     if (name === activeMgmtTab()) {
       activateMgmtTab(name);  // pulsar la pestaña en la que ya estás la recarga
@@ -258,5 +258,8 @@ function activateMgmtTab(name) {
   }
   if (name === 'ram') {
     loadRamConfig();
+  }
+  if (name === 'backups') {
+    loadBackups();
   }
 }

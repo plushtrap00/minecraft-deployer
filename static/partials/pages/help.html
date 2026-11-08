@@ -39,7 +39,9 @@
         <p>Desde la pestaña <b>Servidor</b> eliges qué modpack arrancar (si hay más de uno) y decides si acepta conexiones solo de tu red local o de cualquier IP.</p>
         <ul>
           <li><b>Consola en vivo</b> — ves el log del servidor en tiempo real y puedes enviar comandos (<code>say</code>, <code>list</code>, <code>stop</code>...) directamente.</li>
+          <li><b>Chat</b> — la pestaña <b>Chat</b> de la consola deja solo los mensajes de los jugadores, quién entra y sale y lo dicho con <code>say</code>. Lo que escribas ahí les llega a todos como mensaje del servidor.</li>
           <li><b>Métricas</b> — TPS y MSPT en vivo (vía RCON, en Forge/NeoForge) y jugadores conectados, mientras el servidor está en marcha.</li>
+          <li><b>Rendimiento</b> — gráficas de TPS, jugadores y RAM de las últimas 24 horas o 7 días. Se guarda una muestra por minuto mientras el servidor está encendido; donde estuvo apagado, la línea se corta.</li>
           <li><b>Firewall</b> — controla si el puerto de Minecraft está abierto solo en tu red local o también desde fuera (necesita permisos de administrador).</li>
         </ul>
       </div>
@@ -49,6 +51,27 @@
       <summary>Jugadores</summary>
       <div class="help-section-body">
         <p>Gestión global de jugadores, aplicada a <b>todos los servidores a la vez</b>: operadores (ops), whitelist, y baneos de jugador o de IP. Si el servidor está corriendo en ese momento, usa los comandos de la consola para que el cambio surta efecto inmediato (los archivos por sí solos no expulsan/aceptan a nadie en caliente).</p>
+        <p>Abajo, <b>Estadísticas</b> muestra lo que guarda el propio mundo de cada jugador: tiempo jugado, muertes, bichos, bloques picados, distancia recorrida... Pulsa el nombre de una columna para ordenar por ella.</p>
+      </div>
+    </details>
+
+    <details class="help-section">
+      <summary>Copias de seguridad y clonar</summary>
+      <div class="help-section-body">
+        <p>En <b>Modpacks → Copias</b> haces una copia del mundo con un clic (también con el servidor encendido: el panel pausa el guardado un momento para que la copia salga entera), la descargas, la restauras o la borras. Para restaurar, el servidor tiene que estar parado, y antes se guarda una copia del mundo actual por si quieres volver atrás.</p>
+        <p>El botón <b>Clonar</b> de un modpack crea otro igual (mods, configuración, scripts y, si quieres, el mundo) para probar cambios sin tocar el bueno.</p>
+      </div>
+    </details>
+
+    <details class="help-section">
+      <summary>Automatización</summary>
+      <div class="help-section-body">
+        <ul>
+          <li><b>Si el servidor se cae</b> — el panel lo vuelve a arrancar solo, con un límite de intentos para no entrar en bucle si algo va mal. Parar desde el panel o con <code>stop</code> no cuenta como caída.</li>
+          <li><b>Copias automáticas</b> — cada cierto número de horas mientras el servidor está encendido, guardando solo las últimas.</li>
+          <li><b>Tareas programadas</b> — reiniciar, parar, encender un servidor, ejecutar un comando o hacer una copia a una hora y unos días concretos. Los reinicios y paradas pueden avisar antes a los jugadores. Con <b>Probar</b> la ejecutas al momento para ver que funciona.</li>
+        </ul>
+        <p>Todo funciona aunque no tengas el panel abierto.</p>
       </div>
     </details>
 
@@ -63,6 +86,7 @@
       <summary>Configuración <span class="label-note">(solo administrador)</span></summary>
       <div class="help-section-body">
         <p>Edita las variables de entorno (usuario, puertos, dominio, clave de CurseForge, auto-actualización...) y los números de ajuste internos de la app (timeouts, límites, tamaños de página...) directamente desde el navegador. Los cambios no se aplican en caliente: al guardar, el panel te ofrece reiniciar la app en el momento para aplicarlos (no reinicia si hay un servidor de Minecraft corriendo o una operación en curso).</p>
+        <p>En <b>Avisos</b> configuras, si quieres, que el panel te escriba por <b>Telegram</b> o <b>Discord</b> cuando el servidor está listo, se cae, entra alguien... Cada instalación usa su propio bot de Telegram (lo creas en @BotFather) o su propio webhook de Discord, así que los avisos solo te llegan a ti. Estos cambios sí se aplican al momento.</p>
       </div>
     </details>
 

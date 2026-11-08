@@ -14,6 +14,10 @@ Rutas:
 - GET  /api/admin/constants  → valores + descripciones de .APP_CONSTANTS
 - POST /api/admin/constants  → guarda cambios
 - POST /api/admin/restart    → reinicia la app para aplicar lo anterior
+- GET  /api/admin/notifications              → avisos por Telegram/Discord
+- POST /api/admin/notifications              → guardarlos (se aplican al momento, sin reiniciar)
+- POST /api/admin/notifications/test         → mensaje de prueba con lo escrito (aunque no esté guardado)
+- POST /api/admin/notifications/detect-chat  → averigua el chat ID con el token del bot
 """
 import asyncio
 import bcrypt
@@ -24,7 +28,7 @@ from pydantic import BaseModel
 from dotenv import dotenv_values, set_key
 
 import app_constants
-from services import auto_update
+from services import auto_update, notify
 from routes.auth import require_admin as _require_admin
 
 router = APIRouter(prefix="/api/admin", tags=["admin-config"])
@@ -150,3 +154,83 @@ async def restart_app(request: Request):
         raise HTTPException(status_code=409, detail=str(e))
     auto_update.schedule_restart()
     return JSONResponse({"success": True, "message": "Reiniciando la app..."})
+
+
+# ── Avisos por Telegram / Discord ─────────────────────────────────────────────
+# Van en el .env (el token del bot y el webhook son secretos), pero
+# services/notify.py los lee en cada envío: no hace falta reiniciar la app.
+@router.get("/notifications")
+def get_notifications(request: Request):
+    _require_admin(request)
+    settings = notify.load_settings()
+    return JSONResponse({**settings, "available_events": notify.EVENTS})
+
+
+class NotificationsBody(BaseModel):
+    telegram_token: str = ""
+    telegram_chat_id: str = ""
+    discord_webhook: str = ""
+    events: list = []
+
+
+def _clean_notifications(body: NotificationsBody) -> dict:
+    values = {
+        "telegram_token": body.telegram_token.strip(),
+        "telegram_chat_id": body.telegram_chat_id.strip(),
+        "discord_webhook": body.discord_webhook.strip(),
+    }
+    for key, value in values.items():
+        if any(ch in value for ch in "\r\n\x00 "):
+            raise HTTPException(status_code=400, detail="Los datos de los avisos no pueden llevar espacios ni saltos de línea")
+    if values["discord_webhook"] and not notify.valid_discord_webhook(values["discord_webhook"]):
+        raise HTTPException(status_code=400, detail="La URL del webhook de Discord no es válida (tiene que empezar por https://discord.com/api/webhooks/)")
+    if bool(values["telegram_token"]) != bool(values["telegram_chat_id"]):
+        raise HTTPException(status_code=400, detail="Para Telegram hacen falta el token del bot y el chat ID")
+    values["events"] = [e for e in body.events if e in notify.EVENTS]
+    return values
+
+
+@router.post("/notifications")
+async def save_notifications(request: Request, body: NotificationsBody):
+    _require_admin(request)
+    values = _clean_notifications(body)
+    pairs = {
+        "TELEGRAM_BOT_TOKEN": values["telegram_token"],
+        "TELEGRAM_CHAT_ID": values["telegram_chat_id"],
+        "DISCORD_WEBHOOK_URL": values["discord_webhook"],
+        # Vacío significaría «los de siempre»: si se desmarca todo, se guarda «none».
+        "NOTIFY_EVENTS": ",".join(values["events"]) or "none",
+    }
+    try:
+        for key, value in pairs.items():
+            await asyncio.to_thread(set_key, str(_ENV_PATH), key, value, quote_mode="never")
+    except OSError as e:
+        print(f"[config-admin] No se pudo escribir {_ENV_PATH}: {e}", flush=True)
+        raise HTTPException(status_code=500, detail="No se pudo guardar en .env: el archivo no se puede escribir")
+    return JSONResponse({"success": True})
+
+
+@router.post("/notifications/test")
+async def test_notifications(request: Request, body: NotificationsBody):
+    _require_admin(request)
+    values = _clean_notifications(body)
+    if not notify.is_configured(values):
+        raise HTTPException(status_code=400, detail="Configura Telegram o Discord antes de probar")
+    results = await asyncio.to_thread(
+        notify.send_now, values, "🧪 Mensaje de prueba de MC Deployer: los avisos funcionan."
+    )
+    return JSONResponse({"results": results, "ok": all(r == "ok" for r in results.values())})
+
+
+class DetectChatBody(BaseModel):
+    telegram_token: str
+
+
+@router.post("/notifications/detect-chat")
+async def detect_chat(request: Request, body: DetectChatBody):
+    _require_admin(request)
+    try:
+        chat = await asyncio.to_thread(notify.detect_telegram_chat, body.telegram_token.strip())
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return JSONResponse(chat)

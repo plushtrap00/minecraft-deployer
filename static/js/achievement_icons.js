@@ -421,6 +421,86 @@ var ACHIEVEMENT_ICONS = {
     ],
     palette: { r: '#d23a2a', d: '#9a2420', w: '#efe9e0', k: '#222222' }
   },
+  // Cofre con candado
+  'safe-keeper': {
+    rows: [
+      '..........',
+      '.oooooooo.',
+      '.wWWWWWWw.',
+      '.wWWWWWWw.',
+      '.oooGGooo.',
+      '.wWWgGWWw.',
+      '.wWWggWWw.',
+      '.wWWWWWWw.',
+      '.oooooooo.',
+      '..........'
+    ],
+    palette: { o: '#3a3f4a', w: '#6a7488', W: '#9aa6bc', G: '#ffd24a', g: '#b8860b' }
+  },
+  // Reloj
+  'clockwork': {
+    rows: [
+      '...gggg...',
+      '..gYYYYg..',
+      '.gYYkYYYg.',
+      'gYYYkYYYYg',
+      'gYYYkkkYYg',
+      'gYYYYYYYYg',
+      'gYYYYYYYYg',
+      '.gYYYYYYg.',
+      '..gYYYYg..',
+      '...gggg...'
+    ],
+    palette: { g: '#b8860b', Y: '#ffe27a', k: '#3a2a10' }
+  },
+  // Paloma con carta
+  'messenger': {
+    rows: [
+      '..........',
+      '...ww.....',
+      '..wWWw....',
+      '.kwWWWw...',
+      'yywWWWWww.',
+      '...wWWWWWw',
+      '...ppppWW.',
+      '...pPPp...',
+      '...pppp...',
+      '..........'
+    ],
+    palette: { w: '#c8cdd8', W: '#ffffff', k: '#222222', y: '#f0a020', p: '#d8b878', P: '#a05030' }
+  },
+  // Dos aldeanos iguales
+  'twins': {
+    rows: [
+      '..........',
+      '.ss....ss.',
+      'sSSs..sSSs',
+      'sksk..sksk',
+      'sSSs..sSSs',
+      '.nn....nn.',
+      'gggg..gggg',
+      'gGGg..gGGg',
+      'gggg..gggg',
+      '.g.g...gg.'
+    ],
+    palette: { s: '#b07850', S: '#d8a070', k: '#3a8a3a', n: '#8a5838', g: '#6a4a8a', G: '#8a6aaa' }
+  },
+  // Fénix
+  'phoenix': {
+    rows: [
+      '....yy....',
+      '...yRRy...',
+      '..yRkRRy..',
+      'y.yRRRRy.y',
+      'RyyRRRRyyR',
+      'RRRrRRrRRR',
+      '.RRrRRrRR.',
+      '..rrOOrr..',
+      '...OyyO...',
+      '....yy....'
+    ],
+    palette: { y: '#ffd24a', R: '#ff5a2a', r: '#c2301a', k: '#222222', O: '#ff9a2a' }
+  },
   // Diamante
   'platinum': {
     rows: [

@@ -1,8 +1,8 @@
 # Minecraft Server Deployer
 
-Panel web (FastAPI + JavaScript sin frameworks) para crear y gestionar servidores de Minecraft modded: instalar modpacks completos desde Modrinth/CurseForge, buscar y actualizar mods, gestionar jugadores (ops/whitelist/bans), mundos, consola en vivo, métricas, firewall y copias de seguridad. Pensado para autoalojarse en tu propio servidor o VPS Linux.
+Panel web (FastAPI + JavaScript sin frameworks) para crear y gestionar servidores de Minecraft modded: instalar modpacks completos desde Modrinth/CurseForge, buscar y actualizar mods, gestionar jugadores (ops/whitelist/bans), mundos, consola en vivo con chat, métricas e historial, firewall, copias de seguridad, reinicio automático si el servidor se cae, tareas programadas y avisos por Telegram o Discord. Pensado para autoalojarse en tu propio servidor o VPS Linux.
 
-Y como gestionar un servidor de Minecraft no tiene por qué ser aburrido: cuatro temas con su propio fondo pixelado, una escena que pasa de noche a día cuando el servidor arranca, cabezas de los jugadores, celebraciones y más de veinte logros por desbloquear (algunos secretos).
+Y como gestionar un servidor de Minecraft no tiene por qué ser aburrido: cuatro temas con su propio fondo pixelado, una escena que pasa de noche a día cuando el servidor arranca, cabezas de los jugadores, celebraciones y más de treinta logros por desbloquear (algunos secretos).
 
 ## Requisitos
 
@@ -31,6 +31,7 @@ El instalador te va preguntando:
 - Dominio público (opcional — para que los jugadores se conecten con un nombre en vez de una IP).
 - Clave de API de CurseForge (opcional — **Modrinth funciona sin ella**; se consigue gratis en [console.curseforge.com](https://console.curseforge.com/#/api-keys)).
 - Auto-actualización (opcional — la app comprueba sola si hay una versión nueva en GitHub).
+- Avisos por Telegram (opcional — ver [Avisos por Telegram y Discord](#avisos-por-telegram-y-discord)).
 - Versión de Java (`17` o `21`, según qué versiones de Minecraft vayas a alojar).
 - Dónde se guardan los modpacks/servidores en disco.
 
@@ -121,6 +122,24 @@ No hace falta vaciar la caché del navegador: cada archivo del panel lleva su pr
 - **Tutorial dentro de la app**: pestaña **Ayuda**, con una explicación de cada sección del panel.
 - **Sesión**: el inicio de sesión se guarda en una cookie del navegador (HttpOnly). Al cambiar la contraseña de una cuenta o borrarla, sus sesiones abiertas dejan de valer.
 - **Apariencia**: botón **Apariencia** de la barra superior. Ahí se elige el tema (Amatista, Superficie, Nether o End), se activan los sonidos (apagados por defecto) y se ve la lista de logros. Todo esto se guarda en cada navegador, no en el servidor: si entras desde otro equipo, empiezas de cero.
+
+## Copias, automatización y avisos
+
+- **Copias de seguridad**: en **Modpacks → Copias**. Se pueden hacer con el servidor encendido (el panel pausa el guardado mientras copia), descargar y restaurar (con el servidor parado; antes se guarda una copia del mundo actual). Se guardan en `SERVERS_PATH/.global/backups/<modpack>/`.
+- **Automatización**: sección **Automatización** del panel. Reinicio automático si el servidor se cae (con límite de intentos), copias automáticas cada N horas guardando las últimas, y tareas programadas (reiniciar, parar, encender, comando o copia) con aviso previo a los jugadores. Los ajustes van en `SERVERS_PATH/.global/automation.json` y funcionan aunque nadie tenga el panel abierto.
+- **Clonar** un modpack, **estadísticas** de jugadores (de los archivos del mundo), **gráficas de rendimiento** de 24 h / 7 días (`.global/history/`) y vista de **chat** en la consola.
+
+### Avisos por Telegram y Discord
+
+Opcionales. El panel puede escribirte cuando el servidor está listo, se para, se cae, entra o sale alguien, falla una copia, termina una instalación o se ejecuta una tarea programada (eliges cuáles).
+
+Cada instalación usa **su propio bot**, así que los avisos solo le llegan a quien lo configura:
+
+1. En Telegram, abre **@BotFather**, escríbele `/newbot` y elige un nombre. Te dará un token.
+2. Abre tu bot nuevo y escríbele cualquier cosa (por ejemplo `/start`).
+3. Pega el token en **Configuración → Avisos** y pulsa **Detectar**: el panel encuentra tu chat solo. Guarda y usa **Enviar prueba**.
+
+El instalador (`install.sh` / `setup.py`) también lo pregunta, y se puede dejar en blanco. Para Discord basta la URL de un webhook del canal (ajustes del canal → Integraciones → Webhooks). Todo se guarda en el `.env` (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `DISCORD_WEBHOOK_URL`, `NOTIFY_EVENTS`), pero se aplica al momento, sin reiniciar el panel.
 
 ## Desarrollo y pruebas
 

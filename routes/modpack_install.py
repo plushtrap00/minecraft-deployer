@@ -17,6 +17,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from app_constants import MOD_SEARCH_PAGE_SIZE
 from services.mod_search import ModSearchError
 from services.server_create import validate_new_server_name
+from services.notify import notify_install_result
 from services.modpack_install import (
     search_modrinth_modpacks, get_modrinth_modpack_versions, install_modrinth_modpack_stream,
     search_curseforge_modpacks, get_curseforge_modpack_versions, install_curseforge_modpack_stream,
@@ -146,6 +147,7 @@ def install_stream(source: str, project_id: str, version_id: str, name: str, ram
 
         with BusyGuard(f"instalando modpack '{name}' desde {source}"):
             async for event in generator:
+                notify_install_result(event, name)
                 yield f"data: {json.dumps(event)}\n\n"
 
     return StreamingResponse(

@@ -14,6 +14,7 @@ function playerEmptyHtml(type) {
 }
 
 function loadPlayers() {
+  loadPlayerStats();
   apiFetch('/api/players')
     .then(function(response) { return response.json(); })
     .then(function(data) {

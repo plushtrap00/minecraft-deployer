@@ -4,6 +4,7 @@
     <div class="mgmt-tabs" id="cfg-tabs">
       <button class="mgmt-tab active" id="cfgtab-env"><svg class="icon"><use href="#i-settings"/></svg>Variables de entorno</button>
       <button class="mgmt-tab" id="cfgtab-constants"><svg class="icon"><use href="#i-sliders-horizontal"/></svg>Constantes de la app</button>
+      <button class="mgmt-tab" id="cfgtab-notify"><svg class="icon"><use href="#i-bell"/></svg>Avisos</button>
     </div>
   </div>
 
@@ -62,6 +63,58 @@
       <div class="info-box">Números de ajuste (timeouts, límites, tamaños de caché) compartidos por todas las instalaciones — a diferencia del .env, este archivo no tiene secretos y sí se versiona en git. Los cambios <strong>no se aplican en caliente</strong> — al guardar se te ofrecerá reiniciar la app para aplicarlos.</div>
       <div id="config-constants-form"><div class="skeleton-rows" role="status" aria-label="Cargando"><div></div><div></div><div></div></div></div>
       <button id="cfg-save-constants-btn" class="add-user-btn mt-l">Guardar constantes</button>
+    </div>
+  </div>
+
+  <!-- Avisos por Telegram y Discord (notifications.js). Opcionales: cada
+       instalación usa su propio bot o webhook, así que solo le llegan a
+       quien los configura. -->
+  <div class="cfg-tab-content" id="cfg-content-notify">
+    <div class="card">
+      <div class="info-box">El panel puede mandarte un mensaje cuando el servidor está listo, se cae o entra alguien. Es opcional y cada instalación usa <strong>su propio bot</strong>: los avisos solo te llegan a ti. Los cambios se aplican al momento, sin reiniciar.</div>
+
+      <div class="notify-grid">
+        <section class="notify-channel">
+          <h3 class="notify-channel-title"><svg class="icon"><use href="#i-send"/></svg>Telegram</h3>
+          <ol class="notify-steps">
+            <li>En Telegram, abre <strong>@BotFather</strong>, escríbele <code>/newbot</code> y elige un nombre. Te dará un token.</li>
+            <li>Pega el token aquí abajo.</li>
+            <li>Abre tu bot nuevo, escríbele cualquier cosa (por ejemplo <code>/start</code>) y pulsa <strong>Detectar</strong>.</li>
+          </ol>
+          <div class="prop-field">
+            <label class="prop-label">Token del bot</label>
+            <div class="pass-wrapper">
+              <input type="password" id="notify-telegram-token" class="w-full" placeholder="123456789:ABC-DEF…" autocomplete="off" spellcheck="false">
+              <button type="button" id="notify-token-vis" class="btn-pass-toggle" title="Mostrar u ocultar el token" aria-label="Mostrar u ocultar el token"><svg class="icon"><use href="#i-eye"/></svg></button>
+            </div>
+          </div>
+          <div class="prop-field">
+            <label class="prop-label">Chat ID</label>
+            <div class="input-flex mb-0">
+              <input type="text" id="notify-telegram-chat" class="flex-1" placeholder="Se rellena al pulsar Detectar" autocomplete="off" spellcheck="false">
+              <button type="button" class="btn-secondary" id="notify-detect-btn"><svg class="icon"><use href="#i-search"/></svg>Detectar</button>
+            </div>
+            <div class="field-hint" id="notify-detect-hint"></div>
+          </div>
+        </section>
+
+        <section class="notify-channel">
+          <h3 class="notify-channel-title"><svg class="icon"><use href="#i-message-square"/></svg>Discord</h3>
+          <p class="notify-channel-desc">En tu servidor de Discord: ajustes del canal → Integraciones → Webhooks → Nuevo webhook → Copiar URL.</p>
+          <div class="prop-field">
+            <label class="prop-label">URL del webhook</label>
+            <input type="text" id="notify-discord-url" class="w-full" placeholder="https://discord.com/api/webhooks/…" autocomplete="off" spellcheck="false">
+          </div>
+        </section>
+      </div>
+
+      <div class="block-label mt-l">Avisarme cuando…</div>
+      <div class="notify-events" id="notify-events"></div>
+
+      <div class="notify-actions">
+        <button type="button" class="btn-secondary" id="notify-test-btn"><svg class="icon"><use href="#i-send"/></svg>Enviar prueba</button>
+        <button type="button" class="add-user-btn" id="notify-save-btn">Guardar avisos</button>
+      </div>
     </div>
   </div>
 </div>

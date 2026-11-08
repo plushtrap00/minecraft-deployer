@@ -560,6 +560,10 @@ var ACHIEVEMENTS = [
   { id: 'marathon', name: 'Maratón', hint: 'Ten un servidor encendido 24 horas seguidas.' },
   { id: 'tourist', name: 'Turista interdimensional', hint: 'Prueba todos los temas.' },
   { id: 'explorer', name: 'Explorador', hint: 'Visita todas las secciones del panel.' },
+  { id: 'safe-keeper', name: 'Precavido', hint: 'Haz una copia de seguridad de un mundo desde Copias.' },
+  { id: 'clockwork', name: 'Como un reloj', hint: 'Programa una tarea en Automatización.' },
+  { id: 'messenger', name: 'Paloma mensajera', hint: 'Recibe un aviso de prueba por Telegram o Discord.' },
+  { id: 'twins', name: 'Gemelos', hint: 'Clona un servidor.' },
   { id: 'iron-fist', name: 'Mano dura', hint: 'Banea a alguien.', secret: true },
   { id: 'mercy', name: 'Segundas oportunidades', hint: 'Levanta un baneo.', secret: true },
   { id: 'konami', name: 'Vidas infinitas', hint: 'Arriba, arriba, abajo, abajo…', secret: true },
@@ -569,6 +573,7 @@ var ACHIEVEMENTS = [
   { id: 'dizzy', name: 'Mareo interdimensional', hint: 'Cambia de tema 10 veces en medio minuto.', secret: true },
   { id: 'touch-sky', name: 'Tocar el cielo', hint: 'Pulsa 5 veces el sol o la luna.', secret: true },
   { id: 'tnt', name: 'Borrón y cuenta nueva', hint: 'Borra un mundo.', secret: true },
+  { id: 'phoenix', name: 'Ave fénix', hint: 'Que el servidor se levante solo tras una caída.', secret: true },
   { id: 'platinum', name: 'Platino', hint: 'Consigue todos los demás logros.' }
 ];
 

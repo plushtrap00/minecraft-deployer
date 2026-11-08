@@ -303,6 +303,52 @@ if [[ "$ALREADY_INSTALLED" == "false" ]] || [[ ! -f ".env" ]]; then
         info "Auto-actualización deshabilitada (puedes activarla luego editando .env)"
     fi
 
+    sep "Avisos por Telegram (opcional)"
+    echo "  El panel puede avisarte por Telegram cuando el servidor arranca, se cae,"
+    echo "  entra alguien... Cada instalación usa su propio bot, así que solo te"
+    echo "  llegan tus avisos. Para crearlo:"
+    echo "    1. En Telegram, abre @BotFather y escríbele /newbot."
+    echo "    2. Elige un nombre; te dará un token (algo como 123456:ABC-DEF...)."
+    echo "  También se puede configurar más tarde en Configuración → Avisos."
+    echo ""
+    TELEGRAM_BOT_TOKEN=""
+    TELEGRAM_CHAT_ID=""
+    prompt "  Token del bot [déjalo vacío para saltar]: "
+    read -r TELEGRAM_BOT_TOKEN
+    TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN// /}"
+    if [[ -n "$TELEGRAM_BOT_TOKEN" ]]; then
+        echo "  Ahora abre tu bot en Telegram y escríbele cualquier cosa (por ejemplo /start)."
+        prompt "  Pulsa Enter cuando lo hayas hecho... "
+        read -r _
+        TELEGRAM_CHAT_ID=$("$VENV_PYTHON" - "$TELEGRAM_BOT_TOKEN" <<'PYEOF2'
+import json, sys, urllib.request
+try:
+    with urllib.request.urlopen(f"https://api.telegram.org/bot{sys.argv[1]}/getUpdates", timeout=10) as r:
+        updates = json.load(r).get("result") or []
+    for update in reversed(updates):
+        chat = (update.get("message") or update.get("channel_post") or {}).get("chat") or {}
+        if "id" in chat:
+            print(chat["id"])
+            break
+except Exception:
+    pass
+PYEOF2
+)
+        if [[ -z "$TELEGRAM_CHAT_ID" ]]; then
+            warn "No se encontró ningún mensaje (¿token correcto? ¿le escribiste al bot?)."
+            prompt "  Chat ID a mano [déjalo vacío para configurarlo luego]: "
+            read -r TELEGRAM_CHAT_ID
+        fi
+        if [[ -n "$TELEGRAM_CHAT_ID" ]]; then
+            ok "Telegram configurado (chat ${TELEGRAM_CHAT_ID})"
+        else
+            TELEGRAM_BOT_TOKEN=""
+            info "Telegram sin configurar (puedes hacerlo luego en Configuración → Avisos)"
+        fi
+    else
+        info "Avisos por Telegram deshabilitados (puedes activarlos luego en Configuración → Avisos)"
+    fi
+
     sep "Versión de Java"
     echo "    21 → Minecraft 1.20.5 o superior  (NeoForge, Fabric moderno)"
     echo "    17 → Minecraft 1.17 – 1.20.4"
@@ -335,6 +381,8 @@ MC_DOMAIN=${MC_DOMAIN}
 CURSEFORGE_API_KEY=${CURSEFORGE_API_KEY}
 AUTO_UPDATE_ENABLED=${AUTO_UPDATE_ENABLED}
 AUTO_UPDATE_INTERVAL_SECONDS=${AUTO_UPDATE_INTERVAL_SECONDS}
+TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
 EOF
     ok ".env generado"
 

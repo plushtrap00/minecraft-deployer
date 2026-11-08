@@ -5,7 +5,7 @@ var CFG_ENV_TEXT_KEYS = [
 ];
 
 // -- Sub-pestañas: Variables de entorno / Constantes de la app --------------
-['env', 'constants'].forEach(function(name) {
+['env', 'constants', 'notify'].forEach(function(name) {
   document.getElementById('cfgtab-' + name).addEventListener('click', function() {
     activateCfgTab(name);
   });
@@ -20,6 +20,9 @@ function activateCfgTab(name) {
   });
   document.getElementById('cfgtab-' + name).classList.add('active');
   document.getElementById('cfg-content-' + name).classList.add('active');
+  if (name === 'notify') {
+    loadNotifications();
+  }
 }
 
 function loadAdminConfig() {

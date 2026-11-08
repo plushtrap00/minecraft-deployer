@@ -116,6 +116,7 @@ button .icon {
 .btn-secondary > .icon:first-child,
 .btn-ghost > .icon:first-child,
 .btn-danger > .icon:first-child,
+.btn-go > .icon:first-child,
 .mods-menu-item > .icon:first-child,
 .crash-culprit-title > .icon:first-child,
 .sysmon-title > .icon:first-child {

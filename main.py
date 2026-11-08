@@ -40,9 +40,11 @@ from routes.server import router as server_router
 from routes.auth import router as auth_router, verify_token, token_from_request
 from routes.users import router as users_router
 from routes.config_admin import router as config_admin_router
+from routes.automation import router as automation_router
+from routes.backups import router as backups_router
 from services.lifecycle import shutdown_event
 from services.process import notify_app_shutdown
-from services import auto_update
+from services import auto_update, scheduler
 
 # ── Middleware de autenticación ────────────────────────────────────────────────
 
@@ -96,7 +98,9 @@ class AuthMiddleware(BaseHTTPMiddleware):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     auto_update.start()
+    scheduler.start()
     yield
+    scheduler.stop()
     # Uvicorn llega aquí DESPUÉS de esperar a que las conexiones se cierren
     # solas (ver timeout_graceful_shutdown más abajo): para entonces los
     # streams SSE de consola/sysmon ya se cortaron por esa espera (o fueron
@@ -132,6 +136,8 @@ app.include_router(upload_router)
 app.include_router(firewall_router)
 app.include_router(players_router)
 app.include_router(server_router)
+app.include_router(automation_router)
+app.include_router(backups_router)
 
 
 # ── Limpieza al arrancar ───────────────────────────────────────────────────────

@@ -195,11 +195,51 @@ def configure_auto_update(default_enabled: bool = False, default_interval: int =
     return True, interval
 
 
+def configure_telegram(default_token: str = "", default_chat: str = "") -> tuple[str, str]:
+    print("  El panel puede avisarte por Telegram cuando el servidor arranca, se cae,")
+    print("  entra alguien... Cada instalación usa su propio bot, así que solo te")
+    print("  llegan tus avisos. Para crearlo:")
+    print("    1. En Telegram, abre @BotFather y escríbele /newbot.")
+    print("    2. Elige un nombre; te dará un token (algo como 123456:ABC-DEF...).")
+    print("  También se puede configurar más tarde en Configuración → Avisos.\n")
+    hint = "ya configurado, Enter para mantener" if default_token else "déjalo vacío para saltar"
+    token = input(f"  Token del bot [{hint}]: ").strip().replace(" ", "") or default_token
+    if not token:
+        return "", ""
+    if token == default_token and default_chat:
+        return token, default_chat
+    print("  Ahora abre tu bot en Telegram y escríbele cualquier cosa (por ejemplo /start).")
+    input("  Pulsa Enter cuando lo hayas hecho... ")
+    chat = _detect_telegram_chat(token)
+    if chat:
+        print(f"  ✓ Chat encontrado: {chat}")
+        return token, chat
+    print("  No se encontró ningún mensaje (¿token correcto? ¿le escribiste al bot?).")
+    chat = input("  Chat ID a mano [déjalo vacío para configurarlo luego]: ").strip()
+    return (token, chat) if chat else ("", "")
+
+
+def _detect_telegram_chat(token: str) -> str:
+    import json
+    import urllib.request
+    try:
+        with urllib.request.urlopen(f"https://api.telegram.org/bot{token}/getUpdates", timeout=10) as response:
+            updates = json.load(response).get("result") or []
+    except Exception:
+        return ""
+    for update in reversed(updates):
+        chat = (update.get("message") or update.get("channel_post") or {}).get("chat") or {}
+        if "id" in chat:
+            return str(chat["id"])
+    return ""
+
+
 # ── Generadores de archivos ────────────────────────────────────────────────────
 
 def generate_env(
     username: str, password: str | None, existing_hash: str, mc_domain: str, curseforge_key: str,
     auto_update_enabled: bool, auto_update_interval: int,
+    telegram_token: str = "", telegram_chat: str = "",
 ) -> str:
     password_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode() if password else existing_hash
     jwt_secret = secrets.token_hex(32)
@@ -211,15 +251,26 @@ def generate_env(
         if m and m.group(1).strip():
             jwt_secret = m.group(1).strip()
 
-    return (
-        f"APP_USERNAME={username}\n"
-        f"APP_PASSWORD_HASH={password_hash}\n"
-        f"JWT_SECRET={jwt_secret}\n"
-        f"MC_DOMAIN={mc_domain}\n"
-        f"CURSEFORGE_API_KEY={curseforge_key}\n"
-        f"AUTO_UPDATE_ENABLED={'true' if auto_update_enabled else 'false'}\n"
-        f"AUTO_UPDATE_INTERVAL_SECONDS={auto_update_interval}\n"
-    )
+    managed = {
+        "APP_USERNAME": username,
+        "APP_PASSWORD_HASH": password_hash,
+        "JWT_SECRET": jwt_secret,
+        "MC_DOMAIN": mc_domain,
+        "CURSEFORGE_API_KEY": curseforge_key,
+        "AUTO_UPDATE_ENABLED": "true" if auto_update_enabled else "false",
+        "AUTO_UPDATE_INTERVAL_SECONDS": str(auto_update_interval),
+        "TELEGRAM_BOT_TOKEN": telegram_token,
+        "TELEGRAM_CHAT_ID": telegram_chat,
+    }
+    text = "".join(f"{key}={value}\n" for key, value in managed.items())
+    # Lo que se configuró desde el panel y este asistente no pregunta (webhook
+    # de Discord, qué avisos se mandan...) se conserva tal cual.
+    if ENV_FILE.exists():
+        for line in ENV_FILE.read_text().splitlines():
+            key = line.split("=", 1)[0].strip()
+            if "=" in line and key and not key.startswith("#") and key not in managed:
+                text += line + "\n"
+    return text
 
 
 def generate_compose(
@@ -275,7 +326,7 @@ def main():
         print("docker-compose.yml listos para arrancar la app.\n")
 
     separator()
-    print("1/7  CREDENCIALES DE ACCESO")
+    print("1/8  CREDENCIALES DE ACCESO")
     separator()
     username, password = configure_credentials(
         existing_username=existing_env.get("APP_USERNAME", ""),
@@ -283,7 +334,7 @@ def main():
     )
 
     separator()
-    print("2/7  PUERTOS")
+    print("2/8  PUERTOS")
     separator()
     web_port, mc_port = configure_ports(
         default_web=existing_compose.get("web_port", 8000),
@@ -291,12 +342,12 @@ def main():
     )
 
     separator()
-    print("3/7  VERSIÓN DE JAVA")
+    print("3/8  VERSIÓN DE JAVA")
     separator()
     java_version = configure_java(default=existing_compose.get("java_version", "21"))
 
     separator()
-    print("4/7  ALMACENAMIENTO DE SERVIDORES")
+    print("4/8  ALMACENAMIENTO DE SERVIDORES")
     separator()
     servers_path, is_host_path = configure_servers_path(
         default_path=existing_compose.get("servers_path", "servers"),
@@ -304,21 +355,29 @@ def main():
     )
 
     separator()
-    print("5/7  DOMINIO PÚBLICO (opcional)")
+    print("5/8  DOMINIO PÚBLICO (opcional)")
     separator()
     mc_domain = configure_domain(default=existing_env.get("MC_DOMAIN", ""))
 
     separator()
-    print("6/7  CURSEFORGE (opcional)")
+    print("6/8  CURSEFORGE (opcional)")
     separator()
     curseforge_key = configure_curseforge(default=existing_env.get("CURSEFORGE_API_KEY", ""))
 
     separator()
-    print("7/7  AUTO-ACTUALIZACIÓN (opcional)")
+    print("7/8  AUTO-ACTUALIZACIÓN (opcional)")
     separator()
     auto_update_enabled, auto_update_interval = configure_auto_update(
         default_enabled=existing_env.get("AUTO_UPDATE_ENABLED", "false").strip().lower() == "true",
         default_interval=int(existing_env.get("AUTO_UPDATE_INTERVAL_SECONDS") or 300),
+    )
+
+    separator()
+    print("8/8  AVISOS POR TELEGRAM (opcional)")
+    separator()
+    telegram_token, telegram_chat = configure_telegram(
+        default_token=existing_env.get("TELEGRAM_BOT_TOKEN", ""),
+        default_chat=existing_env.get("TELEGRAM_CHAT_ID", ""),
     )
 
     # ── Resumen ────────────────────────────────────────────────────────────────
@@ -339,6 +398,7 @@ def main():
         print(f"  Auto-update:     habilitado, cada {auto_update_interval}s")
     else:
         print(f"  Auto-update:     deshabilitado")
+    print(f"  Telegram:        {'configurado' if telegram_token else 'no configurado'}")
     separator()
 
     confirm = input("  ¿Aplicar esta configuración? [S/n]: ").strip().lower()
@@ -349,7 +409,7 @@ def main():
     # ── Escribir archivos ──────────────────────────────────────────────────────
     ENV_FILE.write_text(generate_env(
         username, password, existing_env.get("APP_PASSWORD_HASH", ""), mc_domain, curseforge_key,
-        auto_update_enabled, auto_update_interval,
+        auto_update_enabled, auto_update_interval, telegram_token, telegram_chat,
     ))
     COMPOSE_FILE.write_text(generate_compose(web_port, mc_port, java_version, servers_path, is_host_path))
 
