@@ -2,6 +2,8 @@
 
 Panel web (FastAPI + JavaScript sin frameworks) para crear y gestionar servidores de Minecraft modded: instalar modpacks completos desde Modrinth/CurseForge, buscar y actualizar mods, gestionar jugadores (ops/whitelist/bans), mundos, consola en vivo, métricas, firewall y copias de seguridad. Pensado para autoalojarse en tu propio servidor o VPS Linux.
 
+Y como gestionar un servidor de Minecraft no tiene por qué ser aburrido: cuatro temas con su propio fondo pixelado, una escena que pasa de noche a día cuando el servidor arranca, cabezas de los jugadores, celebraciones y más de veinte logros por desbloquear (algunos secretos).
+
 ## Requisitos
 
 - Linux (nativo, o Docker sobre cualquier sistema operativo).
@@ -102,12 +104,23 @@ bash install.sh
 
 Elige `1) Contenedor` cuando te lo pregunte. Hace exactamente lo mismo que el modo nativo (entorno virtual, dependencias, `.env`...) pero sin crear un servicio `systemd` — al terminar, arranca la app directamente en primer plano dentro del contenedor.
 
+## Actualizar
+
+Hay tres formas, según cómo lo tengas instalado:
+
+- **Desde el propio panel**: si activaste la auto-actualización, el panel comprueba cada cierto tiempo si hay una versión nueva en GitHub y lo avisa en **Sistema**. Se aplica con el botón **Actualizar ahora**, solo cuando no hay ningún servidor de Minecraft encendido ni otra operación en curso, y el panel se reinicia solo.
+- **Linux nativo**: `bash install.sh` de nuevo (descarga lo nuevo y reinicia el servicio). Si prefieres hacer `git pull` a mano, **reinicia después el servicio** (`sudo systemctl restart minecraft-deployer`): hasta entonces sigue funcionando la versión anterior, que ya estaba cargada en memoria.
+- **Docker**: `git pull` y `docker compose up -d --build`.
+
+No hace falta vaciar la caché del navegador: cada archivo del panel lleva su propia versión en la URL y el navegador pide el nuevo en cuanto cambia.
+
 ## Después de instalar
 
 - **Primer acceso**: con el usuario y la contraseña que configuraste durante la instalación (en cualquiera de las opciones).
 - **CurseForge**: si no añadiste la clave de API durante la instalación, puedes añadirla luego desde **Configuración** dentro de la propia app (solo administrador), sin tocar nada por consola.
 - **Tutorial dentro de la app**: pestaña **Ayuda**, con una explicación de cada sección del panel.
 - **Sesión**: el inicio de sesión se guarda en una cookie del navegador (HttpOnly). Al cambiar la contraseña de una cuenta o borrarla, sus sesiones abiertas dejan de valer.
+- **Apariencia**: botón **Apariencia** de la barra superior. Ahí se elige el tema (Amatista, Superficie, Nether o End), se activan los sonidos (apagados por defecto) y se ve la lista de logros. Todo esto se guarda en cada navegador, no en el servidor: si entras desde otro equipo, empiezas de cero.
 
 ## Desarrollo y pruebas
 
@@ -124,5 +137,6 @@ Cubren la validación de rutas y nombres, la extracción segura de archivos, las
 - `static/index.html` es solo el esqueleto: estilos, scripts y una línea `<!-- include: ... -->` por cada trozo.
 - `static/partials/` contiene un HTML por página (`pages/`), por pestaña de Modpacks (`manage/`), por grupo de modales (`modals/`) y los bloques compartidos (por ejemplo `ram-fields.html`, que acepta parámetros). `services/frontend.py` los une al servir `/`, así que el navegador sigue recibiendo una sola página.
 - `static/js/` tiene un archivo por sección o pestaña (`server_props.js`, `jvm_ram.js`, `file_editor.js`, `kubejs.js`...), todos en el ámbito global y cargados en el orden de `index.html`.
-- Los colores viven como tokens en `static/css/base.css`; `themes.css` define los temas (Amatista, Superficie, Nether y End) cambiando solo esos tokens, y `scene.css` la escena pixelada de la cabecera de Servidor y del login, las barras segmentadas y las celebraciones. `static/js/appearance.js` guarda el tema, los sonidos (apagados por defecto) y los logros en el navegador, y dibuja los logos y cabezas de repuesto.
+- Los colores viven como tokens en `static/css/base.css`; `themes.css` define los temas (Amatista, Superficie, Nether y End) cambiando esos tokens y el fondo de página de cada uno (`--bg-pattern`, texturas pixeladas en SVG, y `--bg-extra`, un degradado encima), y `scene.css` la escena pixelada de la cabecera de Servidor y del login, las barras segmentadas y las celebraciones. `static/js/appearance.js` guarda el tema, los sonidos (apagados por defecto) y los logros en el navegador, y dibuja los logos y cabezas de repuesto. Un logro nuevo es una entrada en `ACHIEVEMENTS` (con `secret: true` si debe salir como «???» hasta conseguirlo) y una llamada a `unlockAchievement('id')` donde ocurra.
+- Al servir `/`, cada `/static/...` recibe `?v=` con la fecha de modificación de ese archivo, y esas respuestas se marcan como inmutables: el navegador las guarda indefinidamente y solo descarga las que cambian.
 - Las cabezas de los jugadores se piden a mc-heads.net a través de `/api/players/head/{nombre}` y se guardan unos días en `.global/heads/`. El logo de un modpack es su `server-icon.png` o, si se instaló desde Modrinth o CurseForge, el de la tienda (`.mcdeployer/icon.*` dentro de su carpeta). Sin internet, el panel dibuja una cara o un bloque con los colores del nombre.
