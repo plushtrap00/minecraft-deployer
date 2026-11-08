@@ -18,7 +18,8 @@ from pydantic import BaseModel
 
 from config import DEFAULT_SERVERS_PATH
 from app_constants import MOD_SEARCH_PAGE_SIZE
-from services.modpack import detect_modpack_version, process_mod_jar
+from services.modpack import detect_modpack_version
+from services.mod_checks import process_mod_jar
 from services.modloader import loader_key_from_display
 from services.mod_search import (
     ModSearchError, search_modrinth, search_curseforge,

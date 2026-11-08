@@ -1,6 +1,6 @@
 // -- Players ------------------------------------------------------------------
 // Cada lista es una cuadrícula de fichas con la cabeza del jugador (ver
-// headHtml en appearance.js).
+// headHtml en pixel_art.js).
 var PLAYER_EMPTY = {
   op: ['sign', 'Nadie tiene op todavía', 'Añade a quien deba poder usar los comandos de administrador.'],
   wl: ['sign', 'La whitelist está vacía', 'Si la activas en server.properties, solo podrán entrar los jugadores que estén aquí.'],

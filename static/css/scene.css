@@ -538,7 +538,7 @@ body {
 }
 
 /* -- Logo de modpack y cabeza de jugador ------------------------------------
-   La imagen va encima del dibujo generado (appearance.js); si no carga, se
+   La imagen va encima del dibujo generado (pixel_art.js); si no carga, se
    quita y queda el dibujo. */
 .pack-icon,
 .player-head {

@@ -1,5 +1,5 @@
 // -- Iconos de los logros -------------------------------------------------------
-// Uno pixelado de 10x10 por logro (ACHIEVEMENTS en appearance.js), dibujado
+// Uno pixelado de 10x10 por logro (ACHIEVEMENTS en achievements.js), dibujado
 // con pixelSvg: cada letra de las filas es un color de su paleta y el punto
 // es transparente. Bloqueado se ve en grises, también en los
 // secretos: el nombre sale como «???» pero la silueta sirve de pista.

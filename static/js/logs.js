@@ -127,7 +127,7 @@ function loadLogFile(filename) {
     });
 }
 
-// crash_info (services/modpack.py::analyze_crash) solo viene poblado para
+// crash_info (services/crash_analysis.py::analyze_crash) solo viene poblado para
 // archivos de crash-reports/ — para un log normal llega null y la caja
 // simplemente no se muestra, en vez del "posible culpable" a ciegas de antes.
 function renderCrashInfo(crashInfo) {

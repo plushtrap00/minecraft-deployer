@@ -154,3 +154,77 @@
   display: flex;
   color: var(--muted);
 }
+
+/* -- Jugadores → Estadísticas ----------------------------------------------- */
+.stats-scroll {
+  overflow-x: auto;
+  margin: 0 -4px;
+}
+
+.stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--fs-sm);
+}
+
+.stats-table th,
+.stats-table td {
+  padding: 8px 10px;
+  text-align: left;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+}
+
+.stats-table thead th {
+  border-bottom-color: var(--border-strong);
+  padding-top: 0;
+}
+
+.stats-table tbody tr:last-child > * {
+  border-bottom: none;
+}
+
+.stats-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.stats-table td.active {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.stats-table td {
+  color: var(--muted);
+}
+
+.stats-sort {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.stats-sort:hover,
+.stats-sort.active {
+  background: none;
+  color: var(--text);
+}
+
+.stats-player {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+.stats-crown {
+  color: var(--yellow);
+  display: inline-flex;
+}

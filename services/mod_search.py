@@ -343,7 +343,7 @@ def _norm_id(value: str | None) -> str:
 
 
 def _installed_normalized_ids(mods_dir: Path) -> set:
-    from services.modpack import build_mod_id_index  # import perezoso: evita ciclo con services.modpack
+    from services.mod_metadata import build_mod_id_index
 
     key = str(mods_dir)
     try:

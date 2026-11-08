@@ -1,0 +1,79 @@
+/* Configuración → Avisos: Telegram y Discord (notifications.js). */
+
+.notify-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.notify-channel {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.notify-channel-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: var(--fs-lg);
+}
+
+.notify-channel-title .icon {
+  color: var(--accent);
+}
+
+.notify-channel-desc,
+.notify-steps {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+
+.notify-steps {
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.notify-steps strong {
+  color: var(--text);
+}
+
+.notify-events {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 8px 16px;
+}
+
+.notify-event {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: var(--fs-md);
+}
+
+.notify-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.notify-event input {
+  accent-color: var(--accent);
+  width: 16px;
+  height: 16px;
+}
+
+@media (max-width: 720px) {
+  .notify-grid {
+    grid-template-columns: 1fr;
+  }
+}

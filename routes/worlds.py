@@ -24,7 +24,7 @@ from config import DEFAULT_SERVERS_PATH
 from services.utils import get_world_files, extract_archive
 from services.modpack import (
     detect_installed_mods, has_mod_keyword, parse_server_properties,
-    save_server_property, get_worlds
+    save_server_property, get_worlds,
 )
 from services.busy import BusyGuard
 

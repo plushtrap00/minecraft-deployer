@@ -1,0 +1,149 @@
+/* Servidor → Rendimiento: gráficas de 24 h / 7 días (history_charts.js). */
+
+.perf-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.segmented {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: var(--radius-control);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+}
+
+.segmented-btn {
+  padding: 4px 12px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  border-radius: calc(var(--radius-control) - 2px);
+}
+
+.segmented-btn:hover {
+  background: none;
+  color: var(--text);
+}
+
+.segmented-btn.active {
+  background: var(--card);
+  color: var(--text);
+  box-shadow: 0 0 0 1px var(--border-strong);
+}
+
+.perf-charts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.perf-charts.is-empty {
+  display: block;
+}
+
+.perf-chart {
+  margin: 0;
+  min-width: 0;
+}
+
+.perf-chart figcaption {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.perf-title {
+  font-weight: 600;
+  font-size: var(--fs-md);
+}
+
+.perf-summary {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+
+.perf-plot {
+  position: relative;
+}
+
+.perf-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  touch-action: pan-y;
+}
+
+.perf-grid {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.perf-axis {
+  fill: var(--muted);
+  font-size: 10px;
+  font-family: var(--font-ui);
+}
+
+.perf-line {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.perf-dot,
+.perf-focus {
+  fill: var(--accent);
+  stroke: var(--card);
+  stroke-width: 2;
+}
+
+.perf-cross {
+  stroke: var(--border-strong);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.perf-hit {
+  fill: transparent;
+  cursor: crosshair;
+}
+
+.perf-tip {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  background: var(--surface-raised);
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: var(--fs-xs);
+  white-space: nowrap;
+  pointer-events: none;
+  display: flex;
+  gap: 8px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .3);
+  z-index: 2;
+}
+
+.perf-tip[hidden] {
+  display: none;
+}
+
+.perf-tip span {
+  color: var(--muted);
+}
+
+@media (max-width: 900px) {
+  .perf-charts {
+    grid-template-columns: 1fr;
+  }
+}

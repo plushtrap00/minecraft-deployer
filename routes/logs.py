@@ -14,7 +14,8 @@ from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse, FileResponse
 
 from config import DEFAULT_SERVERS_PATH
-from services.modpack import analyze_crash, prune_old_logs_and_crashes
+from services.modpack import prune_old_logs_and_crashes
+from services.crash_analysis import analyze_crash
 
 from routes.deps import valid_modpack
 

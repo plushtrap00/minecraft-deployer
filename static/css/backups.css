@@ -1,0 +1,145 @@
+/* Modpacks → Copias y el diálogo de clonar (backups.js). */
+
+.backup-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.backup-head .info-box {
+  flex: 1;
+}
+
+.backup-head .btn-go {
+  flex-shrink: 0;
+}
+
+.backup-summary {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.backup-table {
+  display: flex;
+  flex-direction: column;
+}
+
+.backup-row {
+  display: grid;
+  /* Columnas fijas: cada fila es su propia rejilla (como .pack-row). */
+  grid-template-columns: minmax(150px, 1.4fr) minmax(90px, 1fr) 150px 80px 190px;
+  align-items: center;
+  gap: 14px;
+  padding: 9px 4px;
+}
+
+.backup-row + .backup-row {
+  border-top: 1px solid var(--border);
+}
+
+.backup-row-head {
+  padding-top: 0;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.backup-row .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.backup-date {
+  display: flex;
+  flex-direction: column;
+}
+
+.backup-date strong {
+  font-weight: 500;
+}
+
+.backup-ago {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+
+.backup-world {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--fs-sm);
+}
+
+.backup-reason {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: var(--fs-xs);
+  background: rgba(var(--muted-rgb), .14);
+  color: var(--text);
+}
+
+.backup-reason[data-reason="manual"] {
+  background: rgba(var(--accent-rgb), .18);
+}
+
+.backup-reason[data-reason="safety"] {
+  background: rgba(var(--yellow-rgb), .18);
+}
+
+.backup-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.mgmt-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.clone-intro {
+  margin: 0 0 14px;
+  color: var(--muted);
+}
+
+.clone-world {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  cursor: pointer;
+}
+
+.clone-world input {
+  accent-color: var(--accent);
+  width: 16px;
+  height: 16px;
+}
+
+@media (max-width: 900px) {
+  .backup-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px 12px;
+  }
+
+  .backup-row-head {
+    display: none;
+  }
+
+  .backup-row .backup-world,
+  .backup-row .num {
+    display: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .backup-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

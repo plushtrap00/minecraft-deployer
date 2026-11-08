@@ -35,12 +35,10 @@ from pydantic import BaseModel
 
 from config import DEFAULT_SERVERS_PATH, TEMP_DIR
 from app_constants import TEMP_DIR_MAX_AGE_SECONDS
-from services.modpack import (
-    detect_modpack_version, find_installed_mod_by_id, build_mod_id_index,
-    mod_display_name, process_mod_jar, find_possible_duplicate_mods,
-    classify_installed_mods, get_pending_mods, resolve_pending_mods,
-    check_pending_mods_stream
-)
+from services.modpack import detect_modpack_version
+from services.mod_metadata import find_installed_mod_by_id, build_mod_id_index, mod_display_name
+from services.mod_checks import process_mod_jar, find_possible_duplicate_mods, classify_installed_mods
+from services.pending_mods import get_pending_mods, resolve_pending_mods, check_pending_mods_stream
 from services.mod_dependencies import find_missing_dependencies, install_missing_dependencies
 from services.busy import BusyGuard
 
@@ -211,7 +209,7 @@ async def mods_duplicates(modpack: str):
 async def mods_client_only(modpack: str):
     """
     Categoriza los mods instalados en server / client_only / unknown según su
-    metadata de side/environment (ver classify_mod_side en services/modpack.py).
+    metadata de side/environment (ver classify_mod_side en services/mod_checks.py).
     Los "client_only" no se instalan del lado servidor A PROPÓSITO, no es un error.
     """
     mods_dir = DEFAULT_SERVERS_PATH / modpack / "mods"

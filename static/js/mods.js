@@ -57,7 +57,7 @@ function loadModpackVersion() {
 }
 
 // Mods que el autor del modpack bloqueó para descarga por terceros al
-// instalarlo desde CurseForge (ver services/modpack.py::get_pending_mods) —
+// instalarlo desde CurseForge (ver services/pending_mods.py::get_pending_mods) —
 // mientras sigan en la lista, el servidor se niega a arrancar (routes/server.py).
 function loadPendingMods() {
   var banner = document.getElementById('mods-pending-banner');

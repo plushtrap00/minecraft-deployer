@@ -24,7 +24,8 @@ from fastapi.responses import HTMLResponse, JSONResponse, Response, StreamingRes
 
 from config import DEFAULT_SERVERS_PATH, MC_DOMAIN
 from services.utils import get_system_ram_gb, get_modpacks
-from services.modpack import detect_modpack_version, get_pending_mods
+from services.modpack import detect_modpack_version
+from services.pending_mods import get_pending_mods
 from services import auto_update
 from services.frontend import render_index
 from services.visuals import pack_icon_path, image_type

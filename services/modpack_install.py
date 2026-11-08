@@ -43,7 +43,9 @@ from services.modloader import _http_get, _installer_url, LOADER_DISPLAY_NAMES
 from services.server_create import validate_new_server_name, _write_run_script, _bootstrap_common_files, _vanilla_server_jar_url
 from services.utils import configure_jvm_ram, get_modpacks
 from services.visuals import save_pack_icon
-from services.modpack import _dedup_fingerprint, detect_modpack_version, write_pending_mods, _KNOWN_CLIENT_ONLY_FINGERPRINTS
+from services.modpack import detect_modpack_version
+from services.mod_checks import _dedup_fingerprint, _KNOWN_CLIENT_ONLY_FINGERPRINTS
+from services.pending_mods import write_pending_mods
 
 CURSEFORGE_MODPACK_CLASS_ID = 4471
 
@@ -80,7 +82,7 @@ def _known_client_only_reason(filename: str) -> str | None:
     """
     Devuelve el motivo si `filename` corresponde a un mod conocido que
     revienta un servidor dedicado (sodium, iris y demás confirmados mod a mod
-    en _KNOWN_CLIENT_ONLY_MOD_IDS, services/modpack.py), o None si no calza
+    en _KNOWN_CLIENT_ONLY_MOD_IDS, services/mod_checks.py), o None si no calza
     con ninguno.
     """
     return _KNOWN_CLIENT_ONLY_FINGERPRINTS.get(_dedup_fingerprint(filename))
@@ -608,7 +610,7 @@ async def install_curseforge_modpack_stream(mod_id, file_id, server_name: str, r
             # incluir igual algún mod como sodium/iris que ya sabemos que
             # revienta un servidor dedicado (pasa sobre todo con mods que
             # declaran side="BOTH" de forma incorrecta, ver
-            # _KNOWN_CLIENT_ONLY_MOD_IDS en services/modpack.py).
+            # _KNOWN_CLIENT_ONLY_MOD_IDS en services/mod_checks.py).
             server_pack_mods_dir = server_dir / "mods"
             if server_pack_mods_dir.exists():
                 removed_known_bad = []
@@ -740,7 +742,7 @@ def find_similar_installed_modpacks(filenames: list, mc_version: str | None) -> 
     Compara los nombres de archivo de una versión de modpack candidata a
     instalar contra los mods ya instalados en cada servidor existente, usando
     la misma huella "sin versión/loader/MC" que ya usa
-    find_possible_duplicate_mods() (services/modpack.py) para detectar
+    find_possible_duplicate_mods() (services/mod_checks.py) para detectar
     duplicados dentro de un mismo modpack. Así, actualizar un mod (que cambia
     el número de versión en el nombre del jar) o añadir mods sueltos a mano no
     rompe la detección: solo importa si el "núcleo" del nombre original sigue

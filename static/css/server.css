@@ -754,3 +754,72 @@
     padding: 10px 12px;
   }
 }
+
+/* -- Consola: vista de chat ------------------------------------------------- */
+.console-views {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.console-view {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 12px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-weight: 600;
+  border-radius: var(--radius-control);
+}
+
+.console-view:hover {
+  background: rgba(var(--muted-rgb), .1);
+  color: var(--text);
+}
+
+.console-view.active {
+  background: rgba(var(--accent-rgb), .16);
+  color: var(--text);
+}
+
+.console-head .console-modpack {
+  margin-right: auto;
+}
+
+.console-wrap.chat-only > div:not(.is-chat) {
+  display: none;
+}
+
+.console-wrap.chat-only {
+  font-family: var(--font-ui);
+  font-size: var(--fs-md);
+}
+
+.console-wrap.chat-only .ts {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  margin-right: 6px;
+}
+
+.console-wrap.chat-only .src {
+  display: none;
+}
+
+.console-wrap.chat-only:not(:has(> .is-chat))::before {
+  content: 'Aquí aparecerá lo que se diga en el chat y quién entra o sale. Escribe abajo para hablar con los jugadores.';
+  display: block;
+  color: var(--muted);
+  font-style: italic;
+  padding: 8px 0;
+}
+
+.log-say {
+  color: var(--info);
+}
+
+@media (max-width: 720px) {
+  .console-view {
+    padding: 5px 8px;
+  }
+}

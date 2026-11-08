@@ -24,7 +24,8 @@ from fastapi import HTTPException
 from app_constants import GRACEFUL_STOP_TIMEOUT_SECONDS
 from services import process as proc_module
 from services.metrics import mc_metrics, read_proc_ram, _parse_metrics_line
-from services.modpack import ensure_rcon_enabled, detect_modpack_version, prune_old_logs_and_crashes, get_pending_mods
+from services.modpack import ensure_rcon_enabled, detect_modpack_version, prune_old_logs_and_crashes
+from services.pending_mods import get_pending_mods
 from services.notify import notify
 from services.rcon import RconConnection, RconError
 from routes.deps import modpack_path

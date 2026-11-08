@@ -32,9 +32,10 @@ import hashlib
 from pathlib import Path
 
 from config import CURSEFORGE_API_KEY, DEFAULT_SERVERS_PATH
-from services.modpack import (
-    detect_modpack_version, process_mod_jar, resolve_pending_mods, mod_display_name,
-)
+from services.modpack import detect_modpack_version
+from services.mod_metadata import mod_display_name
+from services.mod_checks import process_mod_jar
+from services.pending_mods import resolve_pending_mods
 from services.modloader import loader_key_from_display
 from services.mod_search import (
     ModSearchError, _http_post_json, _curseforge_headers, _norm_id, download_bytes,

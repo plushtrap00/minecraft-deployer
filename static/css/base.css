@@ -196,6 +196,12 @@ button .icon {
   color: var(--text);
 }
 
+.card h2 .icon {
+  margin-right: 8px;
+  color: var(--accent);
+  vertical-align: -2px;
+}
+
 /* Cabecera de tarjeta: título a la izquierda, acciones a la derecha. */
 .card-head {
   display: flex;

@@ -79,7 +79,7 @@ class FrontendGlobalsTest(unittest.TestCase):
 
 class AchievementIconsTest(unittest.TestCase):
     def test_every_achievement_has_a_10x10_icon(self):
-        appearance = (STATIC / "js" / "appearance.js").read_text(encoding="utf-8")
+        appearance = (STATIC / "js" / "achievements.js").read_text(encoding="utf-8")
         block = appearance[appearance.index("var ACHIEVEMENTS = ["):]
         block = block[:block.index("];")]
         ids = re.findall(r"\{ id: '([a-z-]+)'", block)
