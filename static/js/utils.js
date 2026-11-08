@@ -248,6 +248,8 @@ function showToast(msg, type) {
   });
   if (type === 'error') {
     playSound('error');
+  } else if (type === 'success') {
+    playSound('success');
   }
   setTimeout(function() {
     toastEl.classList.remove('show');

@@ -77,5 +77,22 @@ class FrontendGlobalsTest(unittest.TestCase):
             self.assertEqual(version, _asset_version(rel_path), rel_path)
 
 
+class AchievementIconsTest(unittest.TestCase):
+    def test_every_achievement_has_a_10x10_icon(self):
+        appearance = (STATIC / "js" / "appearance.js").read_text(encoding="utf-8")
+        block = appearance[appearance.index("var ACHIEVEMENTS = ["):]
+        block = block[:block.index("];")]
+        ids = re.findall(r"\{ id: '([a-z-]+)'", block)
+        icons = (STATIC / "js" / "achievement_icons.js").read_text(encoding="utf-8")
+        self.assertGreater(len(ids), 10)
+        for achievement_id in ids:
+            with self.subTest(achievement_id):
+                start = icons.index("'" + achievement_id + "': {")
+                art = icons[start:icons.index("palette", start)]
+                rows = re.findall(r"'([^']{2,})'", art.split("rows:", 1)[1])
+                self.assertEqual(len(rows), 10)
+                self.assertTrue(all(len(row) == 10 for row in rows), rows)
+
+
 if __name__ == "__main__":
     unittest.main()

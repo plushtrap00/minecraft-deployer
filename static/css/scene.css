@@ -384,6 +384,21 @@ body {
   height: 20px;
 }
 
+.achievement-art {
+  width: 26px;
+  height: 26px;
+}
+
+.achievement-row .achievement-art {
+  width: 20px;
+  height: 20px;
+}
+
+/* Bloqueado: la silueta del icono, en gris y apagada. */
+.achievement-row:not(.unlocked) .achievement-art {
+  opacity: .45;
+}
+
 .achievement-kicker {
   font-family: var(--font-display);
   font-size: var(--fs-sm);
