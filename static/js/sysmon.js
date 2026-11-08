@@ -117,9 +117,16 @@ function loadAutoUpdateStatus() {
         setTimeout(function() { window.location.reload(); }, 800);
         return;
       }
-      updateSysmonBadge();
-      if (lastSysmonStats) {
-        renderSysmon(lastSysmonStats);
+      // Un fallo al pintar el panel no puede caer en el .catch de abajo: ahí
+      // se interpreta como que la app dejó de responder y se muestra el
+      // aviso de reinicio (y luego se recarga la página) sin motivo.
+      try {
+        updateSysmonBadge();
+        if (lastSysmonStats) {
+          renderSysmon(lastSysmonStats);
+        }
+      } catch (renderError) {
+        console.error('No se pudo pintar el panel de Sistema', renderError);
       }
       scheduleNextAutoUpdatePoll();
     })
@@ -367,7 +374,7 @@ function autoUpdateRow(label, value, tone) {
   var valueClass = tone ? ' class="fw-semibold text-' + tone + '"' : '';
   return '<div class="sysmon-proc-row">'
     + '<span class="sysmon-proc-name">' + escHtml(label) + '</span>'
-    + '<span class="sysmon-proc-stats"><span' + valueStyle + '>' + escHtml(value) + '</span></span>'
+    + '<span class="sysmon-proc-stats"><span' + valueClass + '>' + escHtml(value) + '</span></span>'
     + '</div>';
 }
 
