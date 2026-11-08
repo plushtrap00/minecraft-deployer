@@ -29,7 +29,7 @@ function renderPlayerList(containerId, players, type, extraFn) {
       + '<span class="pe-name">' + escHtml(name) + '</span>'
       + extra
       + '<div class="pe-actions">'
-      + '<button class="btn-danger player-remove-btn" data-type="' + type + '" data-name="' + escHtml(name) + '" style="padding:3px 10px;font-size:.75rem">'
+      + '<button class="btn-danger player-remove-btn btn-xs" data-type="' + type + '" data-name="' + escHtml(name) + '">'
       + removeLabel + '</button>'
       + '</div></div>';
   });
@@ -50,11 +50,11 @@ function renderBanList(containerId, bans, type) {
     var reasonHtml = reason ? '<div class="pe-meta">' + escHtml(reason) + '</div>' : '';
     html += '<div class="player-entry">'
       + '<span class="pe-icon">' + entryIcon + '</span>'
-      + '<div style="flex:1"><div class="pe-name">' + escHtml(name) + '</div>'
+      + '<div class="flex-1"><div class="pe-name">' + escHtml(name) + '</div>'
       + reasonHtml
       + '</div>'
       + '<div class="pe-actions">'
-      + '<button class="btn-secondary player-unban-btn" data-type="' + type + '" data-name="' + escHtml(name) + '" style="padding:3px 10px;font-size:.75rem">Desbanear</button>'
+      + '<button class="btn-secondary player-unban-btn btn-xs" data-type="' + type + '" data-name="' + escHtml(name) + '">Desbanear</button>'
       + '</div></div>';
   });
   el.innerHTML = html;
@@ -94,7 +94,7 @@ function apiCall(method, url, body, successMsg) {
     .then(function(result) {
       if (result.ok && result.data.success) {
         var syncedCount = result.data.synced ? result.data.synced.length : 0;
-        showToast(successMsg + ' (' + syncedCount + ' servers)', 'success');
+        showToast(successMsg + ' (' + syncedCount + (syncedCount === 1 ? ' servidor)' : ' servidores)'), 'success');
         loadPlayers();
       } else {
         showToast(result.data.detail || 'No se pudo guardar el cambio', 'error');
@@ -113,7 +113,7 @@ document.getElementById('btn-add-op').addEventListener('click', function() {
   var form = new FormData();
   form.append('name', name);
   form.append('level', '4');
-  apiCall('POST', '/api/players/op', form, 'Op anadido: ' + name)
+  apiCall('POST', '/api/players/op', form, 'Op añadido: ' + name)
     .then(function() { document.getElementById('op-name-input').value = ''; });
 });
 
@@ -144,7 +144,7 @@ document.getElementById('btn-add-wl').addEventListener('click', function() {
   }
   var form = new FormData();
   form.append('name', name);
-  apiCall('POST', '/api/players/whitelist', form, 'Anadido a whitelist: ' + name)
+  apiCall('POST', '/api/players/whitelist', form, 'Añadido a la whitelist: ' + name)
     .then(function() { document.getElementById('wl-name-input').value = ''; });
 });
 
@@ -163,7 +163,7 @@ function removeWhitelist(name) {
 }
 
 function doRemoveWhitelist(name) {
-  apiCall('DELETE', '/api/players/whitelist/' + encodeURIComponent(name), null, 'Eliminado de whitelist: ' + name);
+  apiCall('DELETE', '/api/players/whitelist/' + encodeURIComponent(name), null, 'Quitado de la whitelist: ' + name);
 }
 
 // Ban player
@@ -173,7 +173,7 @@ document.getElementById('btn-ban-player').addEventListener('click', function() {
     showAlert('Escribe un nombre');
     return;
   }
-  var reason = document.getElementById('ban-reason-input').value.trim() || 'Banned by admin';
+  var reason = document.getElementById('ban-reason-input').value.trim() || '';
   var form = new FormData();
   form.append('name', name);
   form.append('reason', reason);
@@ -202,7 +202,7 @@ document.getElementById('btn-ban-ip').addEventListener('click', function() {
     showAlert('Escribe una IP');
     return;
   }
-  var reason = document.getElementById('ban-ip-reason-input').value.trim() || 'Banned by admin';
+  var reason = document.getElementById('ban-ip-reason-input').value.trim() || '';
   var form = new FormData();
   form.append('ip', ip);
   form.append('reason', reason);
@@ -232,10 +232,9 @@ document.getElementById('btn-sync-all').addEventListener('click', function() {
       if (data.warning) {
         showToast(data.warning, '');
       } else {
-        showToast('Sincronizado a todos los servers', 'success');
+        showToast('Sincronizado con todos los servidores', 'success');
       }
     })
     .catch(function() { showToast('No se pudo sincronizar con los servidores', 'error'); });
 });
 
-document.getElementById('tab-players').addEventListener('click', loadPlayers);

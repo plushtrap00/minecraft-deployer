@@ -1,73 +1,89 @@
-// -- Disco --------------------------------------------------------------------
-apiFetch('/api/disk-usage')
-  .then(function(response) { return response.json(); })
-  .then(function(data) {
-    if (data.error) {
-      document.getElementById('disk-text').textContent = 'No disponible';
-      return;
-    }
-    var fillBar = document.getElementById('disk-fill');
-    fillBar.style.width = data.percent_used + '%';
-    if (data.percent_used > 90) {
-      fillBar.classList.add('danger');
-    } else if (data.percent_used > 70) {
-      fillBar.classList.add('warn');
-    }
-    document.getElementById('disk-text').textContent =
-      data.free_gb + ' GB libres de ' + data.total_gb + ' GB (' + data.percent_used + '% usado)';
-  })
-  .catch(function() {
-    document.getElementById('disk-text').textContent = 'No disponible';
-  });
-
-
-// -- RAM ----------------------------------------------------------------------
+// -- Disco y RAM del sistema -------------------------------------------------
+// Se piden al entrar en la página (ver main.js), no al cargar el script:
+// antes de iniciar sesión la petición daba 401 y la barra se quedaba vacía.
 var maxAllowedGb = null;
 
-apiFetch('/api/system-info')
-  .then(function(response) { return response.json(); })
-  .then(function(data) {
-    maxAllowedGb = data.ram_max_allowed_gb;
-    if (data.ram_total_gb) {
-      document.getElementById('ram-info').textContent =
-        'RAM: ' + data.ram_total_gb + ' GB (máx. recomendado: ' + data.ram_max_allowed_gb + ' GB)';
-    } else {
-      document.getElementById('ram-info').textContent = '';
-    }
-  })
-  .catch(function() {
-    document.getElementById('ram-info').textContent = '';
-  });
+function loadDeployPageData() {
+  apiFetch('/api/disk-usage')
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      if (data.error) {
+        document.getElementById('disk-text').textContent = 'No disponible';
+        return;
+      }
+      var fillBar = document.getElementById('disk-fill');
+      fillBar.style.width = data.percent_used + '%';
+      fillBar.classList.toggle('danger', data.percent_used > 90);
+      fillBar.classList.toggle('warn', data.percent_used > 70 && data.percent_used <= 90);
+      document.getElementById('disk-text').textContent =
+        data.free_gb + ' GB libres de ' + data.total_gb + ' GB (' + data.percent_used + '% usado)';
+    })
+    .catch(function() {
+      document.getElementById('disk-text').textContent = 'No disponible';
+    });
 
-function checkRam() {
-  if (!maxAllowedGb) {
-    return;
-  }
-  var maxVal = parseFloat(document.getElementById('ram-max-val').value) || 0;
-  var maxUnit = document.getElementById('ram-max-unit').value;
-  var minVal = parseFloat(document.getElementById('ram-min-val').value) || 0;
-  var minUnit = document.getElementById('ram-min-unit').value;
-  var maxGb = maxUnit === 'G' ? maxVal : maxVal / 1024;
-  var minGb = minUnit === 'G' ? minVal : minVal / 1024;
-  var warningEl = document.getElementById('ram-warn');
-  var msgs = [];
-  if (maxGb > maxAllowedGb) {
-    msgs.push('La RAM máxima supera el 80% del sistema (' + maxAllowedGb + ' GB recomendado)');
-  }
-  if (minGb > maxGb) {
-    msgs.push('La RAM mínima no puede ser mayor que la máxima');
-  }
-  warningEl.textContent = msgs.join(' · ');
-  if (msgs.length) {
-    warningEl.style.display = 'block';
-  } else {
-    warningEl.style.display = 'none';
-  }
+  apiFetch('/api/system-info')
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      maxAllowedGb = data.ram_max_allowed_gb;
+      document.getElementById('ram-info').textContent = data.ram_total_gb
+        ? 'RAM: ' + data.ram_total_gb + ' GB (máx. recomendado: ' + data.ram_max_allowed_gb + ' GB)'
+        : '';
+      RAM_FIELD_PREFIXES.forEach(checkRamFields);
+    })
+    .catch(function() {
+      document.getElementById('ram-info').textContent = '';
+    });
 }
 
-['ram-min-val', 'ram-max-val', 'ram-min-unit', 'ram-max-unit'].forEach(function(id) {
-  document.getElementById(id).addEventListener('input', checkRam);
-  document.getElementById(id).addEventListener('change', checkRam);
+
+// -- Campos de RAM (los tres modos: subir, crear y descargar) ----------------
+// Mismo bloque HTML (partials/ram-fields.html) con un prefijo en los ids.
+var RAM_FIELD_PREFIXES = ['', 'create-', 'dl-'];
+
+function ramFieldGb(prefix, which) {
+  var value = parseFloat(document.getElementById(prefix + 'ram-' + which + '-val').value) || 0;
+  return document.getElementById(prefix + 'ram-' + which + '-unit').value === 'G' ? value : value / 1024;
+}
+
+function ramFieldValue(prefix, which) {
+  return document.getElementById(prefix + 'ram-' + which + '-val').value
+    + document.getElementById(prefix + 'ram-' + which + '-unit').value;
+}
+
+// Texto del problema que bloquea la instalación, o '' si los valores valen.
+function ramFieldsError(prefix) {
+  var minGb = ramFieldGb(prefix, 'min');
+  var maxGb = ramFieldGb(prefix, 'max');
+  if (minGb <= 0 || maxGb <= 0) {
+    return 'Indica la RAM mínima y la máxima';
+  }
+  if (minGb > maxGb) {
+    return 'La RAM mínima no puede ser mayor que la máxima';
+  }
+  return '';
+}
+
+function checkRamFields(prefix) {
+  var msgs = [];
+  var error = ramFieldsError(prefix);
+  if (error) {
+    msgs.push(error);
+  }
+  if (maxAllowedGb && ramFieldGb(prefix, 'max') > maxAllowedGb) {
+    msgs.push('La RAM máxima supera el 80% del sistema (' + maxAllowedGb + ' GB recomendado)');
+  }
+  var warningEl = document.getElementById(prefix + 'ram-warn');
+  warningEl.textContent = msgs.join(' · ');
+  warningEl.style.display = msgs.length ? 'block' : 'none';
+}
+
+RAM_FIELD_PREFIXES.forEach(function(prefix) {
+  ['ram-min-val', 'ram-max-val', 'ram-min-unit', 'ram-max-unit'].forEach(function(id) {
+    var el = document.getElementById(prefix + id);
+    el.addEventListener('input', function() { checkRamFields(prefix); });
+    el.addEventListener('change', function() { checkRamFields(prefix); });
+  });
 });
 
 var ramEnabled = false;
@@ -151,6 +167,10 @@ document.getElementById('deploy-btn').addEventListener('click', function() {
     showAlert('Escribe un nombre para el servidor.');
     return;
   }
+  if (ramEnabled && ramFieldsError('')) {
+    showAlert(ramFieldsError('') + '.');
+    return;
+  }
   var btn = document.getElementById('deploy-btn');
   btn.disabled = true;
   resetDeploy();
@@ -178,10 +198,8 @@ document.getElementById('deploy-btn').addEventListener('click', function() {
   form.append('folder_name', folderName);
   form.append('configure_ram', ramEnabled ? '1' : '0');
   if (ramEnabled) {
-    form.append('ram_min',
-      document.getElementById('ram-min-val').value + document.getElementById('ram-min-unit').value);
-    form.append('ram_max',
-      document.getElementById('ram-max-val').value + document.getElementById('ram-max-unit').value);
+    form.append('ram_min', ramFieldValue('', 'min'));
+    form.append('ram_max', ramFieldValue('', 'max'));
   }
 
   apiFetch('/api/upload-and-extract', { method: 'POST', body: form })

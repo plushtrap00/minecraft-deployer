@@ -93,13 +93,14 @@ var dlCategoryPanelBody = document.getElementById('dl-category-panel-body');
 
 dlCategoryPanelToggle.addEventListener('click', function() {
   var collapsed = dlCategoryPanelBody.classList.toggle('collapsed');
-  dlCategoryPanelToggle.textContent = collapsed ? '▼' : '▲';
+  dlCategoryPanelToggle.classList.toggle('collapsed', collapsed);
+  dlCategoryPanelToggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
 });
 
 function loadDlCategories(source) {
   var cached = dlCategoriesCache.get(source);
   if (cached) {
-    dlCategoryPanelBody.innerHTML = renderModSearchCategoryOptions(cached) || '<p class="empty-msg" style="padding:6px">Sin categorías</p>';
+    dlCategoryPanelBody.innerHTML = renderModSearchCategoryOptions(cached) || '<p class="empty-msg pad-s">Sin categorías</p>';
     return;
   }
   dlCategoryPanelBody.innerHTML = loadingHtml();
@@ -109,15 +110,15 @@ function loadDlCategories(source) {
     })
     .then(function(result) {
       if (!result.ok) {
-        dlCategoryPanelBody.innerHTML = '<p class="empty-msg" style="padding:6px">Error al cargar categorías</p>';
+        dlCategoryPanelBody.innerHTML = '<p class="empty-msg pad-s">Error al cargar categorías</p>';
         return;
       }
       var cats = result.data.categories || [];
       dlCategoriesCache.set(source, cats);
-      dlCategoryPanelBody.innerHTML = renderModSearchCategoryOptions(cats) || '<p class="empty-msg" style="padding:6px">Sin categorías</p>';
+      dlCategoryPanelBody.innerHTML = renderModSearchCategoryOptions(cats) || '<p class="empty-msg pad-s">Sin categorías</p>';
     })
     .catch(function() {
-      dlCategoryPanelBody.innerHTML = '<p class="empty-msg" style="padding:6px">Error al cargar categorías</p>';
+      dlCategoryPanelBody.innerHTML = '<p class="empty-msg pad-s">Error al cargar categorías</p>';
     });
 }
 
@@ -239,7 +240,7 @@ function renderDlResults(results) {
     var link = isWebUrl(item.page_url)
       ? '<a class="mod-search-link" href="' + escHtml(item.page_url) + '" target="_blank" rel="noopener" title="Ver página del modpack" onclick="event.stopPropagation()">↗</a>'
       : '';
-    return '<div class="mod-search-result-item" data-index="' + i + '" style="cursor:pointer">'
+    return '<div class="mod-search-result-item cursor-pointer" data-index="' + i + '">'
       + iconHtml
       + '<div class="mod-search-info">'
       + '<div class="mod-search-title-row"><span class="mod-search-title">' + escHtml(item.title) + '</span></div>'
@@ -449,8 +450,12 @@ document.getElementById('dl-install-btn').addEventListener('click', function() {
     showToast('Escribe un nombre para el servidor', 'error');
     return;
   }
-  var ramMin = document.getElementById('dl-ram-min-val').value + document.getElementById('dl-ram-min-unit').value;
-  var ramMax = document.getElementById('dl-ram-max-val').value + document.getElementById('dl-ram-max-unit').value;
+  if (ramFieldsError('dl-')) {
+    showToast(ramFieldsError('dl-'), 'error');
+    return;
+  }
+  var ramMin = ramFieldValue('dl-', 'min');
+  var ramMax = ramFieldValue('dl-', 'max');
 
   var btn = this;
   dlInstallBusy = true;
@@ -469,7 +474,7 @@ document.getElementById('dl-install-btn').addEventListener('click', function() {
 
   function logHtml() {
     return logLines.length
-      ? '<div class="log-viewer" id="dl-install-log" style="height:220px;margin-bottom:10px;font-size:.74rem">'
+      ? '<div class="log-viewer log-viewer-inline mb-s" id="dl-install-log">'
         + logLines.map(escHtml).join('\n') + '</div>'
       : '';
   }

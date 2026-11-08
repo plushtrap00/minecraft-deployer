@@ -128,7 +128,7 @@ function modSearchSpinnerHtml(text) {
 }
 
 function modSearchBackButtonHtml() {
-  return '<button type="button" class="btn-secondary btn-sm mod-search-back" style="margin-bottom:10px">‹ Volver a resultados</button>';
+  return '<button type="button" class="btn-secondary btn-sm mod-search-back mb-s">' + icon('chevron-left') + 'Volver a resultados</button>';
 }
 
 // query precargada: usado tanto por "Buscar mods" (vacía) como por
@@ -190,7 +190,8 @@ var modSearchCategoryPanelBody = document.getElementById('mod-search-category-pa
 // no deben sentirse como parte de un botón gigante.
 modSearchCategoryPanelToggle.addEventListener('click', function() {
   var collapsed = modSearchCategoryPanelBody.classList.toggle('collapsed');
-  modSearchCategoryPanelToggle.textContent = collapsed ? '▼' : '▲';
+  modSearchCategoryPanelToggle.classList.toggle('collapsed', collapsed);
+  modSearchCategoryPanelToggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
 });
 
 function renderModSearchCategoryOptions(categories) {
@@ -213,7 +214,7 @@ function renderModSearchCategoryOptions(categories) {
 function loadModSearchCategories(source) {
   var cached = modSearchCategoriesCache.get(source);
   if (cached) {
-    modSearchCategoryPanelBody.innerHTML = renderModSearchCategoryOptions(cached) || '<p class="empty-msg" style="padding:6px">Sin categorías</p>';
+    modSearchCategoryPanelBody.innerHTML = renderModSearchCategoryOptions(cached) || '<p class="empty-msg pad-s">Sin categorías</p>';
     return;
   }
   modSearchCategoryPanelBody.innerHTML = loadingHtml();
@@ -229,10 +230,10 @@ function loadModSearchCategories(source) {
       }
       var cats = result.data.categories || [];
       modSearchCategoriesCache.set(source, cats);
-      modSearchCategoryPanelBody.innerHTML = renderModSearchCategoryOptions(cats) || '<p class="empty-msg" style="padding:6px">Sin categorías</p>';
+      modSearchCategoryPanelBody.innerHTML = renderModSearchCategoryOptions(cats) || '<p class="empty-msg pad-s">Sin categorías</p>';
     })
     .catch(function() {
-      modSearchCategoryPanelBody.innerHTML = '<p class="empty-msg" style="padding:6px">Error al cargar categorías</p>';
+      modSearchCategoryPanelBody.innerHTML = '<p class="empty-msg pad-s">Error al cargar categorías</p>';
     });
 }
 
@@ -416,7 +417,7 @@ function renderModSearchFilesPage() {
   var files = modSearchFilesState.items;
   var badge = mod.installed ? ' <span class="mod-search-badge">Instalado</span>' : '';
   var header = '<div class="mod-search-files-header">'
-    + '<button type="button" class="btn-secondary btn-sm mod-search-back">‹ Volver a resultados</button>'
+    + '<button type="button" class="btn-secondary btn-sm mod-search-back">' + icon('chevron-left') + 'Volver a resultados</button>'
     + '<span class="mod-search-title">' + escHtml(mod.title) + badge + '</span>'
     + '</div>';
 
@@ -437,7 +438,7 @@ function renderModSearchFilesPage() {
       + '<div class="mod-search-file-action">'
       + (available
         ? '<button type="button" class="btn-sm mod-search-install" data-index="' + (start + i) + '">Instalar</button>'
-        : '<span style="font-size:.72rem;color:var(--muted)">Sin descarga directa</span>')
+        : '<span class="text-muted text-xs">Sin descarga directa</span>')
       + '</div>'
       + '</div>';
   }).join('');
@@ -505,7 +506,7 @@ function installSearchedMod(mod, file, buttonEl) {
       var body = document.getElementById('mod-search-modal-body');
       if (result.ok && result.data.success) {
         showToast('Mod instalado: ' + result.data.filename, 'success');
-        // Se vuelve a pintar la lista de versiones (con "‹ Volver a resultados")
+        // Se vuelve a pintar la lista de versiones (con «Volver a resultados»)
         // en vez de sustituirla por el aviso: si no, el modal se quedaba sin
         // forma de volver salvo tocando los filtros.
         mod.installed = true;

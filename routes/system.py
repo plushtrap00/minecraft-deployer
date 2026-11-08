@@ -26,11 +26,10 @@ from config import DEFAULT_SERVERS_PATH, MC_DOMAIN
 from services.utils import get_system_ram_gb, get_modpacks
 from services.modpack import detect_modpack_version, get_pending_mods
 from services import auto_update
+from services.frontend import render_index
 
 router = APIRouter()
 
-
-_STATIC_INDEX = Path(__file__).parent.parent / "static" / "index.html"
 
 # Se fija una sola vez al arrancar el proceso (no en cada request): así
 # cambia con cada reinicio real (incluido el que dispara la propia
@@ -44,7 +43,7 @@ _STATIC_ASSET_RE = re.compile(r'(href|src)="(/static/[^"]+)"')
 
 @router.get("/", response_class=HTMLResponse)
 def index():
-    html = _STATIC_INDEX.read_text(encoding="utf-8")
+    html = render_index()
     html = _STATIC_ASSET_RE.sub(rf'\1="\2?v={_ASSET_VERSION}"', html)
     return HTMLResponse(
         content=html,

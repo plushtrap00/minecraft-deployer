@@ -19,7 +19,7 @@ from pathlib import Path
 from config import DEFAULT_SERVERS_PATH
 from services.modloader import _http_get, _installer_url, LOADER_DISPLAY_NAMES
 from services.utils import configure_jvm_ram
-from services.players import ensure_global_dir, read_global_file, PLAYER_FILES
+from services.players import write_player_files
 
 _VERSION_MANIFEST_URL = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json"
 
@@ -93,11 +93,7 @@ def _bootstrap_common_files(server_dir: Path, mc_version: str, loader_key: str |
     if loader_key:
         (server_dir / "mods").mkdir(exist_ok=True)
 
-    ensure_global_dir()
-    for fname in PLAYER_FILES:
-        data = read_global_file(fname)
-        if data:
-            (server_dir / fname).write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+    write_player_files(server_dir.name)
 
     # detect_modpack_version() prioriza variables.txt: sin esto, la app no
     # reconocería el modloader/versión hasta el primer parseo de nombres de jar.

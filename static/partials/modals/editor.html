@@ -1,0 +1,62 @@
+<!-- Modal: editor de archivos -->
+<div class="modal-overlay" id="editor-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-icon"><svg class="icon"><use href="#i-file-text"/></svg></span>
+      <span class="modal-path" id="modal-path"></span>
+      <button class="modal-close" id="modal-close-btn" aria-label="Cerrar"><svg class="icon"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="cfg-toolbar" id="cfg-toolbar">
+        <button class="cfg-mode-btn active" id="cfg-btn-form">Formulario</button>
+        <button class="cfg-mode-btn" id="cfg-btn-raw">Texto plano</button>
+        <span class="cfg-mode-hint" id="cfg-mode-hint"></span>
+      </div>
+      <div id="cfg-form-view" class="cfg-form-view">
+        <div class="cfg-form" id="cfg-form-content"></div>
+      </div>
+      <div id="cfg-raw-view" class="cfg-raw-view" style="display:none">
+        <div class="editor-with-lines">
+          <div class="line-numbers" id="line-numbers">1</div>
+          <textarea class="modal-textarea" id="config-editor" spellcheck="false"></textarea>
+        </div>
+      </div>
+      <div id="kjs-move-form" class="new-world-form mt-m" style="display:none">
+        <div class="form-panel-title">Mover o renombrar el script</div>
+        <div class="props-grid mb-m">
+          <div class="prop-field">
+            <label class="prop-label">Carpeta destino <span class="req">*</span></label>
+            <select id="kjs-move-subfolder">
+              <option value="startup_scripts">startup_scripts/</option>
+              <option value="server_scripts">server_scripts/</option>
+              <option value="client_scripts">client_scripts/</option>
+              <option value="__root__">Raíz (kubejs/)</option>
+              <option value="__custom__">Personalizado...</option>
+            </select>
+          </div>
+          <div class="prop-field" id="kjs-move-custom-folder-field" style="display:none">
+            <label class="prop-label">Ruta personalizada</label>
+            <input type="text" id="kjs-move-custom-folder" placeholder="ej: assets, data/mymod...">
+          </div>
+          <div class="prop-field">
+            <label class="prop-label">Nombre del archivo <span class="req">*</span></label>
+            <input type="text" id="kjs-move-filename">
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn-secondary" id="kjs-move-cancel">Cancelar</button>
+          <button id="kjs-move-confirm">Mover o renombrar</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <span class="line-info" id="line-info">Línea 1</span>
+      <div class="modal-footer-actions">
+        <button class="btn-danger" id="modal-kjs-delete-btn" style="display:none">Borrar</button>
+        <button class="btn-secondary" id="modal-kjs-move-btn" style="display:none">Mover o renombrar</button>
+        <button class="btn-secondary" id="modal-close-btn2">Cerrar</button>
+        <button id="modal-save-btn">Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+</div>

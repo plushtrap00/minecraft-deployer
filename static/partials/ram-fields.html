@@ -1,0 +1,20 @@
+<!-- Campos de RAM mínima/máxima de la JVM. Se usa en los tres modos de
+     Instalar con un prefijo distinto para los ids (ver services/frontend.py);
+     deploy.js comprueba los tres igual (ramFieldsWarning). -->
+<div class="ram-grid">
+  <div>
+    <label class="field-label">RAM mínima <span class="field-label-note">-Xms</span></label>
+    <div class="input-row">
+      <input type="number" id="{{prefix}}ram-min-val" value="{{min}}" min="1">
+      <select id="{{prefix}}ram-min-unit" aria-label="Unidad de la RAM mínima"><option value="G">GB</option><option value="M">MB</option></select>
+    </div>
+  </div>
+  <div>
+    <label class="field-label">RAM máxima <span class="field-label-note">-Xmx</span></label>
+    <div class="input-row">
+      <input type="number" id="{{prefix}}ram-max-val" value="{{max}}" min="1">
+      <select id="{{prefix}}ram-max-unit" aria-label="Unidad de la RAM máxima"><option value="G">GB</option><option value="M">MB</option></select>
+    </div>
+  </div>
+</div>
+<p id="{{prefix}}ram-warn" class="ram-warn" role="alert" style="display:none"></p>

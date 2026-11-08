@@ -70,6 +70,13 @@
   color: var(--muted);
 }
 
+/* El formulario reparte sus campos con el mismo hueco que la tarjeta. */
+#login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 .login-field {
   display: flex;
   flex-direction: column;

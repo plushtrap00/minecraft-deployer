@@ -1,0 +1,36 @@
+<!-- ══ GESTIÓN ═══════════════════════════════════════════ -->
+<div class="page" id="page-manage">
+  <div class="card">
+    <div class="card-head">
+      <h2>Modpacks instalados</h2>
+      <button class="btn-ghost btn-sm" id="btn-refresh-packs"><svg class="icon"><use href="#i-refresh-cw"/></svg> Actualizar</button>
+    </div>
+    <div id="modpack-list"><div class="skeleton-rows" role="status" aria-label="Cargando"><div></div><div></div><div></div></div></div>
+  </div>
+  <div id="mgmt-panel">
+    <div class="card pb-0">
+      <div class="card-head">
+        <h2 class="mgmt-heading"><span class="mgmt-heading-label">Gestionando</span> <span id="mgmt-title" class="mgmt-title"></span></h2>
+        <button class="btn-danger btn-sm" id="btn-delete-modpack"><svg class="icon"><use href="#i-trash-2"/></svg> Borrar modpack</button>
+      </div>
+      <div class="mgmt-tabs" id="mgmt-panel-tabs">
+        <button class="mgmt-tab active" id="mtab-props"><svg class="icon"><use href="#i-sliders-horizontal"/></svg>server.properties</button>
+        <button class="mgmt-tab" id="mtab-ram"><svg class="icon"><use href="#i-memory-stick"/></svg>RAM</button>
+        <button class="mgmt-tab" id="mtab-configs"><svg class="icon"><use href="#i-wrench"/></svg>Config de mods</button>
+        <button class="mgmt-tab" id="mtab-kubejs"><svg class="icon"><use href="#i-scroll-text"/></svg>KubeJS</button>
+        <button class="mgmt-tab" id="mtab-worldfiles"><svg class="icon"><use href="#i-map"/></svg>Archivos de mundo</button>
+        <button class="mgmt-tab" id="mtab-logs"><svg class="icon"><use href="#i-file-text"/></svg>Logs</button>
+        <button class="mgmt-tab" id="mtab-mods"><svg class="icon"><use href="#i-puzzle"/></svg>Mods</button>
+      </div>
+    </div>
+
+    <!-- include: partials/manage/props.html -->
+    <!-- include: partials/manage/ram.html -->
+    <!-- include: partials/manage/configs.html -->
+    <!-- include: partials/manage/kubejs.html -->
+    <!-- include: partials/manage/worldfiles.html -->
+    <!-- include: partials/manage/logs.html -->
+    <!-- include: partials/manage/mods.html -->
+
+  </div>
+</div>

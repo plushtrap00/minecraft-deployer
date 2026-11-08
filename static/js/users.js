@@ -14,7 +14,7 @@ function loadUsers() {
           ? '<span class="role-badge role-admin">Admin</span>'
           : '<span class="role-badge role-user">Usuario</span>';
         var actions = isAdmin ? '' :
-          '<div class="pe-actions"><button class="btn-danger user-delete-btn" style="padding:4px 10px;font-size:.78rem" data-user="' + escHtml(u.username) + '">Eliminar</button></div>';
+          '<div class="pe-actions"><button class="btn-danger user-delete-btn btn-xs" data-user="' + escHtml(u.username) + '">Eliminar</button></div>';
         return '<div class="player-entry">'
           + '<span class="pe-name">' + escHtml(u.username) + '</span>'
           + badge + actions
@@ -27,7 +27,15 @@ function loadUsers() {
 }
 
 function deleteUser(username) {
-  if (!confirm('¿Eliminar usuario "' + username + '"?')) return;
+  showConfirm(
+    'Eliminar a ' + username,
+    'Esta cuenta ya no podrá entrar al panel. Esta acción no se puede deshacer.',
+    function() { doDeleteUser(username); },
+    { confirmLabel: 'Eliminar usuario' }
+  );
+}
+
+function doDeleteUser(username) {
   apiFetch('/api/users/' + encodeURIComponent(username), { method: 'DELETE' })
     .then(function(r) {
       return r.json().then(function(d) { return { ok: r.ok, d: d }; });
@@ -37,9 +45,10 @@ function deleteUser(username) {
         showToast('Usuario eliminado', 'success');
         loadUsers();
       } else {
-        showToast(res.d.detail || 'Error al eliminar', 'error');
+        showToast(res.d.detail || 'No se pudo eliminar el usuario', 'error');
       }
-    });
+    })
+    .catch(function() { showToast('No se pudo conectar con el panel', 'error'); });
 }
 
 document.getElementById('btn-refresh-users').addEventListener('click', loadUsers);

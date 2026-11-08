@@ -39,11 +39,15 @@ var autoUpdateRestarting = false;
 var autoUpdateRestartStartedAt = null;
 var autoUpdatePollTimer = null;
 
-function startSysmonStream() {
+// resume: se reabre al volver a la pestaña; se deja lo último pintado en
+// vez del esqueleto de carga.
+function startSysmonStream(resume) {
   if (sysmonSSE) {
     return;
   }
-  document.getElementById('sysmon-body').innerHTML = loadingHtml();
+  if (!resume || !lastSysmonStats) {
+    document.getElementById('sysmon-body').innerHTML = loadingHtml();
+  }
   sysmonSSE = new EventSource('/api/system-stats/stream');
   sysmonSSE.onmessage = function(event) {
     var data;
@@ -54,7 +58,7 @@ function startSysmonStream() {
     }
     if (data.error || !data.cpu) {
       document.getElementById('sysmon-body').innerHTML =
-        '<p style="color:var(--red);font-size:.82rem">Error: ' + escHtml(data.error || 'Respuesta inesperada del servidor') + '</p>';
+        '<p class="text-red text-sm">Error: ' + escHtml(data.error || 'Respuesta inesperada del servidor') + '</p>';
       return;
     }
     lastSysmonStats = data;
@@ -68,6 +72,15 @@ function stopSysmonStream() {
     sysmonSSE = null;
   }
 }
+
+// Con la pestaña del navegador oculta no hace falta el stream de CPU/RAM.
+document.addEventListener('visibilitychange', function() {
+  if (document.hidden) {
+    stopSysmonStream();
+  } else if (sysmonOpen) {
+    startSysmonStream(true);
+  }
+});
 
 // El estado de auto-actualización se pide aparte del stream de CPU/RAM/temp, y
 // corre SIEMPRE desde que carga la página (no solo mientras el panel está
@@ -339,7 +352,7 @@ function renderRestartPendingSection() {
   var html = '<div class="sysmon-section">';
   html += '<div class="sysmon-section-title">Reinicio pendiente</div>';
   html += '<span class="sysmon-no-temps">Guardaste cambios de .env o de constantes que todavía no se aplicaron.</span>';
-  html += '<div style="margin-top:6px;display:flex;flex-direction:column;gap:4px;align-items:flex-start">';
+  html += '<div class="stack-start">';
   html += '<button type="button" class="btn-secondary btn-sm" id="sysmon-restart-btn"'
     + (blockedReason ? ' disabled' : '') + '>Reiniciar ahora</button>';
   if (blockedReason) {
@@ -349,8 +362,9 @@ function renderRestartPendingSection() {
   return html;
 }
 
-function autoUpdateRow(label, value, valueColor) {
-  var valueStyle = valueColor ? ' style="color:' + valueColor + ';font-weight:600"' : '';
+// tone: 'green', 'yellow' o 'red' para resaltar el valor (ver .text-* en utilities.css).
+function autoUpdateRow(label, value, tone) {
+  var valueClass = tone ? ' class="fw-semibold text-' + tone + '"' : '';
   return '<div class="sysmon-proc-row">'
     + '<span class="sysmon-proc-name">' + escHtml(label) + '</span>'
     + '<span class="sysmon-proc-stats"><span' + valueStyle + '>' + escHtml(value) + '</span></span>'
@@ -379,13 +393,13 @@ function renderAutoUpdateSection() {
   }
 
   if (status.commits_behind > 0) {
-    html += autoUpdateRow('Estado', status.commits_behind + ' commit(s) nuevos disponibles', 'var(--yellow)');
+    html += autoUpdateRow('Estado', status.commits_behind + ' commit(s) nuevos disponibles', 'yellow');
 
     var blockedReason = status.server_running
       ? 'hay un servidor de Minecraft en marcha'
       : (status.busy ? status.busy_reasons.join(', ') : null);
 
-    html += '<div style="margin-top:6px;display:flex;flex-direction:column;gap:4px;align-items:flex-start">';
+    html += '<div class="stack-start">';
     html += '<button type="button" class="btn-secondary btn-sm" id="auto-update-apply-btn"'
       + (blockedReason ? ' disabled' : '') + '>Actualizar ahora</button>';
     if (blockedReason) {
@@ -396,7 +410,7 @@ function renderAutoUpdateSection() {
     // Solo "al día" si ya se comprobó de verdad alguna vez (automático o a
     // mano) — si nunca se comprobó, commits_behind sigue en su valor inicial
     // 0 y mostrar "al día" sería un falso positivo.
-    html += autoUpdateRow('Estado', 'Al día', 'var(--green)');
+    html += autoUpdateRow('Estado', 'Al día', 'green');
   }
 
   if (status.last_check) {
@@ -408,10 +422,10 @@ function renderAutoUpdateSection() {
   }
 
   if (status.last_error) {
-    html += autoUpdateRow('Error', status.last_error, 'var(--red)');
+    html += autoUpdateRow('Error', status.last_error, 'red');
   }
 
-  html += '<div style="margin-top:6px">'
+  html += '<div class="mt-s">'
     + '<button type="button" class="btn-secondary btn-xs" id="auto-update-check-btn"' + (autoUpdateChecking ? ' disabled' : '') + '>'
     + (autoUpdateChecking ? 'Comprobando…' : 'Comprobar ahora') + '</button>'
     + '</div>';

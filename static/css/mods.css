@@ -321,6 +321,14 @@
   line-height: 1;
 }
 
+.mod-search-category-panel-toggle .icon {
+  transition: transform .2s;
+}
+
+.mod-search-category-panel-toggle.collapsed .icon {
+  transform: rotate(180deg);
+}
+
 .mod-search-category-panel-body {
   flex: 1;
   min-height: 0;

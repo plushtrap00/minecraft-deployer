@@ -2,7 +2,7 @@
 var allMods = [];
 var currentModpackVersion = {};
 
-// -- Menú "⋮" de acciones (duplicados / solo-cliente / borrar deshabilitados) --
+// -- Menú «Más opciones» de acciones (duplicados / solo-cliente / borrar deshabilitados) --
 // Los botones mantienen los mismos id que antes (mod-duplicates-btn, etc.),
 // solo cambia dónde viven visualmente, así que sus propios listeners (más
 // abajo en este archivo) no necesitan tocarse.
@@ -107,7 +107,7 @@ function loadModsList() {
       applyModsFilters();
     })
     .catch(function() {
-      list.innerHTML = '<p class="empty-msg" style="color:var(--red)">Error al cargar mods</p>';
+      list.innerHTML = '<p class="empty-msg text-red">Error al cargar mods</p>';
     });
 }
 
@@ -126,10 +126,10 @@ function renderModsList(mods) {
   }
   var html = '<div class="mods-table-wrap">';
   mods.forEach(function(mod) {
-    var opacityStyle = mod.enabled ? '' : ' style="opacity:.45"';
+    var disabledClass = mod.enabled ? '' : ' is-disabled';
     var disabledLabel = mod.enabled ? '' : '<span class="mod-disabled-label">desactivado</span>';
     var toggleTitle = mod.enabled ? 'Deshabilitar mod' : 'Habilitar mod';
-    html += '<div class="mod-list-item"' + opacityStyle + '>'
+    html += '<div class="mod-list-item' + disabledClass + '">'
       + '<span class="mod-icon">' + icon('puzzle') + '</span>'
       + '<div class="mod-info"><div class="mod-display">' + escHtml(mod.name) + '</div>'
       + '<div class="mod-file">' + escHtml(mod.filename) + '</div></div>'
@@ -190,11 +190,11 @@ function openDeleteDisabledModal() {
   var body = document.getElementById('mod-delete-disabled-modal-body');
 
   if (!disabled.length) {
-    body.innerHTML = '<p class="empty-msg" style="padding:8px 4px">No hay mods deshabilitados.</p>';
+    body.innerHTML = '<p class="empty-msg">No hay mods deshabilitados.</p>';
   } else {
     body.innerHTML = disabled.map(function(mod) {
-      return '<label class="mod-list-item" style="cursor:pointer">'
-        + '<input type="checkbox" class="mod-delete-disabled-check" data-filename="' + escHtml(mod.filename) + '" checked style="flex-shrink:0;width:16px;height:16px">'
+      return '<label class="mod-list-item cursor-pointer">'
+        + '<input type="checkbox" class="mod-delete-disabled-check check-md shrink-0" data-filename="' + escHtml(mod.filename) + '" checked>'
         + '<div class="mod-info"><div class="mod-display">' + escHtml(mod.name) + '</div>'
         + '<div class="mod-file">' + escHtml(mod.filename) + '</div></div>'
         + '</label>';

@@ -81,3 +81,98 @@
   margin: 0;
   height: 360px;
 }
+
+/* -- Texto y espaciado (sustituyen a los style="..." que generaba el JS) ---- */
+.mt-xs { margin-top: 2px; }
+.pad-s { padding: 6px; }
+.text-xs { font-size: var(--fs-xs); }
+.text-sm { font-size: var(--fs-sm); }
+.text-md { font-size: var(--fs-md); }
+.fw-normal { font-weight: 400; }
+.fw-semibold { font-weight: 600; }
+.text-muted { color: var(--muted); }
+.text-red { color: var(--red); }
+.text-green { color: var(--green); }
+.text-yellow { color: var(--yellow); }
+.text-accent { color: var(--accent); }
+.cursor-pointer { cursor: pointer; }
+.no-underline { text-decoration: none; }
+.is-disabled { opacity: .5; }
+.btn-solid { opacity: 1; }
+
+.ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Coincidencia resaltada en buscadores de archivos y logs. */
+mark.hl {
+  background: rgba(var(--yellow-rgb), .35);
+  color: var(--text);
+  border-radius: 2px;
+}
+
+.stack-start {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.block-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+
+.check-md {
+  width: 16px;
+  height: 16px;
+}
+
+/* Log de progreso dentro de un paso (crear servidor, cambiar modloader...). */
+.log-viewer.log-viewer-inline {
+  height: 220px;
+  font-size: var(--fs-xs);
+}
+
+/* Listas de los modales de limpieza de mods. */
+.list-subhead {
+  margin: 4px 0 8px;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+
+.list-footnote {
+  margin-top: 16px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+
+.dup-group {
+  margin-bottom: 12px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+}
+
+.dup-group-head {
+  margin-bottom: 6px;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+
+/* Mod señalado como culpable en el análisis de un crash. */
+.culprit-mod {
+  display: inline-block;
+  margin: 2px 4px 2px 0;
+  padding: 1px 6px;
+  border-radius: var(--radius-tag);
+  background: rgba(var(--red-rgb), .15);
+  color: var(--red);
+}

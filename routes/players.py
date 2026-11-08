@@ -21,10 +21,30 @@ from services.players import (
     ensure_global_dir, read_global_file, write_global_file,
     find_player, sync_to_all_modpacks, send_console_if_running,
     validate_player_name, validate_ip, sanitize_reason,
-    PLAYER_FILES,
+    resolve_player, fill_missing_uuids, PlayerLookupError,
+    PLAYER_FILES, PROFILE_FILES,
 )
 
 router = APIRouter(prefix="/api/players", tags=["players"])
+
+
+def _resolve(name: str) -> dict:
+    """UUID y nombre exacto de la cuenta, o error 400/502 legible."""
+    try:
+        return resolve_player(name)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except PlayerLookupError as e:
+        raise HTTPException(status_code=502, detail=str(e))
+
+
+def _save(fname: str, data: list) -> list:
+    """Guarda el archivo global (completando UUID que falten) y lo sincroniza."""
+    if fname in PROFILE_FILES:
+        fill_missing_uuids(data)
+    write_global_file(fname, data)
+    synced, _ = sync_to_all_modpacks(fname, data)
+    return synced
 
 
 @router.get("")
@@ -39,7 +59,7 @@ def get_all_players():
 
 
 @router.post("/op")
-def add_op(name: str = Form(...), uuid: str = Form(""), level: int = Form(4)):
+def add_op(name: str = Form(...), level: int = Form(4)):
     try:
         name = validate_player_name(name)
     except ValueError as e:
@@ -47,9 +67,10 @@ def add_op(name: str = Form(...), uuid: str = Form(""), level: int = Form(4)):
     data = read_global_file("ops.json")
     if find_player(data, name) != -1:
         raise HTTPException(status_code=400, detail=f"{name} ya es op")
-    data.append({"uuid": uuid or "", "name": name, "level": level, "bypassesPlayerLimit": False})
-    write_global_file("ops.json", data)
-    synced, _ = sync_to_all_modpacks("ops.json", data)
+    player = _resolve(name)
+    name = player["name"]
+    data.append({"uuid": player["uuid"], "name": name, "level": level, "bypassesPlayerLimit": False})
+    synced = _save("ops.json", data)
     send_console_if_running("__all__", [f"op {name}"])
     return JSONResponse({"success": True, "synced": synced})
 
@@ -65,14 +86,13 @@ def remove_op(name: str):
     if idx == -1:
         raise HTTPException(status_code=404, detail=f"{name} no es op")
     data.pop(idx)
-    write_global_file("ops.json", data)
-    synced, _ = sync_to_all_modpacks("ops.json", data)
+    synced = _save("ops.json", data)
     send_console_if_running("__all__", [f"deop {name}"])
     return JSONResponse({"success": True, "synced": synced})
 
 
 @router.post("/whitelist")
-def add_whitelist(name: str = Form(...), uuid: str = Form("")):
+def add_whitelist(name: str = Form(...)):
     try:
         name = validate_player_name(name)
     except ValueError as e:
@@ -80,9 +100,10 @@ def add_whitelist(name: str = Form(...), uuid: str = Form("")):
     data = read_global_file("whitelist.json")
     if find_player(data, name) != -1:
         raise HTTPException(status_code=400, detail=f"{name} ya está en la whitelist")
-    data.append({"uuid": uuid or "", "name": name})
-    write_global_file("whitelist.json", data)
-    synced, _ = sync_to_all_modpacks("whitelist.json", data)
+    player = _resolve(name)
+    name = player["name"]
+    data.append({"uuid": player["uuid"], "name": name})
+    synced = _save("whitelist.json", data)
     send_console_if_running("__all__", [f"whitelist add {name}"])
     return JSONResponse({"success": True, "synced": synced})
 
@@ -98,14 +119,13 @@ def remove_whitelist(name: str):
     if idx == -1:
         raise HTTPException(status_code=404, detail=f"{name} no está en la whitelist")
     data.pop(idx)
-    write_global_file("whitelist.json", data)
-    synced, _ = sync_to_all_modpacks("whitelist.json", data)
+    synced = _save("whitelist.json", data)
     send_console_if_running("__all__", [f"whitelist remove {name}"])
     return JSONResponse({"success": True, "synced": synced})
 
 
 @router.post("/ban")
-def ban_player(name: str = Form(...), uuid: str = Form(""), reason: str = Form("Banned by admin")):
+def ban_player(name: str = Form(...), reason: str = Form("Banned by admin")):
     try:
         name = validate_player_name(name)
     except ValueError as e:
@@ -114,16 +134,17 @@ def ban_player(name: str = Form(...), uuid: str = Form(""), reason: str = Form("
     data = read_global_file("banned-players.json")
     if find_player(data, name) != -1:
         raise HTTPException(status_code=400, detail=f"{name} ya está baneado")
+    player = _resolve(name)
+    name = player["name"]
     data.append({
-        "uuid": uuid or "",
+        "uuid": player["uuid"],
         "name": name,
         "created": datetime.datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S +0000"),
         "source": "Deployer",
         "expires": "forever",
         "reason": reason,
     })
-    write_global_file("banned-players.json", data)
-    synced, _ = sync_to_all_modpacks("banned-players.json", data)
+    synced = _save("banned-players.json", data)
     send_console_if_running("__all__", [f"ban {name} {reason}"])
     return JSONResponse({"success": True, "synced": synced})
 
@@ -139,8 +160,7 @@ def unban_player(name: str):
     if idx == -1:
         raise HTTPException(status_code=404, detail=f"{name} no está baneado")
     data.pop(idx)
-    write_global_file("banned-players.json", data)
-    synced, _ = sync_to_all_modpacks("banned-players.json", data)
+    synced = _save("banned-players.json", data)
     send_console_if_running("__all__", [f"pardon {name}"])
     return JSONResponse({"success": True, "synced": synced})
 
@@ -162,8 +182,7 @@ def ban_ip(ip: str = Form(...), reason: str = Form("Banned by admin")):
         "expires": "forever",
         "reason": reason,
     })
-    write_global_file("banned-ips.json", data)
-    synced, _ = sync_to_all_modpacks("banned-ips.json", data)
+    synced = _save("banned-ips.json", data)
     send_console_if_running("__all__", [f"ban-ip {ip} {reason}"])
     return JSONResponse({"success": True, "synced": synced})
 
@@ -179,8 +198,7 @@ def unban_ip(ip: str):
     if idx == -1:
         raise HTTPException(status_code=404, detail=f"{ip} no está baneada")
     data.pop(idx)
-    write_global_file("banned-ips.json", data)
-    synced, _ = sync_to_all_modpacks("banned-ips.json", data)
+    synced = _save("banned-ips.json", data)
     send_console_if_running("__all__", [f"pardon-ip {ip}"])
     return JSONResponse({"success": True, "synced": synced})
 
@@ -192,6 +210,10 @@ def sync_all():
     skipped = []
     for fname in PLAYER_FILES:
         data = read_global_file(fname)
+        # Las entradas que el panel guardaba antes sin UUID se completan
+        # aquí: Minecraft las ignora mientras no lo tengan.
+        if fname in PROFILE_FILES and fill_missing_uuids(data):
+            write_global_file(fname, data)
         synced, skipped = sync_to_all_modpacks(fname, data)
         results[fname] = synced
     warning = None

@@ -363,7 +363,7 @@ function offerForceStart(modpack, message) {
     'Mods pendientes de instalar',
     message + ' ¿Quieres iniciar el servidor de todas formas?',
     function() { _launchServer(modpack, true); },
-    { icon: '⏳', confirmLabel: 'Iniciar de todas formas', cancelLabel: 'Cancelar', confirmColor: 'var(--yellow)' }
+    { icon: '⏳', confirmLabel: 'Iniciar de todas formas', cancelLabel: 'Cancelar', tone: 'yellow' }
   );
 }
 
@@ -573,7 +573,17 @@ var metricsTimer = null;
 // consulta, cada minuto: 30 muestras = la última media hora).
 var metricsHistory = { tps: [], mspt: [] };
 
+// Si el servidor está en marcha se quieren métricas, pero mientras la
+// pestaña del navegador no se ve se pausan los temporizadores (no tiene
+// sentido pedir datos ni repintar nada que nadie mira) y al volver se pide
+// una medida nueva al momento.
+var metricsWanted = false;
+
 function startMetricsPolling() {
+  metricsWanted = true;
+  if (document.hidden) {
+    return;
+  }
   fetchMetrics();
   if (!metricsTimer) {
     metricsTimer = setInterval(fetchMetrics, 60000);
@@ -581,13 +591,26 @@ function startMetricsPolling() {
   _startRelativeTicker();
 }
 
-function stopMetricsPolling() {
+function pauseMetricsPolling() {
   if (metricsTimer) {
     clearInterval(metricsTimer);
     metricsTimer = null;
   }
   _stopRelativeTicker();
 }
+
+function stopMetricsPolling() {
+  metricsWanted = false;
+  pauseMetricsPolling();
+}
+
+document.addEventListener('visibilitychange', function() {
+  if (document.hidden) {
+    pauseMetricsPolling();
+  } else if (metricsWanted) {
+    startMetricsPolling();
+  }
+});
 
 function fetchMetrics() {
   apiFetch('/api/server/metrics')

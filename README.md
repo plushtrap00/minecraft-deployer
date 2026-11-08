@@ -117,4 +117,10 @@ Las pruebas usan solo la biblioteca estándar y no tocan tus servidores (apuntan
 python -m unittest discover -s tests -t .
 ```
 
-Cubren la validación de rutas y nombres, la extracción segura de archivos, las sesiones, el parseo del firewall, la RAM de la JVM y que los scripts de `static/js` no se pisen nombres globales entre sí.
+Cubren la validación de rutas y nombres, la extracción segura de archivos, las sesiones, el parseo del firewall, la RAM de la JVM, los UUID de los jugadores, que la página se monte completa y que los scripts de `static/js` no se pisen nombres globales entre sí.
+
+### Estructura del front
+
+- `static/index.html` es solo el esqueleto: estilos, scripts y una línea `<!-- include: ... -->` por cada trozo.
+- `static/partials/` contiene un HTML por página (`pages/`), por pestaña de Modpacks (`manage/`), por grupo de modales (`modals/`) y los bloques compartidos (por ejemplo `ram-fields.html`, que acepta parámetros). `services/frontend.py` los une al servir `/`, así que el navegador sigue recibiendo una sola página.
+- `static/js/` tiene un archivo por sección o pestaña (`server_props.js`, `jvm_ram.js`, `file_editor.js`, `kubejs.js`...), todos en el ámbito global y cargados en el orden de `index.html`.

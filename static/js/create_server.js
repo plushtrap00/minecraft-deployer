@@ -114,8 +114,12 @@ document.getElementById('create-server-btn').addEventListener('click', function(
     showToast('Elige una versión del modloader', 'error');
     return;
   }
-  var ramMin = document.getElementById('create-ram-min-val').value + document.getElementById('create-ram-min-unit').value;
-  var ramMax = document.getElementById('create-ram-max-val').value + document.getElementById('create-ram-max-unit').value;
+  if (ramFieldsError('create-')) {
+    showToast(ramFieldsError('create-'), 'error');
+    return;
+  }
+  var ramMin = ramFieldValue('create-', 'min');
+  var ramMax = ramFieldValue('create-', 'max');
 
   var btn = this;
   btn.disabled = true;
@@ -133,7 +137,7 @@ document.getElementById('create-server-btn').addEventListener('click', function(
 
   function logHtml() {
     return logLines.length
-      ? '<div class="log-viewer" id="create-server-log" style="height:220px;margin-bottom:10px;font-size:.74rem">'
+      ? '<div class="log-viewer log-viewer-inline mb-s" id="create-server-log">'
         + logLines.map(escHtml).join('\n') + '</div>'
       : '';
   }

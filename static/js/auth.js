@@ -82,8 +82,8 @@ function onLoginSuccess(role) {
   if (typeof loadAutoUpdateStatus === 'function') {
     loadAutoUpdateStatus();
   }
-  if (typeof loadServerPageData === 'function') {
-    loadServerPageData();
+  if (typeof applyInitialRoute === 'function') {
+    applyInitialRoute();
   }
 }
 
@@ -130,21 +130,9 @@ function doLogin() {
     });
 }
 
-document.getElementById('login-btn').addEventListener('click', doLogin);
-document.getElementById('login-pass').addEventListener('keydown', function(event) {
-  if (event.key === 'Enter') {
-    doLogin();
-  }
-});
-// Enter en el usuario pasa a la contraseña (o entra, si ya está escrita).
-document.getElementById('login-user').addEventListener('keydown', function(event) {
-  if (event.key === 'Enter') {
-    if (document.getElementById('login-pass').value) {
-      doLogin();
-    } else {
-      document.getElementById('login-pass').focus();
-    }
-  }
+document.getElementById('login-form').addEventListener('submit', function(event) {
+  event.preventDefault();
+  doLogin();
 });
 
 // Si ya hay una sesión abierta (la cookie sigue valiendo), entrar directamente.

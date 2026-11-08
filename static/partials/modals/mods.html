@@ -1,0 +1,231 @@
+<!-- Modal: progreso y resultado de operaciones sobre mods/modloader -->
+<div class="modal-overlay" id="mod-upload-modal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <span class="modal-icon" id="mod-upload-modal-icon"><svg class="icon"><use href="#i-package"/></svg></span>
+      <span class="modal-path" id="mod-upload-modal-title">Subida de mods</span>
+      <button class="modal-close" id="mod-upload-modal-close" aria-label="Cerrar"><svg class="icon"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-scroll" id="mod-upload-modal-body"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: lista de mods de una subida masiva -->
+<div class="modal-overlay" id="mod-list-modal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <span class="modal-icon" id="mod-list-modal-icon"><svg class="icon"><use href="#i-package"/></svg></span>
+      <span class="modal-path" id="mod-list-modal-title"></span>
+      <button class="modal-close" id="mod-list-modal-close" aria-label="Cerrar"><svg class="icon"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-scroll" id="mod-list-modal-body"></div>
+    </div>
+    <div class="modal-footer">
+      <div class="mod-modal-pagination" id="mod-list-modal-pagination"></div>
+      <div class="modal-footer-actions">
+        <button class="btn-secondary" id="mod-list-modal-close2">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: confirmar mods que necesitan revisión (versión más antigua, solo-cliente...) -->
+<div class="modal-overlay" id="mod-downgrade-modal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <span class="modal-icon"><svg class="icon"><use href="#i-triangle-alert"/></svg></span>
+      <span class="modal-path" id="mod-downgrade-modal-title">Mods que necesitan confirmación</span>
+      <button class="modal-close" id="mod-downgrade-modal-close" aria-label="Cerrar"><svg class="icon"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-scroll" id="mod-downgrade-modal-body"></div>
+    </div>
+    <div class="modal-footer">
+      <div class="mod-modal-pagination" id="mod-downgrade-modal-pagination"></div>
+      <div class="modal-footer-actions">
+        <button class="btn-secondary" id="mod-downgrade-reject-all">Rechazar todos</button>
+        <button id="mod-downgrade-confirm">Confirmar seleccionados</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: cambiar versión de modloader -->
+<div class="modal-overlay" id="modloader-modal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <span class="modal-icon"><svg class="icon"><use href="#i-wrench"/></svg></span>
+      <span class="modal-path">Cambiar versión del modloader</span>
+      <button class="modal-close" id="modloader-modal-close" aria-label="Cerrar"><svg class="icon"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-scroll" id="modloader-modal-body"></div>
+    </div>
+    <div class="modal-footer">
+      <div></div>
+      <div class="modal-footer-actions">
+        <button class="btn-secondary" id="modloader-verify-btn">Verificar compatibilidad</button>
+        <button id="modloader-install-btn" disabled>Instalar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: posibles mods duplicados -->
+<div class="modal-overlay" id="mod-duplicates-modal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <span class="modal-icon"><svg class="icon"><use href="#i-triangle-alert"/></svg></span>
+      <span class="modal-path">Posibles mods duplicados</span>
+      <button class="modal-close" id="mod-duplicates-modal-close" aria-label="Cerrar"><svg class="icon"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-scroll" id="mod-duplicates-modal-body"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: mods solo-cliente -->
+<div class="modal-overlay" id="mod-client-only-modal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <span class="modal-icon"><svg class="icon"><use href="#i-monitor"/></svg></span>
+      <span class="modal-path">Mods solo de cliente</span>
+      <button class="modal-close" id="mod-client-only-modal-close" aria-label="Cerrar"><svg class="icon"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="info-box">Los mods marcados como "solo cliente" no necesitan estar en la carpeta mods/ del servidor — no es un error que falten aquí, es lo esperado. La detección se basa en metadata que el propio mod declara, así que "sin detectar" no significa necesariamente que haga falta en el servidor.</div>
+      <div class="modal-scroll" id="mod-client-only-modal-body"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: borrar mods deshabilitados -->
+<div class="modal-overlay" id="mod-delete-disabled-modal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <span class="modal-icon"><svg class="icon"><use href="#i-trash-2"/></svg></span>
+      <span class="modal-path">Borrar mods deshabilitados</span>
+      <button class="modal-close" id="mod-delete-disabled-modal-close" aria-label="Cerrar"><svg class="icon"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="info-box">Elige cuáles de los mods deshabilitados quieres borrar de verdad. Esta acción no se puede deshacer.</div>
+      <div class="modal-scroll" id="mod-delete-disabled-modal-body"></div>
+    </div>
+    <div class="modal-footer">
+      <span class="line-info" id="mod-delete-disabled-count">0 seleccionados</span>
+      <div class="modal-footer-actions">
+        <button class="btn-secondary" id="mod-delete-disabled-cancel">Cancelar</button>
+        <button class="btn-danger" id="mod-delete-disabled-confirm">Borrar seleccionados</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: descargar la carpeta mods/ como .zip -->
+<div class="modal-overlay" id="mod-download-modal">
+  <div class="modal mod-dl-dialog">
+    <div class="modal-header">
+      <span class="modal-icon"><svg class="icon"><use href="#i-download"/></svg></span>
+      <span class="modal-path">Descargar mods</span>
+      <button class="modal-close" id="mod-download-modal-close" aria-label="Cerrar"><svg class="icon"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-scroll">
+        <div class="mod-dl-label">¿Qué quieres incluir?</div>
+        <div class="mod-dl-options" role="radiogroup">
+          <label class="mod-dl-option">
+            <input type="radio" name="mod-download-scope" value="enabled" checked>
+            <span class="mod-dl-option-icon"><svg class="icon"><use href="#i-puzzle"/></svg></span>
+            <span class="mod-dl-option-text">
+              <span class="mod-dl-option-title">Solo activos</span>
+              <span class="mod-dl-option-desc">Lo que carga el servidor ahora mismo</span>
+            </span>
+            <span class="mod-dl-option-stats" id="mod-download-stats-enabled"></span>
+          </label>
+          <label class="mod-dl-option" id="mod-download-option-all">
+            <input type="radio" name="mod-download-scope" value="all">
+            <span class="mod-dl-option-icon"><svg class="icon"><use href="#i-package"/></svg></span>
+            <span class="mod-dl-option-text">
+              <span class="mod-dl-option-title">Todos</span>
+              <span class="mod-dl-option-desc" id="mod-download-desc-all"></span>
+            </span>
+            <span class="mod-dl-option-stats" id="mod-download-stats-all"></span>
+          </label>
+        </div>
+
+        <div class="mod-dl-file">
+          <span class="mod-dl-file-icon"><svg class="icon"><use href="#i-file-text"/></svg></span>
+          <span class="mod-dl-file-name" id="mod-download-filename"></span>
+          <span class="mod-dl-file-size" id="mod-download-size"></span>
+        </div>
+        <p class="mod-dl-hint">Dentro va una carpeta <code>mods/</code> lista para copiar. Los deshabilitados conservan la extensión <code>.disabled</code>, así que el modloader seguirá ignorándolos.</p>
+      </div>
+    </div>
+    <div class="modal-footer mod-dl-footer">
+      <button class="btn-secondary" id="mod-download-cancel">Cancelar</button>
+      <button id="mod-download-confirm">Descargar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: buscar e instalar mods desde Modrinth / CurseForge -->
+<div class="modal-overlay" id="mod-search-modal">
+  <div class="modal mod-search-dialog">
+    <div class="modal-header">
+      <span class="modal-icon"><svg class="icon"><use href="#i-search"/></svg></span>
+      <span class="modal-path">Buscar mods online</span>
+      <button class="modal-close" id="mod-search-modal-close" aria-label="Cerrar"><svg class="icon"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="mgmt-tabs mb-m" id="mod-search-tabs">
+        <button type="button" class="mgmt-tab active" data-source="modrinth">Modrinth</button>
+        <button type="button" class="mgmt-tab" data-source="curseforge">CurseForge</button>
+      </div>
+      <div class="mod-search-toolbar">
+        <input type="text" id="mod-search-input" placeholder="Buscar mod por nombre…" class="w-full">
+      </div>
+
+      <div class="mod-search-columns">
+        <aside class="mod-search-sidebar" id="mod-search-category-panel">
+          <div class="mod-search-sidebar-header" id="mod-search-category-panel-header">
+            <span>Categorías</span>
+            <button type="button" class="mod-search-category-panel-toggle" id="mod-search-category-panel-toggle" title="Plegar o desplegar las categorías" aria-label="Plegar o desplegar las categorías" aria-expanded="true"><svg class="icon" aria-hidden="true"><use href="#i-chevron-up"/></svg></button>
+          </div>
+          <div class="mod-search-category-panel-body" id="mod-search-category-panel-body"></div>
+        </aside>
+
+        <div class="mod-search-results-col">
+          <div class="modal-scroll" id="mod-search-modal-body">
+            <div class="skeleton-rows" role="status" aria-label="Cargando"><div></div><div></div><div></div></div>
+          </div>
+          <div class="modal-footer mod-search-results-footer">
+            <div class="mod-modal-pagination" id="mod-search-pagination"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: dependencias obligatorias que faltan. Va después del resto de
+     modales de mods para quedar por encima si se abre al terminar una subida
+     o una instalación desde el buscador. -->
+<div class="modal-overlay" id="mod-deps-modal">
+  <div class="modal mod-deps-dialog">
+    <div class="modal-header">
+      <span class="modal-icon"><svg class="icon"><use href="#i-link"/></svg></span>
+      <span class="modal-path">Dependencias de los mods</span>
+      <button class="modal-close" id="mod-deps-modal-close" aria-label="Cerrar"><svg class="icon"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-scroll" id="mod-deps-modal-body"></div>
+    </div>
+    <div class="modal-footer mod-dl-footer">
+      <button class="btn-secondary" id="mod-deps-modal-done">Cerrar</button>
+    </div>
+  </div>
+</div>

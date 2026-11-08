@@ -34,7 +34,7 @@ function loadAdminConfig() {
     .then(renderConstantsForm)
     .catch(function() {
       document.getElementById('config-constants-form').innerHTML =
-        '<p class="empty-msg" style="color:var(--red)">Error al cargar</p>';
+        '<p class="empty-msg text-red">Error al cargar</p>';
     });
 }
 
@@ -213,7 +213,7 @@ function offerAppRestart(savedMessage) {
       icon: '🔄',
       confirmLabel: 'Reiniciar ahora',
       cancelLabel: 'Más tarde',
-      confirmColor: 'var(--accent)',
+      tone: 'accent',
       onCancel: function() { loadAutoUpdateStatus(); },
     }
   );

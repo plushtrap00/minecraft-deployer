@@ -2,12 +2,15 @@
 Los scripts de static/js se cargan con <script> normales y comparten el ámbito
 global: si dos archivos declaran la misma función o variable de primer nivel,
 el que se carga después pisa al otro sin avisar. Este test lo detecta, y
-comprueba que index.html carga todos los scripts.
+comprueba que index.html carga todos los scripts. También que la página
+montada a partir de static/partials/ sale completa y coherente.
 """
 import re
 import unittest
 from collections import defaultdict
 from pathlib import Path
+
+from services.frontend import render_index
 
 STATIC = Path(__file__).resolve().parent.parent / "static"
 # Solo declaraciones en la columna 0: lo que está dentro de funciones va sangrado.
@@ -41,6 +44,27 @@ class FrontendGlobalsTest(unittest.TestCase):
         on_disk = {p.name for p in (STATIC / "js").glob("*.js")}
         self.assertEqual(on_disk - loaded, set(), "Scripts sin cargar en index.html")
         self.assertEqual(loaded - on_disk, set(), "index.html carga scripts que no existen")
+
+
+    def test_rendered_page_is_complete(self):
+        html = render_index()
+        self.assertNotIn("<!-- include:", html)
+        self.assertNotIn("{{", html)
+
+    def test_rendered_ids_are_unique(self):
+        ids = re.findall(r'\sid="([^"]+)"', render_index())
+        repeated = sorted({i for i in ids if ids.count(i) > 1})
+        self.assertEqual(repeated, [], "ids repetidos en la página")
+
+    def test_get_element_by_id_targets_exist(self):
+        # Cada getElementById('x') literal tiene que apuntar a un id de la
+        # página o a uno que el propio JS genera (id="x" dentro de un string).
+        html_ids = set(re.findall(r'\sid="([^"]+)"', render_index()))
+        js = "\n".join(p.read_text(encoding="utf-8") for p in (STATIC / "js").glob("*.js"))
+        js_ids = set(re.findall(r'id="([\w-]+)"', js))
+        wanted = set(re.findall(r"getElementById\('([\w-]+)'\)", js))
+        missing = sorted(wanted - html_ids - js_ids)
+        self.assertEqual(missing, [], "getElementById a ids que no existen")
 
 
 if __name__ == "__main__":

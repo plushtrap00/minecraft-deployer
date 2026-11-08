@@ -1,0 +1,32 @@
+<!-- ══ USUARIOS (solo admin) ══════════════════════════════ -->
+<div class="page" id="page-users">
+  <div class="card">
+    <div class="card-head">
+      <h2>Usuarios del panel</h2>
+      <button class="btn-ghost btn-sm" id="btn-refresh-users"><svg class="icon"><use href="#i-refresh-cw"/></svg> Actualizar</button>
+    </div>
+    <div class="info-box">Como administrador puedes crear y eliminar usuarios. El administrador no puede eliminarse a sí mismo.</div>
+    <div id="users-list"><div class="skeleton-rows" role="status" aria-label="Cargando"><div></div><div></div><div></div></div></div>
+  </div>
+  <div class="card">
+    <h2>Añadir usuario</h2>
+    <div class="users-form">
+      <div>
+        <label class="field-label">Nombre de usuario <span class="req">*</span></label>
+        <input type="text" id="new-user-name" placeholder="nombre_usuario" class="w-full" maxlength="16" autocomplete="off" spellcheck="false">
+        <div id="new-user-name-err" class="field-error"></div>
+        <div class="field-hint">Solo letras, números, <code>_</code> y <code>-</code> · máx. 16 caracteres</div>
+      </div>
+      <div>
+        <label class="field-label">Contraseña <span class="req">*</span></label>
+        <div class="pass-wrapper">
+          <input type="password" id="new-user-pass" placeholder="mín. 8 caracteres" class="w-full" autocomplete="new-password">
+          <button type="button" id="toggle-pass-vis" class="btn-pass-toggle" title="Mostrar u ocultar la contraseña" aria-label="Mostrar u ocultar la contraseña"><svg class="icon"><use href="#i-eye"/></svg></button>
+        </div>
+        <div id="new-user-pass-err" class="field-error"></div>
+        <div class="field-hint">Solo caracteres estándar (sin emojis) · mín. 8 caracteres</div>
+      </div>
+      <button id="add-user-btn" class="add-user-btn" disabled>Crear usuario</button>
+    </div>
+  </div>
+</div>

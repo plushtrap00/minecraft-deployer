@@ -1,0 +1,79 @@
+<!-- ══ SERVIDOR ══════════════════════════════════════════ -->
+<!-- La cabecera de estado es el único elemento llamativo de toda la app (la
+     única con la fuente de bloque): es lo primero que se mira al entrar. El
+     atributo data-state (stopped | starting | running) lo pone server.js y
+     decide colores y qué botones se ven. -->
+<div class="page active" id="page-server">
+  <section class="server-hero" id="server-hero" data-state="stopped">
+    <div class="server-hero-main">
+      <div class="server-hero-status">
+        <span class="status-dot" id="status-dot"></span>
+        <span id="status-text">Comprobando…</span>
+      </div>
+      <h1 class="server-hero-name" id="status-modpack">Ningún servidor en marcha</h1>
+      <div class="server-hero-meta" id="server-hero-meta"></div>
+    </div>
+    <div class="server-hero-actions">
+      <button id="clean-stop-btn" style="display:none"><svg class="icon"><use href="#i-square"/></svg>Detener</button>
+      <button class="btn-ghost btn-sm" id="stop-btn" style="display:none" title="Mata el proceso sin guardar, como Ctrl+C. Úsalo solo si «Detener» no responde.">Forzar parada</button>
+    </div>
+
+    <!-- Métricas: solo con el servidor en marcha -->
+    <div class="server-metrics" id="metrics-card" style="display:none">
+      <div class="metric" id="mc-tps">
+        <div class="metric-label">TPS <span class="metric-verdict" id="mvd-tps"></span></div>
+        <div class="metric-value" id="mv-tps">—</div>
+        <svg class="metric-spark" id="spark-tps" viewBox="0 0 100 24" preserveAspectRatio="none" aria-hidden="true"></svg>
+      </div>
+      <div class="metric" id="mc-mspt">
+        <div class="metric-label">MSPT <span class="metric-verdict" id="mvd-mspt"></span></div>
+        <div class="metric-value" id="mv-mspt">—</div>
+        <svg class="metric-spark" id="spark-mspt" viewBox="0 0 100 24" preserveAspectRatio="none" aria-hidden="true"></svg>
+      </div>
+      <div class="metric" id="mc-players">
+        <div class="metric-label">Jugadores</div>
+        <div class="metric-value" id="mv-players">—</div>
+        <div class="players-list" id="metrics-players-list"></div>
+      </div>
+      <div class="metric" id="mc-ram">
+        <div class="metric-label">RAM del servidor</div>
+        <div class="metric-value" id="mv-ram">—</div>
+        <div class="metric-bar"><div class="metric-bar-fill" id="mb-ram"></div></div>
+      </div>
+      <div class="server-metrics-footer">
+        <span id="metrics-updated" title="TPS y MSPT se leen por RCON (Forge/NeoForge). La CPU está en Sistema."></span>
+        <button class="btn-ghost btn-xs" id="btn-refresh-metrics"><svg class="icon"><use href="#i-refresh-cw"/></svg>Actualizar</button>
+      </div>
+      <div id="rcon-warning" class="warn-box" style="display:none"></div>
+    </div>
+  </section>
+
+  <div class="card" id="server-picker" style="display:none">
+    <div class="card-head">
+      <h2>Elige qué servidor arrancar</h2>
+      <div class="net-toggle" id="net-toggle-row">
+        <div class="net-toggle-track" id="net-toggle-track" role="switch" tabindex="0" aria-labelledby="net-toggle-label">
+          <div class="net-toggle-thumb"></div>
+        </div>
+        <div>
+          <div class="net-toggle-label" id="net-toggle-label">Solo red local</div>
+          <div class="net-toggle-desc" id="net-toggle-desc">El servidor solo acepta conexiones de tu red local</div>
+        </div>
+      </div>
+    </div>
+    <div id="server-pick-list"></div>
+  </div>
+
+  <div class="console-card" id="console-card" style="display:none">
+    <div class="console-head">
+      <span class="console-title"><svg class="icon"><use href="#i-terminal"/></svg>Consola <span id="console-modpack" class="console-modpack"></span></span>
+      <label class="console-follow"><input type="checkbox" id="console-follow" checked> Seguir al final</label>
+    </div>
+    <div class="console-wrap" id="console" role="log" aria-live="off"></div>
+    <div class="cmd-row">
+      <span class="cmd-prompt" aria-hidden="true">&gt;</span>
+      <input type="text" id="cmd-input" placeholder="Escribe un comando: say Hola, list, whitelist add Alex…" autocomplete="off" spellcheck="false" aria-label="Comando para el servidor">
+      <button class="btn-secondary btn-sm" id="cmd-send-btn">Enviar</button>
+    </div>
+  </div>
+</div>

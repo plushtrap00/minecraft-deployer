@@ -9,7 +9,7 @@ function loadWorlds() {
     .then(function(response) { return response.json(); })
     .then(function(data) { renderWorlds(data); })
     .catch(function() {
-      list.innerHTML = '<p class="empty-msg" style="color:var(--red)">Error al cargar mundos</p>';
+      list.innerHTML = '<p class="empty-msg text-red">Error al cargar mundos</p>';
     });
 }
 
@@ -18,7 +18,7 @@ function renderWorlds(data) {
   var worlds = data.worlds;
   if (!worlds || !worlds.length) {
     list.innerHTML = '<p class="empty-msg">No se detectaron mundos generados aún.</p>'
-      + '<p class="hint" style="margin-top:6px">Mundo configurado: <code>' + escHtml(data.active || 'world') + '</code>'
+      + '<p class="hint mt-s">Mundo configurado: <code>' + escHtml(data.active || 'world') + '</code>'
       + ' · Tipo: <code>' + escHtml(data.level_type || 'minecraft:normal') + '</code></p>';
     return;
   }
@@ -28,26 +28,26 @@ function renderWorlds(data) {
       ? '<span class="world-active-badge">Activo</span>'
       : '';
     var activateBtn = !world.active
-      ? '<button class="btn-secondary wc-activate" data-world="' + escHtml(world.name) + '" style="font-size:.78rem;padding:5px 10px">Activar</button>'
+      ? '<button class="btn-secondary wc-activate btn-xs" data-world="' + escHtml(world.name) + '">Activar</button>'
       : '';
     var deleteBtn = !world.active
-      ? '<button class="btn-danger wc-delete" data-world="' + escHtml(world.name) + '" style="font-size:.78rem;padding:5px 10px">' + icon('trash-2') + 'Borrar</button>'
+      ? '<button class="btn-danger wc-delete btn-xs" data-world="' + escHtml(world.name) + '">' + icon('trash-2') + 'Borrar</button>'
       : '';
     var downloadUrl = '/api/modpacks/' + encodeURIComponent(currentModpack) + '/worlds/' + encodeURIComponent(world.name) + '/download';
-    var downloadBtn = '<a href="' + downloadUrl + '" download="' + escHtml(world.name) + '.zip" class="btn-secondary" style="font-size:.78rem;padding:5px 10px;text-decoration:none">' + icon('download') + 'Descargar</a>';
+    var downloadBtn = '<a href="' + downloadUrl + '" download="' + escHtml(world.name) + '.zip" class="btn-secondary btn-xs no-underline">' + icon('download') + 'Descargar</a>';
     var worldIcon = icon('map');
     var activeClass = world.active ? ' active-world' : '';
     html += '<div class="world-card' + activeClass + '">'
       + '<span class="world-icon">' + worldIcon + '</span>'
-      + '<div style="flex:1">'
-      + '<div style="font-weight:600">' + escHtml(world.name) + ' ' + activeBadge + '</div>'
-      + '<div style="font-size:.78rem;color:var(--muted)">' + escHtml(world.size_mb) + ' MB en disco</div>'
+      + '<div class="flex-1">'
+      + '<div class="fw-semibold">' + escHtml(world.name) + ' ' + activeBadge + '</div>'
+      + '<div class="text-muted text-xs">' + escHtml(world.size_mb) + ' MB en disco</div>'
       + '</div>'
       + '<div class="wc-actions">' + activateBtn + downloadBtn + deleteBtn + '</div>'
       + '</div>';
   });
   var seedHint = data.seed ? ' · Seed: <code>' + escHtml(data.seed) + '</code>' : '';
-  html += '<p class="hint" style="margin-top:8px">Tipo actual: <code>' + escHtml(data.level_type || 'minecraft:normal') + '</code>'
+  html += '<p class="hint mt-s">Tipo actual: <code>' + escHtml(data.level_type || 'minecraft:normal') + '</code>'
     + seedHint + '</p>';
   list.innerHTML = html;
 }
@@ -376,12 +376,12 @@ function loadWorldFilesTab() {
       if (select.value) {
         loadWorldFiles(select.value);
       } else {
-        document.getElementById('wf-tree').innerHTML = '<p class="empty-msg" style="padding:12px">No hay mundos detectados</p>';
+        document.getElementById('wf-tree').innerHTML = '<p class="empty-msg pad-m">No hay mundos detectados</p>';
         document.getElementById('wf-pagination').style.display = 'none';
       }
     })
     .catch(function() {
-      document.getElementById('wf-tree').innerHTML = '<p class="empty-msg" style="padding:12px;color:var(--red)">Error al cargar mundos</p>';
+      document.getElementById('wf-tree').innerHTML = '<p class="empty-msg pad-m text-red">Error al cargar mundos</p>';
     });
 }
 
@@ -403,7 +403,7 @@ function loadWorldFiles(worldName) {
       renderWfTreePage();
     })
     .catch(function() {
-      document.getElementById('wf-tree').innerHTML = '<p class="empty-msg" style="padding:12px;color:var(--red)">Error al cargar archivos</p>';
+      document.getElementById('wf-tree').innerHTML = '<p class="empty-msg pad-m text-red">Error al cargar archivos</p>';
     });
 }
 
@@ -463,7 +463,7 @@ function renderWfTreePage() {
   var pg = document.getElementById('wf-pagination');
   var total = filteredWfKeys.length;
   if (!total) {
-    tree.innerHTML = '<p class="empty-msg" style="padding:12px">Sin resultados</p>';
+    tree.innerHTML = '<p class="empty-msg pad-m">Sin resultados</p>';
     pg.style.display = 'none';
     return;
   }
@@ -478,9 +478,9 @@ function renderWfTreePage() {
     var openClass = hasFilter ? ' open' : '';
     html += '<div class="mod-group">'
       + '<div class="mod-group-header' + openClass + '"><span>' + escHtml(label)
-      + ' <span style="color:var(--muted);font-weight:400">(' + files.length
+      + ' <span class="text-muted fw-normal">(' + files.length
       + (allFiles.length !== files.length ? '/' + allFiles.length : '') + ')</span></span>'
-      + '<span class="mg-arrow">▶</span></div>'
+      + '<svg class="icon mg-arrow" aria-hidden="true"><use href="#i-chevron-right"/></svg></div>'
       + '<div class="mod-file-list' + openClass + '">';
     files.forEach(function(filePath) {
       var fname = filePath.split('/').pop();
@@ -490,7 +490,7 @@ function renderWfTreePage() {
         var matchIndex = fname.toLowerCase().indexOf(filterLower);
         if (matchIndex !== -1) {
           display = escHtml(fname.substring(0, matchIndex))
-            + '<mark style="background:rgba(var(--yellow-rgb), .35);color:var(--text);border-radius:2px">'
+            + '<mark class="hl">'
             + escHtml(fname.substring(matchIndex, matchIndex + activeWfFilter.length)) + '</mark>'
             + escHtml(fname.substring(matchIndex + activeWfFilter.length));
         }

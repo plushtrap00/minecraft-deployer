@@ -70,8 +70,8 @@ function renderLogFileList(logs, crashes) {
       btn.className = 'log-file-btn';
       btn.dataset.file = file.name;
       btn.title = file.name;
-      btn.innerHTML = '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">' + escHtml(logDisplayLabel(file.name)) + '</span>'
-        + '<span style="color:var(--muted);flex-shrink:0;font-size:.72rem">' + file.size_kb + ' KB</span>';
+      btn.innerHTML = '<span class="ellipsis flex-1">' + escHtml(logDisplayLabel(file.name)) + '</span>'
+        + '<span class="text-muted shrink-0 text-xs">' + file.size_kb + ' KB</span>';
       btn.addEventListener('click', function() { loadLogFile(file.name); });
       logList.appendChild(btn);
     });
@@ -86,8 +86,8 @@ function renderLogFileList(logs, crashes) {
       btn.className = 'log-file-btn crash-btn';
       btn.dataset.file = file.name;
       btn.title = file.name;
-      btn.innerHTML = '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;font-size:.72rem">' + escHtml(label) + '</span>'
-        + '<span style="color:var(--muted);flex-shrink:0;font-size:.72rem">' + file.size_kb + ' KB</span>';
+      btn.innerHTML = '<span class="ellipsis flex-1 text-xs">' + escHtml(label) + '</span>'
+        + '<span class="text-muted shrink-0 text-xs">' + file.size_kb + ' KB</span>';
       btn.addEventListener('click', function() { loadLogFile(file.name); });
       crashList.appendChild(btn);
     });
@@ -123,7 +123,7 @@ function loadLogFile(filename) {
       renderCrashInfo(data.crash_info);
     })
     .catch(function() {
-      viewer.innerHTML = '<span style="color:var(--red)">Error al cargar archivo</span>';
+      viewer.innerHTML = '<span class="text-red">Error al cargar archivo</span>';
     });
 }
 
@@ -145,11 +145,11 @@ function renderCrashInfo(crashInfo) {
   var modsEl = document.getElementById('crash-culprit-mods');
   if (crashInfo.culprit_mods.length) {
     modsEl.innerHTML = crashInfo.culprit_mods.map(function(name) {
-      return '<code style="display:inline-block;margin:2px 4px 2px 0;background:rgba(var(--red-rgb), .15);color:var(--red);padding:1px 6px;border-radius:4px">'
+      return '<code class="culprit-mod">'
         + escHtml(name) + '</code>';
     }).join('');
   } else {
-    modsEl.innerHTML = '<span style="color:var(--muted)">No se pudo identificar un mod concreto</span>';
+    modsEl.innerHTML = '<span class="text-muted">No se pudo identificar un mod concreto</span>';
   }
 
   var causedByDetails = document.getElementById('crash-caused-by-details');
@@ -230,11 +230,11 @@ function renderLogPage() {
     var escaped = escHtml(item.text);
     if (search) {
       var re = new RegExp('(' + escRegex(search) + ')', 'gi');
-      escaped = escaped.replace(re, '<mark style="background:rgba(var(--yellow-rgb), .4);color:var(--text)">$1</mark>');
+      escaped = escaped.replace(re, '<mark class="hl">$1</mark>');
     }
     html += '<div class="log-line ' + cls + '"><span class="log-line-num">' + item.num + '</span><span class="log-line-text">' + escaped + '</span></div>';
   });
-  viewer.innerHTML = html || '<span style="color:var(--muted)">Sin resultados</span>';
+  viewer.innerHTML = html || '<span class="text-muted">Sin resultados</span>';
   document.getElementById('log-match-count').textContent = filtered.length + ' / ' + logViewState.totalLines + ' líneas';
 
   renderModModalPagination('log-pagination', logViewState.page, totalPages, function(p) {

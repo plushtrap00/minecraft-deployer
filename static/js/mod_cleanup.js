@@ -37,11 +37,11 @@ function renderDuplicatesModal(groups) {
       return '<div class="mod-modal-item">'
         + '<div class="mod-info"><div class="mod-display">' + escHtml(mod.display_name) + '</div>'
         + '<div class="mod-modal-detail">' + escHtml(mod.filename) + (mod.mod_version ? ' · v' + escHtml(mod.mod_version) : '') + '</div></div>'
-        + '<button type="button" class="btn-danger mod-delete" title="Borrar mod" data-filename="' + escHtml(mod.filename) + '" aria-label="Borrar mod" style="opacity:1;font-size:.78rem;padding:4px 8px;flex-shrink:0">' + icon('trash-2') + '</button>'
+        + '<button type="button" class="btn-danger mod-delete btn-xs shrink-0 btn-solid" title="Borrar mod" data-filename="' + escHtml(mod.filename) + '" aria-label="Borrar mod">' + icon('trash-2') + '</button>'
         + '</div>';
     }).join('');
-    return '<div style="border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:12px">'
-      + '<div style="font-size:.8rem;color:var(--muted);margin-bottom:6px">' + '<span class="dup-dot ' + conf.cls + '"></span><b>' + escHtml(conf.text) + '</b> — ' + escHtml(group.reason) + '</div>'
+    return '<div class="dup-group">'
+      + '<div class="dup-group-head">' + '<span class="dup-dot ' + conf.cls + '"></span><b>' + escHtml(conf.text) + '</b> — ' + escHtml(group.reason) + '</div>'
       + modsHtml
       + '</div>';
   }).join('');
@@ -88,20 +88,20 @@ function openClientOnlyModal() {
 }
 
 function renderClientOnlyGroup(items) {
-  return '<div class="mods-table-wrap" style="margin-bottom:8px">' + items.map(function(mod) {
-    var opacityStyle = mod.enabled ? '' : ' style="opacity:.5"';
+  return '<div class="mods-table-wrap mb-s">' + items.map(function(mod) {
+    var disabledClass = mod.enabled ? '' : ' is-disabled';
     var confidenceText = mod.confidence === 'high' ? ' · confianza alta' : (mod.confidence === 'medium' ? ' · confianza media' : '');
-    var disabledNote = mod.enabled ? '' : ' · <span style="color:var(--yellow)">desactivado</span>';
+    var disabledNote = mod.enabled ? '' : ' · <span class="text-yellow">desactivado</span>';
     var reasonLine = mod.reason ? '<div class="mod-modal-detail">' + escHtml(mod.reason) + confidenceText + '</div>' : '';
     var toggleTitle = mod.enabled ? 'Deshabilitar mod' : 'Habilitar mod';
     var toggleIcon = mod.enabled ? icon('pause') : icon('play');
-    return '<div class="mod-modal-item"' + opacityStyle + '>'
+    return '<div class="mod-modal-item' + disabledClass + '">'
       + '<div class="mod-info"><div class="mod-display">' + escHtml(mod.display_name) + '</div>'
       + '<div class="mod-modal-detail">' + escHtml(mod.filename) + disabledNote + '</div>'
       + reasonLine
       + '</div>'
-      + '<button type="button" class="btn-secondary client-only-toggle" title="' + toggleTitle + '" data-filename="' + escHtml(mod.filename) + '" style="font-size:.78rem;padding:4px 8px;flex-shrink:0">' + toggleIcon + '</button>'
-      + '<button type="button" class="btn-danger client-only-delete" title="Borrar mod" data-filename="' + escHtml(mod.filename) + '" aria-label="Borrar mod" style="opacity:1;font-size:.78rem;padding:4px 8px;flex-shrink:0">' + icon('trash-2') + '</button>'
+      + '<button type="button" class="btn-secondary client-only-toggle btn-xs shrink-0" title="' + toggleTitle + '" data-filename="' + escHtml(mod.filename) + '">' + toggleIcon + '</button>'
+      + '<button type="button" class="btn-danger client-only-delete btn-xs shrink-0 btn-solid" title="Borrar mod" data-filename="' + escHtml(mod.filename) + '" aria-label="Borrar mod">' + icon('trash-2') + '</button>'
       + '</div>';
   }).join('') + '</div>';
 }
@@ -112,18 +112,18 @@ function renderClientOnlyModal(data) {
   var unknown = data.unknown || [];
   var server = data.server || [];
 
-  var html = '<div style="font-size:.85rem;font-weight:600;margin:4px 0 8px">Solo cliente (' + clientOnly.length + ')</div>';
+  var html = '<div class="list-subhead">Solo cliente (' + clientOnly.length + ')</div>';
   html += clientOnly.length
     ? renderClientOnlyGroup(clientOnly)
-    : '<p class="empty-msg" style="padding:8px 4px">No se detectó ningún mod solo-cliente.</p>';
+    : '<p class="empty-msg">No se detectó ningún mod solo-cliente.</p>';
 
   if (unknown.length) {
-    html += '<div style="font-size:.85rem;font-weight:600;margin:16px 0 8px">Categoría desconocida (' + unknown.length + ')</div>'
-      + '<p class="hint" style="margin-bottom:8px">Este mod no declara de forma clara si hace falta en el servidor — revísalo a mano si no estás seguro.</p>'
+    html += '<div class="list-subhead mt-l">Categoría desconocida (' + unknown.length + ')</div>'
+      + '<p class="hint mb-s">Este mod no declara de forma clara si hace falta en el servidor — revísalo a mano si no estás seguro.</p>'
       + renderClientOnlyGroup(unknown);
   }
 
-  html += '<div style="font-size:.8rem;color:var(--muted);margin-top:16px;padding-top:10px;border-top:1px solid var(--border)">'
+  html += '<div class="list-footnote">'
     + server.length + ' mod(s) detectado(s) como necesarios en el servidor (no se listan aquí).</div>';
 
   body.innerHTML = html;

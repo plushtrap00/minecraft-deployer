@@ -1,0 +1,26 @@
+<!-- ══ LOGIN ════════════════════════════════════════════ -->
+<div id="login-screen">
+  <!-- Es un <form> de verdad para que el gestor de contraseñas del navegador
+     lo reconozca y ofrezca guardar o rellenar la contraseña; Enter en
+     cualquiera de los dos campos lo envía. No se manda solo: auth.js lo
+     intercepta y entra por fetch. -->
+  <main class="login-card" aria-labelledby="login-title">
+    <div class="login-brand">
+      <svg class="icon"><use href="#i-pickaxe"/></svg>
+      <h1 class="login-title" id="login-title">MC Deployer</h1>
+    </div>
+    <p class="login-subtitle">Entra para gestionar tus servidores de Minecraft.</p>
+    <form id="login-form" novalidate>
+    <div class="login-field">
+      <label for="login-user">Usuario</label>
+      <input type="text" id="login-user" name="username" autocomplete="username" autocapitalize="none" spellcheck="false">
+    </div>
+    <div class="login-field">
+      <label for="login-pass">Contraseña</label>
+      <input type="password" id="login-pass" name="password" autocomplete="current-password">
+    </div>
+    <div class="login-error" id="login-error" role="alert"></div>
+    <button type="submit" class="login-btn" id="login-btn">Entrar</button>
+    </form>
+  </main>
+</div>

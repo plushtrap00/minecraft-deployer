@@ -258,7 +258,7 @@
 
 .mg-arrow {
   transition: transform .2s;
-  font-size: var(--fs-2xs);
+  color: var(--muted);
 }
 
 .mod-group-header.open .mg-arrow {
@@ -478,14 +478,21 @@
   overflow: hidden;
 }
 
+/* Es un <button> (se puede abrir y cerrar con el teclado): de ahí el reset
+   de los estilos de botón. */
 .props-section-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  width: 100%;
   padding: 11px 16px;
+  border: 0;
+  border-radius: 0;
   cursor: pointer;
   font-weight: 600;
   font-size: var(--fs-md);
+  text-align: left;
+  color: var(--text);
   background: var(--bg);
   user-select: none;
 }
@@ -495,7 +502,6 @@
 }
 
 .ps-arrow {
-  font-size: var(--fs-sm);
   transition: transform .2s;
   color: var(--muted);
 }

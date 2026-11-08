@@ -548,11 +548,17 @@ a.btn-ghost {
   display: none;
 }
 
+/* Chevron de Lucide como máscara: toma el color de background-color. */
 .help-section summary::before {
-  content: '▸';
+  content: '';
   display: inline-block;
   width: 14px;
-  color: var(--accent);
+  height: 14px;
+  margin-right: 4px;
+  vertical-align: -2px;
+  background-color: var(--accent);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E") center / contain no-repeat;
   transition: transform .15s;
 }
 
@@ -674,8 +680,8 @@ code {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, .7);
-  /* Por encima de cualquier panel/toast flotante (z-index: 999, ver
-     sysmon.css/base.css .toast): un modal abierto debe tapar TODO,
+  /* Por encima de cualquier panel flotante (z-index: 999, ver
+     sysmon.css): un modal abierto debe tapar TODO,
      si no el panel de sistema (fixed, top-right) se dibuja encima del
      modal y se ve contenido de la página de fondo a través de sus bordes. */
   z-index: 1000;
@@ -856,19 +862,40 @@ code {
   border-top: 1px solid var(--border);
 }
 
-.toast {
+/* Botón de confirmar del diálogo: rojo para lo destructivo (por defecto),
+   acento o amarillo para lo demás (showConfirm(..., { tone })). */
+.dialog-footer .btn-tone-red { background: var(--red); color: #fff; }
+.dialog-footer .btn-tone-accent { background: var(--accent); color: #fff; }
+.dialog-footer .btn-tone-yellow { background: var(--yellow); color: #fff; }
+
+/* Avisos: se apilan (el más reciente abajo) en vez de pisarse unos a otros.
+   Van por encima de los modales (1000) para que se vea, por ejemplo, el
+   «Archivo guardado» del editor, pero por debajo del login y del overlay
+   de reinicio. */
+.toast-stack {
   position: fixed;
   bottom: 24px;
   right: 24px;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  max-width: min(420px, calc(100vw - 32px));
+  pointer-events: none;
+}
+
+.toast {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius-control);
   padding: 12px 18px;
   font-size: var(--fs-md);
-  transform: translateY(80px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, .35);
+  transform: translateY(16px);
   opacity: 0;
-  transition: all .3s;
-  z-index: 999;
+  transition: transform .25s, opacity .25s;
+  pointer-events: auto;
 }
 
 .toast.show {

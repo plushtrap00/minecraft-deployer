@@ -92,7 +92,9 @@
   }
 
   /* Toast: ancho completo centrado */
-  .toast {
+  .toast-stack {
+    align-items: stretch;
+    max-width: none;
     left: 12px;
     right: 12px;
     bottom: calc(76px + env(safe-area-inset-bottom));

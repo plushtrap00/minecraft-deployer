@@ -1,0 +1,179 @@
+<!-- ══ INSTALAR ══════════════════════════════════════════ -->
+<div class="page" id="page-deploy">
+  <div class="disk-bar">
+    <span class="disk-label">Espacio en disco</span>
+    <div class="bar-wrap"><div class="bar-fill" id="disk-fill" style="width:0%"></div></div>
+    <span class="disk-text" id="disk-text">Calculando…</span>
+  </div>
+
+  <div class="mgmt-tabs deploy-modes">
+    <button class="mgmt-tab active" id="deploy-mode-import"><svg class="icon"><use href="#i-upload"/></svg>Subir un modpack</button>
+    <button class="mgmt-tab" id="deploy-mode-create"><svg class="icon"><use href="#i-plus"/></svg>Crear desde cero</button>
+    <button class="mgmt-tab" id="deploy-mode-download"><svg class="icon"><use href="#i-download"/></svg>Buscar y descargar</button>
+  </div>
+
+  <div id="deploy-import-section">
+  <div class="card step">
+    <h2 class="step-title"><span class="step-num" aria-hidden="true">1</span>Archivo comprimido</h2>
+    <p class="hint step-lead">Los «server files» del modpack, tal como los descargas de CurseForge o Modrinth.</p>
+    <div class="drop-zone" id="drop-zone">
+      <input type="file" id="file-input" accept=".zip,.rar,.tar,.tar.gz,.tgz,.tar.bz2">
+      <svg class="icon dz-icon"><use href="#i-upload"/></svg>
+      <div class="dz-text">Arrastra aquí el archivo o <span class="dz-link">elígelo en tu equipo</span></div>
+      <div class="dz-hint">.zip, .rar, .tar, .tar.gz o .tar.bz2</div>
+    </div>
+    <div class="file-badge" id="file-badge">
+      <span class="fb-icon"><svg class="icon"><use href="#i-package"/></svg></span>
+      <span class="fb-name" id="fb-name"></span>
+      <span class="fb-size" id="fb-size"></span>
+      <button class="btn-clear" id="fb-clear" aria-label="Quitar archivo"><svg class="icon"><use href="#i-x"/></svg></button>
+    </div>
+  </div>
+
+  <div class="card step">
+    <h2 class="step-title"><span class="step-num" aria-hidden="true">2</span>Nombre del servidor</h2>
+    <input type="text" id="folder-name" placeholder="ej: ATM9, SkyFactory4, survival-v2..." class="w-full">
+    <p class="hint">Se instalará en <code>~/servers-minecraft/<em>nombre</em></code></p>
+  </div>
+
+  <div class="card step">
+    <h2 class="step-title"><span class="step-num" aria-hidden="true">3</span>Memoria RAM <span class="step-optional">opcional</span></h2>
+    <p class="hint step-lead">Solo funciona si el modpack trae <code>user_jvm_args.txt</code> o <code>variables.txt</code>.</p>
+    <div class="toggle-row">
+      <div class="toggle-track" id="ram-toggle"><div class="toggle-thumb"></div></div>
+      <span>Cambiar la RAM al instalar</span>
+      <span id="ram-info" class="ram-info">Leyendo RAM...</span>
+    </div>
+    <div id="ram-inputs" style="display:none">
+      <!-- include: partials/ram-fields.html prefix= min=4 max=8 -->
+      <p class="hint">Solo se modifican <code>-Xms</code> y <code>-Xmx</code>. El resto del archivo no se toca.</p>
+    </div>
+  </div>
+
+  <div class="card step">
+    <h2 class="step-title"><span class="step-num" aria-hidden="true">4</span>Instalar</h2>
+    <div class="progress-section" id="progress-section">
+      <div class="progress-wrap"><div class="progress-fill" id="progress-fill"></div></div>
+      <div class="progress-status" id="progress-status">Preparando...</div>
+    </div>
+    <div class="result-box" id="result-box">
+      <h3 id="result-title"></h3>
+      <p id="result-msg" class="result-msg"></p>
+      <div class="result-grid" id="result-grid"></div>
+    </div>
+    <div class="step-action"><span class="step-missing" data-missing-for="deploy-btn"></span><button class="deploy-btn" id="deploy-btn">Instalar servidor</button></div>
+  </div>
+  </div>
+  <!-- /deploy-import-section -->
+
+  <div id="deploy-create-section" style="display:none">
+    <div class="card step">
+      <h2 class="step-title"><span class="step-num" aria-hidden="true">1</span>Nombre del servidor</h2>
+      <input type="text" id="create-name" placeholder="ej: survival-nuevo, test-fabric..." class="w-full">
+      <p class="hint">Se creará en <code>~/servers-minecraft/<em>nombre</em></code></p>
+    </div>
+
+    <div class="card step">
+      <h2 class="step-title"><span class="step-num" aria-hidden="true">2</span>Modloader y versión de Minecraft</h2>
+      <div class="props-grid">
+        <div class="prop-field">
+          <label class="prop-label">Modloader</label>
+          <select id="create-loader" class="w-full">
+            <option value="vanilla">Vanilla (sin modloader)</option>
+            <option value="neoforge">NeoForge</option>
+            <option value="forge">Forge</option>
+            <option value="fabric">Fabric</option>
+            <option value="quilt">Quilt</option>
+          </select>
+        </div>
+        <div class="prop-field">
+          <label class="prop-label">Versión de Minecraft</label>
+          <select id="create-mc-version" class="w-full"><option value="">Cargando versiones…</option></select>
+        </div>
+        <div class="prop-field" id="create-loader-version-field" style="display:none">
+          <label class="prop-label">Versión del modloader</label>
+          <select id="create-loader-version" class="w-full"></select>
+        </div>
+      </div>
+      <p class="hint mt-s" id="create-loader-hint"></p>
+    </div>
+
+    <div class="card step">
+      <h2 class="step-title"><span class="step-num" aria-hidden="true">3</span>Memoria RAM</h2>
+      <!-- include: partials/ram-fields.html prefix=create- min=2 max=4 -->
+    </div>
+
+    <div class="card step">
+      <h2 class="step-title"><span class="step-num" aria-hidden="true">4</span>Crear</h2>
+      <div id="create-progress-body"></div>
+      <div class="step-action"><span class="step-missing" data-missing-for="create-server-btn"></span><button class="deploy-btn" id="create-server-btn">Crear servidor</button></div>
+    </div>
+  </div>
+
+  <div id="deploy-download-section" style="display:none">
+    <div class="card step">
+      <h2 class="step-title"><span class="step-num" aria-hidden="true">1</span>Buscar modpack</h2>
+      <div class="mgmt-tabs mb-m" id="dl-source-tabs">
+        <button type="button" class="mgmt-tab active" data-source="modrinth">Modrinth</button>
+        <button type="button" class="mgmt-tab" data-source="curseforge">CurseForge</button>
+      </div>
+      <div class="mod-search-toolbar dl-search-toolbar">
+        <input type="text" id="dl-search-input" placeholder="Nombre del modpack…" class="w-full">
+        <select id="dl-loader-filter" title="Filtrar por modloader">
+          <option value="">Cualquier modloader</option>
+          <option value="forge">Forge</option>
+          <option value="neoforge">NeoForge</option>
+          <option value="fabric">Fabric</option>
+          <option value="quilt">Quilt</option>
+        </select>
+        <select id="dl-mc-version-filter" title="Filtrar por versión de Minecraft">
+          <option value="">Cualquier versión de MC</option>
+        </select>
+      </div>
+      <div class="mod-search-columns dl-search-columns">
+        <aside class="mod-search-sidebar" id="dl-category-panel">
+          <div class="mod-search-sidebar-header" id="dl-category-panel-header">
+            <span>Categorías</span>
+            <button type="button" class="mod-search-category-panel-toggle" id="dl-category-panel-toggle" title="Plegar o desplegar las categorías" aria-label="Plegar o desplegar las categorías" aria-expanded="true"><svg class="icon" aria-hidden="true"><use href="#i-chevron-up"/></svg></button>
+          </div>
+          <div class="mod-search-category-panel-body" id="dl-category-panel-body"></div>
+        </aside>
+        <div class="mod-search-results-col">
+          <div class="modal-scroll" id="dl-search-results">
+            <p class="empty-msg">Busca un modpack para empezar.</p>
+          </div>
+          <div class="modal-footer mod-search-results-footer">
+            <div class="mod-modal-pagination" id="dl-search-pagination"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card step" id="dl-version-card" style="display:none">
+      <h2 class="step-title"><span class="step-num" aria-hidden="true">2</span>Versión y nombre del servidor</h2>
+      <div id="dl-selected-pack" class="mb-m"></div>
+      <div class="props-grid">
+        <div class="prop-field">
+          <label class="prop-label">Versión del modpack</label>
+          <select id="dl-version-select" class="w-full"></select>
+        </div>
+        <div class="prop-field">
+          <label class="prop-label">Nombre del servidor</label>
+          <input type="text" id="dl-server-name" placeholder="ej: atm10, prominence2..." class="w-full">
+        </div>
+      </div>
+      <div id="dl-duplicate-warning"></div>
+    </div>
+
+    <div class="card step" id="dl-ram-card" style="display:none">
+      <h2 class="step-title"><span class="step-num" aria-hidden="true">3</span>Memoria RAM</h2>
+      <!-- include: partials/ram-fields.html prefix=dl- min=4 max=8 -->
+    </div>
+
+    <div class="card step" id="dl-install-card" style="display:none">
+      <h2 class="step-title"><span class="step-num" aria-hidden="true">4</span>Instalar</h2>
+      <div id="dl-progress-body"></div>
+      <div class="step-action"><span class="step-missing" data-missing-for="dl-install-btn"></span><button class="deploy-btn" id="dl-install-btn">Descargar e instalar</button></div>
+    </div>
+  </div>
+</div>

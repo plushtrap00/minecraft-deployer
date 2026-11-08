@@ -1,0 +1,67 @@
+<!-- ══ CONFIGURACIÓN (solo admin) ══════════════════════════ -->
+<div class="page" id="page-config">
+  <div class="card pb-0">
+    <div class="mgmt-tabs" id="cfg-tabs">
+      <button class="mgmt-tab active" id="cfgtab-env"><svg class="icon"><use href="#i-settings"/></svg>Variables de entorno</button>
+      <button class="mgmt-tab" id="cfgtab-constants"><svg class="icon"><use href="#i-sliders-horizontal"/></svg>Constantes de la app</button>
+    </div>
+  </div>
+
+  <div class="cfg-tab-content active" id="cfg-content-env">
+    <div class="card">
+      <div class="info-box">Credenciales y configuración específica de esta instalación. Los cambios <strong>no se aplican en caliente</strong> — al guardar se te ofrecerá reiniciar la app para aplicarlos.</div>
+      <div class="props-grid" id="config-env-form">
+        <div class="prop-field">
+          <label class="prop-label">Usuario admin</label>
+          <input type="text" id="cfg-env-APP_USERNAME" class="w-full" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="prop-field">
+          <label class="prop-label">Nueva contraseña <span class="label-note">(opcional)</span></label>
+          <div class="pass-wrapper">
+            <input type="password" id="cfg-env-new-password" class="w-full" placeholder="mín. 8 caracteres" autocomplete="new-password">
+            <button type="button" id="cfg-toggle-pass-vis" class="btn-pass-toggle" title="Mostrar u ocultar la contraseña" aria-label="Mostrar u ocultar la contraseña"><svg class="icon"><use href="#i-eye"/></svg></button>
+          </div>
+        </div>
+        <div class="prop-field">
+          <label class="prop-label">JWT_SECRET <span class="label-note label-note-warn">(reinicia todas las sesiones)</span></label>
+          <input type="text" id="cfg-env-JWT_SECRET" class="w-full" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="prop-field">
+          <label class="prop-label">Puerto web</label>
+          <input type="number" id="cfg-env-WEB_PORT" class="w-full" min="1" max="65535">
+          <div class="field-hint field-hint-warn" id="cfg-env-WEB_PORT-hint" style="display:none"></div>
+        </div>
+        <div class="prop-field">
+          <label class="prop-label">Carpeta de servidores</label>
+          <input type="text" id="cfg-env-SERVERS_PATH" class="w-full" placeholder="~/servers-minecraft" autocomplete="off" spellcheck="false">
+          <div class="field-hint field-hint-warn" id="cfg-env-SERVERS_PATH-hint" style="display:none"></div>
+        </div>
+        <div class="prop-field">
+          <label class="prop-label">Dominio de Minecraft</label>
+          <input type="text" id="cfg-env-MC_DOMAIN" class="w-full" placeholder="mc.tudominio.com" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="prop-field">
+          <label class="prop-label">API key de CurseForge</label>
+          <input type="text" id="cfg-env-CURSEFORGE_API_KEY" class="w-full" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="prop-field">
+          <label class="prop-label">Auto-actualización habilitada</label>
+          <div class="prop-toggle-wrap"><div class="toggle-track" id="cfg-env-AUTO_UPDATE_ENABLED"><div class="toggle-thumb"></div></div></div>
+        </div>
+        <div class="prop-field">
+          <label class="prop-label">Intervalo de auto-actualización (segundos)</label>
+          <input type="number" id="cfg-env-AUTO_UPDATE_INTERVAL_SECONDS" class="w-full" min="30">
+        </div>
+      </div>
+      <button id="cfg-save-env-btn" class="add-user-btn mt-l">Guardar .env</button>
+    </div>
+  </div>
+
+  <div class="cfg-tab-content" id="cfg-content-constants">
+    <div class="card">
+      <div class="info-box">Números de ajuste (timeouts, límites, tamaños de caché) compartidos por todas las instalaciones — a diferencia del .env, este archivo no tiene secretos y sí se versiona en git. Los cambios <strong>no se aplican en caliente</strong> — al guardar se te ofrecerá reiniciar la app para aplicarlos.</div>
+      <div id="config-constants-form"><div class="skeleton-rows" role="status" aria-label="Cargando"><div></div><div></div><div></div></div></div>
+      <button id="cfg-save-constants-btn" class="add-user-btn mt-l">Guardar constantes</button>
+    </div>
+  </div>
+</div>

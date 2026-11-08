@@ -38,7 +38,7 @@ function openModloaderModal() {
 function renderModloaderModalBody() {
   var body = document.getElementById('modloader-modal-body');
   var info = modloaderInfo;
-  var html = '<p style="margin-bottom:10px;font-size:.87rem">Loader actual: <b>' + escHtml(info.loader_display)
+  var html = '<p class="mb-s text-md">Loader actual: <b>' + escHtml(info.loader_display)
     + ' ' + escHtml(info.current_version || '?') + '</b> · MC <b>' + escHtml(info.mc_version) + '</b></p>';
 
   if (!info.available.length) {
@@ -48,11 +48,11 @@ function renderModloaderModalBody() {
     return;
   }
 
-  html += '<label style="display:block;margin-bottom:6px;font-size:.85rem;color:var(--muted)">Nueva versión:</label>'
+  html += '<label class="block-label">Nueva versión:</label>'
     + '<select id="modloader-version-select" class="w-full">'
     + info.available.map(function(v) { return '<option value="' + escHtml(v) + '">' + escHtml(v) + '</option>'; }).join('')
     + '</select>'
-    + '<div id="modloader-check-result" style="margin-top:12px"></div>';
+    + '<div id="modloader-check-result" class="mt-m"></div>';
   body.innerHTML = html;
 
   document.getElementById('modloader-version-select').addEventListener('change', function() {
@@ -69,7 +69,7 @@ document.getElementById('modloader-verify-btn').addEventListener('click', functi
   }
   var version = select.value;
   var resultEl = document.getElementById('modloader-check-result');
-  resultEl.innerHTML = '<div style="color:var(--muted);font-size:.83rem">Verificando compatibilidad con los mods instalados...</div>';
+  resultEl.innerHTML = '<div class="text-muted text-sm">Verificando compatibilidad con los mods instalados...</div>';
   document.getElementById('modloader-install-btn').disabled = true;
   modloaderCheckedVersion = null;
 
@@ -85,7 +85,7 @@ document.getElementById('modloader-verify-btn').addEventListener('click', functi
       return;
     }
     if (data.type === 'progress') {
-      resultEl.innerHTML = '<div style="color:var(--muted);font-size:.83rem">Verificando compatibilidad... ('
+      resultEl.innerHTML = '<div class="text-muted text-sm">Verificando compatibilidad... ('
         + data.current + '/' + data.total + ') ' + escHtml(data.display_name) + '</div>';
     } else if (data.type === 'result') {
       source.close();
@@ -149,7 +149,7 @@ function startModloaderInstall(version) {
 
   function logHtml() {
     return installLogLines.length
-      ? '<div class="log-viewer" id="modloader-install-log" style="height:220px;margin-top:10px;font-size:.74rem">'
+      ? '<div class="log-viewer log-viewer-inline mt-s" id="modloader-install-log">'
         + installLogLines.map(escHtml).join('\n') + '</div>'
       : '';
   }

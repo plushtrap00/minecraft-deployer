@@ -98,7 +98,7 @@ function guardModOperationNav() {
 function modUploadProgressHtml(text) {
   return '<div class="mod-upload-progress">'
     + '<div class="mod-upload-spinner"></div>'
-    + '<div><div id="mod-upload-progress-text" style="font-weight:600">' + escHtml(text) + '</div>'
+    + '<div><div id="mod-upload-progress-text" class="fw-semibold">' + escHtml(text) + '</div>'
     + '<div class="mod-upload-keep-open">No cierres ni recargues esta pestaña hasta que termine.</div></div>'
     + '</div>'
     + '<div id="mod-upload-extra"></div>';
@@ -191,7 +191,7 @@ function uploadMod(file) {
         }
         var replacedMsg = '';
         if (result.data.replaced_filename) {
-          replacedMsg = '<div style="color:var(--muted);font-size:.78rem;margin-top:2px">'
+          replacedMsg = '<div class="text-muted text-xs mt-xs">'
             + 'Se reemplazó ' + escHtml(result.data.replaced_filename)
             + ' (v' + escHtml(result.data.previous_version) + ' → v' + escHtml(result.data.mod_version) + ')</div>';
         }
@@ -276,17 +276,17 @@ function rejectedFlaggedLabels(items) {
 
 var BULK_CATEGORIES = [
   {
-    key: 'added', icon: 'circle-check', color: 'var(--green)', modalTitle: 'Mods agregados', modalType: 'list',
+    key: 'added', icon: 'circle-check', tone: 'green', modalTitle: 'Mods agregados', modalType: 'list',
     many: function(n) { return n + ' mods agregados'; },
     fewPrefix: 'Se han agregado los mods: '
   },
   {
-    key: 'already_installed', icon: 'info', color: 'var(--muted)', modalTitle: 'Mods ya instalados', modalType: 'list',
+    key: 'already_installed', icon: 'info', tone: 'muted', modalTitle: 'Mods ya instalados', modalType: 'list',
     many: function(n) { return n + ' mods ya estaban instalados'; },
     fewPrefix: 'Ya están instalados los mods: '
   },
   {
-    key: 'needs_confirmation', icon: 'triangle-alert', color: 'var(--yellow)', modalType: 'downgrade',
+    key: 'needs_confirmation', icon: 'triangle-alert', tone: 'yellow', modalType: 'downgrade',
     dynamicLabels: true, alwaysClickable: true
   },
   // Estas dos solo aparecen una vez resuelto un lote de needs_confirmation
@@ -294,15 +294,15 @@ var BULK_CATEGORIES = [
   // datos, así que renderBulkResult() las salta igual que cualquier
   // categoría vacía.
   {
-    key: 'accepted_flagged', icon: 'circle-check', color: 'var(--green)', modalTitle: 'Mods instalados igualmente', modalType: 'list',
+    key: 'accepted_flagged', icon: 'circle-check', tone: 'green', modalTitle: 'Mods instalados igualmente', modalType: 'list',
     dynamicLabels: true, labelFn: acceptedFlaggedLabels
   },
   {
-    key: 'rejected_flagged', icon: 'ban', color: 'var(--muted)', modalTitle: 'Mods rechazados', modalType: 'list',
+    key: 'rejected_flagged', icon: 'ban', tone: 'muted', modalTitle: 'Mods rechazados', modalType: 'list',
     dynamicLabels: true, labelFn: rejectedFlaggedLabels
   },
   {
-    key: 'errors', icon: 'circle-x', color: 'var(--red)', modalTitle: 'Mods con error', modalType: 'list',
+    key: 'errors', icon: 'circle-x', tone: 'red', modalTitle: 'Mods con error', modalType: 'list',
     many: function(n) { return n + ' mods con error'; },
     fewPrefix: 'No se pudieron agregar los mods: '
   }
@@ -440,19 +440,19 @@ function renderBulkResult(data) {
     var labels = cat.dynamicLabels ? (cat.labelFn || needsConfirmationLabels)(items) : cat;
     if (items.length <= 2 && !cat.alwaysClickable) {
       return '<div class="bulk-result-row"><span class="bulk-result-icon">' + icon(cat.icon) + '</span>'
-        + '<span style="color:' + cat.color + '">' + escHtml(labels.fewPrefix) + '<b>' + names.map(escHtml).join('</b>, <b>') + '</b></span></div>';
+        + '<span class="text-' + cat.tone + '">' + escHtml(labels.fewPrefix) + '<b>' + names.map(escHtml).join('</b>, <b>') + '</b></span></div>';
     }
     if (items.length <= 2) {
       // needs_confirmation con pocos mods: texto clicable que abre el mismo formulario
-      return '<div class="bulk-result-row clickable" style="color:' + cat.color + '" data-bulk-cat="' + cat.key + '">'
+      return '<div class="bulk-result-row clickable text-' + cat.tone + '" data-bulk-cat="' + cat.key + '">'
         + '<span class="bulk-result-icon">' + icon(cat.icon) + '</span>'
         + '<span class="bulk-result-link">' + escHtml(labels.fewPrefix) + '<b>' + names.map(escHtml).join('</b>, <b>') + '</b></span></div>';
     }
-    return '<div class="bulk-result-row clickable" style="color:' + cat.color + '" data-bulk-cat="' + cat.key + '">'
+    return '<div class="bulk-result-row clickable text-' + cat.tone + '" data-bulk-cat="' + cat.key + '">'
       + '<span class="bulk-result-icon">' + icon(cat.icon) + '</span><span class="bulk-result-link">' + escHtml(labels.many(items.length)) + '</span></div>';
   }).join('');
 
-  setModUploadModalBody(rows || '<div class="bulk-result-row" style="color:var(--muted)">No se procesó ningún mod.</div>');
+  setModUploadModalBody(rows || '<div class="bulk-result-row text-muted">No se procesó ningún mod.</div>');
 }
 
 modUploadModalBody.addEventListener('click', function(event) {
@@ -571,7 +571,7 @@ function renderDowngradeModalPage() {
     var detail = item.reason === 'client_only'
       ? escHtml(item.detail || 'Este mod parece ser solo de cliente.')
       : 'v' + escHtml(item.mod_version) + ' reemplazaría a v' + escHtml(item.existing_version) + ' (' + escHtml(item.existing_filename) + ')';
-    return '<label class="mod-modal-item" style="cursor:pointer">'
+    return '<label class="mod-modal-item cursor-pointer">'
       + '<input type="checkbox" class="mod-downgrade-check" data-filename="' + escHtml(item.filename) + '"' + checked + '>'
       + '<div class="mod-info"><div class="mod-display">' + escHtml(item.display_name) + '</div>'
       + '<div class="mod-modal-detail">' + detail + '</div></div></label>';
@@ -627,14 +627,14 @@ function renderDowngradeResult(data) {
   var skipped = data.skipped || [];
   var html = '';
   if (applied.length) {
-    html += '<div class="bulk-result-row" style="color:var(--green)"><span class="bulk-result-icon">' + icon('circle-check') + '</span>'
+    html += '<div class="bulk-result-row text-green"><span class="bulk-result-icon">' + icon('circle-check') + '</span>'
       + '<span>Instalados de todas formas: <b>' + applied.map(function(it) { return escHtml(it.display_name); }).join('</b>, <b>') + '</b></span></div>';
   }
   if (skipped.length) {
-    html += '<div class="bulk-result-row" style="color:var(--muted)"><span class="bulk-result-icon">' + icon('square') + '</span>'
+    html += '<div class="bulk-result-row text-muted"><span class="bulk-result-icon">' + icon('square') + '</span>'
       + '<span>Sin cambios (no aceptados): <b>' + skipped.map(function(it) { return escHtml(it.display_name); }).join('</b>, <b>') + '</b></span></div>';
   }
-  document.getElementById('mod-downgrade-modal-body').innerHTML = html || '<div class="bulk-result-row" style="color:var(--muted)">No se aplicó ningún cambio.</div>';
+  document.getElementById('mod-downgrade-modal-body').innerHTML = html || '<div class="bulk-result-row text-muted">No se aplicó ningún cambio.</div>';
   // Viven en el <div class="modal-footer"> aparte del cuerpo, así que
   // reemplazar mod-downgrade-modal-body no los toca — sin esto quedaban
   // visibles pero deshabilitados para siempre, sin ninguna acción posible.

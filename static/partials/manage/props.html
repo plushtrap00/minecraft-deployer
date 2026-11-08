@@ -1,0 +1,268 @@
+<!-- server.properties -->
+<div class="mgmt-content active" id="mgmt-props">
+  <div class="card">
+    <div class="info-box">Los cambios requieren reinicio del servidor para aplicarse. Las propiedades no reconocidas aparecen en el editor avanzado al final.</div>
+    <div class="card-toolbar">
+      <span class="card-toolbar-title">server.properties</span>
+      <button id="save-props-btn">Guardar cambios</button>
+    </div>
+
+    <!-- Form sections -->
+    <div id="props-form">
+      <!-- General -->
+      <div class="props-section">
+        <button type="button" class="props-section-header" data-section="general">
+          <span>General</span><svg class="icon ps-arrow" aria-hidden="true"><use href="#i-chevron-down"/></svg>
+        </button>
+        <div class="props-section-body" id="ps-general">
+          <div class="props-grid">
+            <div class="prop-field full-width">
+              <label class="prop-label">Mensaje del día (MOTD)</label>
+              <input type="text" class="prop-input" data-key="motd" placeholder="A Minecraft Server">
+            </div>
+            <div class="prop-field">
+              <label class="prop-label">Puerto del servidor <span class="req">*</span></label>
+              <input type="number" class="prop-input" data-key="server-port" placeholder="25565" min="1" max="65535">
+            </div>
+            <div class="prop-field">
+              <label class="prop-label">Jugadores máximos</label>
+              <input type="number" class="prop-input" data-key="max-players" placeholder="20" min="1">
+            </div>
+            <div class="prop-field">
+              <label class="prop-label">Modo online (verificar cuentas)</label>
+              <div class="prop-toggle-wrap"><div class="toggle-track" data-key="online-mode"><div class="toggle-thumb"></div></div></div>
+            </div>
+            <div class="prop-field">
+              <label class="prop-label">Activar whitelist</label>
+              <div class="prop-toggle-wrap"><div class="toggle-track" data-key="white-list"><div class="toggle-thumb"></div></div></div>
+            </div>
+            <div class="prop-field">
+              <label class="prop-label">Forzar whitelist al reiniciar</label>
+              <div class="prop-toggle-wrap"><div class="toggle-track" data-key="enforce-whitelist"><div class="toggle-thumb"></div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mundo -->
+      <div class="props-section">
+        <button type="button" class="props-section-header" data-section="mundo">
+          <span>Mundo</span><svg class="icon ps-arrow" aria-hidden="true"><use href="#i-chevron-down"/></svg>
+        </button>
+        <div class="props-section-body" id="ps-mundo">
+          <div class="props-grid">
+            <div class="prop-field">
+              <label class="prop-label">Modo de juego</label>
+              <select class="prop-input" data-key="gamemode">
+                <option value="survival">Supervivencia</option>
+                <option value="creative">Creativo</option>
+                <option value="adventure">Aventura</option>
+                <option value="spectator">Espectador</option>
+              </select>
+            </div>
+            <div class="prop-field">
+              <label class="prop-label">Dificultad</label>
+              <select class="prop-input" data-key="difficulty">
+                <option value="peaceful">Pacífico</option>
+                <option value="easy">Fácil</option>
+                <option value="normal">Normal</option>
+                <option value="hard">Difícil</option>
+              </select>
+            </div>
+            <div class="prop-field">
+              <label class="prop-label">Modo hardcore</label>
+              <div class="prop-toggle-wrap"><div class="toggle-track" data-key="hardcore"><div class="toggle-thumb"></div></div></div>
+            </div>
+            <div class="prop-field">
+              <label class="prop-label">Generar estructuras</label>
+              <div class="prop-toggle-wrap"><div class="toggle-track" data-key="generate-structures"><div class="toggle-thumb"></div></div></div>
+            </div>
+            <div class="prop-field">
+              <label class="prop-label">Permitir el Nether</label>
+              <div class="prop-toggle-wrap"><div class="toggle-track" data-key="allow-nether"><div class="toggle-thumb"></div></div></div>
+            </div>
+          </div>
+
+          <!-- Gestión de mundos integrada -->
+          <hr class="section-sep">
+          <div class="section-toolbar">
+            <span class="section-toolbar-title">Mundos instalados</span>
+            <div class="button-row-tight">
+              <button id="btn-upload-world" class="btn-secondary btn-sm">Subir mundo</button>
+              <button id="btn-new-world" class="btn-secondary btn-sm">Nuevo mundo</button>
+            </div>
+          </div>
+          <div id="worlds-list"><div class="skeleton-rows" role="status" aria-label="Cargando"><div></div><div></div><div></div></div></div>
+
+          <!-- Subir mundo existente (inline, sin modal) -->
+          <div id="upload-world-form" class="new-world-form" style="display:none">
+            <div class="form-panel-title">Subir un mundo existente</div>
+            <div class="props-grid mb-m">
+              <div class="prop-field full-width">
+                <label class="prop-label">Archivo (.zip, .tar.gz, .tar.bz2, .tar, .rar) <span class="req">*</span></label>
+                <input type="file" id="uw-file" accept=".zip,.tar.gz,.tgz,.tar.bz2,.tar,.rar">
+                <span class="hint">Puede ser una carpeta de mundo comprimida directamente o un zip con la carpeta dentro.</span>
+              </div>
+              <div class="prop-field">
+                <label class="prop-label">Nombre de carpeta <span class="req">*</span></label>
+                <input type="text" id="uw-name" placeholder="ej: mundo_importado">
+                <span class="hint">Solo letras, números, _ y -</span>
+              </div>
+            </div>
+            <div class="toggle-row mb-m">
+              <div class="toggle-track on" id="uw-activate-toggle"><div class="toggle-thumb"></div></div>
+              <span class="toggle-label">Activar este mundo (cambia <code>level-name</code>)</span>
+            </div>
+            <div id="uw-progress" class="form-progress" style="display:none"></div>
+            <div class="warn-box mb-m">Si el servidor está en marcha, detenlo antes de activar el mundo subido.</div>
+            <div class="form-actions">
+              <button class="btn-secondary" id="uw-cancel-inline">Cancelar</button>
+              <button id="uw-confirm">Subir mundo</button>
+            </div>
+          </div>
+
+          <!-- Crear nuevo mundo (inline, sin modal) -->
+          <div id="new-world-form" class="new-world-form" style="display:none">
+            <div class="form-panel-title">Nuevo mundo</div>
+            <div class="props-grid mb-m">
+              <div class="prop-field">
+                <label class="prop-label">Nombre de carpeta <span class="req">*</span></label>
+                <input type="text" id="nw-name" placeholder="ej: mundo_nuevo, survival_2025...">
+                <span class="hint">Solo letras, números, _ y -</span>
+              </div>
+              <div class="prop-field">
+                <label class="prop-label">Seed <span class="label-note">(vacío = aleatorio)</span></label>
+                <input type="text" id="nw-seed" placeholder="ej: 12345, MiSeed...">
+              </div>
+              <div class="prop-field full-width">
+                <label class="prop-label">Tipo de mundo <span class="req">*</span></label>
+                <select id="nw-type-select">
+                  <option value="minecraft:normal">Normal</option>
+                  <option value="minecraft:large_biomes">Biomas grandes</option>
+                  <option value="minecraft:amplified">Amplificado</option>
+                  <option value="minecraft:flat">Superplano</option>
+                  <option value="biomesoplenty" id="opt-bop" disabled>Biomes O Plenty (mod no detectado)</option>
+                  <option value="terraforged" id="opt-tf" disabled>TerraForged (mod no detectado)</option>
+                  <option value="skyblockbuilder:skyblock" id="opt-sky" disabled>Skyblock con SkyblockBuilder (mod no detectado)</option>
+                  <option value="custom">Personalizado</option>
+                </select>
+                <div id="nw-type-desc" class="nw-type-desc"></div>
+                <input type="text" id="nw-type-custom" class="nw-type-custom" placeholder="ej: skyblockbuilder..." style="display:none">
+              </div>
+            </div>
+            <div class="toggle-row mb-m">
+              <div class="toggle-track on" id="nw-activate-toggle"><div class="toggle-thumb"></div></div>
+              <span class="toggle-label">Activar este mundo (cambia <code>level-name</code>)</span>
+            </div>
+            <div class="warn-box mb-m">El mundo se genera al iniciar el servidor. Si está en marcha, detenlo primero.</div>
+            <div class="form-actions">
+              <button class="btn-secondary" id="nw-cancel-inline">Cancelar</button>
+              <button id="nw-confirm">Preparar mundo</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PvP -->
+      <div class="props-section">
+        <button type="button" class="props-section-header" data-section="pvp">
+          <span>PvP y comportamiento</span><svg class="icon ps-arrow" aria-hidden="true"><use href="#i-chevron-down"/></svg>
+        </button>
+        <div class="props-section-body" id="ps-pvp">
+          <div class="props-grid">
+            <div class="prop-field">
+              <label class="prop-label">PvP activado</label>
+              <div class="prop-toggle-wrap"><div class="toggle-track" data-key="pvp"><div class="toggle-thumb"></div></div></div>
+            </div>
+            <div class="prop-field">
+              <label class="prop-label">Generar monstruos</label>
+              <div class="prop-toggle-wrap"><div class="toggle-track" data-key="spawn-monsters"><div class="toggle-thumb"></div></div></div>
+            </div>
+            <div class="prop-field">
+              <label class="prop-label">Generar animales</label>
+              <div class="prop-toggle-wrap"><div class="toggle-track" data-key="spawn-animals"><div class="toggle-thumb"></div></div></div>
+            </div>
+            <div class="prop-field">
+              <label class="prop-label">Generar aldeanos</label>
+              <div class="prop-toggle-wrap"><div class="toggle-track" data-key="spawn-npcs"><div class="toggle-thumb"></div></div></div>
+            </div>
+            <div class="prop-field">
+              <label class="prop-label">Permitir vuelo</label>
+              <div class="prop-toggle-wrap"><div class="toggle-track" data-key="allow-flight"><div class="toggle-thumb"></div></div></div>
+            </div>
+            <div class="prop-field">
+              <label class="prop-label">Radio de protección del spawn</label>
+              <input type="number" class="prop-input" data-key="spawn-protection" placeholder="16" min="0">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Red -->
+      <div class="props-section">
+        <button type="button" class="props-section-header" data-section="red">
+          <span>Red y rendimiento</span><svg class="icon ps-arrow" aria-hidden="true"><use href="#i-chevron-down"/></svg>
+        </button>
+        <div class="props-section-body" id="ps-red">
+          <div class="props-grid">
+            <div class="prop-field">
+              <label class="prop-label">Distancia de visión (chunks)</label>
+              <input type="number" class="prop-input" data-key="view-distance" placeholder="10" min="2" max="32">
+            </div>
+            <div class="prop-field">
+              <label class="prop-label">Distancia de simulación (chunks)</label>
+              <input type="number" class="prop-input" data-key="simulation-distance" placeholder="10" min="2" max="32">
+            </div>
+            <div class="prop-field">
+              <label class="prop-label">Umbral compresión de red</label>
+              <input type="number" class="prop-input" data-key="network-compression-threshold" placeholder="256">
+            </div>
+            <div class="prop-field">
+              <label class="prop-label">Tiempo máximo de tick (-1 = sin límite)</label>
+              <input type="number" class="prop-input" data-key="max-tick-time" placeholder="60000">
+            </div>
+            <div class="prop-field">
+              <label class="prop-label">Límite paquetes/jugador (0 = sin límite)</label>
+              <input type="number" class="prop-input" data-key="rate-limit" placeholder="0" min="0">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Query -->
+      <div class="props-section">
+        <button type="button" class="props-section-header" data-section="rcon">
+          <span>Query</span><svg class="icon ps-arrow" aria-hidden="true"><use href="#i-chevron-down"/></svg>
+        </button>
+        <div class="props-section-body" id="ps-rcon">
+          <div class="info-box mb-m">RCON se activa y configura automáticamente al arrancar el servidor (necesario para refrescar métricas sin llenar la consola), por eso no aparece aquí.</div>
+          <div class="props-grid">
+            <div class="prop-field">
+              <label class="prop-label">Activar Query</label>
+              <div class="prop-toggle-wrap"><div class="toggle-track" data-key="enable-query"><div class="toggle-thumb"></div></div></div>
+            </div>
+            <div class="prop-field">
+              <label class="prop-label">Puerto Query</label>
+              <input type="number" class="prop-input" data-key="query.port" placeholder="25565">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Editor avanzado -->
+      <div class="props-section">
+        <button type="button" class="props-section-header collapsed" data-section="raw">
+          <span>Propiedades avanzadas o desconocidas</span><svg class="icon ps-arrow" aria-hidden="true"><use href="#i-chevron-down"/></svg>
+        </button>
+        <div class="props-section-body" id="ps-raw" style="display:none">
+          <p class="hint mb-m">Propiedades no reconocidas por el formulario. Edita con cuidado.</p>
+          <textarea id="props-raw-editor" spellcheck="false"></textarea>
+        </div>
+      </div>
+
+    </div><!-- end props-form -->
+
+    <!-- Hidden full content store -->
+    <textarea id="props-editor" style="display:none" spellcheck="false"></textarea>
+  </div>
+</div>

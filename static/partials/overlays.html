@@ -1,0 +1,44 @@
+<!-- Alert / Confirm modal -->
+<div class="modal-overlay" id="dialog-overlay">
+  <div class="modal modal-dialog">
+    <div class="modal-header">
+      <span class="modal-icon" id="dialog-icon"></span>
+      <span class="dialog-title" id="dialog-title">Aviso</span>
+    </div>
+    <div class="dialog-body" id="dialog-msg"></div>
+    <div class="dialog-footer" id="dialog-buttons">
+      <button id="dialog-ok">Aceptar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-stack" id="toast" role="status" aria-live="polite"></div>
+
+<!-- Bloquea toda la app (por encima de modales, paneles y hasta la propia
+     pantalla de login) mientras se aplica un reinicio, sea porque lo disparó
+     este mismo navegador (auto-actualización o el panel de Configuración) o
+     porque se detectó que la app dejó de responder de golpe sin haberlo
+     pedido aquí -- probablemente otra sesión disparó un reinicio. No tiene
+     botón de cerrar a propósito: se oculta sola cuando la app vuelve a
+     responder y la página se recarga. -->
+<div class="restart-overlay" id="restart-overlay">
+  <div class="restart-overlay-box">
+    <div class="restart-overlay-spinner"></div>
+    <div class="restart-overlay-title" id="restart-overlay-title">La app se está reiniciando...</div>
+    <div class="restart-overlay-sub" id="restart-overlay-sub">Esto puede tardar unos segundos. No cierres esta pestaña.</div>
+  </div>
+</div>
+
+<!-- ══ PANEL SISTEMA ════════════════════════════════════ -->
+<div id="sysmon-panel">
+  <div class="sysmon-header">
+    <span class="sysmon-title"><svg class="icon"><use href="#i-cpu"/></svg>Sistema</span>
+    <div class="sysmon-header-right">
+      <span id="sysmon-updated" class="sysmon-updated"></span>
+      <button id="sysmon-close-btn" class="sysmon-close-btn" aria-label="Cerrar"><svg class="icon"><use href="#i-x"/></svg></button>
+    </div>
+  </div>
+  <div class="sysmon-body" id="sysmon-body">
+    <div class="skeleton-rows" role="status" aria-label="Cargando"><div></div><div></div><div></div></div>
+  </div>
+</div>

@@ -1,0 +1,56 @@
+<!-- Players page -->
+<div class="page" id="page-players">
+  <div class="card">
+    <div class="players-header">
+      <h2>Jugadores de todos los servidores</h2>
+      <button class="btn-secondary btn-sm" id="btn-sync-all"><svg class="icon"><use href="#i-refresh-cw"/></svg>Sincronizar con todos los servidores</button>
+    </div>
+    <div class="info-box mt-m">Los cambios se aplican a <strong>todos los modpacks</strong> automáticamente. Si el servidor está corriendo, usa los comandos de consola para que surtan efecto inmediato.</div>
+  </div>
+
+  <div class="players-grid">
+
+    <!-- OPS -->
+    <div class="card">
+      <h2>Operadores (ops)</h2>
+      <div class="input-flex">
+        <input type="text" id="op-name-input" placeholder="Nombre del jugador" class="flex-1">
+        <button class="btn-secondary" id="btn-add-op">Añadir</button>
+      </div>
+      <div id="ops-list"><div class="skeleton-rows" role="status" aria-label="Cargando"><div></div><div></div><div></div></div></div>
+    </div>
+
+    <!-- WHITELIST -->
+    <div class="card">
+      <h2>Whitelist</h2>
+      <div class="input-flex">
+        <input type="text" id="wl-name-input" placeholder="Nombre del jugador" class="flex-1">
+        <button class="btn-secondary" id="btn-add-wl">Añadir</button>
+      </div>
+      <div id="whitelist-list"><div class="skeleton-rows" role="status" aria-label="Cargando"><div></div><div></div><div></div></div></div>
+    </div>
+
+    <!-- BANS JUGADORES -->
+    <div class="card">
+      <h2>Jugadores baneados</h2>
+      <div class="input-flex mb-s">
+        <input type="text" id="ban-name-input" placeholder="Nombre del jugador" class="flex-1">
+        <button id="btn-ban-player" class="btn-danger">Banear</button>
+      </div>
+      <input type="text" id="ban-reason-input" placeholder="Motivo (opcional)" class="w-full mb-l">
+      <div id="banned-list"><div class="skeleton-rows" role="status" aria-label="Cargando"><div></div><div></div><div></div></div></div>
+    </div>
+
+    <!-- BANS IPS -->
+    <div class="card">
+      <h2>IPs baneadas</h2>
+      <div class="input-flex mb-s">
+        <input type="text" id="ban-ip-input" placeholder="IP (ej: 192.168.1.50)" class="flex-1">
+        <button id="btn-ban-ip" class="btn-danger">Banear IP</button>
+      </div>
+      <input type="text" id="ban-ip-reason-input" placeholder="Motivo (opcional)" class="w-full mb-l">
+      <div id="banned-ips-list"><div class="skeleton-rows" role="status" aria-label="Cargando"><div></div><div></div><div></div></div></div>
+    </div>
+
+  </div>
+</div>

@@ -1,0 +1,47 @@
+<!-- Mods list -->
+<div class="mgmt-content" id="mgmt-mods">
+  <div class="card">
+    <div class="mods-header">
+      <span id="modpack-version-badge" style="display:none"></span>
+      <button type="button" class="btn-secondary btn-sm" id="modloader-change-btn">Cambiar versión del modloader</button>
+      <div class="flex-1"></div>
+      <span id="mods-count" class="mods-count"></span>
+    </div>
+
+    <!-- Aviso: mods que el autor del modpack bloqueó para descarga por terceros -->
+    <div class="warn-box mb-m" id="mods-pending-banner" style="display:none"></div>
+
+    <!-- Upload zone -->
+    <div class="mod-upload-zone" id="mod-upload-zone">
+      <input type="file" id="mod-file-input" accept=".jar,.zip">
+      <svg class="icon muz-icon"><use href="#i-upload"/></svg>
+      <div class="muz-text">Arrastra un <strong>.jar</strong> o un <strong>.zip</strong> con varios mods aquí, o <span class="muz-link">haz clic</span> para elegir archivo</div>
+      <div class="muz-hint">Se verificará compatibilidad con la versión del servidor</div>
+    </div>
+    <input type="file" id="mod-folder-input" webkitdirectory directory multiple style="display:none">
+    <div class="button-row">
+      <button type="button" class="btn-secondary btn-sm" id="mod-folder-btn"><svg class="icon"><use href="#i-folder-up"/></svg>Subir carpeta de mods</button>
+      <button type="button" class="btn-secondary btn-sm" id="mod-search-btn"><svg class="icon"><use href="#i-search"/></svg>Buscar mods online</button>
+    </div>
+
+    <div class="filter-row">
+      <input type="text" id="mods-search" placeholder="Buscar mod por nombre…" class="w-full">
+      <select id="mods-status-filter" class="btn-secondary btn-sm shrink-0">
+        <option value="all">Mostrar todos</option>
+        <option value="hide-disabled">Ocultar deshabilitados</option>
+        <option value="only-disabled">Solo deshabilitados</option>
+      </select>
+      <div class="mods-menu" id="mods-menu">
+        <button type="button" class="btn-secondary btn-sm" id="mods-menu-btn" title="Más opciones" aria-haspopup="true" aria-expanded="false">Más opciones <svg class="icon" aria-hidden="true"><use href="#i-chevron-down"/></svg></button>
+        <div class="mods-menu-dropdown" id="mods-menu-dropdown">
+          <button type="button" class="mods-menu-item" id="mod-duplicates-btn"><svg class="icon"><use href="#i-triangle-alert"/></svg>Ver posibles duplicados</button>
+          <button type="button" class="mods-menu-item" id="mod-client-only-btn"><svg class="icon"><use href="#i-monitor"/></svg>Mods solo de cliente</button>
+          <button type="button" class="mods-menu-item" id="mod-deps-btn"><svg class="icon"><use href="#i-link"/></svg>Instalar dependencias que faltan</button>
+          <button type="button" class="mods-menu-item" id="mod-delete-disabled-btn"><svg class="icon"><use href="#i-trash-2"/></svg>Borrar deshabilitados</button>
+          <button type="button" class="mods-menu-item" id="mod-download-btn"><svg class="icon"><use href="#i-download"/></svg>Descargar mods (.zip)</button>
+        </div>
+      </div>
+    </div>
+    <div id="mods-list"><div class="skeleton-rows" role="status" aria-label="Cargando"><div></div><div></div><div></div></div></div>
+  </div>
+</div>

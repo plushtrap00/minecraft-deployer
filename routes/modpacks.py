@@ -11,7 +11,6 @@ Rutas:
 - POST      /api/upload-and-extract
 """
 import re
-import json
 import shutil
 import asyncio
 import tempfile
@@ -23,7 +22,7 @@ from pydantic import BaseModel
 from config import DEFAULT_SERVERS_PATH, TEMP_DIR
 from services.utils import extract_archive, configure_jvm_ram, detect_jvm_ram
 from services.modpack import detect_modpack_version, save_server_property
-from services.players import ensure_global_dir, read_global_file, PLAYER_FILES
+from services.players import write_player_files
 from services.busy import BusyGuard, is_busy, busy_reasons
 from services.server_create import validate_new_server_name
 from services import process as proc_module
@@ -152,17 +151,7 @@ async def upload_and_extract(
                 jvm_configured = f"-Xms{ram_min} / -Xmx{ram_max}"
 
         # Sincronizar archivos globales de jugadores al nuevo modpack
-        ensure_global_dir()
-        synced_player_files = []
-        for fname in PLAYER_FILES:
-            global_data = read_global_file(fname)
-            if global_data:
-                dest_file = dest / fname
-                dest_file.write_text(
-                    json.dumps(global_data, indent=2, ensure_ascii=False),
-                    encoding="utf-8"
-                )
-                synced_player_files.append(fname)
+        synced_player_files = write_player_files(folder_name)
 
         return JSONResponse({
             "success": True,

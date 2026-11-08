@@ -64,6 +64,13 @@ class AuthMiddleware(BaseHTTPMiddleware):
         response = await self._authorize(request, call_next)
         for name, value in SECURITY_HEADERS.items():
             response.headers.setdefault(name, value)
+        # index.html pide el CSS/JS con ?v=<arranque> (routes/system.py), que
+        # cambia en cada reinicio o actualización: con esa versión el
+        # navegador puede guardarlos sin volver a preguntar, y una versión
+        # nueva se pide sola porque la URL ya es otra.
+        if (request.url.path.startswith("/static/") and "v" in request.query_params
+                and response.status_code == 200):
+            response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
         return response
 
     async def _authorize(self, request: Request, call_next):
