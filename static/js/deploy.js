@@ -225,6 +225,8 @@ document.getElementById('deploy-btn').addEventListener('click', function() {
           items.push(['RAM', result.data.jvm_configured]);
         }
         showResult('success', '¡Listo!', 'Modpack instalado correctamente', items);
+        celebrate(document.getElementById('progress-fill'));
+        unlockAchievement('first-install');
       } else {
         fill.classList.add('error');
         status.textContent = 'Error';

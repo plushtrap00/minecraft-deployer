@@ -12,17 +12,8 @@
   display: none;
 }
 
-/* Login: la otra única pieza con la fuente de bloque. El fondo lleva una
-   rejilla muy tenue de 32 px -- bloques, sin texturas. */
-#login-screen {
-  background-color: var(--bg);
-  background-image:
-    linear-gradient(rgba(var(--muted-rgb), .045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(var(--muted-rgb), .045) 1px, transparent 1px);
-  background-size: 32px 32px;
-  background-position: center center;
-}
-
+/* Login: la misma escena de noche que la cabecera de Servidor (scene.css),
+   a pantalla completa, con la tarjeta encima. */
 .login-card {
   position: relative;
   width: min(380px, calc(100vw - 32px));
@@ -34,7 +25,6 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: 0 24px 60px rgba(0, 0, 0, .45);
-  overflow: hidden;
 }
 
 .login-card::before {
@@ -42,6 +32,7 @@
   position: absolute;
   inset: 0 0 auto;
   height: 3px;
+  border-radius: var(--radius) var(--radius) 0 0;
   background: var(--accent);
 }
 
@@ -96,6 +87,7 @@
 
 .login-btn {
   padding: 11px;
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .22);
   font-size: var(--fs-lg);
 }
 

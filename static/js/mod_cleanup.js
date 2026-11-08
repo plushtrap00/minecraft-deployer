@@ -28,7 +28,7 @@ function openDuplicatesModal() {
 function renderDuplicatesModal(groups) {
   var body = document.getElementById('mod-duplicates-modal-body');
   if (!groups.length) {
-    body.innerHTML = '<p class="empty-msg">No se encontraron posibles duplicados.</p>';
+    body.innerHTML = emptyArt('sapling', 'Sin duplicados', 'No hay dos mods que parezcan el mismo. Todo en orden.');
     return;
   }
   body.innerHTML = groups.map(function(group) {
@@ -115,7 +115,7 @@ function renderClientOnlyModal(data) {
   var html = '<div class="list-subhead">Solo cliente (' + clientOnly.length + ')</div>';
   html += clientOnly.length
     ? renderClientOnlyGroup(clientOnly)
-    : '<p class="empty-msg">No se detectó ningún mod solo-cliente.</p>';
+    : emptyArt('sapling', 'Nada que sobre', 'No hay ningún mod que sea solo para el cliente.');
 
   if (unknown.length) {
     html += '<div class="list-subhead mt-l">Categoría desconocida (' + unknown.length + ')</div>'

@@ -1,9 +1,8 @@
 /* -- Fuentes (servidas desde la propia app: funciona sin internet) --------
    IBM Plex Sans para toda la interfaz, IBM Plex Mono para consola/código, y
-   Pixelify Sans SOLO para el nombre y el estado del servidor (página
-   Servidor) y el título del login -- es el único guiño "de bloque" a
-   Minecraft, a propósito no se usa en ningún otro sitio. Licencias OFL en
-   static/fonts/. */
+   Pixelify Sans, la fuente "de bloque", para lo que se mira de un vistazo:
+   el nombre del servidor, los títulos de las tarjetas, los números de las
+   métricas y el login (ver scene.css). Licencias OFL en static/fonts/. */
 @font-face { font-family: 'Plex Sans'; src: url('/static/fonts/plex-sans-400.woff2') format('woff2'); font-weight: 400; font-display: swap; }
 @font-face { font-family: 'Plex Sans'; src: url('/static/fonts/plex-sans-400-italic.woff2') format('woff2'); font-weight: 400; font-style: italic; font-display: swap; }
 @font-face { font-family: 'Plex Sans'; src: url('/static/fonts/plex-sans-500.woff2') format('woff2'); font-weight: 500; font-display: swap; }
@@ -608,20 +607,6 @@ a.btn-ghost {
 
 .empty-msg.error-msg {
   color: var(--red);
-}
-
-/* Estado vacío con acción: en vez de solo "no hay nada", qué hacer. */
-.empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 8px 0 4px;
-  color: var(--muted);
-}
-
-.empty-state button .icon {
-  margin-right: 6px;
 }
 
 /* Carga: barras con la forma aproximada del contenido en vez de un

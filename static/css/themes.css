@@ -1,0 +1,134 @@
+/* -- Temas -------------------------------------------------------------------
+   Cada tema solo cambia tokens (los de base.css :root): la maqueta es la
+   misma. Se eligen en Apariencia (appearance.js), que pone data-theme en
+   <html>. Amatista es el de siempre y no necesita bloque propio.
+
+   Tokens nuevos que usan todos los temas:
+   - --go / --go-hover / --on-go: la acción positiva por excelencia (Iniciar,
+     Instalar). Verde hierba; distinto del acento a propósito, que es para
+     seleccionar y navegar.
+   - --scene-*: colores de la escena pixelada de la cabecera de Servidor y
+     del login, según el estado (noche = parado, amanecer = arrancando,
+     día = en marcha). */
+:root {
+  --go: #6fbf4f;
+  --go-hover: #86d465;
+  --go-rgb: 111, 191, 79;
+  --on-go: #0e2208;
+
+  --scene-night-top: #120f22;
+  --scene-night-bottom: #2a2146;
+  --scene-dawn-top: #2b1f4a;
+  --scene-dawn-bottom: #8a4a5c;
+  --scene-day-top: #23466e;
+  --scene-day-bottom: #3f7393;
+  --scene-hill: #1c1830;
+  --scene-hill-far: #262040;
+  --scene-grass: #5aa043;
+  --scene-dirt: #6b4a33;
+  --scene-orb-night: #e9e6f5;
+  --scene-orb-day: #ffd76a;
+  --scene-star: 255, 255, 255;
+  --scene-cloud: rgba(255, 255, 255, .16);
+
+  /* Brillo de fondo según el estado del servidor (body, ver scene.css). */
+  --glow-stopped: rgba(var(--accent-rgb), .07);
+  --glow-starting: rgba(var(--yellow-rgb), .09);
+  --glow-running: rgba(var(--go-rgb), .1);
+}
+
+/* Superficie: hierba, tierra y cielo. Acento diamante. */
+:root[data-theme="surface"] {
+  --bg: #151a17;
+  --card: #1d2420;
+  --surface-raised: #26302a;
+  --border: #334039;
+  --border-strong: #4a5c51;
+  --text: #e9f0ea;
+  --muted: #9faea4;
+  --muted-rgb: 159, 174, 164;
+  --accent: #6cc3ee;
+  --accent-rgb: 108, 195, 238;
+  --accent-hover: #93d5f4;
+  --on-accent: #062233;
+  --console-bg: #0f1311;
+  --console-text: #d2ddd5;
+
+  --scene-night-top: #0d1622;
+  --scene-night-bottom: #1d3346;
+  --scene-dawn-top: #1f3550;
+  --scene-dawn-bottom: #b0715a;
+  --scene-day-top: #3a78b0;
+  --scene-day-bottom: #74aed0;
+  --scene-hill: #1d3a26;
+  --scene-hill-far: #2a4e34;
+  --scene-grass: #63b04a;
+  --scene-dirt: #74533a;
+  --scene-cloud: rgba(255, 255, 255, .28);
+}
+
+/* Nether: piedra rojiza y lava. Acento fuego de almas (no hay sol). */
+:root[data-theme="nether"] {
+  --bg: #1a1111;
+  --card: #241817;
+  --surface-raised: #2f201e;
+  --border: #452b28;
+  --border-strong: #603c38;
+  --text: #f3e7e4;
+  --muted: #b89f9a;
+  --muted-rgb: 184, 159, 154;
+  --accent: #52d6c8;
+  --accent-rgb: 82, 214, 200;
+  --accent-hover: #7fe3d8;
+  --on-accent: #052522;
+  --console-bg: #120b0b;
+  --console-text: #e2d4d1;
+
+  --scene-night-top: #170909;
+  --scene-night-bottom: #3a1512;
+  --scene-dawn-top: #2a0d0b;
+  --scene-dawn-bottom: #7a2a16;
+  --scene-day-top: #3a110e;
+  --scene-day-bottom: #8c3a1c;
+  --scene-hill: #2a0f0d;
+  --scene-hill-far: #3d1714;
+  --scene-grass: #a33a2c;
+  --scene-dirt: #5e2420;
+  --scene-orb-night: transparent;
+  --scene-orb-day: transparent;
+  --scene-star: 255, 160, 90;
+  --scene-cloud: rgba(255, 120, 60, .1);
+}
+
+/* End: vacío casi negro, piedra clara y púrpura. Acento púrpura rosado. */
+:root[data-theme="end"] {
+  --bg: #110f17;
+  --card: #1a1723;
+  --surface-raised: #231f2f;
+  --border: #322b44;
+  --border-strong: #493f62;
+  --text: #efebf6;
+  --muted: #a49db9;
+  --muted-rgb: 164, 157, 185;
+  --accent: #e78bd9;
+  --accent-rgb: 231, 139, 217;
+  --accent-hover: #f0aee6;
+  --on-accent: #2b0a26;
+  --console-bg: #0c0a11;
+  --console-text: #d9d3e4;
+
+  --scene-night-top: #07060c;
+  --scene-night-bottom: #171126;
+  --scene-dawn-top: #0d0a18;
+  --scene-dawn-bottom: #34204e;
+  --scene-day-top: #150f24;
+  --scene-day-bottom: #3a2858;
+  --scene-hill: #0f0c18;
+  --scene-hill-far: #1a1428;
+  --scene-grass: #d9d59a;
+  --scene-dirt: #b6b07a;
+  --scene-orb-night: transparent;
+  --scene-orb-day: transparent;
+  --scene-star: 230, 200, 255;
+  --scene-cloud: rgba(200, 160, 255, .08);
+}

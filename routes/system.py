@@ -20,13 +20,15 @@ import shutil
 import time
 from pathlib import Path
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
+from fastapi.responses import HTMLResponse, JSONResponse, Response, StreamingResponse
 
 from config import DEFAULT_SERVERS_PATH, MC_DOMAIN
 from services.utils import get_system_ram_gb, get_modpacks
 from services.modpack import detect_modpack_version, get_pending_mods
 from services import auto_update
 from services.frontend import render_index
+from services.visuals import pack_icon_path, image_type
+from routes.deps import modpack_path
 
 router = APIRouter()
 
@@ -101,9 +103,22 @@ def list_modpacks():
             "pending_mods": get_pending_mods(name),
             "mods_count": _count_enabled_mods(path),
             "last_played": _last_played(path),
+            "has_icon": pack_icon_path(path) is not None,
         })
     return JSONResponse({"modpacks": result})
 
+
+
+@router.get("/api/modpacks/{modpack}/icon")
+def modpack_icon(modpack: str):
+    """Logo del modpack (server-icon.png o el de la tienda). 404 si no tiene:
+    el panel dibuja entonces un bloque con los colores del nombre."""
+    icon = pack_icon_path(modpack_path(modpack))
+    data = icon.read_bytes() if icon else b""
+    kind = image_type(data)
+    if not kind:
+        raise HTTPException(status_code=404, detail="Este modpack no tiene logo")
+    return Response(data, media_type=kind[0], headers={"Cache-Control": "private, max-age=3600"})
 
 def _count_enabled_mods(path: Path) -> int | None:
     mods_dir = path / "mods"

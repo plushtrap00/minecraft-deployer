@@ -196,6 +196,8 @@ document.getElementById('create-server-btn').addEventListener('click', function(
       finish(resultHtml);
       if (data.success) {
         loadModpacks();
+        celebrate(document.getElementById('create-server-btn'));
+        unlockAchievement('first-install');
       }
     } else if (data.type === 'error') {
       source.close();

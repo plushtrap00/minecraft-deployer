@@ -18,25 +18,136 @@ function loadMcDomain() {
 function checkServerStatus() {
   apiFetch('/api/server/status')
     .then(function(response) { return response.json(); })
-    .then(function(data) { applyServerState(data.running, data.modpack); })
+    .then(function(data) { applyServerState(data.running, data.modpack, data.ready); })
     .catch(function() { applyServerState(false, null); });
 }
 
 // -- Cabecera de estado --------------------------------------------------------
-// state: 'stopped' | 'starting' | 'running'. Es lo único que decide colores
-// y botones de la cabecera (vía data-state en el CSS).
+// state: 'stopped' | 'starting' | 'running'. Es lo único que decide colores,
+// cielo de la escena y botones de la cabecera (vía data-state en el CSS).
+// También se copia a <html data-server>, que tiñe el fondo de toda la app.
 function setHeroState(state, statusText, name) {
   var hero = document.getElementById('server-hero');
   hero.dataset.state = state;
+  document.documentElement.dataset.server = state;
   document.getElementById('status-text').textContent = statusText;
   document.getElementById('status-modpack').textContent = name || 'Ningún servidor en marcha';
-  var running = state === 'running';
-  document.getElementById('clean-stop-btn').style.display = running ? '' : 'none';
-  document.getElementById('stop-btn').style.display = running ? '' : 'none';
-  hero.classList.toggle('has-metrics', running);
-  if (state !== 'running') {
+  // Con el proceso en marcha se puede parar aunque aún esté cargando.
+  var stoppable = serverRunning && state !== 'stopped';
+  document.getElementById('clean-stop-btn').style.display = stoppable ? '' : 'none';
+  document.getElementById('stop-btn').style.display = stoppable ? '' : 'none';
+  renderHeroIcon(state === 'stopped' ? null : name);
+  if (state !== 'starting') {
+    document.getElementById('startup-progress').hidden = true;
+  }
+  if (state === 'stopped') {
     document.getElementById('server-hero-meta').innerHTML = '';
   }
+}
+
+function renderHeroIcon(name) {
+  var holder = document.getElementById('server-hero-icon');
+  if (!name) {
+    holder.innerHTML = '';
+    delete holder.dataset.pack;
+    return;
+  }
+  var info = serverPackInfo[name] || { name: name };
+  var key = name + (info.has_icon ? '+icon' : '');
+  if (holder.dataset.pack !== key) {
+    holder.dataset.pack = key;
+    holder.innerHTML = packIconHtml(info);
+  }
+}
+
+// -- Progreso del arranque -------------------------------------------------------
+// Mientras arranca, las líneas de la consola dicen por dónde va: se traducen a
+// una fase legible y a un porcentaje aproximado (nunca retrocede). Cuando sale
+// «Done (…)!» el servidor ya acepta jugadores.
+var startupTracking = false;
+var startupPercent = 0;
+var STARTUP_PHASES = [
+  { re: /ModLauncher running|Launching target|Loading Minecraft .* with Fabric|Loading \d+ mods|Found \d+ mods|Loading mods/i, text: 'Cargando mods…', pct: 12 },
+  { re: /Starting minecraft server version|Starting Minecraft server/i, text: 'Arrancando Minecraft…', pct: 42 },
+  { re: /Loading properties/i, text: 'Leyendo la configuración…', pct: 46 },
+  { re: /Preparing level/i, text: 'Preparando el mundo…', pct: 58 },
+  { re: /Preparing start region/i, text: 'Preparando el spawn…', pct: 62 }
+];
+var SPAWN_PROGRESS_RE = /Preparing spawn area:\s*(\d+)\s*%/i;
+var DONE_LINE_RE = /\]: Done \(\d/;
+
+function setStartupProgress(percent, text) {
+  startupPercent = Math.max(startupPercent, Math.min(100, percent));
+  document.getElementById('startup-progress').hidden = false;
+  document.getElementById('startup-fill').style.width = startupPercent.toFixed(1) + '%';
+  document.getElementById('startup-bar').setAttribute('aria-valuenow', String(Math.round(startupPercent)));
+  if (text) {
+    document.getElementById('startup-phase').textContent = text;
+  }
+}
+
+function beginStartupTracking() {
+  startupTracking = true;
+  startupPercent = 0;
+  setStartupProgress(4, 'Lanzando Java…');
+}
+
+function trackStartupLine(line) {
+  if (!startupTracking) {
+    return;
+  }
+  if (DONE_LINE_RE.test(line)) {
+    markServerReady(true);
+    return;
+  }
+  var spawn = line.match(SPAWN_PROGRESS_RE);
+  if (spawn) {
+    var spawnPct = parseInt(spawn[1], 10);
+    setStartupProgress(62 + spawnPct * .36, 'Preparando el spawn ' + spawnPct + ' %');
+    return;
+  }
+  for (var i = 0; i < STARTUP_PHASES.length; i++) {
+    if (STARTUP_PHASES[i].re.test(line)) {
+      setStartupProgress(STARTUP_PHASES[i].pct, STARTUP_PHASES[i].text);
+      return;
+    }
+  }
+  // Cargar cientos de mods escribe miles de líneas: cada una empuja un
+  // poquito la barra para que se vea que avanza, sin pasar de la fase siguiente.
+  if (startupPercent < 40) {
+    setStartupProgress(startupPercent + .12);
+  } else if (startupPercent >= 58 && startupPercent < 62) {
+    setStartupProgress(startupPercent + .05);
+  }
+}
+
+// El servidor ya acepta jugadores. celebrateIt: se acaba de ver el «Done» en
+// directo (no al recargar la página con el servidor ya encendido).
+function markServerReady(celebrateIt) {
+  var wasTracking = startupTracking;
+  startupTracking = false;
+  if (!serverRunning) {
+    return;
+  }
+  var name = document.getElementById('status-modpack').textContent;
+  var finish = function() {
+    setHeroState('running', 'Listo para jugar', name);
+    renderHeroMeta(name);
+  };
+  if (!celebrateIt || !wasTracking) {
+    finish();
+    return;
+  }
+  setStartupProgress(100, '¡Listo!');
+  setTimeout(function() {
+    finish();
+    celebrate(document.getElementById('server-hero-icon').firstChild || document.getElementById('status-modpack'));
+    unlockAchievement('first-start');
+    var hour = new Date().getHours();
+    if (hour >= 1 && hour < 5) {
+      unlockAchievement('night-shift');
+    }
+  }, 500);
 }
 
 function renderHeroMeta(modpack) {
@@ -83,16 +194,28 @@ function currentUptime() {
   return uptimeBase.seconds + Math.floor((Date.now() - uptimeBase.at) / 1000);
 }
 
-function applyServerState(running, modpack) {
+// ready: el servidor ya escribió «Done» (acepta jugadores). Si no, está
+// cargando y la cabecera sigue en «arrancando» con su barra de progreso.
+function applyServerState(running, modpack, ready) {
   serverRunning = running;
   document.getElementById('server-picker').style.display = running ? 'none' : 'block';
   document.getElementById('console-card').style.display = running ? 'block' : 'none';
   document.getElementById('metrics-card').style.display = running ? '' : 'none';
   if (running) {
-    setHeroState('running', 'En marcha', modpack);
+    var heroState = document.getElementById('server-hero').dataset.state;
+    if (ready) {
+      startupTracking = false;
+      setHeroState('running', 'Listo para jugar', modpack);
+    } else if (!startupTracking || heroState !== 'starting') {
+      setHeroState('starting', 'Arrancando…', modpack);
+      beginStartupTracking();
+    }
     document.getElementById('console-modpack').textContent = modpack || '';
     if (!serverPackInfo[modpack]) {
-      refreshServerPackInfo().then(function() { renderHeroMeta(modpack); });
+      refreshServerPackInfo().then(function() {
+        renderHeroIcon(modpack);
+        renderHeroMeta(modpack);
+      });
     }
     renderHeroMeta(modpack);
     if (!sseSource) {
@@ -100,6 +223,7 @@ function applyServerState(running, modpack) {
     }
     startMetricsPolling();
   } else {
+    startupTracking = false;
     setHeroState('stopped', 'Parado', null);
     if (sseSource) {
       sseSource.close();
@@ -129,10 +253,9 @@ function loadServerPickList() {
   refreshServerPackInfo()
     .then(function(packs) {
       if (!packs.length) {
-        list.innerHTML = '<div class="empty-state">'
-          + '<p>Aún no hay ningún servidor instalado.</p>'
-          + '<button id="pick-empty-install">' + icon('package-plus') + 'Instalar un modpack</button>'
-          + '</div>';
+        list.innerHTML = emptyArt('chest', 'Todavía no hay servidores',
+          'Instala un modpack o crea un servidor vanilla y aparecerá aquí, listo para arrancar.',
+          '<button class="btn-go" id="pick-empty-install">' + icon('package-plus') + 'Instalar un modpack</button>');
         document.getElementById('pick-empty-install').addEventListener('click', function() {
           document.getElementById('tab-deploy').click();
         });
@@ -140,36 +263,44 @@ function loadServerPickList() {
       }
       list.innerHTML = '';
       packs.forEach(function(pack) {
-        var element = document.createElement('div');
-        element.className = 'server-pick-item' + (pack.start_script ? '' : ' no-script');
-        var sub = [loaderTag(pack.modloader)];
-        if (pack.mc_version) {
-          sub.push('<span>Minecraft ' + escHtml(pack.mc_version) + '</span>');
-        }
-        if (pack.start_script) {
-          sub.push('<span>' + escHtml(pack.start_script) + '</span>');
-        } else {
-          sub.push('<span class="server-pick-warn">No tiene script de arranque</span>');
-        }
-        if (pack.pending_mods && pack.pending_mods.length) {
-          sub.push('<span class="server-pick-pending" title="' + escHtml(pack.pending_mods.join(', ')) + '">'
-            + pack.pending_mods.length + (pack.pending_mods.length === 1 ? ' mod pendiente' : ' mods pendientes') + '</span>');
-        }
-        var startDisabled = pack.start_script ? '' : ' disabled';
-        element.innerHTML = '<div>'
-          + '<div class="server-pick-name">' + escHtml(pack.name) + '</div>'
-          + '<div class="server-pick-sub">' + sub.join('') + '</div>'
-          + '</div>'
-          + '<button class="btn-secondary btn-sm"' + startDisabled + '>' + icon('play') + 'Iniciar</button>';
-        if (pack.start_script) {
-          element.querySelector('button').addEventListener('click', function() { startServer(pack.name); });
-        }
-        list.appendChild(element);
+        list.appendChild(serverCard(pack));
       });
     })
     .catch(function() {
       list.innerHTML = '<p class="empty-msg error-msg">No se pudo cargar la lista de servidores. Recarga la página para reintentarlo.</p>';
     });
+}
+
+// Tarjeta de un servidor para arrancar: logo, versión, cuándo se usó y un
+// botón grande de Iniciar. El borde de arriba es del color del modloader.
+function serverCard(pack) {
+  var card = document.createElement('article');
+  card.className = 'server-card' + (pack.start_script ? '' : ' no-script');
+  if (pack.modloader) {
+    card.dataset.loader = pack.modloader.toLowerCase();
+  }
+  var facts = ['<span>' + icon('clock') + (pack.last_played ? 'Arrancado ' + formatRelativeDate(pack.last_played) : 'Sin estrenar') + '</span>'];
+  if (pack.mods_count) {
+    facts.push('<span>' + icon('puzzle') + pack.mods_count + (pack.mods_count === 1 ? ' mod' : ' mods') + '</span>');
+  }
+  if (!pack.start_script) {
+    facts.push('<span class="server-card-warn">' + icon('triangle-alert') + 'No tiene script de arranque</span>');
+  }
+  if (pack.pending_mods && pack.pending_mods.length) {
+    facts.push('<span class="server-card-pending" title="' + escHtml(pack.pending_mods.join(', ')) + '">' + icon('timer')
+      + pack.pending_mods.length + (pack.pending_mods.length === 1 ? ' mod pendiente' : ' mods pendientes') + '</span>');
+  }
+  card.innerHTML = '<div class="server-card-head">' + packIconHtml(pack)
+    + '<div class="server-card-title"><h3 class="server-card-name">' + escHtml(pack.name) + '</h3>'
+    + '<div class="server-card-sub">' + loaderTag(pack.modloader)
+    + (pack.mc_version ? '<span>Minecraft ' + escHtml(pack.mc_version) + '</span>' : '') + '</div></div></div>'
+    + '<div class="server-card-facts">' + facts.join('') + '</div>'
+    + '<button class="btn-go"' + (pack.start_script ? '' : ' disabled') + ' aria-label="Iniciar ' + escHtml(pack.name) + '">'
+    + icon('play') + 'Iniciar</button>';
+  if (pack.start_script) {
+    card.querySelector('button').addEventListener('click', function() { startServer(pack.name); });
+  }
+  return card;
 }
 
 
@@ -412,8 +543,8 @@ document.getElementById('clean-stop-btn').addEventListener('click', function() {
   showConfirm('¿Detener el servidor?', msg, function() {
     sendServerCommand('stop').then(function(ok) {
       if (ok) {
-        document.getElementById('server-hero').dataset.state = 'starting';
-        document.getElementById('status-text').textContent = 'Deteniendo…';
+        startupTracking = false;
+        setHeroState('starting', 'Deteniendo…', document.getElementById('status-modpack').textContent);
       }
     });
   }, { icon: '⏹', confirmLabel: 'Detener' });
@@ -505,12 +636,89 @@ function startSSE() {
 // La hora y el origen se atenúan para que destaque el mensaje; el nivel
 // decide el color de toda la línea.
 var LOG_LINE_RE = /^(\[[0-9:.]+\])(\s*\[[^\]]*\/(INFO|WARN|ERROR|FATAL|DEBUG)\](?:\s*\[[^\]]*\])?:?)?(.*)$/;
+var JOIN_RE = /^\s*([A-Za-z0-9_]{1,16}) (joined|left) the game\s*$/;
+var CHAT_RE = /^(\s*(?:\[Not Secure\] )?)<([A-Za-z0-9_]{1,16})> (.*)$/;
+// Códigos de formato de Minecraft (§a, §l...): cada letra es un color o un
+// estilo; §r lo quita todo. §k (texto revuelto) se ignora.
+var MC_FORMAT_RE = /§([0-9a-fk-or])/gi;
+var MC_STYLES = { l: 'mc-bold', o: 'mc-italic', n: 'mc-underline', m: 'mc-strike' };
+
+function appendMcFormatted(parent, text) {
+  if (text.indexOf('§') === -1) {
+    parent.appendChild(document.createTextNode(text));
+    return;
+  }
+  var color = null;
+  var styles = {};
+  var last = 0;
+  var flush = function(end) {
+    if (end <= last) {
+      return;
+    }
+    var chunk = text.slice(last, end);
+    var classes = Object.keys(styles);
+    if (color !== null) {
+      classes.push('mc-' + color);
+    }
+    if (!classes.length) {
+      parent.appendChild(document.createTextNode(chunk));
+      return;
+    }
+    var span = document.createElement('span');
+    span.className = classes.join(' ');
+    span.textContent = chunk;
+    parent.appendChild(span);
+  };
+  var match;
+  MC_FORMAT_RE.lastIndex = 0;
+  while ((match = MC_FORMAT_RE.exec(text)) !== null) {
+    flush(match.index);
+    last = match.index + match[0].length;
+    var code = match[1].toLowerCase();
+    if (/[0-9a-f]/.test(code)) {
+      // Un color nuevo, como en el juego, también quita los estilos.
+      color = code;
+      styles = {};
+    } else if (code === 'r') {
+      color = null;
+      styles = {};
+    } else if (MC_STYLES[code]) {
+      styles[MC_STYLES[code]] = true;
+    }
+  }
+  flush(text.length);
+}
+
+// El mensaje de una línea: entradas y salidas de jugadores con su cabeza,
+// nombre resaltado en el chat y el resto con sus códigos de color.
+function appendLogMessage(div, message) {
+  var join = message.match(JOIN_RE);
+  if (join) {
+    div.classList.add(join[2] === 'joined' ? 'log-join' : 'log-leave');
+    div.insertAdjacentHTML('beforeend', ' ' + headHtml(join[1], null, 'sm') + ' ');
+    div.appendChild(document.createTextNode(message.trim()));
+    return;
+  }
+  var chat = message.match(CHAT_RE);
+  if (chat) {
+    div.appendChild(document.createTextNode(chat[1]));
+    var who = document.createElement('span');
+    who.className = 'log-chat-name';
+    who.textContent = '<' + chat[2] + '>';
+    div.appendChild(who);
+    div.appendChild(document.createTextNode(' '));
+    appendMcFormatted(div, chat[3]);
+    return;
+  }
+  appendMcFormatted(div, message);
+}
 
 function appendLine(line) {
   // Restos de colores ANSI: con el ESC delante, o ya sin él pero siempre con
   // al menos un número ("[0m", "[32;1m"). Sin exigir el número, "[m" se
   // comía el principio de "[main/INFO]" o "[mixin/]".
   var clean = line.replace(/\x1b\[[0-9;]*m|\[[0-9;]+m/g, '');
+  trackStartupLine(clean);
   var lineLower = clean.toLowerCase();
   var match = clean.match(LOG_LINE_RE);
   var level = match && match[3];
@@ -519,8 +727,10 @@ function appendLine(line) {
     cls = 'log-error';
   } else if (level === 'WARN' || (!level && lineLower.indexOf('warn') !== -1)) {
     cls = 'log-warn';
-  } else if (/done \(|joined the game|left the game/.test(lineLower)) {
+  } else if (DONE_LINE_RE.test(clean)) {
     cls = 'log-done';
+  } else if (clean.indexOf('[Deployer]') !== -1) {
+    cls = 'log-deployer';
   }
   var div = appendConsoleNode(null, cls);
   if (match && match[2]) {
@@ -532,9 +742,9 @@ function appendLine(line) {
     src.textContent = match[2];
     div.appendChild(ts);
     div.appendChild(src);
-    div.appendChild(document.createTextNode(match[4]));
+    appendLogMessage(div, match[4]);
   } else {
-    div.textContent = clean;
+    appendMcFormatted(div, clean);
   }
   scrollConsoleIfFollowing();
 }
@@ -624,7 +834,9 @@ function fetchMetrics() {
 
 function resetMetrics() {
   ['mv-tps', 'mv-mspt', 'mv-players', 'mv-ram'].forEach(function(id) {
-    document.getElementById(id).textContent = '—';
+    var el = document.getElementById(id);
+    el.textContent = '—';
+    delete el.dataset.num;
   });
   ['mvd-tps', 'mvd-mspt', 'metrics-updated'].forEach(function(id) {
     document.getElementById(id).textContent = '';
@@ -663,12 +875,13 @@ function renderMetric(kind, value) {
   var verdictEl = document.getElementById('mvd-' + kind);
   if (value === null || value === undefined) {
     valueEl.textContent = '—';
+    delete valueEl.dataset.num;
     verdictEl.textContent = '';
     card.className = 'metric';
     return;
   }
   var rating = rateMetric(kind, value);
-  valueEl.textContent = value.toFixed(1);
+  animateNumber(valueEl, value, 1);
   verdictEl.textContent = rating[1];
   card.className = 'metric ' + rating[0];
   var history = metricsHistory[kind];
@@ -679,6 +892,7 @@ function renderMetric(kind, value) {
   renderSpark(document.getElementById('spark-' + kind), history, kind === 'tps' ? [0, 20] : null);
 }
 
+// Línea de evolución con el área de debajo rellena (ver .metric-spark).
 function renderSpark(svg, values, range) {
   if (values.length < 2) {
     svg.innerHTML = '';
@@ -694,17 +908,27 @@ function renderSpark(svg, values, range) {
     var y = 22 - ((Math.min(Math.max(v, min), max) - min) / (max - min)) * 20;
     return (i * step).toFixed(1) + ',' + y.toFixed(1);
   }).join(' ');
-  svg.innerHTML = '<polyline points="' + points + '"/>';
+  svg.innerHTML = '<polygon points="0,24 ' + points + ' 100,24"/><polyline points="' + points + '"/>';
 }
 
 function updateMetricsUI(data) {
   var players = data.players_online || [];
   window._lastPlayersOnline = players.length;
-  document.getElementById('mv-players').innerHTML = players.length
-    + ' <small>de ' + (data.players_max || '?') + '</small>';
+  animateNumber(document.getElementById('mv-players'), players.length, 0, ' <small>de ' + (data.players_max || '?') + '</small>');
   document.getElementById('metrics-players-list').innerHTML = players.map(function(playerName) {
-    return '<span class="player-chip">' + escHtml(playerName) + '</span>';
+    return '<span class="player-chip">' + headHtml(playerName, null, 'sm') + escHtml(playerName) + '</span>';
   }).join('');
+  if (players.length >= 5) {
+    unlockAchievement('full-house');
+  }
+  if (players.length && data.tps !== null && data.tps !== undefined && data.tps >= 19.95) {
+    unlockAchievement('smooth');
+  }
+  // TPS solo se puede leer con el servidor ya listo: si se llegó a perder
+  // el «Done» de la consola, esto lo corrige.
+  if (startupTracking && ((data.tps !== null && data.tps !== undefined) || players.length)) {
+    markServerReady(false);
+  }
 
   renderMetric('tps', data.tps);
   renderMetric('mspt', data.mspt);
@@ -713,12 +937,12 @@ function updateMetricsUI(data) {
   var ramBar = document.getElementById('mb-ram');
   if (data.ram_used_mb && data.ram_max_mb) {
     var pct = Math.min(100, (data.ram_used_mb / data.ram_max_mb) * 100);
-    ramEl.innerHTML = (data.ram_used_mb / 1024).toFixed(1)
-      + ' <small>de ' + (data.ram_max_mb / 1024).toFixed(1) + ' GB</small>';
+    animateNumber(ramEl, data.ram_used_mb / 1024, 1, ' <small>de ' + (data.ram_max_mb / 1024).toFixed(1) + ' GB</small>');
     ramBar.style.width = pct.toFixed(0) + '%';
     ramBar.classList.toggle('high', pct >= 90);
   } else {
     ramEl.textContent = '—';
+    delete ramEl.dataset.num;
     ramBar.style.width = '0';
   }
 

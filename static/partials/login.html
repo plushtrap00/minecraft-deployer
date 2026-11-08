@@ -1,5 +1,6 @@
 <!-- ══ LOGIN ════════════════════════════════════════════ -->
-<div id="login-screen">
+<div id="login-screen" data-state="stopped">
+  <!-- include: partials/scene.html -->
   <!-- Es un <form> de verdad para que el gestor de contraseñas del navegador
      lo reconozca y ofrezca guardar o rellenar la contraseña; Enter en
      cualquiera de los dos campos lo envía. No se manda solo: auth.js lo
@@ -8,6 +9,7 @@
     <div class="login-brand">
       <svg class="icon"><use href="#i-pickaxe"/></svg>
       <h1 class="login-title" id="login-title">MC Deployer</h1>
+      <span class="login-splash" id="login-splash" aria-hidden="true"></span>
     </div>
     <p class="login-subtitle">Entra para gestionar tus servidores de Minecraft.</p>
     <form id="login-form" novalidate>

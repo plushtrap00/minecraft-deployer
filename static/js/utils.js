@@ -246,6 +246,9 @@ function showToast(msg, type) {
   requestAnimationFrame(function() {
     toastEl.classList.add('show');
   });
+  if (type === 'error') {
+    playSound('error');
+  }
   setTimeout(function() {
     toastEl.classList.remove('show');
     setTimeout(function() {

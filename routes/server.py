@@ -47,6 +47,7 @@ def server_status():
     return JSONResponse({
         "running": running,
         "modpack": proc_module.mc_running_modpack if running else None,
+        "ready": running and proc_module.mc_ready,
     })
 
 

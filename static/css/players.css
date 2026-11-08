@@ -6,10 +6,13 @@
 }
 
 .player-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   background: var(--surface-raised);
   border: 1px solid var(--border);
   border-radius: var(--radius-tag);
-  padding: 1px 8px;
+  padding: 2px 8px 2px 2px;
   font-size: var(--fs-xs);
   color: var(--text);
 }
@@ -41,8 +44,99 @@
   gap: 5px;
 }
 
+/* Las cuatro listas en dos columnas cuando caben. */
 .players-grid {
-  display: block;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 440px), 1fr));
+  gap: 0 18px;
+}
+
+/* Fichas de jugador: cabeza, nombre y la acción a la derecha. */
+.player-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr));
+  gap: 8px;
+}
+
+#players-online {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 180px), 1fr));
+}
+
+#players-online > .empty-art {
+  grid-column: 1 / -1;
+}
+
+.player-tile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+}
+
+.player-tile-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.player-tile .pe-name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.player-tile .pe-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.player-tile .btn-ghost {
+  flex-shrink: 0;
+}
+
+.player-tile .player-remove-btn:hover,
+.player-tile .player-unban-btn:hover {
+  color: var(--red);
+  background: rgba(var(--red-rgb), .1);
+}
+
+.player-tile.banned .player-head {
+  filter: grayscale(.7);
+  opacity: .8;
+}
+
+.player-tile.online {
+  border-color: rgba(var(--go-rgb), .35);
+}
+
+.online-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 1px;
+  background: var(--go);
+}
+
+.ip-avatar {
+  display: inline-grid;
+  place-items: center;
+  color: var(--muted);
+  background: var(--surface-raised);
+}
+
+.ip-avatar .icon {
+  position: static;
+  width: 20px;
+  height: 20px;
 }
 
 .players-header {

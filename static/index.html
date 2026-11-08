@@ -5,7 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Minecraft Server Deployer</title>
 <link rel="icon" type="image/x-icon" href="/icon/favicon.ico">
+<script>
+  // El tema elegido se aplica antes de pintar nada, para que no se vea un
+  // instante el de por defecto (el resto de Apariencia está en appearance.js).
+  try {
+    var savedTheme = localStorage.getItem('mcd-theme');
+    if (savedTheme && savedTheme !== 'amethyst') {
+      document.documentElement.setAttribute('data-theme', savedTheme);
+    }
+  } catch (e) {}
+</script>
 <link rel="stylesheet" href="/static/css/base.css">
+<link rel="stylesheet" href="/static/css/themes.css">
 <link rel="stylesheet" href="/static/css/nav.css">
 <link rel="stylesheet" href="/static/css/auth.css">
 <link rel="stylesheet" href="/static/css/deploy.css">
@@ -17,6 +28,7 @@
 <link rel="stylesheet" href="/static/css/server.css">
 <link rel="stylesheet" href="/static/css/users.css">
 <link rel="stylesheet" href="/static/css/sysmon.css">
+<link rel="stylesheet" href="/static/css/scene.css">
 <link rel="stylesheet" href="/static/css/responsive.css">
 <link rel="stylesheet" href="/static/css/utilities.css">
 </head>
@@ -35,6 +47,7 @@
 <!-- include: partials/modals/mods.html -->
 <!-- include: partials/overlays.html -->
 <script src="/static/js/utils.js"></script>
+<script src="/static/js/appearance.js"></script>
 <script src="/static/js/auth.js"></script>
 <script src="/static/js/deploy.js"></script>
 <script src="/static/js/manage.js"></script>

@@ -11,6 +11,7 @@ Contiene:
 - notify_app_shutdown(): desbloquea las colas SSE para que la app pueda salir rápido
 """
 import os
+import re
 import subprocess
 import threading
 import time
@@ -52,6 +53,11 @@ mc_rcon_port: int | None = None
 mc_rcon_password: str | None = None
 mc_rcon_conn = None  # services.rcon.RconConnection, creada al arrancar el servidor
 mc_modloader: str | None = None
+
+# True desde que el servidor escribe «Done (12.3s)! For help, type "help"»:
+# antes de eso el proceso existe pero todavía está cargando mods o el mundo.
+mc_ready = False
+_DONE_LINE_RE = re.compile(r'\]: Done \(\d')
 
 
 # ── Espera de apagado limpio ───────────────────────────────────────────────────
@@ -195,8 +201,9 @@ def _reader_thread(proc, temp_script: str | None = None):
     from services.metrics import mc_metrics, _parse_metrics_line
     import datetime
 
-    global mc_running_modpack
+    global mc_running_modpack, mc_ready
 
+    mc_ready = False
     mc_metrics["players_online"] = []
     mc_metrics["tps"] = None
     mc_metrics["mspt"] = None
@@ -213,6 +220,8 @@ def _reader_thread(proc, temp_script: str | None = None):
             line = raw.decode("utf-8", errors="replace").rstrip()
             _broadcast(line)
             _parse_metrics_line(line)
+            if not mc_ready and _DONE_LINE_RE.search(line):
+                mc_ready = True
             if not eula_handled and "you need to agree to the eula" in line.lower():
                 eula_handled = True
                 server_dir = DEFAULT_SERVERS_PATH / mc_running_modpack
@@ -226,6 +235,7 @@ def _reader_thread(proc, temp_script: str | None = None):
             except Exception:
                 pass
         _m.mc_start_time = None
+        mc_ready = False
         mc_metrics["players_online"] = []
         mc_metrics["tps"] = None
         _notify_stopped()

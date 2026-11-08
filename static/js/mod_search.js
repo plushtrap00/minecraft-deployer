@@ -339,7 +339,7 @@ function runModSearch(query, offset) {
 function renderModSearchResults(results) {
   var body = document.getElementById('mod-search-modal-body');
   if (!results.length) {
-    body.innerHTML = '<p class="empty-msg">Sin resultados para esta versión/modloader.</p>';
+    body.innerHTML = emptyArt('spyglass', 'Ningún mod a la vista', 'No hay resultados para esta versión y modloader. Prueba con otras palabras o quita algún filtro.');
     document.getElementById('mod-search-pagination').innerHTML = '';
     return;
   }

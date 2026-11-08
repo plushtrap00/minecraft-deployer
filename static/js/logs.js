@@ -77,7 +77,7 @@ function renderLogFileList(logs, crashes) {
     });
   }
   if (!crashes || !crashes.length) {
-    crashList.innerHTML = '<p class="empty-msg">Sin crash reports.</p>';
+    crashList.innerHTML = emptyArt('sapling', 'Ni un crash', 'Disfrútalo mientras dure.', null, true);
   } else {
     crashList.innerHTML = '';
     crashes.forEach(function(file) {

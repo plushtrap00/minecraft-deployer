@@ -17,7 +17,7 @@ function renderWorlds(data) {
   var list = document.getElementById('worlds-list');
   var worlds = data.worlds;
   if (!worlds || !worlds.length) {
-    list.innerHTML = '<p class="empty-msg">No se detectaron mundos generados aún.</p>'
+    list.innerHTML = emptyArt('map', 'Aún no hay mundo', 'Se genera la primera vez que arranca el servidor.', null, true)
       + '<p class="hint mt-s">Mundo configurado: <code>' + escHtml(data.active || 'world') + '</code>'
       + ' · Tipo: <code>' + escHtml(data.level_type || 'minecraft:normal') + '</code></p>';
     return;

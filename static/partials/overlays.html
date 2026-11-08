@@ -12,6 +12,34 @@
   </div>
 </div>
 
+<!-- Apariencia: tema, sonidos y logros (appearance.js). Se guarda en este navegador. -->
+<div class="modal-overlay" id="appearance-modal" role="dialog" aria-modal="true" aria-labelledby="appearance-title">
+  <div class="modal modal-dialog appearance-dialog">
+    <div class="modal-header">
+      <span class="modal-icon"><svg class="icon"><use href="#i-palette"/></svg></span>
+      <span class="dialog-title" id="appearance-title">Apariencia</span>
+      <button class="modal-close" id="appearance-close" aria-label="Cerrar"><svg class="icon"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="dialog-body">
+      <div class="block-label" id="theme-label">Tema</div>
+      <div class="theme-grid" id="theme-grid" role="radiogroup" aria-labelledby="theme-label"></div>
+      <div class="toggle-row appearance-sound">
+        <div class="toggle-track" id="sound-toggle" role="switch" tabindex="0" aria-checked="false" aria-labelledby="sound-label"><div class="toggle-thumb"></div></div>
+        <span id="sound-label">Sonidos al pulsar botones y al conseguir logros</span>
+      </div>
+      <div class="appearance-achievements-head">
+        <span class="block-label">Logros</span>
+        <span class="achievement-count" id="achievement-count"></span>
+      </div>
+      <ul class="achievement-list" id="achievement-list"></ul>
+      <p class="field-hint">El tema, los sonidos y los logros se guardan en este navegador.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Partículas de las celebraciones (celebrate(), appearance.js) -->
+<div class="fx-layer" id="fx-layer" aria-hidden="true"></div>
+
 <div class="toast-stack" id="toast" role="status" aria-live="polite"></div>
 
 <!-- Bloquea toda la app (por encima de modales, paneles y hasta la propia

@@ -42,6 +42,7 @@ from services.mod_search import (
 from services.modloader import _http_get, _installer_url, LOADER_DISPLAY_NAMES
 from services.server_create import validate_new_server_name, _write_run_script, _bootstrap_common_files, _vanilla_server_jar_url
 from services.utils import configure_jvm_ram, get_modpacks
+from services.visuals import save_pack_icon
 from services.modpack import _dedup_fingerprint, detect_modpack_version, write_pending_mods, _KNOWN_CLIENT_ONLY_FINGERPRINTS
 
 CURSEFORGE_MODPACK_CLASS_ID = 4471
@@ -256,6 +257,20 @@ def get_modrinth_modpack_files(project_id: str, version_id: str) -> tuple[list, 
     return filenames, mc_version
 
 
+def _store_modpack_logo(server_dir: Path, source: str, project_id) -> None:
+    """Guarda el logo del modpack para el panel. Sin red o sin logo no pasa nada."""
+    try:
+        if source == "modrinth":
+            project = _http_get_json(f"https://api.modrinth.com/v2/project/{urllib.parse.quote(str(project_id))}")
+            url = project.get("icon_url")
+        else:
+            mod = _http_get_json(f"https://api.curseforge.com/v1/mods/{int(project_id)}", headers=_curseforge_headers())
+            url = ((mod.get("data") or {}).get("logo") or {}).get("thumbnailUrl")
+    except Exception:
+        return
+    save_pack_icon(server_dir, url)
+
+
 async def install_modrinth_modpack_stream(project_id: str, version_id: str, server_name: str, ram_min: str, ram_max: str):
     server_dir = DEFAULT_SERVERS_PATH / server_name
     server_dir.mkdir(parents=True)
@@ -314,6 +329,7 @@ async def install_modrinth_modpack_stream(project_id: str, version_id: str, serv
         zf.close()
 
         await asyncio.to_thread(_bootstrap_common_files, server_dir, mc_version, loader_key, loader_version)
+        await asyncio.to_thread(_store_modpack_logo, server_dir, "modrinth", project_id)
         yield {"type": "done", "success": True, "name": server_name}
 
     except Exception as e:
@@ -689,6 +705,7 @@ async def install_curseforge_modpack_stream(mod_id, file_id, server_name: str, r
         zf.close()
 
         await asyncio.to_thread(_bootstrap_common_files, server_dir, mc_version, loader_key, loader_version)
+        await asyncio.to_thread(_store_modpack_logo, server_dir, "curseforge", mod_id)
         yield {"type": "done", "success": True, "name": server_name, "skipped": skipped_no_url}
 
     except Exception as e:

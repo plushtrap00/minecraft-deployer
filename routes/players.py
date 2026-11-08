@@ -3,6 +3,7 @@ routes/players.py - Endpoints de gestión global de jugadores.
 
 Rutas:
 - GET    /api/players                  → todos los archivos de jugadores
+- GET    /api/players/head/{name}      → cabeza del jugador (PNG, con caché)
 - POST   /api/players/op               → añadir op
 - DELETE /api/players/op/{name}        → quitar op
 - POST   /api/players/whitelist        → añadir a whitelist
@@ -15,7 +16,7 @@ Rutas:
 """
 import datetime
 from fastapi import APIRouter, Form, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 
 from services.players import (
     ensure_global_dir, read_global_file, write_global_file,
@@ -24,6 +25,8 @@ from services.players import (
     resolve_player, fill_missing_uuids, PlayerLookupError,
     PLAYER_FILES, PROFILE_FILES,
 )
+
+from services.visuals import player_head
 
 router = APIRouter(prefix="/api/players", tags=["players"])
 
@@ -45,6 +48,20 @@ def _save(fname: str, data: list) -> list:
     write_global_file(fname, data)
     synced, _ = sync_to_all_modpacks(fname, data)
     return synced
+
+
+@router.get("/head/{name}")
+def get_player_head(name: str, uuid: str | None = None):
+    """Cara del jugador (32 px) para las listas del panel. Se guarda en
+    .global/heads/; 404 si no se puede conseguir y el panel pone una genérica."""
+    try:
+        name = validate_player_name(name)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    data = player_head(name, uuid)
+    if not data:
+        raise HTTPException(status_code=404, detail="No se pudo conseguir la cabeza del jugador")
+    return Response(data, media_type="image/png", headers={"Cache-Control": "private, max-age=86400"})
 
 
 @router.get("")

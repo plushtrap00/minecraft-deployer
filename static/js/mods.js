@@ -190,7 +190,7 @@ function openDeleteDisabledModal() {
   var body = document.getElementById('mod-delete-disabled-modal-body');
 
   if (!disabled.length) {
-    body.innerHTML = '<p class="empty-msg">No hay mods deshabilitados.</p>';
+    body.innerHTML = emptyArt('chest', 'No hay mods deshabilitados', 'Los mods que deshabilites se guardan aquí para volver a activarlos cuando quieras.');
   } else {
     body.innerHTML = disabled.map(function(mod) {
       return '<label class="mod-list-item cursor-pointer">'

@@ -12,6 +12,9 @@ var filteredKjsKeys = [];
 var modPage = 0;
 var kjsPage = 0;
 var PAGE_SIZE = 25;
+// Último /api/modpacks por nombre: la cabecera del modpack que se gestiona
+// lo usa para el logo y el color del modloader.
+var modpackInfo = {};
 
 document.getElementById('btn-refresh-packs').addEventListener('click', loadModpacks);
 
@@ -36,11 +39,17 @@ function renderModpacks(packs) {
     closeModpackPanel();
     replaceRoute();
   }
+  modpackInfo = {};
+  (packs || []).forEach(function(pack) {
+    modpackInfo[pack.name] = pack;
+  });
+  if (currentModpack && modpackInfo[currentModpack]) {
+    renderMgmtHeader(currentModpack);
+  }
   if (!packs || !packs.length) {
-    list.innerHTML = '<div class="empty-state">'
-      + '<p>Aún no hay modpacks instalados.</p>'
-      + '<button id="packs-empty-install">' + icon('package-plus') + 'Instalar un modpack</button>'
-      + '</div>';
+    list.innerHTML = emptyArt('chest', 'El cofre está vacío',
+      'Todavía no hay modpacks instalados. Sube uno, créalo desde cero o búscalo en Modrinth o CurseForge.',
+      '<button class="btn-go" id="packs-empty-install">' + icon('package-plus') + 'Instalar un modpack</button>');
     document.getElementById('packs-empty-install').addEventListener('click', function() {
       document.getElementById('tab-deploy').click();
     });
@@ -70,7 +79,11 @@ function renderModpacks(packs) {
     row.className = 'pack-row modpack-card' + (pack.name === currentModpack ? ' selected' : '');
     row.setAttribute('role', 'row');
     row.dataset.name = pack.name;
-    row.innerHTML = '<span class="pack-name" role="cell">' + escHtml(pack.name) + flags.join('') + '</span>'
+    if (pack.modloader) {
+      row.dataset.loader = pack.modloader.toLowerCase();
+    }
+    row.innerHTML = '<span class="pack-name" role="cell">' + packIconHtml(pack, 'sm')
+      + '<span class="pack-name-text">' + escHtml(pack.name) + '</span>' + flags.join('') + '</span>'
       + '<span class="pack-version" role="cell">' + loaderTag(pack.modloader)
       + (pack.mc_version ? ' <span>' + escHtml(pack.mc_version) + '</span>' : '') + '</span>'
       + '<span class="pack-num" role="cell" data-label="Mods">' + (pack.mods_count === null || pack.mods_count === undefined ? '—' : pack.mods_count) + '</span>'
@@ -118,10 +131,24 @@ function selectModpack(name, tab) {
     card.classList.toggle('selected', card.dataset.name === name);
   });
   document.getElementById('mgmt-title').textContent = name;
+  renderMgmtHeader(name);
   document.getElementById('mgmt-panel').classList.add('show');
   activateMgmtTab(tab || 'props');
   loadWorlds();
   loadKubejs();
+}
+
+// Cabecera del modpack que se gestiona: logo y una franja del color de su
+// modloader. Si la lista aún no ha llegado, se completa cuando llegue.
+function renderMgmtHeader(name) {
+  var pack = modpackInfo[name] || { name: name };
+  var card = document.getElementById('mgmt-card');
+  if (pack.modloader) {
+    card.dataset.loader = pack.modloader.toLowerCase();
+  } else {
+    delete card.dataset.loader;
+  }
+  document.getElementById('mgmt-icon').innerHTML = packIconHtml(pack);
 }
 
 // -- Borrar modpack completo (triple confirmación) -----------------------------

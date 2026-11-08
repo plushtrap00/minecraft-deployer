@@ -228,7 +228,7 @@ function renderDlResults(results) {
   dlSearchResultsCache = results;
   var body = document.getElementById('dl-search-results');
   if (!results.length) {
-    body.innerHTML = '<p class="empty-msg">Sin resultados.</p>';
+    body.innerHTML = emptyArt('spyglass', 'Ningún modpack a la vista', 'Prueba con otras palabras, otra versión de Minecraft o quita alguna categoría.');
     document.getElementById('dl-search-pagination').innerHTML = '';
     return;
   }
@@ -534,6 +534,8 @@ document.getElementById('dl-install-btn').addEventListener('click', function() {
       finish(resultHtml);
       if (data.success) {
         loadModpacks();
+        celebrate(document.getElementById('dl-install-btn'));
+        unlockAchievement('first-install');
       }
     } else if (data.type === 'error') {
       source.close();

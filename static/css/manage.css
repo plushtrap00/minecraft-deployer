@@ -40,11 +40,16 @@
   background: rgba(var(--muted-rgb), .06);
 }
 
-/* El seleccionado se marca con una barra a la izquierda, no con un borde
-   alrededor que cambia el tamaño de la fila. */
+/* Cada fila lleva a la izquierda una franja del color de su modloader; el
+   seleccionado se marca con el fondo y un borde del acento (sin cambiar el
+   tamaño de la fila). */
+.pack-row[data-loader] {
+  box-shadow: inset 3px 0 0 rgba(var(--loader-rgb), .75);
+}
+
 .modpack-card.selected {
-  background: rgba(var(--accent-rgb), .07);
-  box-shadow: inset 3px 0 0 var(--accent);
+  background: rgba(var(--accent-rgb), .08);
+  box-shadow: inset 3px 0 0 var(--loader, var(--accent)), inset 0 0 0 1px rgba(var(--accent-rgb), .45);
 }
 
 .modpack-card.selected + .pack-row {
@@ -59,6 +64,10 @@
   font-weight: 600;
   min-width: 0;
   overflow-wrap: anywhere;
+}
+
+.pack-name .pack-icon {
+  margin-right: 2px;
 }
 
 .pack-flag {
@@ -183,8 +192,31 @@
 
 .mgmt-heading {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
+  align-items: center;
+  gap: 10px;
+}
+
+.mgmt-icon .pack-icon {
+  width: 34px;
+  height: 34px;
+}
+
+.mgmt-icon:empty {
+  display: none;
+}
+
+/* Franja de arriba del color del modloader del modpack que se gestiona. */
+.mgmt-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.mgmt-card[data-loader]::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: var(--loader);
 }
 
 .mgmt-heading-label {

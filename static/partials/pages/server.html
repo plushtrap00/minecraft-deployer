@@ -1,21 +1,31 @@
 <!-- ══ SERVIDOR ══════════════════════════════════════════ -->
-<!-- La cabecera de estado es el único elemento llamativo de toda la app (la
-     única con la fuente de bloque): es lo primero que se mira al entrar. El
-     atributo data-state (stopped | starting | running) lo pone server.js y
-     decide colores y qué botones se ven. -->
+<!-- La cabecera de estado es la pieza central de la app: una escena
+     pixelada que hace de noche con el servidor parado, amanece mientras
+     arranca y es de día cuando ya se puede jugar. El atributo data-state
+     (stopped | starting | running) lo pone server.js y decide colores, cielo
+     y qué botones se ven. -->
 <div class="page active" id="page-server">
   <section class="server-hero" id="server-hero" data-state="stopped">
-    <div class="server-hero-main">
-      <div class="server-hero-status">
-        <span class="status-dot" id="status-dot"></span>
-        <span id="status-text">Comprobando…</span>
+    <div class="server-hero-top">
+      <!-- include: partials/scene.html -->
+      <div class="server-hero-icon" id="server-hero-icon" aria-hidden="true"></div>
+      <div class="server-hero-main">
+        <div class="server-hero-status">
+          <span class="status-dot" id="status-dot"></span>
+          <span id="status-text">Comprobando…</span>
+        </div>
+        <h1 class="server-hero-name" id="status-modpack">Ningún servidor en marcha</h1>
+        <div class="server-hero-meta" id="server-hero-meta"></div>
+        <!-- Progreso del arranque, leído de la consola (server.js) -->
+        <div class="startup-progress" id="startup-progress" hidden>
+          <div class="xp-bar" role="progressbar" aria-labelledby="startup-phase" aria-valuemin="0" aria-valuemax="100" id="startup-bar"><div class="xp-fill" id="startup-fill"></div></div>
+          <span class="startup-phase" id="startup-phase">Arrancando…</span>
+        </div>
       </div>
-      <h1 class="server-hero-name" id="status-modpack">Ningún servidor en marcha</h1>
-      <div class="server-hero-meta" id="server-hero-meta"></div>
-    </div>
-    <div class="server-hero-actions">
-      <button id="clean-stop-btn" style="display:none"><svg class="icon"><use href="#i-square"/></svg>Detener</button>
-      <button class="btn-ghost btn-sm" id="stop-btn" style="display:none" title="Mata el proceso sin guardar, como Ctrl+C. Úsalo solo si «Detener» no responde.">Forzar parada</button>
+      <div class="server-hero-actions">
+        <button id="clean-stop-btn" style="display:none"><svg class="icon"><use href="#i-square"/></svg>Detener</button>
+        <button class="btn-ghost btn-sm" id="stop-btn" style="display:none" title="Mata el proceso sin guardar, como Ctrl+C. Úsalo solo si «Detener» no responde.">Forzar parada</button>
+      </div>
     </div>
 
     <!-- Métricas: solo con el servidor en marcha -->
@@ -61,7 +71,7 @@
         </div>
       </div>
     </div>
-    <div id="server-pick-list"></div>
+    <div class="server-pick-grid" id="server-pick-list"></div>
   </div>
 
   <div class="console-card" id="console-card" style="display:none">
