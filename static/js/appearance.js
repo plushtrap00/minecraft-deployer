@@ -451,6 +451,9 @@ function unlockAchievement(id) {
   if (!hasAchievement(id)) {
     return;
   }
+  // Si el diálogo de Apariencia está abierto (p. ej. al probar los temas),
+  // la lista se actualiza en el momento.
+  renderAchievementList();
   var stack = document.getElementById('toast');
   var toastEl = document.createElement('div');
   toastEl.className = 'toast achievement';
