@@ -1,8 +1,8 @@
 // -- Iconos de los logros -------------------------------------------------------
 // Uno pixelado de 10x10 por logro (ACHIEVEMENTS en appearance.js), dibujado
 // con pixelSvg: cada letra de las filas es un color de su paleta y el punto
-// es transparente. Bloqueado se ve como silueta gris; los secretos, con un
-// candado hasta conseguirlos.
+// es transparente. Bloqueado se ve como silueta gris, también en los
+// secretos: el nombre sale como «???» pero la silueta sirve de pista.
 
 var ACHIEVEMENT_ICONS = {
   // Cofre
@@ -343,11 +343,10 @@ var ACHIEVEMENT_ICONS = {
   }
 };
 
-// Icono de un logro. Bloqueado: la misma figura en gris (o un candado si es
-// secreto, para no dar pistas).
+// Icono de un logro. Bloqueado: la misma figura en gris.
 function achievementIconHtml(item, unlocked) {
   var art = ACHIEVEMENT_ICONS[item.id];
-  if (!art || (!unlocked && item.secret)) {
+  if (!art) {
     return icon(unlocked ? 'trophy' : 'lock');
   }
   var palette = art.palette;
