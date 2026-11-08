@@ -269,12 +269,34 @@ _LOADER_ARTIFACTS = [
 ]
 
 
+def _forge_maven_version(mc_version: str, forge_version: str) -> str:
+    """
+    El Maven de Forge publica cada build como "<mc>-<forge>" (1.20.1-47.2.0),
+    que es lo que da la lista de versiones del panel. Pero los modpacks traen
+    solo la parte de Forge: Modrinth pone "forge": "47.2.0" en el índice y
+    CurseForge "forge-47.2.0", y con eso la URL del instalador daba 404.
+    Algunas builds antiguas llevan además un sufijo (1.7.10-10.13.4.1614-1.7.10),
+    así que se busca en la lista oficial antes de componerla a mano.
+    """
+    if not mc_version or forge_version.startswith(f"{mc_version}-"):
+        return forge_version
+    candidate = f"{mc_version}-{forge_version}"
+    try:
+        known = _forge_versions_for(mc_version)
+    except Exception:
+        return candidate
+    if candidate in known:
+        return candidate
+    return next((v for v in known if v.startswith(candidate + "-")), candidate)
+
+
 def _installer_url(loader_key: str, mc_version: str, target_version: str) -> tuple:
     """Devuelve (url_instalador, args_de_instalación) para el loader/versión dados."""
     if loader_key == "neoforge":
         url = f"https://maven.neoforged.net/releases/net/neoforged/neoforge/{target_version}/neoforge-{target_version}-installer.jar"
         return url, ["--installServer"]
     if loader_key == "forge":
+        target_version = _forge_maven_version(mc_version, target_version)
         url = f"https://maven.minecraftforge.net/net/minecraftforge/forge/{target_version}/forge-{target_version}-installer.jar"
         return url, ["--installServer"]
     if loader_key == "fabric":
