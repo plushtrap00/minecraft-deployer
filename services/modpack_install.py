@@ -141,6 +141,20 @@ async def _install_loader_or_vanilla(server_dir: Path, loader_key: str | None, m
         await asyncio.to_thread(_write_run_script, server_dir, "server.jar", ram_min, ram_max)
 
 
+async def _reapply_ram(server_dir: Path, ram_min: str, ram_max: str):
+    """
+    La RAM elegida se escribe al instalar el loader, pero los archivos del
+    modpack se copian DESPUÉS (overrides, o el Server Pack entero) y muchos
+    traen su propio user_jvm_args.txt o variables.txt, que pisaba lo que se
+    acababa de configurar. Se vuelve a aplicar al final.
+    """
+    if not ram_min or not ram_max:
+        return
+    source = await asyncio.to_thread(configure_jvm_ram, server_dir, ram_min, ram_max)
+    if source:
+        yield {"type": "log", "message": f"RAM aplicada en {source}: mínimo {ram_min}, máximo {ram_max}."}
+
+
 def _extract_overrides(zf: zipfile.ZipFile, server_dir: Path) -> None:
     """overrides/ primero, server-overrides/ después (pisa lo anterior) — mismo orden que el spec de Modrinth."""
     for overrides_dir in ("overrides", "server-overrides"):
@@ -329,6 +343,8 @@ async def install_modrinth_modpack_stream(project_id: str, version_id: str, serv
         yield {"type": "log", "message": "Aplicando overrides de configuración..."}
         await asyncio.to_thread(_extract_overrides, zf, server_dir)
         zf.close()
+        async for event in _reapply_ram(server_dir, ram_min, ram_max):
+            yield event
 
         await asyncio.to_thread(_bootstrap_common_files, server_dir, mc_version, loader_key, loader_version)
         await asyncio.to_thread(_store_modpack_logo, server_dir, "modrinth", project_id)
@@ -705,6 +721,8 @@ async def install_curseforge_modpack_stream(mod_id, file_id, server_name: str, r
                 dest.write_bytes(zf.read(name))
 
         zf.close()
+        async for event in _reapply_ram(server_dir, ram_min, ram_max):
+            yield event
 
         await asyncio.to_thread(_bootstrap_common_files, server_dir, mc_version, loader_key, loader_version)
         await asyncio.to_thread(_store_modpack_logo, server_dir, "curseforge", mod_id)

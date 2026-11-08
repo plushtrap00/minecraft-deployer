@@ -271,9 +271,15 @@ def extract_archive(archive_path: Path, dest_path: Path) -> dict:
 #    Fabric y Quilt (ver _write_run_script en services/server_create.py)
 #    embeben "-Xms... -Xmx..." directo en la línea "java ...", sin ningún
 #    archivo de configuración aparte.
-# Si no aparece en NINGUNO de los tres, se da por no detectable: mejor avisar
-# que "no se puede editar la RAM de este modpack desde aquí" que insertar
-# flags a ciegas en un script cuya estructura no se conoce.
+# Si no aparece en NINGUNO de los tres pero existe user_jvm_args.txt (los
+# run.sh/startserver.sh de Forge/NeoForge lo cargan con @user_jvm_args.txt),
+# ese archivo es donde va la RAM aunque ahora no tenga ninguna: la plantilla
+# del instalador trae la línea «# -Xmx4G» comentada, y entonces Java usa lo
+# que decide por defecto (una cuarta parte de la RAM del equipo). Se informa
+# como source "user_jvm_args.txt" con unset=True, y al guardar se añaden.
+# Sin ese archivo, se da por no detectable: mejor avisar que "no se puede
+# editar la RAM de este modpack desde aquí" que insertar flags a ciegas en un
+# script cuya estructura no se conoce.
 _XMS_RE = re.compile(r'-Xms\S+', re.IGNORECASE)
 _XMX_RE = re.compile(r'-Xmx\S+', re.IGNORECASE)
 _RAM_SCRIPT_NAMES = ("run.sh", "start.sh", "startserver.sh")
@@ -288,9 +294,10 @@ def _detect_ram_in_text(text: str) -> tuple[str | None, str | None]:
 def detect_jvm_ram(server_dir: Path) -> dict:
     """
     Detecta la RAM configurada actualmente, sin modificar nada. Devuelve
-    {"ram_min", "ram_max", "source"} — source es el nombre del archivo donde
-    se encontró (o None si no se pudo detectar en ninguno de los tres sitios
-    que prueba configure_jvm_ram()).
+    {"ram_min", "ram_max", "source", "unset"} — source es el nombre del
+    archivo donde se encontró (o None si no se pudo detectar en ninguno de los
+    tres sitios que prueba configure_jvm_ram()); unset es True cuando el
+    archivo existe pero aún no tiene RAM (ver el comentario de arriba).
     """
     jvm_path = server_dir / "user_jvm_args.txt"
     if jvm_path.exists():
@@ -300,7 +307,7 @@ def detect_jvm_ram(server_dir: Path) -> dict:
         )
         ram_min, ram_max = _detect_ram_in_text(active_text)
         if ram_min or ram_max:
-            return {"ram_min": ram_min, "ram_max": ram_max, "source": "user_jvm_args.txt"}
+            return {"ram_min": ram_min, "ram_max": ram_max, "source": "user_jvm_args.txt", "unset": False}
 
     vars_path = server_dir / "variables.txt"
     if vars_path.exists():
@@ -308,7 +315,7 @@ def detect_jvm_ram(server_dir: Path) -> dict:
         if m:
             ram_min, ram_max = _detect_ram_in_text(m.group(1))
             if ram_min or ram_max:
-                return {"ram_min": ram_min, "ram_max": ram_max, "source": "variables.txt"}
+                return {"ram_min": ram_min, "ram_max": ram_max, "source": "variables.txt", "unset": False}
 
     for script_name in _RAM_SCRIPT_NAMES:
         script_path = server_dir / script_name
@@ -316,20 +323,25 @@ def detect_jvm_ram(server_dir: Path) -> dict:
             continue
         ram_min, ram_max = _detect_ram_in_text(script_path.read_text(encoding="utf-8", errors="replace"))
         if ram_min or ram_max:
-            return {"ram_min": ram_min, "ram_max": ram_max, "source": script_name}
+            return {"ram_min": ram_min, "ram_max": ram_max, "source": script_name, "unset": False}
 
-    return {"ram_min": None, "ram_max": None, "source": None}
+    if jvm_path.exists():
+        return {"ram_min": None, "ram_max": None, "source": "user_jvm_args.txt", "unset": True}
+    return {"ram_min": None, "ram_max": None, "source": None, "unset": False}
 
 
 def configure_jvm_ram(dest_path: Path, ram_min: str, ram_max: str) -> str | None:
     """
-    Modifica la configuración de RAM JVM (ver detect_jvm_ram para dónde
-    busca). Devuelve el nombre del archivo modificado, o None si no se
-    encontró ninguno de los tres sitios conocidos (no se toca nada en ese caso).
+    Modifica la configuración de RAM JVM. Escribe en el mismo archivo que
+    detect_jvm_ram() muestra en el panel (así nunca se guarda en uno distinto
+    del que se ve). Devuelve el nombre del archivo modificado, o None si no se
+    encontró ninguno de los sitios conocidos (no se toca nada en ese caso).
     """
-    # 1. user_jvm_args.txt
+    source = detect_jvm_ram(dest_path)["source"]
+
+    # 1. user_jvm_args.txt (con RAM, o sin ella todavía: se añade)
     jvm_path = dest_path / "user_jvm_args.txt"
-    if jvm_path.exists():
+    if source == "user_jvm_args.txt":
         lines = jvm_path.read_text(encoding="utf-8").splitlines(keepends=True)
         xms_found = xmx_found = False
         new_lines = []
@@ -349,12 +361,16 @@ def configure_jvm_ram(dest_path: Path, ram_min: str, ram_max: str) -> str | None
             new_lines.insert(0, f"-Xms{ram_min}\n")
         if not xmx_found:
             new_lines.insert(0 if not xms_found else 1, f"-Xmx{ram_max}\n")
+        # La plantilla del instalador acaba sin salto de línea («# -Xmx4G»):
+        # sin esto, una línea añadida al final quedaría pegada al comentario.
+        if new_lines and not new_lines[-1].endswith("\n"):
+            new_lines[-1] += "\n"
         jvm_path.write_text("".join(new_lines), encoding="utf-8")
         return "user_jvm_args.txt"
 
     # 2. variables.txt (JAVA_ARGS="...")
     vars_path = dest_path / "variables.txt"
-    if vars_path.exists():
+    if source == "variables.txt" or (source is None and vars_path.exists()):
         content = vars_path.read_text(encoding="utf-8")
         if re.search(r'JAVA_ARGS\s*=', content, re.IGNORECASE):
             xms_found = bool(_XMS_RE.search(content))

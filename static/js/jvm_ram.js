@@ -30,10 +30,16 @@ function renderRamConfig(data) {
       + 'en su script de arranque). Puede que use un lanzador propio — edítala a mano en la carpeta del servidor.</div>';
     return;
   }
-  var min = parseRamValue(data.ram_min);
-  var max = parseRamValue(data.ram_max);
+  // Sin RAM todavía (plantilla del instalador con todo comentado): se
+  // proponen 4 GB / 8 GB, lo normal para un modpack.
+  var min = parseRamValue(data.unset ? '4G' : data.ram_min);
+  var max = parseRamValue(data.unset ? '8G' : data.ram_max);
+  var where = data.unset
+    ? noticeHtml('warn', '<code>' + escHtml(data.source) + '</code> no tiene la RAM puesta (sus líneas están comentadas), así que '
+      + 'Java usa lo que decide por defecto: una cuarta parte de la RAM del equipo. Elige cuánta darle y guarda.')
+    : '<p class="hint mb-m">Detectado en <code>' + escHtml(data.source) + '</code>.</p>';
   body.innerHTML =
-    '<p class="hint mb-m">Detectado en <code>' + escHtml(data.source) + '</code>.</p>'
+    where
     + '<div class="ram-grid">'
     + '<div><label class="field-label">RAM mínima <span class="text-accent">(-Xms)</span></label>'
     + '<div class="input-row"><input type="number" id="ram-cfg-min-val" value="' + escHtml(min.val) + '" min="1">'
@@ -95,6 +101,8 @@ function saveRamConfig() {
       btn.disabled = false;
       if (result.ok) {
         showToast('RAM guardada en ' + result.data.source + ' — reinicia el servidor para aplicarla', 'success');
+        // Vuelve a leerla: si el archivo no tenía RAM, deja de salir el aviso.
+        loadRamConfig();
       } else {
         showToast(result.data.detail || 'Error al guardar', 'error');
       }
