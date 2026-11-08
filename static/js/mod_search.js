@@ -123,6 +123,110 @@ function formatDownloads(n) {
   return String(n);
 }
 
+// -- Tarjetas de resultado (las usan este modal y la búsqueda de modpacks) ----
+// El icono va en una "casilla de inventario"; con Modrinth, el halo de detrás
+// es el color dominante del propio icono (campo color de su API).
+
+function searchCategoryLabel(name) {
+  var text = String(name || '').replace(/-/g, ' ');
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+// "2026-11-01T10:43:17Z" → "hace 7 días"; vacío si no hay fecha válida.
+function searchUpdatedText(iso) {
+  var ms = iso ? Date.parse(iso) : NaN;
+  return isNaN(ms) ? '' : formatRelativeDate(ms / 1000);
+}
+
+var SEARCH_LOADER_NAMES = { forge: 'Forge', neoforge: 'NeoForge', fabric: 'Fabric', quilt: 'Quilt' };
+
+// opts: { fallbackIcon, linkTitle, installed, selected, kind, hideLoaders }
+function searchResultCardHtml(item, index, opts) {
+  opts = opts || {};
+  var color = /^#[0-9a-f]{6}$/i.test(item.color || '') ? item.color : '';
+  var slot = '<span class="search-slot"' + (color ? ' style="--slot-glow:' + color + '"' : '') + '>'
+    + (item.icon_url
+      ? '<img class="mod-search-icon" data-icon-url="' + escHtml(item.icon_url) + '" alt="" loading="lazy" decoding="async">'
+      : '<span class="mod-search-icon mod-search-icon-empty">' + icon(opts.fallbackIcon || 'puzzle') + '</span>')
+    + (opts.installed ? '<span class="search-slot-check" title="Ya instalado">' + icon('check') + '</span>' : '')
+    + '</span>';
+
+  var badge = opts.installed ? '<span class="mod-search-badge">Instalado</span>' : '';
+  var author = item.author ? '<span class="search-card-author">de ' + escHtml(item.author) + '</span>' : '';
+  var desc = item.description ? '<div class="mod-search-desc">' + escHtml(item.description) + '</div>' : '';
+
+  var updated = searchUpdatedText(item.updated);
+  var stats = '<span class="search-stat search-stat-dl" title="' + escHtml((item.downloads || 0).toLocaleString('es-ES')) + ' descargas">'
+    + icon('download') + '<b>' + formatDownloads(item.downloads) + '</b></span>'
+    + (updated ? '<span class="search-stat" title="Última actualización">' + icon('clock') + updated + '</span>' : '');
+  var loaders = opts.hideLoaders ? '' : (item.loaders || []).filter(function(l) { return SEARCH_LOADER_NAMES[l]; }).map(function(l) {
+    return '<span class="loader-tag" data-loader="' + l + '">' + SEARCH_LOADER_NAMES[l] + '</span>';
+  }).join('');
+  var cats = (item.categories || []).map(function(c) {
+    return '<span class="search-chip">' + escHtml(searchCategoryLabel(c)) + '</span>';
+  }).join('');
+
+  var link = isWebUrl(item.page_url)
+    ? '<a class="mod-search-link" href="' + escHtml(item.page_url) + '" target="_blank" rel="noopener" title="' + escHtml(opts.linkTitle || 'Ver página') + '" aria-label="' + escHtml(opts.linkTitle || 'Ver página') + '" onclick="event.stopPropagation()">' + icon('globe') + '</a>'
+    : '';
+
+  return '<div class="mod-search-result-item search-card' + (opts.selected ? ' selected' : '') + '" data-index="' + index + '" role="button" tabindex="0"'
+    + ' aria-label="' + escHtml((opts.kind || 'Ver') + ' ' + (item.title || '')) + '">'
+    + slot
+    + '<div class="mod-search-info">'
+    + '<div class="mod-search-title-row"><span class="mod-search-title">' + escHtml(item.title) + '</span>' + badge + '</div>'
+    + author
+    + desc
+    + '<div class="search-card-foot">' + stats + loaders + cats + '</div>'
+    + '</div>'
+    + link
+    + '</div>';
+}
+
+// Enter o espacio sobre una tarjeta enfocada = pulsarla.
+function enableSearchCardKeys(container) {
+  container.addEventListener('keydown', function(event) {
+    if ((event.key === 'Enter' || event.key === ' ') && event.target.classList.contains('search-card')) {
+      event.preventDefault();
+      event.target.click();
+    }
+  });
+}
+
+// Contador de categorías marcadas y botón "Quitar" en la cabecera del panel.
+function syncCategoryHeader(prefix, count) {
+  var badge = document.getElementById(prefix + '-category-count');
+  var clear = document.getElementById(prefix + '-category-clear');
+  if (badge) {
+    badge.textContent = count;
+    badge.hidden = !count;
+  }
+  if (clear) {
+    clear.hidden = !count;
+  }
+}
+
+// Desmarca todo el panel sin disparar un "change" por casilla.
+function clearCategoryChecks(panelBody) {
+  Array.prototype.forEach.call(panelBody.querySelectorAll('input[type="checkbox"]:checked'), function(cb) {
+    cb.checked = false;
+  });
+}
+
+// Pie de la lista: cuántos resultados hay, al lado de la paginación.
+function searchSummaryHtml(total, query, noun) {
+  var n = (total || 0).toLocaleString('es-ES');
+  return query
+    ? '<b>' + n + '</b> ' + noun + ' para «' + escHtml(query) + '»'
+    : '<b>' + n + '</b> ' + noun + ', los más descargados primero';
+}
+
+var SEARCH_RELEASE_TYPES = {
+  release: { label: 'Estable', cls: 'release' },
+  beta: { label: 'Beta', cls: 'beta' },
+  alpha: { label: 'Alfa', cls: 'alpha' }
+};
+
 function modSearchSpinnerHtml(text) {
   return '<div class="mod-upload-progress"><div class="mod-upload-spinner"></div><div>' + escHtml(text) + '</div></div>';
 }
@@ -262,6 +366,14 @@ modSearchCategoryPanelBody.addEventListener('change', function(event) {
   runModSearch(document.getElementById('mod-search-input').value.trim(), 0);
 });
 
+document.getElementById('mod-search-category-clear').addEventListener('click', function() {
+  clearCategoryChecks(modSearchCategoryPanelBody);
+  modSearchCategories = [];
+  runModSearch(document.getElementById('mod-search-input').value.trim(), 0);
+});
+
+enableSearchCardKeys(document.getElementById('mod-search-modal-body'));
+
 // -- Input de texto: busca solo/a con Enter, o tras una pausa al escribir -----
 var modSearchInputEl = document.getElementById('mod-search-input');
 
@@ -287,6 +399,8 @@ function runModSearch(query, offset) {
   offset = offset || 0;
   modSearchQuery = query;
   document.getElementById('mod-search-pagination').innerHTML = '';
+  document.getElementById('mod-search-summary').innerHTML = '';
+  syncCategoryHeader('mod-search', modSearchCategories.length);
 
   var cacheKey = modSearchResultsCacheKey(modSearchSource, query, modSearchCategories, offset);
   var cached = modSearchResultsCache.get(cacheKey);
@@ -341,30 +455,21 @@ function renderModSearchResults(results) {
   if (!results.length) {
     body.innerHTML = emptyArt('spyglass', 'Ningún mod a la vista', 'No hay resultados para esta versión y modloader. Prueba con otras palabras o quita algún filtro.');
     document.getElementById('mod-search-pagination').innerHTML = '';
+    document.getElementById('mod-search-summary').innerHTML = '';
     return;
   }
-  body.innerHTML = results.map(function(mod, i) {
-    // Sin src todavía: applyModSearchImage() lo completa abajo, desde caché
-    // (blob ya descargado) o disparando la descarga una sola vez.
-    var iconHtml = mod.icon_url
-      ? '<img class="mod-search-icon" data-icon-url="' + escHtml(mod.icon_url) + '" alt="" loading="lazy" decoding="async">'
-      : '<span class="mod-search-icon mod-search-icon-empty">' + icon('puzzle') + '</span>';
-    var badge = mod.installed ? '<span class="mod-search-badge">Instalado</span>' : '';
-    var desc = mod.description ? '<div class="mod-search-desc">' + escHtml(mod.description) + '</div>' : '';
-    var link = isWebUrl(mod.page_url)
-      ? '<a class="mod-search-link" href="' + escHtml(mod.page_url) + '" target="_blank" rel="noopener" title="Ver página del mod" onclick="event.stopPropagation()">↗</a>'
-      : '';
-    return '<div class="mod-search-result-item" data-index="' + i + '">'
-      + iconHtml
-      + '<div class="mod-search-info">'
-      + '<div class="mod-search-title-row"><span class="mod-search-title">' + escHtml(mod.title) + '</span>' + badge + '</div>'
-      + desc
-      + '<div class="mod-search-meta">' + escHtml(mod.author || '') + ' · ' + formatDownloads(mod.downloads) + ' descargas' + '</div>'
-      + '</div>'
-      + link
-      + '</div>';
-  }).join('');
+  // Sin src todavía en los iconos: applyModSearchImage() lo completa abajo,
+  // desde caché (blob ya descargado) o disparando la descarga una sola vez.
+  body.innerHTML = '<div class="search-card-list">' + results.map(function(mod, i) {
+    return searchResultCardHtml(mod, i, {
+      fallbackIcon: 'puzzle', linkTitle: 'Ver la página del mod', installed: mod.installed, kind: 'Ver versiones de',
+      // Ya vienen filtrados por el modloader del servidor: no aportan nada.
+      hideLoaders: true
+    });
+  }).join('') + '</div>';
+  body.scrollTop = 0;
   body._modSearchResults = results;
+  document.getElementById('mod-search-summary').innerHTML = searchSummaryHtml(modSearchTotal, modSearchQuery, modSearchTotal === 1 ? 'mod' : 'mods');
 
   Array.prototype.forEach.call(body.querySelectorAll('img[data-icon-url]'), function(img) {
     applyModSearchImage(img, img.dataset.iconUrl);
@@ -416,10 +521,22 @@ function renderModSearchFilesPage() {
   var mod = modSearchFilesState.mod;
   var files = modSearchFilesState.items;
   var badge = mod.installed ? ' <span class="mod-search-badge">Instalado</span>' : '';
+  var color = /^#[0-9a-f]{6}$/i.test(mod.color || '') ? mod.color : '';
   var header = '<div class="mod-search-files-header">'
     + '<button type="button" class="btn-secondary btn-sm mod-search-back">' + icon('chevron-left') + 'Volver a resultados</button>'
-    + '<span class="mod-search-title">' + escHtml(mod.title) + badge + '</span>'
+    + '<div class="search-files-mod">'
+    + '<span class="search-slot search-slot-sm"' + (color ? ' style="--slot-glow:' + color + '"' : '') + '>'
+    + (mod.icon_url
+      ? '<img class="mod-search-icon" data-icon-url="' + escHtml(mod.icon_url) + '" alt="">'
+      : '<span class="mod-search-icon mod-search-icon-empty">' + icon('puzzle') + '</span>')
+    + '</span>'
+    + '<div class="min-w-0"><div class="mod-search-title">' + escHtml(mod.title) + badge + '</div>'
+    + (mod.author ? '<div class="search-card-author">de ' + escHtml(mod.author) + '</div>' : '')
+    + '</div></div>'
     + '</div>';
+  document.getElementById('mod-search-summary').innerHTML = files.length
+    ? '<b>' + files.length + '</b> ' + (files.length === 1 ? 'versión compatible' : 'versiones compatibles')
+    : '';
 
   if (!files.length) {
     body.innerHTML = header + '<p class="empty-msg">No hay versiones compatibles con la versión/modloader de este servidor.</p>';
@@ -431,18 +548,31 @@ function renderModSearchFilesPage() {
   var pageItems = files.slice(start, start + MOD_MODAL_PAGE_SIZE);
   var list = pageItems.map(function(f, i) {
     var available = !!f.download_url;
-    var detail = escHtml(f.filename) + (f.game_versions && f.game_versions.length ? ' · MC ' + escHtml(f.game_versions.join(', ')) : '');
-    return '<div class="mod-modal-item">'
-      + '<div class="mod-info"><div class="mod-display">' + escHtml(f.version_number || f.filename) + '</div>'
-      + '<div class="mod-modal-detail">' + detail + '</div></div>'
+    var channel = SEARCH_RELEASE_TYPES[f.release_type];
+    var when = searchUpdatedText(f.file_date);
+    var mcVersions = (f.game_versions || []).filter(function(v) { return /^\d/.test(v); });
+    var tags = (channel ? '<span class="release-tag ' + channel.cls + '">' + channel.label + '</span>' : '')
+      + (start + i === 0 ? '<span class="release-tag newest">Más reciente</span>' : '')
+      + mcVersions.slice(0, 3).map(function(v) { return '<span class="search-chip">MC ' + escHtml(v) + '</span>'; }).join('')
+      + (when ? '<span class="search-stat">' + icon('clock') + when + '</span>' : '');
+    return '<div class="search-file-row">'
+      + '<div class="search-file-info">'
+      + '<div class="search-file-name">' + escHtml(f.version_number || f.filename) + '</div>'
+      + '<div class="search-file-detail" title="' + escHtml(f.filename) + '">' + escHtml(f.filename) + '</div>'
+      + '<div class="search-card-foot">' + tags + '</div>'
+      + '</div>'
       + '<div class="mod-search-file-action">'
       + (available
-        ? '<button type="button" class="btn-sm mod-search-install" data-index="' + (start + i) + '">Instalar</button>'
+        ? '<button type="button" class="btn-sm mod-search-install" data-index="' + (start + i) + '">' + icon('download') + 'Instalar</button>'
         : '<span class="text-muted text-xs">Sin descarga directa</span>')
       + '</div>'
       + '</div>';
   }).join('');
-  body.innerHTML = header + '<div class="mods-table-wrap">' + list + '</div>';
+  body.innerHTML = header + '<div class="search-file-list">' + list + '</div>';
+  body.scrollTop = 0;
+  Array.prototype.forEach.call(body.querySelectorAll('img[data-icon-url]'), function(img) {
+    applyModSearchImage(img, img.dataset.iconUrl);
+  });
 
   var totalPages = Math.max(1, Math.ceil(files.length / MOD_MODAL_PAGE_SIZE));
   renderModModalPagination('mod-search-pagination', modSearchFilesState.page, totalPages, function(p) {

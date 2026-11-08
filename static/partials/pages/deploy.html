@@ -113,12 +113,12 @@
   <div id="deploy-download-section" style="display:none">
     <div class="card step">
       <h2 class="step-title"><span class="step-num" aria-hidden="true">1</span>Buscar modpack</h2>
-      <div class="mgmt-tabs mb-m" id="dl-source-tabs">
-        <button type="button" class="mgmt-tab active" data-source="modrinth">Modrinth</button>
-        <button type="button" class="mgmt-tab" data-source="curseforge">CurseForge</button>
+      <div class="mgmt-tabs source-switch" id="dl-source-tabs" role="tablist" aria-label="Dónde buscar">
+        <button type="button" class="mgmt-tab active" data-source="modrinth"><span class="source-dot" aria-hidden="true"></span>Modrinth</button>
+        <button type="button" class="mgmt-tab" data-source="curseforge"><span class="source-dot" aria-hidden="true"></span>CurseForge</button>
       </div>
       <div class="mod-search-toolbar dl-search-toolbar">
-        <input type="text" id="dl-search-input" placeholder="Nombre del modpack…" class="w-full">
+        <label class="search-field"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg><input type="text" id="dl-search-input" placeholder="Nombre del modpack…" aria-label="Nombre del modpack"></label>
         <select id="dl-loader-filter" title="Filtrar por modloader">
           <option value="">Cualquier modloader</option>
           <option value="forge">Forge</option>
@@ -133,7 +133,8 @@
       <div class="mod-search-columns dl-search-columns">
         <aside class="mod-search-sidebar" id="dl-category-panel">
           <div class="mod-search-sidebar-header" id="dl-category-panel-header">
-            <span>Categorías</span>
+            <span class="search-cat-title">Categorías <span class="search-cat-count" id="dl-category-count" hidden>0</span></span>
+            <button type="button" class="search-cat-clear" id="dl-category-clear" hidden>Quitar</button>
             <button type="button" class="mod-search-category-panel-toggle" id="dl-category-panel-toggle" title="Plegar o desplegar las categorías" aria-label="Plegar o desplegar las categorías" aria-expanded="true"><svg class="icon" aria-hidden="true"><use href="#i-chevron-up"/></svg></button>
           </div>
           <div class="mod-search-category-panel-body" id="dl-category-panel-body"></div>
@@ -143,6 +144,7 @@
             <p class="empty-msg">Escribe el nombre de un modpack o elige una categoría para empezar.</p>
           </div>
           <div class="modal-footer mod-search-results-footer">
+            <div class="search-summary" id="dl-search-summary" aria-live="polite"></div>
             <div class="mod-modal-pagination" id="dl-search-pagination"></div>
           </div>
         </div>

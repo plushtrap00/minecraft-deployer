@@ -141,6 +141,55 @@ button .icon {
   outline-offset: 2px;
 }
 
+/* -- Barras de scroll ------------------------------------------------------
+   Del color del acento del tema, finas y cuadradas como un deslizador de
+   Minecraft: un bloque con luz arriba a la izquierda y sombra abajo a la
+   derecha. Chromium/Safari usan ::-webkit-scrollbar; Firefox solo entiende
+   scrollbar-color, y se le da solo a él porque en Chromium moderno esa
+   propiedad anula los pseudoelementos (y con ellos el bisel). */
+::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(var(--muted-rgb), .05);
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: rgba(var(--accent-rgb), .38);
+  background-clip: padding-box;
+  border: 3px solid transparent;
+  border-radius: 0;
+  min-height: 32px;
+  box-shadow:
+    inset 2px 2px 0 rgba(255, 255, 255, .16),
+    inset -2px -2px 0 rgba(0, 0, 0, .28);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(var(--accent-rgb), .62);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background-color: var(--accent);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+::-webkit-scrollbar-button {
+  display: none;
+}
+
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(var(--accent-rgb), .45) transparent;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

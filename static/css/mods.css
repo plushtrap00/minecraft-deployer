@@ -351,10 +351,6 @@
   min-height: 0;
 }
 
-.mod-search-results-col .modal-scroll {
-  padding-right: 26px;
-}
-
 /* .mod-search-category-row solo aporta el layout horizontal (opción + "+"
    cuando existe); el padding/hover vive en .mod-search-category-option
    porque las subcategorías se renderizan como opciones sueltas, sin row. */
@@ -422,31 +418,10 @@
   display: flex;
 }
 
-.mod-search-result-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--border);
-  cursor: pointer;
-  transition: background .15s;
-}
-
-.mod-search-result-item:last-child {
-  border-bottom: none;
-}
-
-.mod-search-result-item:hover {
-  background: rgba(var(--accent-rgb), .06);
-}
-
+/* Tarjetas de resultado, casilla del icono y vista de versiones: search.css */
 .mod-search-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-control);
   flex-shrink: 0;
   object-fit: cover;
-  background: var(--bg);
 }
 
 .mod-search-info {
@@ -486,24 +461,6 @@
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
-}
-
-.mod-search-meta {
-  font-size: var(--fs-xs);
-  color: var(--muted);
-  margin-top: 4px;
-}
-
-.mod-search-link {
-  flex-shrink: 0;
-  color: var(--accent);
-  text-decoration: none;
-  font-size: var(--fs-xl);
-  padding: 2px 4px;
-}
-
-.mod-search-link:hover {
-  text-decoration: underline;
 }
 
 .mod-search-files-header {

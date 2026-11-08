@@ -38,6 +38,7 @@ from app_constants import (
 from services.mod_search import (
     _http_get_json, download_bytes, _curseforge_headers, _HTTP_TIMEOUT, CURSEFORGE_GAME_ID,
     MODRINTH_LOADERS, CURSEFORGE_LOADER_TYPES, CURSEFORGE_MOD_CLASS_ID,
+    modrinth_result_extras, curseforge_result_extras,
 )
 from services.modloader import _http_get, _installer_url, LOADER_DISPLAY_NAMES
 from services.server_create import validate_new_server_name, _write_run_script, _bootstrap_common_files, _vanilla_server_jar_url
@@ -202,6 +203,7 @@ def search_modrinth_modpacks(
             "icon_url": hit.get("icon_url"), "downloads": hit.get("downloads", 0),
             "author": hit.get("author"),
             "page_url": f"https://modrinth.com/modpack/{hit['slug']}" if hit.get("slug") else None,
+            **modrinth_result_extras(hit),
         }
         for hit in data.get("hits", [])
     ]
@@ -388,6 +390,7 @@ def search_curseforge_modpacks(
             "downloads": mod.get("downloadCount", 0),
             "author": authors[0]["name"] if authors else None,
             "page_url": links.get("websiteUrl"),
+            **curseforge_result_extras(mod),
         })
     total = (data.get("pagination") or {}).get("totalCount", len(results))
     return results, total

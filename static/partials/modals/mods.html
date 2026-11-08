@@ -181,18 +181,19 @@
       <button class="modal-close" id="mod-search-modal-close" aria-label="Cerrar"><svg class="icon"><use href="#i-x"/></svg></button>
     </div>
     <div class="modal-body">
-      <div class="mgmt-tabs mb-m" id="mod-search-tabs">
-        <button type="button" class="mgmt-tab active" data-source="modrinth">Modrinth</button>
-        <button type="button" class="mgmt-tab" data-source="curseforge">CurseForge</button>
+      <div class="mgmt-tabs source-switch" id="mod-search-tabs" role="tablist" aria-label="Dónde buscar">
+        <button type="button" class="mgmt-tab active" data-source="modrinth"><span class="source-dot" aria-hidden="true"></span>Modrinth</button>
+        <button type="button" class="mgmt-tab" data-source="curseforge"><span class="source-dot" aria-hidden="true"></span>CurseForge</button>
       </div>
       <div class="mod-search-toolbar">
-        <input type="text" id="mod-search-input" placeholder="Buscar mod por nombre…" class="w-full">
+        <label class="search-field"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg><input type="text" id="mod-search-input" placeholder="Buscar mod por nombre…" aria-label="Buscar mod por nombre"></label>
       </div>
 
       <div class="mod-search-columns">
         <aside class="mod-search-sidebar" id="mod-search-category-panel">
           <div class="mod-search-sidebar-header" id="mod-search-category-panel-header">
-            <span>Categorías</span>
+            <span class="search-cat-title">Categorías <span class="search-cat-count" id="mod-search-category-count" hidden>0</span></span>
+            <button type="button" class="search-cat-clear" id="mod-search-category-clear" hidden>Quitar</button>
             <button type="button" class="mod-search-category-panel-toggle" id="mod-search-category-panel-toggle" title="Plegar o desplegar las categorías" aria-label="Plegar o desplegar las categorías" aria-expanded="true"><svg class="icon" aria-hidden="true"><use href="#i-chevron-up"/></svg></button>
           </div>
           <div class="mod-search-category-panel-body" id="mod-search-category-panel-body"></div>
@@ -203,6 +204,7 @@
             <div class="skeleton-rows" role="status" aria-label="Cargando"><div></div><div></div><div></div></div>
           </div>
           <div class="modal-footer mod-search-results-footer">
+            <div class="search-summary" id="mod-search-summary" aria-live="polite"></div>
             <div class="mod-modal-pagination" id="mod-search-pagination"></div>
           </div>
         </div>

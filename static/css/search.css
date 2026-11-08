@@ -1,0 +1,562 @@
+/* -- Buscadores de mods y modpacks (Modrinth / CurseForge) ------------------
+   Lo comparten el modal "Buscar mods online" y el paso 1 de "Buscar y
+   descargar". Cada resultado es una tarjeta con el icono en una casilla de
+   inventario: bisel hundido, halo del color del propio icono (Modrinth lo da
+   en su API) y, al pasar el ratón, el icono flota como un objeto tirado en
+   el suelo. El modpack elegido lleva el brillo de encantamiento. */
+
+/* -- Elegir dónde buscar ------------------------------------------------- */
+.mgmt-tabs.source-switch {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  margin-bottom: 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius-control) + 3px);
+  align-self: flex-start;
+  /* En móvil .mgmt-tabs lleva overflow-x (responsive.css) y, dentro de la
+     columna flex del modal, eso le dejaba encogerse hasta cortarse. */
+  flex-shrink: 0;
+}
+
+/* En el modal, .modal-body no tiene padding propio (ver .mod-search-toolbar). */
+.mod-search-dialog .source-switch {
+  margin: 0 20px 12px;
+}
+
+.source-switch .mgmt-tab {
+  --source: var(--muted);
+  border: none;
+  margin: 0;
+  padding: 6px 14px;
+  border-radius: var(--radius-control);
+  transition: background .15s, color .15s, box-shadow .15s;
+}
+
+.source-switch .mgmt-tab[data-source="modrinth"] { --source: #1bd96a; }
+.source-switch .mgmt-tab[data-source="curseforge"] { --source: #f16436; }
+
+.source-switch .mgmt-tab:hover {
+  background: rgba(var(--muted-rgb), .08);
+}
+
+.source-switch .mgmt-tab.active {
+  background: var(--surface-raised);
+  box-shadow: inset 0 -2px 0 var(--source);
+}
+
+/* Cuadradito del color de cada web: un "píxel", no un círculo. */
+.source-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--source);
+  opacity: .45;
+  transition: opacity .15s;
+}
+
+.mgmt-tab.active .source-dot {
+  opacity: 1;
+}
+
+/* -- Campo de búsqueda con lupa ----------------------------------------- */
+.search-field {
+  flex: 1;
+  min-width: 160px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  color: var(--muted);
+  cursor: text;
+  transition: border-color .15s, box-shadow .15s;
+}
+
+.search-field:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(var(--accent-rgb), .18);
+  color: var(--accent);
+}
+
+.search-field input[type="text"],
+.search-field input[type="text"]:focus {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: none;
+  box-shadow: none;
+  outline: none;
+  padding: 10px 0;
+}
+
+/* -- Panel de categorías -------------------------------------------------- */
+.mod-search-sidebar {
+  background: var(--card);
+}
+
+.mod-search-sidebar-header {
+  background: none;
+}
+
+.search-cat-title {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.search-cat-count {
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: var(--radius-tag);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-family: var(--font-display);
+  font-size: var(--fs-xs);
+  line-height: 18px;
+  text-align: center;
+}
+
+.search-cat-count[hidden],
+.search-cat-clear[hidden] {
+  display: none;
+}
+
+.search-cat-clear {
+  background: none;
+  border: none;
+  padding: 2px 4px;
+  color: var(--accent);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.search-cat-clear:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
+.mod-search-category-option {
+  transition: background .12s, color .12s;
+}
+
+.mod-search-category-option:has(input:checked) {
+  background: rgba(var(--accent-rgb), .14);
+  color: var(--text);
+  font-weight: 500;
+}
+
+/* Casilla cuadrada de borde grueso: al marcarla se rellena como un bloque. */
+.mod-search-category-option input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  border: 2px solid var(--border-strong);
+  border-radius: 2px;
+  background: var(--bg);
+  transition: background .12s, border-color .12s;
+}
+
+.mod-search-category-option:hover input[type="checkbox"] {
+  border-color: var(--muted);
+}
+
+.mod-search-category-option input[type="checkbox"]:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 2px var(--bg);
+}
+
+/* -- Columna de resultados ---------------------------------------------- */
+.mod-search-results-col {
+  background: var(--bg);
+}
+
+.mod-search-results-col .modal-scroll {
+  padding: 12px;
+}
+
+.mod-search-results-footer {
+  gap: 8px 16px;
+  flex-wrap: wrap;
+  background: var(--card);
+}
+
+.search-summary {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  min-width: 0;
+}
+
+.search-summary b {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.mod-search-columns.dl-search-columns {
+  height: 540px;
+}
+
+/* -- Tarjeta de resultado ------------------------------------------------ */
+.search-card-list,
+.search-file-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.search-card {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 12px 12px 12px 14px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+
+.search-card:hover {
+  background: var(--surface-raised);
+  border-color: var(--border-strong);
+}
+
+.search-card.selected {
+  border-color: rgba(var(--accent-rgb), .75);
+  background: linear-gradient(100deg, rgba(var(--accent-rgb), .12), transparent 60%), var(--card);
+}
+
+.search-card .mod-search-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.search-card .mod-search-title {
+  font-size: var(--fs-lg);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.search-card-author {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  margin-top: 1px;
+}
+
+.search-card .mod-search-desc {
+  font-size: var(--fs-sm);
+  line-height: 1.45;
+  margin-top: 6px;
+}
+
+.search-card-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  margin-top: 9px;
+}
+
+.search-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.search-stat-dl b {
+  font-family: var(--font-display);
+  font-size: var(--fs-md);
+  font-weight: 500;
+  color: var(--text);
+}
+
+.search-stat-dl .icon {
+  color: var(--accent);
+}
+
+.search-chip {
+  display: inline-block;
+  padding: 1px 7px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-tag);
+  background: rgba(var(--muted-rgb), .06);
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.search-card .mod-search-link {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: var(--radius-control);
+  color: var(--muted);
+  font-size: var(--fs-lg);
+  transition: background .15s, color .15s;
+}
+
+.search-card .mod-search-link:hover {
+  color: var(--accent);
+  background: rgba(var(--accent-rgb), .12);
+  text-decoration: none;
+}
+
+/* -- Casilla de inventario ---------------------------------------------- */
+.search-slot {
+  --slot-glow: var(--accent);
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  background:
+    linear-gradient(color-mix(in srgb, var(--slot-glow) 34%, transparent), color-mix(in srgb, var(--slot-glow) 18%, transparent)),
+    rgba(0, 0, 0, .32);
+  box-shadow:
+    inset 2px 2px 0 rgba(0, 0, 0, .45),
+    inset -2px -2px 0 rgba(255, 255, 255, .09);
+  overflow: hidden;
+}
+
+.search-slot .mod-search-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  object-fit: cover;
+  background: none;
+}
+
+.search-slot .mod-search-icon-empty .icon {
+  width: 24px;
+  height: 24px;
+}
+
+.search-slot-sm {
+  width: 44px;
+  height: 44px;
+}
+
+.search-slot-sm .mod-search-icon {
+  width: 32px;
+  height: 32px;
+}
+
+.search-card:hover .search-slot .mod-search-icon,
+.search-card:focus-visible .search-slot .mod-search-icon {
+  animation: item-bob 1.4s ease-in-out infinite;
+}
+
+@keyframes item-bob {
+  0%, 100% { transform: translateY(1px); }
+  50% { transform: translateY(-3px); }
+}
+
+/* Ya instalado: marca verde en la esquina de la casilla. */
+.search-slot-check {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  background: var(--green);
+  color: var(--bg);
+  box-shadow: 0 0 0 2px var(--bg);
+}
+
+.search-slot-check .icon {
+  width: 12px;
+  height: 12px;
+  stroke-width: 3;
+}
+
+/* Elegido: el brillo de encantamiento recorre la casilla. */
+.search-card.selected .search-slot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg,
+    transparent 30%,
+    rgba(var(--accent-rgb), .55) 45%,
+    rgba(255, 255, 255, .35) 50%,
+    rgba(var(--accent-rgb), .55) 55%,
+    transparent 70%);
+  background-size: 250% 100%;
+  mix-blend-mode: screen;
+  animation: enchant-glint 2.6s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes enchant-glint {
+  from { background-position: 120% 0; }
+  to { background-position: -120% 0; }
+}
+
+/* Recordatorio del paso 2: la misma tarjeta, pero no se pulsa. */
+#dl-selected-pack .search-card {
+  cursor: default;
+}
+
+#dl-selected-pack .search-card:hover {
+  background: linear-gradient(100deg, rgba(var(--accent-rgb), .12), transparent 60%), var(--card);
+  border-color: rgba(var(--accent-rgb), .75);
+}
+
+/* -- Versiones de un mod -------------------------------------------------- */
+.mod-search-files-header {
+  flex-wrap: wrap;
+}
+
+.search-files-mod {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.search-files-mod > div {
+  min-width: 0;
+}
+
+.search-file-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px 10px 14px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  transition: border-color .15s;
+}
+
+.search-file-row:hover {
+  border-color: var(--border-strong);
+}
+
+.search-file-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.search-file-name {
+  font-weight: 600;
+  font-size: var(--fs-md);
+  overflow-wrap: anywhere;
+}
+
+.search-file-detail {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.search-file-row .search-card-foot {
+  margin-top: 6px;
+}
+
+.release-tag {
+  --tag-rgb: var(--muted-rgb);
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: var(--radius-tag);
+  border: 1px solid rgba(var(--tag-rgb), .35);
+  background: rgba(var(--tag-rgb), .12);
+  color: rgb(var(--tag-rgb));
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.release-tag.release { --tag-rgb: var(--green-rgb); }
+.release-tag.beta { --tag-rgb: var(--yellow-rgb); }
+.release-tag.alpha { --tag-rgb: var(--red-rgb); }
+.release-tag.newest { --tag-rgb: var(--accent-rgb); }
+
+.mod-search-install {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search-card:hover .search-slot .mod-search-icon,
+  .search-card:focus-visible .search-slot .mod-search-icon,
+  .search-card.selected .search-slot::after {
+    animation: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .mgmt-tabs.source-switch {
+    display: flex;
+    width: 100%;
+  }
+
+  .source-switch .mgmt-tab {
+    flex: 1;
+    justify-content: center;
+  }
+
+  /* Apilado: el alto lo marca el contenido, y la lista tiene su propio
+     tope para que las categorías no le roben casi todo el espacio. */
+  .mod-search-columns.dl-search-columns {
+    height: auto;
+  }
+
+  .dl-search-columns .modal-scroll {
+    flex: 0 1 auto;
+    min-height: 320px;
+    max-height: 65vh;
+  }
+
+  .search-card {
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .search-slot {
+    width: 48px;
+    height: 48px;
+  }
+
+  .search-slot .mod-search-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .search-card .mod-search-link {
+    width: 26px;
+    height: 26px;
+  }
+
+  .search-file-row {
+    flex-wrap: wrap;
+  }
+
+  .search-file-row .mod-search-file-action {
+    flex: 1 0 100%;
+  }
+}

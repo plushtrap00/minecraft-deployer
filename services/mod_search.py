@@ -88,6 +88,43 @@ def download_bytes(url: str) -> bytes:
 
 # ── Modrinth (api.modrinth.com/v2, sin autenticación) ──────────────────────────
 
+# Loaders que Modrinth mezcla con las categorías normales en sus resultados.
+_RESULT_LOADERS = ("forge", "neoforge", "fabric", "quilt", "babric", "legacy-fabric", "ornithe", "liteloader", "rift", "modloader", "nilloader", "bta-babric", "java-agent")
+
+
+def modrinth_result_extras(hit: dict) -> dict:
+    """
+    Datos extra de un resultado de búsqueda de Modrinth para pintar la
+    tarjeta: categorías (sin los loaders, que van aparte), loaders, fecha
+    de la última actualización y el color dominante del icono que calcula
+    Modrinth (un entero RGB, o None).
+    """
+    cats = hit.get("display_categories") or hit.get("categories") or []
+    color = hit.get("color")
+    return {
+        "categories": [c for c in cats if c not in _RESULT_LOADERS][:3],
+        "loaders": [c for c in (hit.get("categories") or []) if c in _RESULT_LOADERS],
+        "updated": hit.get("date_modified"),
+        "color": f"#{color:06x}" if isinstance(color, int) and 0 <= color <= 0xFFFFFF else None,
+    }
+
+
+def curseforge_result_extras(mod: dict) -> dict:
+    """Lo mismo que modrinth_result_extras() para un resultado de CurseForge."""
+    loader_ids = {v: k for k, v in CURSEFORGE_LOADER_TYPES.items()}
+    loaders = []
+    for idx in mod.get("latestFilesIndexes") or []:
+        name = loader_ids.get(idx.get("modLoader"))
+        if name and name not in loaders:
+            loaders.append(name)
+    return {
+        "categories": [c.get("name") for c in (mod.get("categories") or []) if c.get("name")][:3],
+        "loaders": loaders,
+        "updated": mod.get("dateModified"),
+        "color": None,
+    }
+
+
 def search_modrinth(
     query: str, mc_version: str | None, loader: str | None,
     categories: list[str] | None = None, limit: int = 20, offset: int = 0,
@@ -121,6 +158,7 @@ def search_modrinth(
             "downloads": hit.get("downloads", 0),
             "author": hit.get("author"),
             "page_url": f"https://modrinth.com/mod/{hit['slug']}" if hit.get("slug") else None,
+            **modrinth_result_extras(hit),
         }
         for hit in data.get("hits", [])
     ]
@@ -152,6 +190,8 @@ def get_modrinth_versions(project_id: str, mc_version: str | None, loader: str |
             "filename": primary_file.get("filename"),
             "download_url": primary_file.get("url"),
             "game_versions": v.get("game_versions", []),
+            "file_date": v.get("date_published"),
+            "release_type": v.get("version_type"),
         })
     return versions
 
@@ -232,6 +272,7 @@ def search_curseforge(
             "downloads": mod.get("downloadCount", 0),
             "author": authors[0]["name"] if authors else None,
             "page_url": links.get("websiteUrl"),
+            **curseforge_result_extras(mod),
         })
     total = (data.get("pagination") or {}).get("totalCount", len(results))
     return results, total
@@ -278,11 +319,15 @@ def get_curseforge_files(mod_id, mc_version: str | None, loader: str | None) -> 
             "download_url": f.get("downloadUrl"),
             "game_versions": f.get("gameVersions", []),
             "file_date": f.get("fileDate"),
+            "release_type": _CURSEFORGE_RELEASE_TYPES.get(f.get("releaseType")),
         })
     return files
 
 
 _curseforge_categories_cache = {"ts": 0.0, "data": []}
+
+# releaseType de CurseForge, con los mismos nombres que version_type de Modrinth.
+_CURSEFORGE_RELEASE_TYPES = {1: "release", 2: "beta", 3: "alpha"}
 
 
 def get_curseforge_categories() -> list:

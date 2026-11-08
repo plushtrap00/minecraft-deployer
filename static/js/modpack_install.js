@@ -147,6 +147,14 @@ dlCategoryPanelBody.addEventListener('change', function(event) {
   runDlSearch(document.getElementById('dl-search-input').value.trim(), 0);
 });
 
+document.getElementById('dl-category-clear').addEventListener('click', function() {
+  clearCategoryChecks(dlCategoryPanelBody);
+  dlCategories = [];
+  runDlSearch(document.getElementById('dl-search-input').value.trim(), 0);
+});
+
+enableSearchCardKeys(document.getElementById('dl-search-results'));
+
 // -- Input de búsqueda: busca solo/a con Enter, o tras una pausa al escribir ---
 var dlSearchInputEl = document.getElementById('dl-search-input');
 
@@ -171,6 +179,8 @@ function runDlSearch(query, offset) {
   offset = offset || 0;
   dlQuery = query;
   document.getElementById('dl-search-pagination').innerHTML = '';
+  document.getElementById('dl-search-summary').innerHTML = '';
+  syncCategoryHeader('dl', dlCategories.length);
 
   var cacheKey = dlResultsCacheKey(dlSource, query, dlCategories, offset, dlLoaderFilter, dlMcVersionFilter);
   var cached = dlResultsCache.get(cacheKey);
@@ -230,26 +240,17 @@ function renderDlResults(results) {
   if (!results.length) {
     body.innerHTML = emptyArt('spyglass', 'Ningún modpack a la vista', 'Prueba con otras palabras, otra versión de Minecraft o quita alguna categoría.');
     document.getElementById('dl-search-pagination').innerHTML = '';
+    document.getElementById('dl-search-summary').innerHTML = '';
     return;
   }
-  body.innerHTML = results.map(function(item, i) {
-    var iconHtml = item.icon_url
-      ? '<img class="mod-search-icon" data-icon-url="' + escHtml(item.icon_url) + '" alt="" loading="lazy" decoding="async">'
-      : '<span class="mod-search-icon mod-search-icon-empty">' + icon('package') + '</span>';
-    var desc = item.description ? '<div class="mod-search-desc">' + escHtml(item.description) + '</div>' : '';
-    var link = isWebUrl(item.page_url)
-      ? '<a class="mod-search-link" href="' + escHtml(item.page_url) + '" target="_blank" rel="noopener" title="Ver página del modpack" onclick="event.stopPropagation()">↗</a>'
-      : '';
-    return '<div class="mod-search-result-item cursor-pointer" data-index="' + i + '">'
-      + iconHtml
-      + '<div class="mod-search-info">'
-      + '<div class="mod-search-title-row"><span class="mod-search-title">' + escHtml(item.title) + '</span></div>'
-      + desc
-      + '<div class="mod-search-meta">' + escHtml(item.author || '') + ' · ' + formatDownloads(item.downloads) + ' descargas' + '</div>'
-      + '</div>'
-      + link
-      + '</div>';
-  }).join('');
+  body.innerHTML = '<div class="search-card-list">' + results.map(function(item, i) {
+    var selected = dlSelectedPack && dlSelectedPack.source === item.source && String(dlSelectedPack.id) === String(item.id);
+    return searchResultCardHtml(item, i, {
+      fallbackIcon: 'package', linkTitle: 'Ver la página del modpack', selected: selected, kind: 'Elegir'
+    });
+  }).join('') + '</div>';
+  body.scrollTop = 0;
+  document.getElementById('dl-search-summary').innerHTML = searchSummaryHtml(dlTotal, dlQuery, dlTotal === 1 ? 'modpack' : 'modpacks');
 
   Array.prototype.forEach.call(body.querySelectorAll('img[data-icon-url]'), function(img) {
     applyModSearchImage(img, img.dataset.iconUrl);
@@ -257,6 +258,8 @@ function renderDlResults(results) {
 
   Array.prototype.forEach.call(body.querySelectorAll('.mod-search-result-item'), function(el) {
     el.addEventListener('click', function() {
+      Array.prototype.forEach.call(body.querySelectorAll('.search-card.selected'), function(c) { c.classList.remove('selected'); });
+      this.classList.add('selected');
       selectModpackToInstall(dlSearchResultsCache[parseInt(this.dataset.index, 10)]);
     });
   });
@@ -275,10 +278,15 @@ function renderDlResults(results) {
 // rompiendo el acceso a "Gestión de modpacks" por completo.
 function selectModpackToInstall(pack) {
   dlSelectedPack = pack;
-  document.getElementById('dl-selected-pack').innerHTML =
-    '<div class="mod-list-item"><span class="mod-icon">' + icon('package') + '</span>'
-    + '<div class="mod-info"><div class="mod-display">' + escHtml(pack.title) + '</div>'
-    + '<div class="mod-file">' + escHtml(pack.author || '') + '</div></div></div>';
+  // La misma tarjeta del resultado, "encantada", como recordatorio de qué se
+  // va a instalar. Sin role=button: aquí no se pulsa.
+  var chosen = document.getElementById('dl-selected-pack');
+  chosen.innerHTML = searchResultCardHtml(pack, 0, { fallbackIcon: 'package', linkTitle: 'Ver la página del modpack', selected: true })
+    .replace(' role="button" tabindex="0"', '');
+  chosen.firstChild.removeAttribute('aria-label');
+  Array.prototype.forEach.call(chosen.querySelectorAll('img[data-icon-url]'), function(img) {
+    applyModSearchImage(img, img.dataset.iconUrl);
+  });
 
   document.getElementById('dl-version-card').style.display = '';
   document.getElementById('dl-ram-card').style.display = '';

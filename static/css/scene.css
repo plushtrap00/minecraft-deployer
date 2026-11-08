@@ -443,15 +443,13 @@ body {
   transform: translateY(0);
 }
 
-/* Filas de modpacks y resultados de búsqueda: se pueden pulsar enteros.
-   Solo se elevan (su box-shadow ya dibuja la franja del modloader). */
-.modpack-card,
-.mod-search-result-item.cursor-pointer {
+/* Filas de modpacks: se pueden pulsar enteras. Solo se elevan (su
+   box-shadow ya dibuja la franja del modloader). */
+.modpack-card {
   transition: transform .15s ease, background .15s, border-color .15s;
 }
 
-.modpack-card:hover,
-.mod-search-result-item.cursor-pointer:hover {
+.modpack-card:hover {
   transform: translateY(-2px);
 }
 
@@ -724,8 +722,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .modpack-card:hover,
-  .mod-search-result-item.cursor-pointer:hover {
+  .modpack-card:hover {
     transform: none;
   }
 }
