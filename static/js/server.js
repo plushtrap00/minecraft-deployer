@@ -147,6 +147,9 @@ function markServerReady(celebrateIt) {
     if (hour >= 1 && hour < 5) {
       unlockAchievement('night-shift');
     }
+    if (hour >= 6 && hour < 8) {
+      unlockAchievement('early-bird');
+    }
   }, 500);
 }
 
@@ -593,7 +596,11 @@ function sendCommand() {
     }
   }
   cmdHistoryPos = cmdHistory.length;
-  sendServerCommand(cmd);
+  sendServerCommand(cmd).then(function(ok) {
+    if (ok && /^\/?say\s+\S/i.test(cmd)) {
+      unlockAchievement('herald');
+    }
+  });
 }
 
 function sendServerCommand(cmd) {
@@ -920,6 +927,12 @@ function updateMetricsUI(data) {
   }).join('');
   if (players.length >= 5) {
     unlockAchievement('full-house');
+  }
+  if (players.length && Number(data.players_max) > 0 && players.length >= Number(data.players_max)) {
+    unlockAchievement('sold-out');
+  }
+  if (data.uptime_seconds >= 86400) {
+    unlockAchievement('marathon');
   }
   if (players.length && data.tps !== null && data.tps !== undefined && data.tps >= 19.95) {
     unlockAchievement('smooth');

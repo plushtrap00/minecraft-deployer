@@ -220,7 +220,10 @@ document.getElementById('btn-ban-player').addEventListener('click', function() {
   var form = new FormData();
   form.append('name', name);
   form.append('reason', reason);
-  apiCall('POST', '/api/players/ban', form, 'Baneado: ' + name).then(function() {
+  apiCall('POST', '/api/players/ban', form, 'Baneado: ' + name).then(function(ok) {
+    if (ok) {
+      unlockAchievement('iron-fist');
+    }
     document.getElementById('ban-name-input').value = '';
     document.getElementById('ban-reason-input').value = '';
   });
@@ -235,7 +238,11 @@ function unbanPlayer(name) {
 }
 
 function doUnbanPlayer(name) {
-  apiCall('DELETE', '/api/players/ban/' + encodeURIComponent(name), null, 'Desbaneado: ' + name);
+  apiCall('DELETE', '/api/players/ban/' + encodeURIComponent(name), null, 'Desbaneado: ' + name).then(function(ok) {
+    if (ok) {
+      unlockAchievement('mercy');
+    }
+  });
 }
 
 // Ban IP
@@ -249,7 +256,10 @@ document.getElementById('btn-ban-ip').addEventListener('click', function() {
   var form = new FormData();
   form.append('ip', ip);
   form.append('reason', reason);
-  apiCall('POST', '/api/players/ban-ip', form, 'IP baneada: ' + ip).then(function() {
+  apiCall('POST', '/api/players/ban-ip', form, 'IP baneada: ' + ip).then(function(ok) {
+    if (ok) {
+      unlockAchievement('iron-fist');
+    }
     document.getElementById('ban-ip-input').value = '';
     document.getElementById('ban-ip-reason-input').value = '';
   });
@@ -264,7 +274,11 @@ function unbanIp(ip) {
 }
 
 function doUnbanIp(ip) {
-  apiCall('DELETE', '/api/players/ban-ip/' + encodeURIComponent(ip), null, 'IP desbaneada: ' + ip);
+  apiCall('DELETE', '/api/players/ban-ip/' + encodeURIComponent(ip), null, 'IP desbaneada: ' + ip).then(function(ok) {
+    if (ok) {
+      unlockAchievement('mercy');
+    }
+  });
 }
 
 // Sync all

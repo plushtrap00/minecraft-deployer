@@ -238,6 +238,9 @@ document.getElementById('mod-delete-disabled-confirm').addEventListener('click',
         showToast(data.deleted.length + ' borrado(s), ' + data.errors.length + ' con error', 'error');
       } else {
         showToast(data.deleted.length + ' mod(s) borrado(s)', 'success');
+        if (data.deleted.length) {
+          unlockAchievement('tidy');
+        }
       }
       loadModsList();
     })

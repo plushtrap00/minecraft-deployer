@@ -175,6 +175,7 @@ function clientOnlyDeleteMod(filename) {
         .then(function(data) {
           if (data.success) {
             showToast('Mod borrado', 'success');
+            unlockAchievement('tidy');
             removeModLocally(filename);
           } else {
             showToast(data.detail || 'Error al borrar', 'error');

@@ -34,7 +34,7 @@ function renderWorlds(data) {
       ? '<button class="btn-danger wc-delete btn-xs" data-world="' + escHtml(world.name) + '">' + icon('trash-2') + 'Borrar</button>'
       : '';
     var downloadUrl = '/api/modpacks/' + encodeURIComponent(currentModpack) + '/worlds/' + encodeURIComponent(world.name) + '/download';
-    var downloadBtn = '<a href="' + downloadUrl + '" download="' + escHtml(world.name) + '.zip" class="btn-secondary btn-xs no-underline">' + icon('download') + 'Descargar</a>';
+    var downloadBtn = '<a href="' + downloadUrl + '" download="' + escHtml(world.name) + '.zip" class="btn-secondary btn-xs no-underline wc-download">' + icon('download') + 'Descargar</a>';
     var worldIcon = icon('map');
     var activeClass = world.active ? ' active-world' : '';
     html += '<div class="world-card' + activeClass + '">'
@@ -61,6 +61,10 @@ document.addEventListener('click', function(event) {
   var deleteBtn = event.target.closest('.wc-delete');
   if (deleteBtn) {
     deleteWorld(deleteBtn.dataset.world);
+    return;
+  }
+  if (event.target.closest('.wc-download')) {
+    unlockAchievement('backup');
   }
 });
 
@@ -222,6 +226,7 @@ var typeDescs = {
       .then(function(result) {
         if (result.ok && result.data.success) {
           showToast(result.data.message, 'success');
+          unlockAchievement('new-world');
           document.getElementById('new-world-form').style.display = 'none';
           document.getElementById('nw-name').value = '';
           document.getElementById('nw-seed').value = '';
@@ -315,6 +320,7 @@ var uwActivate = true;
           progress.textContent = '';
           progress.style.display = 'none';
           showToast('Mundo subido (' + result.data.size_mb + ' MB)', 'success');
+          unlockAchievement('new-world');
           document.getElementById('upload-world-form').style.display = 'none';
           fileInput.value = '';
           document.getElementById('uw-name').value = '';

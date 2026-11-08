@@ -506,6 +506,7 @@ function installSearchedMod(mod, file, buttonEl) {
       var body = document.getElementById('mod-search-modal-body');
       if (result.ok && result.data.success) {
         showToast('Mod instalado: ' + result.data.filename, 'success');
+        unlockAchievement('handyman');
         // Se vuelve a pintar la lista de versiones (con «Volver a resultados»)
         // en vez de sustituirla por el aviso: si no, el modal se quedaba sin
         // forma de volver salvo tocando los filtros.

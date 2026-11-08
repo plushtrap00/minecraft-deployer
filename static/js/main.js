@@ -106,6 +106,10 @@ function showPage(name) {
   // En móvil, si la sección está dentro del menú "Más", se marca "Más".
   navMoreBtn.classList.toggle('active', !!document.querySelector('#nav-aside #tab-' + name));
   currentPage = name;
+  var sections = Array.prototype.filter.call(document.querySelectorAll('.nav-tab[id^="tab-"]'), function(tab) {
+    return tab.style.display !== 'none';
+  }).map(function(tab) { return tab.id.slice(4); });
+  collectForAchievement('explorer', name, sections);
   if (name === 'manage') {
     loadModpacks();
   }

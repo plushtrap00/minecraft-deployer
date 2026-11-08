@@ -66,6 +66,7 @@ document.getElementById('theme-grid').addEventListener('click', function(event) 
   }
   writePref('theme', option.dataset.themeId);
   applyTheme(option.dataset.themeId);
+  collectForAchievement('tourist', option.dataset.themeId, THEMES.map(function(theme) { return theme.id; }));
 });
 
 // Flechas para moverse entre temas, como en cualquier grupo de opciones.
@@ -418,7 +419,22 @@ var ACHIEVEMENTS = [
   { id: 'first-op', name: 'Con poderes de operador', hint: 'Haz op a un jugador.' },
   { id: 'full-house', name: 'Casa llena', hint: 'Ten 5 jugadores conectados a la vez.' },
   { id: 'smooth', name: '20 TPS clavados', hint: 'Que el servidor vaya a 20 TPS con alguien jugando.' },
-  { id: 'night-shift', name: 'Turno de noche', hint: 'Arranca un servidor entre la 1 y las 5 de la madrugada.' }
+  { id: 'night-shift', name: 'Turno de noche', hint: 'Arranca un servidor entre la 1 y las 5 de la madrugada.' },
+  { id: 'early-bird', name: 'Madrugador', hint: 'Arranca un servidor entre las 6 y las 8 de la mañana.' },
+  { id: 'collector', name: 'Coleccionista', hint: 'Ten 5 modpacks instalados.' },
+  { id: 'handyman', name: 'Manitas', hint: 'Instala un mod desde el buscador.' },
+  { id: 'tidy', name: 'Limpieza a fondo', hint: 'Borra mods que sobran: de solo cliente o desactivados.' },
+  { id: 'new-world', name: 'Nuevo horizonte', hint: 'Crea o sube un mundo.' },
+  { id: 'backup', name: 'A buen recaudo', hint: 'Descarga una copia de un mundo.' },
+  { id: 'herald', name: 'Pregonero', hint: 'Habla a los jugadores con el comando say.' },
+  { id: 'sold-out', name: 'No cabe ni un alfiler', hint: 'Llena todas las plazas del servidor.' },
+  { id: 'marathon', name: 'Maratón', hint: 'Ten un servidor encendido 24 horas seguidas.' },
+  { id: 'tourist', name: 'Turista interdimensional', hint: 'Prueba todos los temas.' },
+  { id: 'explorer', name: 'Explorador', hint: 'Visita todas las secciones del panel.' },
+  { id: 'iron-fist', name: 'Mano dura', hint: 'Banea a alguien.', secret: true },
+  { id: 'mercy', name: 'Segundas oportunidades', hint: 'Levanta un baneo.', secret: true },
+  { id: 'konami', name: 'Vidas infinitas', hint: 'Arriba, arriba, abajo, abajo…', secret: true },
+  { id: 'platinum', name: 'Platino', hint: 'Consigue todos los demás logros.' }
 ];
 
 function hasAchievement(id) {
@@ -448,17 +464,62 @@ function unlockAchievement(id) {
     toastEl.classList.remove('show');
     setTimeout(function() { toastEl.remove(); }, 300);
   }, 5000);
+  var rest = ACHIEVEMENTS.filter(function(item) { return item.id !== 'platinum'; });
+  if (id !== 'platinum' && rest.every(function(item) { return hasAchievement(item.id); })) {
+    setTimeout(function() { unlockAchievement('platinum'); }, 1200);
+  }
 }
+
+// Logros de «haz todas las X»: se apunta cada una vista y se desbloquea al
+// completar la lista.
+function collectForAchievement(id, value, required) {
+  var seen = [];
+  try {
+    seen = JSON.parse(readPref('ach-seen-' + id, '[]'));
+  } catch (err) {
+    seen = [];
+  }
+  if (!Array.isArray(seen)) {
+    seen = [];
+  }
+  if (seen.indexOf(value) < 0) {
+    seen.push(value);
+    writePref('ach-seen-' + id, JSON.stringify(seen));
+  }
+  if (required.length && required.every(function(item) { return seen.indexOf(item) >= 0; })) {
+    unlockAchievement(id);
+  }
+}
+
+// Código Konami en cualquier parte del panel (salvo escribiendo en un campo).
+var KONAMI = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
+var konamiPos = 0;
+document.addEventListener('keydown', function(event) {
+  if (event.target.closest && event.target.closest('input, textarea, select, [contenteditable="true"]')) {
+    return;
+  }
+  var key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+  konamiPos = key === KONAMI[konamiPos] ? konamiPos + 1 : (key === KONAMI[0] ? 1 : 0);
+  if (konamiPos === KONAMI.length) {
+    konamiPos = 0;
+    unlockAchievement('konami');
+  }
+});
 
 function renderAchievementList() {
   var got = ACHIEVEMENTS.filter(function(item) { return hasAchievement(item.id); }).length;
   document.getElementById('achievement-count').textContent = got + ' de ' + ACHIEVEMENTS.length;
   document.getElementById('achievement-list').innerHTML = ACHIEVEMENTS.map(function(item) {
     var unlocked = hasAchievement(item.id);
-    return '<li class="achievement-row' + (unlocked ? ' unlocked' : '') + '">'
+    var hidden = item.secret && !unlocked;
+    var when = Number(readPref('ach-' + item.id, ''));
+    var hint = !unlocked ? (hidden ? 'Logro secreto' : item.hint)
+      : (when ? 'Conseguido el ' + new Date(when).toLocaleDateString('es-ES') : 'Conseguido');
+    return '<li class="achievement-row' + (unlocked ? ' unlocked' : '') + (hidden ? ' secret' : '') + '"'
+      + (unlocked ? ' title="' + escHtml(item.hint) + '"' : '') + '>'
       + '<span class="achievement-icon">' + icon(unlocked ? 'trophy' : 'lock') + '</span>'
-      + '<span><span class="achievement-name">' + escHtml(item.name) + '</span>'
-      + '<span class="achievement-hint">' + escHtml(unlocked ? 'Conseguido' : item.hint) + '</span></span></li>';
+      + '<span><span class="achievement-name">' + escHtml(hidden ? '???' : item.name) + '</span>'
+      + '<span class="achievement-hint">' + escHtml(hint) + '</span></span></li>';
   }).join('');
 }
 

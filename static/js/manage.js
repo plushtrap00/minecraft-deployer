@@ -39,6 +39,9 @@ function renderModpacks(packs) {
     closeModpackPanel();
     replaceRoute();
   }
+  if ((packs || []).length >= 5) {
+    unlockAchievement('collector');
+  }
   modpackInfo = {};
   (packs || []).forEach(function(pack) {
     modpackInfo[pack.name] = pack;
