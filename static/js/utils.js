@@ -174,6 +174,40 @@ function enableCodeEditorTab(textarea) {
 }
 
 
+// Versión de la app (version.py), también en un <meta> de la página.
+function appVersion() {
+  var meta = document.querySelector('meta[name="app-version"]');
+  return meta ? meta.content : '';
+}
+
+
+// -- Límite de subida -----------------------------------------------------------
+// El servidor lo deja en <meta name="max-upload-mb"> (routes/system.py). Se
+// comprueba aquí antes de subir para no esperar a mandar varios GB y que el
+// servidor los rechace al final; el servidor lo vuelve a comprobar igualmente.
+function uploadLimitMb() {
+  var meta = document.querySelector('meta[name="max-upload-mb"]');
+  return meta ? parseInt(meta.content, 10) || 0 : 0;
+}
+
+// Devuelve true si se puede subir; si no, avisa y devuelve false.
+function checkUploadSize(files) {
+  var limitMb = uploadLimitMb();
+  if (!limitMb) {
+    return true;
+  }
+  var list = files.length !== undefined ? Array.prototype.slice.call(files) : [files];
+  var tooBig = list.filter(function(f) { return f.size > limitMb * 1024 * 1024; });
+  if (!tooBig.length) {
+    return true;
+  }
+  var limitText = limitMb >= 1024 ? (limitMb / 1024) + ' GB' : limitMb + ' MB';
+  showAlert('«' + tooBig[0].name + '» ocupa ' + formatBytes(tooBig[0].size) + ' y el límite de subida es de '
+    + limitText + '. Un administrador puede cambiarlo en Configuración → Constantes → Subidas.', '⚠️');
+  return false;
+}
+
+
 // -- Dialog (alert / confirm) -------------------------------------------------
 function showAlert(msg, icon) {
   var overlay = document.getElementById('dialog-overlay');

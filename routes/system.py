@@ -19,7 +19,7 @@ import re
 import shutil
 import time
 from pathlib import Path
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, Response, StreamingResponse
 
 from config import DEFAULT_SERVERS_PATH, MC_DOMAIN
@@ -30,6 +30,9 @@ from services import auto_update
 from services.frontend import render_index
 from services.visuals import pack_icon_path, image_type
 from routes.deps import modpack_path
+from version import APP_VERSION
+from routes.auth import require_admin
+from app_constants import MAX_UPLOAD_MB
 
 router = APIRouter()
 
@@ -60,6 +63,13 @@ def _versioned_asset(match: re.Match) -> str:
 @router.get("/", response_class=HTMLResponse)
 def index():
     html = _STATIC_ASSET_RE.sub(_versioned_asset, render_index())
+    # Datos que el JavaScript necesita desde el primer momento (antes incluso
+    # de iniciar sesión), sin una petición aparte.
+    meta = (
+        f'<meta name="app-version" content="{APP_VERSION}">\n'
+        f'<meta name="max-upload-mb" content="{int(MAX_UPLOAD_MB)}">\n'
+    )
+    html = html.replace("</head>", meta + "</head>", 1)
     return HTMLResponse(
         content=html,
         headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
@@ -199,7 +209,10 @@ async def auto_update_check():
 
 
 @router.post("/api/auto-update/apply")
-async def auto_update_apply():
+async def auto_update_apply(request: Request):
+    # git pull + reinicio de la app: acción de administración, como reiniciar
+    # desde Configuración. Comprobar si hay versión nueva sí puede cualquiera.
+    require_admin(request)
     import asyncio
     try:
         await asyncio.to_thread(auto_update.apply_update)

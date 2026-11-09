@@ -14,6 +14,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from services.server_create import get_vanilla_mc_versions, validate_new_server_name, create_server_stream
 from services.modloader import get_available_versions, LOADER_DISPLAY_NAMES
 from services.busy import BusyGuard
+from services.utils import check_ram_values
 from services.notify import notify_install_result
 
 router = APIRouter(prefix="/api/create-server", tags=["create-server"])
@@ -54,6 +55,7 @@ def create_server_sse(
         # routes/modloader.py para su instalación por SSE).
         try:
             validate_new_server_name(name)
+            check_ram_values(ram_min, ram_max)
             if loader not in _LOADER_KEYS:
                 raise ValueError("Loader inválido")
             if loader != "vanilla" and not loader_version:

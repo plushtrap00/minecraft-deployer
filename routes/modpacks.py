@@ -10,7 +10,6 @@ Rutas:
 - DELETE    /api/modpacks/{modpack}
 - POST      /api/upload-and-extract
 """
-import re
 import shutil
 import asyncio
 import tempfile
@@ -20,7 +19,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from config import DEFAULT_SERVERS_PATH, TEMP_DIR
-from services.utils import extract_archive, configure_jvm_ram, detect_jvm_ram
+from services.utils import extract_archive, configure_jvm_ram, detect_jvm_ram, RAM_VALUE_RE as _RAM_VALUE_RE
 from services.modpack import detect_modpack_version, save_server_property
 from services.players import write_player_files
 from services.busy import BusyGuard, is_busy, busy_reasons
@@ -28,6 +27,8 @@ from services.server_create import validate_new_server_name
 from services import process as proc_module
 
 from routes.deps import valid_modpack, modpack_path
+from services.uploads import save_upload
+from services.secure_files import atomic_write_text
 
 
 router = APIRouter(prefix="/api/modpacks", tags=["modpacks"], dependencies=[Depends(valid_modpack)])
@@ -48,7 +49,7 @@ def save_server_properties(modpack: str, content: str = Form(...)):
     props_file = DEFAULT_SERVERS_PATH / modpack / "server.properties"
     if not props_file.exists():
         raise HTTPException(status_code=404, detail="server.properties no encontrado")
-    props_file.write_text(content, encoding="utf-8")
+    atomic_write_text(props_file, content)
     return JSONResponse({"success": True})
 
 
@@ -66,8 +67,6 @@ def set_server_property(modpack: str, key: str = Form(...), value: str = Form(..
 # La misma comprobación en tres pasos que ya usaba la importación de modpacks
 # (configure_jvm_ram/detect_jvm_ram en services/utils.py), reutilizada aquí
 # para poder cambiar la RAM DESPUÉS de creado el servidor, no solo al crearlo.
-
-_RAM_VALUE_RE = re.compile(r'^\d+[MG]$', re.IGNORECASE)
 
 
 @router.get("/{modpack}/ram")
@@ -135,23 +134,20 @@ async def upload_and_extract(
     busy_guard = BusyGuard(f"importando modpack '{folder_name}'")
     busy_guard.__enter__()
     try:
-        def _write_temp():
-            with open(temp_file, "wb") as buffer:
-                shutil.copyfileobj(file.file, buffer)
-
-        await asyncio.to_thread(_write_temp)
+        await asyncio.to_thread(save_upload, file, temp_file)
         file_size_mb = temp_file.stat().st_size / (1024 * 1024)
         result = await asyncio.to_thread(extract_archive, temp_file, dest)
         extracted = True
 
         jvm_configured = None
         if configure_ram == "1" and ram_min and ram_max:
-            jvm_path = configure_jvm_ram(dest, ram_min, ram_max)
+            jvm_path = await asyncio.to_thread(configure_jvm_ram, dest, ram_min, ram_max)
             if jvm_path:
                 jvm_configured = f"-Xms{ram_min} / -Xmx{ram_max}"
 
-        # Sincronizar archivos globales de jugadores al nuevo modpack
-        synced_player_files = write_player_files(folder_name)
+        # Sincronizar archivos globales de jugadores al nuevo modpack (puede
+        # consultar la API de Mojang para resolver UUID: fuera del event loop).
+        synced_player_files = await asyncio.to_thread(write_player_files, folder_name)
 
         return JSONResponse({
             "success": True,
@@ -170,10 +166,15 @@ async def upload_and_extract(
     finally:
         # Si la extracción falló a medias, la carpeta nueva queda incompleta:
         # se borra (solo puede ser nuestra, se comprobó arriba que no existía).
-        if not extracted and dest.exists():
-            shutil.rmtree(dest, ignore_errors=True)
-        shutil.rmtree(tmp_dir, ignore_errors=True)
-        busy_guard.__exit__(None, None, None)
+        # Puede ser una carpeta de varios GB: fuera del event loop.
+        def _cleanup():
+            if not extracted and dest.exists():
+                shutil.rmtree(dest, ignore_errors=True)
+            shutil.rmtree(tmp_dir, ignore_errors=True)
+        try:
+            await asyncio.to_thread(_cleanup)
+        finally:
+            busy_guard.__exit__(None, None, None)
 
 
 # ── Borrar modpack completo ────────────────────────────────────────────────────

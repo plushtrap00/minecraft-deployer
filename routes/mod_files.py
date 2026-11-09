@@ -20,7 +20,8 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from config import DEFAULT_SERVERS_PATH
 from services.utils import get_mod_configs, get_kubejs_files, invalidate_kubejs_cache
 
-from routes.deps import valid_modpack, modpack_path
+from routes.deps import valid_modpack, modpack_path, attachment_headers
+from services.secure_files import atomic_write_text
 
 
 router = APIRouter(prefix="/api/modpacks", tags=["mod-files"], dependencies=[Depends(valid_modpack)])
@@ -56,7 +57,7 @@ def save_config_file(modpack: str, path: str = Form(...), content: str = Form(..
         raise HTTPException(status_code=403, detail="Ruta no permitida")
     if not full_path.exists():
         raise HTTPException(status_code=404, detail="Archivo no encontrado")
-    full_path.write_text(content, encoding="utf-8")
+    atomic_write_text(full_path, content)
     return JSONResponse({"success": True})
 
 
@@ -123,7 +124,7 @@ def save_kubejs_file(modpack: str, path: str = Form(...), content: str = Form(..
         raise HTTPException(status_code=403, detail="Ruta no permitida")
     if not full_path.exists():
         raise HTTPException(status_code=404, detail="Archivo no encontrado")
-    full_path.write_text(content, encoding="utf-8")
+    atomic_write_text(full_path, content)
     return JSONResponse({"success": True})
 
 
@@ -211,5 +212,5 @@ async def download_kubejs(modpack: str):
     return StreamingResponse(
         iter_and_cleanup(),
         media_type="application/zip",
-        headers={"Content-Disposition": f'attachment; filename="{modpack}-kubejs.zip"'},
+        headers=attachment_headers(f"{modpack}-kubejs.zip"),
     )

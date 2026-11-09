@@ -41,8 +41,10 @@ from services.mod_checks import process_mod_jar, find_possible_duplicate_mods, c
 from services.pending_mods import get_pending_mods, resolve_pending_mods, check_pending_mods_stream
 from services.mod_dependencies import find_missing_dependencies, install_missing_dependencies
 from services.busy import BusyGuard
+from services.uploads import read_upload, copy_limited, max_upload_bytes
+from app_constants import MAX_EXTRACTED_MB
 
-from routes.deps import valid_modpack, modpack_path
+from routes.deps import valid_modpack, modpack_path, attachment_headers
 
 
 router = APIRouter(prefix="/api/modpacks", tags=["mods"], dependencies=[Depends(valid_modpack)])
@@ -153,7 +155,7 @@ async def download_mods(modpack: str, include_disabled: int = 0):
     return StreamingResponse(
         iter_and_cleanup(),
         media_type="application/zip",
-        headers={"Content-Disposition": f'attachment; filename="{modpack}-mods.zip"'},
+        headers=attachment_headers(f"{modpack}-mods.zip"),
     )
 
 
@@ -226,7 +228,7 @@ async def upload_mod(modpack: str, file: UploadFile = File(...)):
         raise HTTPException(status_code=404, detail="Carpeta mods/ no encontrada en este modpack")
 
     with BusyGuard(f"subiendo mod a '{modpack}'"):
-        jar_bytes = await file.read()
+        jar_bytes = await read_upload(file)
         server_info = await asyncio.to_thread(detect_modpack_version, modpack)
         server_mc = server_info.get("mc_version")
         filename = Path(file.filename).name
@@ -314,13 +316,17 @@ async def prepare_mods_bulk(modpack: str, files: List[UploadFile] = File(...)):
     # Todo se copia a disco a trozos (copyfileobj) en vez de leerlo entero en
     # memoria: un .zip con un modpack completo podía ocupar cientos de MB de
     # RAM, más otra copia por cada .jar extraído.
+    # Cada .jar respeta MAX_UPLOAD_MB y el total, MAX_EXTRACTED_MB: un .zip
+    # con miles de .jar falsos (o muy comprimidos) no puede llenar el disco.
     def _store_uploads() -> list:
         manifest = []
+        remaining = [MAX_EXTRACTED_MB * 1024 * 1024]
 
         def add(name: str, source) -> None:
             stored_name = f"{len(manifest):04d}_{name}"
+            limit = min(max_upload_bytes(), remaining[0])
             with open(job_dir / stored_name, "wb") as out:
-                shutil.copyfileobj(source, out)
+                remaining[0] -= copy_limited(source, out, limit, what=f"«{name}» (o el total de mods subidos)")
             manifest.append({"stored_name": stored_name, "filename": name})
 
         if len(files) == 1 and (files[0].filename or "").lower().endswith(".zip"):

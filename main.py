@@ -42,6 +42,10 @@ from services.lifecycle import shutdown_event
 from services.process import notify_app_shutdown
 from services import auto_update, scheduler
 from services.startup_cleanup import run_startup_cleanup
+from services.secure_files import harden_secret_files
+from services.uploads import max_upload_bytes
+from app_constants import MAX_UPLOAD_MB
+from version import APP_VERSION
 
 # ── Middleware de autenticación ────────────────────────────────────────────────
 
@@ -50,9 +54,14 @@ PUBLIC_PATHS = {"/", "/api/auth/login", "/api/auth/logout", "/api/auth/verify"}
 # Cabeceras que el navegador aplica a todo: el panel no se puede meter en un
 # <iframe> de otra web (clickjacking), no adivina tipos de archivo y no manda
 # la URL del panel a las webs de mods que se abren desde él.
+#
+# script-src 'self': solo se ejecuta JavaScript servido desde /static. Si algún
+# día se cuela HTML ajeno sin escapar (nombre de un mod, línea de chat...),
+# un <script> o un onerror= metido ahí no llega a ejecutarse. Por eso no hay
+# scripts ni manejadores on*= en línea en el HTML (ver static/js/theme_boot.js).
 SECURITY_HEADERS = {
     "X-Frame-Options": "DENY",
-    "Content-Security-Policy": "frame-ancestors 'none'",
+    "Content-Security-Policy": "frame-ancestors 'none'; script-src 'self'; object-src 'none'; base-uri 'self'",
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "same-origin",
 }
@@ -61,6 +70,10 @@ SECURITY_HEADERS = {
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         response = await self._authorize(request, call_next)
+        if request.url.path in ("/docs", "/redoc"):
+            # La documentación interactiva de FastAPI usa scripts en línea y de
+            # un CDN: con la política estricta se quedaría en blanco.
+            response.headers.setdefault("Content-Security-Policy", "frame-ancestors 'none'")
         for name, value in SECURITY_HEADERS.items():
             response.headers.setdefault(name, value)
         # index.html pide el CSS/JS con ?v=<arranque> (routes/system.py), que
@@ -89,11 +102,27 @@ class AuthMiddleware(BaseHTTPMiddleware):
         request.state.user = user_info["sub"]
         request.state.role = user_info["role"]
 
+        # Starlette guarda el cuerpo de una subida en un temporal ANTES de que
+        # llegue al endpoint: si el navegador ya avisa de que se pasa del
+        # límite, se corta aquí sin escribir nada (el margen cubre los
+        # separadores del formulario multipart).
+        content_length = request.headers.get("content-length", "")
+        if content_length.isdigit() and int(content_length) > max_upload_bytes() + 1024 * 1024:
+            return JSONResponse(
+                {"detail": f"El archivo supera el límite de subida de {MAX_UPLOAD_MB} MB "
+                           "(se puede cambiar en Configuración → Constantes → Subidas)"},
+                status_code=413,
+            )
+
         return await call_next(request)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Instalaciones anteriores a la 2.0 crearon .env/users.json con 644.
+    tightened = harden_secret_files()
+    if tightened:
+        print(f"🔒 Permisos ajustados a 600 (solo el dueño puede leerlos): {', '.join(tightened)}")
     auto_update.start()
     scheduler.start()
     yield
@@ -107,7 +136,7 @@ async def lifespan(app: FastAPI):
     notify_app_shutdown()
 
 
-app = FastAPI(title="Minecraft Server Deployer", lifespan=lifespan)
+app = FastAPI(title="Minecraft Server Deployer", version=APP_VERSION, lifespan=lifespan)
 app.add_middleware(GZipMiddleware, minimum_size=500)
 app.add_middleware(AuthMiddleware)
 # Las fuentes de static/fonts/: sin esto algunos sistemas las sirven como

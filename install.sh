@@ -384,10 +384,13 @@ AUTO_UPDATE_INTERVAL_SECONDS=${AUTO_UPDATE_INTERVAL_SECONDS}
 TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
 TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
 EOF
+    # Lleva JWT_SECRET y el hash de la contraseña: solo lo lee el dueño.
+    chmod 600 .env
     ok ".env generado"
 
     if [[ ! -f "users.json" ]]; then
         echo "[]" > users.json
+        chmod 600 users.json
         ok "users.json creado"
     fi
 

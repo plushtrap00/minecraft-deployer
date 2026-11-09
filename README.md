@@ -4,6 +4,8 @@ Panel web (FastAPI + JavaScript sin frameworks) para crear y gestionar servidore
 
 Y como gestionar un servidor de Minecraft no tiene por qué ser aburrido: cuatro temas con su propio fondo pixelado, una escena que pasa de noche a día cuando el servidor arranca, cabezas de los jugadores, celebraciones y más de treinta logros por desbloquear (algunos secretos).
 
+**Versión actual: 2.0.0** (se ve en **Sistema → Actualizaciones de la app**). Novedades de la 2.0 en [Versiones](#versiones).
+
 ## Requisitos
 
 - Linux (nativo, o Docker sobre cualquier sistema operativo).
@@ -121,6 +123,8 @@ No hace falta vaciar la caché del navegador: cada archivo del panel lleva su pr
 - **CurseForge**: si no añadiste la clave de API durante la instalación, puedes añadirla luego desde **Configuración** dentro de la propia app (solo administrador), sin tocar nada por consola.
 - **Tutorial dentro de la app**: pestaña **Ayuda**, con una explicación de cada sección del panel.
 - **Sesión**: el inicio de sesión se guarda en una cookie del navegador (HttpOnly). Al cambiar la contraseña de una cuenta o borrarla, sus sesiones abiertas dejan de valer.
+- **Contraseñas**: cada usuario cambia la suya con el botón del candado de la barra superior. El administrador puede poner una nueva a cualquier otro usuario desde **Usuarios** (por si la olvida).
+- **Límites de subida**: por defecto, 8 GB por archivo y 32 GB descomprimido. Se cambian en **Configuración → Constantes → Subidas**.
 - **Apariencia**: botón **Apariencia** de la barra superior. Ahí se elige el tema (Amatista, Superficie, Nether o End), se activan los sonidos (apagados por defecto) y se ve la lista de logros. Todo esto se guarda en cada navegador, no en el servidor: si entras desde otro equipo, empiezas de cero.
 
 ## Copias, automatización y avisos
@@ -140,6 +144,26 @@ Cada instalación usa **su propio bot**, así que los avisos solo le llegan a qu
 3. Pega el token en **Configuración → Avisos** y pulsa **Detectar**: el panel encuentra tu chat solo. Guarda y usa **Enviar prueba**.
 
 El instalador (`install.sh` / `setup.py`) también lo pregunta, y se puede dejar en blanco. Para Discord basta la URL de un webhook del canal (ajustes del canal → Integraciones → Webhooks). Todo se guarda en el `.env` (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `DISCORD_WEBHOOK_URL`, `NOTIFY_EVENTS`), pero se aplica al momento, sin reiniciar el panel.
+
+## Versiones
+
+### 2.0.0 (noviembre de 2026)
+
+Revisión de seguridad y retoques:
+
+- **RAM validada en todos los caminos**: al crear un servidor o instalar un modpack, la RAM se escribía sin comprobar en `run.sh`, y con un valor manipulado se podían colar comandos. Ahora solo se acepta un número con `M` o `G`.
+- **`.env` y `users.json` privados**: el panel los deja con permisos `600` al arrancar (y el instalador al crearlos). Llevan el secreto de las sesiones y los hashes de las contraseñas.
+- **Límites de subida** configurables, que también frenan los «zip bomb»: se mira cuánto ocupará un archivo descomprimido antes de extraerlo, y si cabe en el disco.
+- **Login más difícil de forzar**: bloqueo también por IP (con cualquier usuario) y la misma espera tanto si el usuario existe como si no, para que no se pueda averiguar qué usuarios hay.
+- **Cambiar la contraseña** propia desde el panel, y restablecer la de otros usuarios (admin). Cambiar la del admin desde Configuración ya no espera al reinicio.
+- **Actualizar ahora** solo para administradores.
+- **Content-Security-Policy** estricta: el navegador solo ejecuta los scripts del propio panel.
+- **Escrituras atómicas** de `server.properties`, configs, scripts de KubeJS, archivos de mundo y `users.json`: si algo falla a mitad, el archivo anterior sigue intacto.
+- Nombres de descarga con comillas o tildes bien codificados; limpieza de importaciones fallidas fuera del bucle principal; barra superior que ya no se corta en pantallas medianas.
+
+### 1.x
+
+Todo lo anterior, sin numerar.
 
 ## Desarrollo y pruebas
 

@@ -77,6 +77,7 @@ var CFG_CONSTANT_CATEGORY_ORDER = [
   ['Servidor de Minecraft'],
   ['Auto-actualización'],
   ['Mods y modpacks'],
+  ['Subidas'],
   ['Sesión y login'],
   ['Otros'],
 ];

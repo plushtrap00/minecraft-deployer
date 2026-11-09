@@ -28,7 +28,9 @@ from services.modpack import (
 )
 from services.busy import BusyGuard
 
-from routes.deps import valid_modpack, modpack_path, world_path
+from routes.deps import valid_modpack, modpack_path, attachment_headers, world_path
+from services.secure_files import atomic_write_text
+from services.uploads import save_upload
 
 
 router = APIRouter(prefix="/api/modpacks", tags=["worlds"], dependencies=[Depends(valid_modpack)])
@@ -122,11 +124,7 @@ async def upload_world(
             archive_name = Path(file.filename).name if file.filename else "world.zip"
             temp_archive = tmp_dir / archive_name
 
-            def _write_temp():
-                with open(temp_archive, "wb") as buffer:
-                    shutil.copyfileobj(file.file, buffer)
-
-            await asyncio.to_thread(_write_temp)
+            await asyncio.to_thread(save_upload, file, temp_archive)
 
             extract_dir = tmp_dir / "extracted"
             result = await asyncio.to_thread(extract_archive, temp_archive, extract_dir)
@@ -185,7 +183,9 @@ async def upload_world(
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
         finally:
-            shutil.rmtree(tmp_dir, ignore_errors=True)
+            # Si el archivo no era un mundo, aquí queda todo lo extraído:
+            # borrarlo puede tardar, fuera del event loop.
+            await asyncio.to_thread(shutil.rmtree, tmp_dir, ignore_errors=True)
 
 
 @router.get("/{modpack}/worlds/{world_name}/download")
@@ -218,7 +218,7 @@ async def download_world(modpack: str, world_name: str):
     return StreamingResponse(
         iter_and_cleanup(),
         media_type="application/zip",
-        headers={"Content-Disposition": f'attachment; filename="{world_name}.zip"'},
+        headers=attachment_headers(f"{world_name}.zip"),
     )
 
 
@@ -260,7 +260,7 @@ def save_world_file(modpack: str, world_name: str = Form(...), path: str = Form(
         raise HTTPException(status_code=403, detail="Ruta no permitida")
     if not full_path.exists():
         raise HTTPException(status_code=404, detail="Archivo no encontrado")
-    full_path.write_text(content, encoding="utf-8")
+    atomic_write_text(full_path, content)
     return JSONResponse({"success": True})
 
 

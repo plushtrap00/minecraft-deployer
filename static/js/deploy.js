@@ -58,6 +58,11 @@ function ramFieldsError(prefix) {
   if (minGb <= 0 || maxGb <= 0) {
     return 'Indica la RAM mínima y la máxima';
   }
+  var rawMin = document.getElementById(prefix + 'ram-min-val').value;
+  var rawMax = document.getElementById(prefix + 'ram-max-val').value;
+  if (!/^\d+$/.test(rawMin) || !/^\d+$/.test(rawMax)) {
+    return 'La RAM va en números enteros (para 1,5 GB pon 1536 MB)';
+  }
   if (minGb > maxGb) {
     return 'La RAM mínima no puede ser mayor que la máxima';
   }
@@ -128,6 +133,10 @@ dropZone.addEventListener('drop', function(event) {
 });
 
 function setFile(file) {
+  if (!checkUploadSize(file)) {
+    fileInput.value = '';
+    return;
+  }
   selectedFile = file;
   document.getElementById('fb-name').textContent = file.name;
   document.getElementById('fb-size').textContent = fmtSize(file.size);

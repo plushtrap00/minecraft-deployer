@@ -18,7 +18,7 @@ from pathlib import Path
 
 from config import DEFAULT_SERVERS_PATH
 from services.modloader import _http_get, _installer_url, LOADER_DISPLAY_NAMES
-from services.utils import configure_jvm_ram
+from services.utils import configure_jvm_ram, check_ram_values
 from services.players import write_player_files
 
 _VERSION_MANIFEST_URL = "https://piston-meta.mojang.com/mc/game/version_manifest_v2.json"
@@ -58,6 +58,7 @@ def _write_run_script(server_dir: Path, jar_name: str, ram_min: str, ram_max: st
     instalador oficial de Forge/NeoForge SÍ genera el suyo (se reusa tal
     cual), pero Fabric, Quilt y el server.jar vanilla no.
     """
+    check_ram_values(ram_min, ram_max)
     script = "#!/bin/bash\n" + f"java -Xms{ram_min} -Xmx{ram_max} -jar {jar_name} nogui\n"
     run_path = server_dir / "run.sh"
     run_path.write_text(script, encoding="utf-8")

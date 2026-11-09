@@ -7,6 +7,7 @@ Uso:
 """
 import bcrypt
 import getpass
+import os
 import re
 import secrets
 from pathlib import Path
@@ -57,6 +58,9 @@ def main():
         print(f"✓ JWT_SECRET generado automáticamente")
 
     ENV_FILE.write_text(content.strip() + "\n")
+    # Lleva JWT_SECRET y el hash de la contraseña: solo lo lee el dueño.
+    if os.name == "posix":
+        ENV_FILE.chmod(0o600)
     print(f"✓ Usuario '{username}' configurado en {ENV_FILE}")
     print("  Ya puedes arrancar la app con: bash start.sh")
 

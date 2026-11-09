@@ -349,7 +349,7 @@ function renderSysmon(stats) {
 // que el motivo sea igual de visible en los dos casos.
 function renderRestartPendingSection() {
   var status = lastAutoUpdateStatus;
-  if (!status || !status.restart_pending || autoUpdateRestarting) {
+  if (!status || !status.restart_pending || autoUpdateRestarting || currentRole !== 'admin') {
     return '';
   }
   var blockedReason = status.server_running
@@ -393,6 +393,8 @@ function renderAutoUpdateSection() {
     return html;
   }
 
+  html += autoUpdateRow('Versión', appVersion());
+
   if (!status.enabled) {
     html += '<span class="sysmon-no-temps">Comprobación automática deshabilitada (AUTO_UPDATE_ENABLED=false en el .env) — puedes comprobar a mano igualmente.</span>';
   } else {
@@ -406,13 +408,17 @@ function renderAutoUpdateSection() {
       ? 'hay un servidor de Minecraft en marcha'
       : (status.busy ? status.busy_reasons.join(', ') : null);
 
-    html += '<div class="stack-start">';
-    html += '<button type="button" class="btn-secondary btn-sm" id="auto-update-apply-btn"'
-      + (blockedReason ? ' disabled' : '') + '>Actualizar ahora</button>';
-    if (blockedReason) {
-      html += '<span class="sysmon-no-temps">Bloqueado: ' + escHtml(blockedReason) + '</span>';
+    if (currentRole !== 'admin') {
+      html += '<span class="sysmon-no-temps">Un administrador puede aplicarla desde aquí.</span>';
+    } else {
+      html += '<div class="stack-start">';
+      html += '<button type="button" class="btn-secondary btn-sm" id="auto-update-apply-btn"'
+        + (blockedReason ? ' disabled' : '') + '>Actualizar ahora</button>';
+      if (blockedReason) {
+        html += '<span class="sysmon-no-temps">Bloqueado: ' + escHtml(blockedReason) + '</span>';
+      }
+      html += '</div>';
     }
-    html += '</div>';
   } else if (status.last_check) {
     // Solo "al día" si ya se comprobó de verdad alguna vez (automático o a
     // mano) — si nunca se comprobó, commits_behind sigue en su valor inicial

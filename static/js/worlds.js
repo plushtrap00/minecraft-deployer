@@ -289,6 +289,9 @@ var uwActivate = true;
       showAlert('Selecciona un archivo de mundo (.zip, .tar.gz...)');
       return;
     }
+    if (!checkUploadSize(file)) {
+      return;
+    }
     var worldName = document.getElementById('uw-name').value.trim();
     if (!worldName) {
       showAlert('Escribe un nombre para el mundo');

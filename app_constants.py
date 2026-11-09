@@ -45,6 +45,9 @@ DEFAULTS = {
     "MOD_SEARCH_PAGE_SIZE": 20,
     "TEMP_DIR_MAX_AGE_SECONDS": 7200,
     "MODPACK_DUPLICATE_MATCH_THRESHOLD_PERCENT": 40,
+    "MAX_UPLOAD_MB": 8192,
+    "MAX_EXTRACTED_MB": 32768,
+    "LOGIN_MAX_FAILED_ATTEMPTS_PER_IP": 20,
 }
 
 # Agrupación de cada constante para el formulario del panel de administración
@@ -68,6 +71,9 @@ CATEGORIES = {
     "LOGIN_ATTEMPT_WINDOW_SECONDS": "Sesión y login",
     "LOGIN_LOCKOUT_SECONDS": "Sesión y login",
     "TEMP_DIR_MAX_AGE_SECONDS": "Otros",
+    "MAX_UPLOAD_MB": "Subidas",
+    "MAX_EXTRACTED_MB": "Subidas",
+    "LOGIN_MAX_FAILED_ATTEMPTS_PER_IP": "Sesión y login",
 }
 
 # Texto explicativo para el formulario del panel de administración.
@@ -90,6 +96,9 @@ DESCRIPTIONS = {
     "MOD_SEARCH_PAGE_SIZE": "Resultados por página al buscar mods online.",
     "TEMP_DIR_MAX_AGE_SECONDS": "Antigüedad máxima de archivos temporales (subidas en curso) antes de limpiarlos.",
     "MODPACK_DUPLICATE_MATCH_THRESHOLD_PERCENT": "Porcentaje mínimo de mods coincidentes con un servidor ya existente para avisar de una posible instalación duplicada al descargar un modpack.",
+    "MAX_UPLOAD_MB": "Tamaño máximo (en MB) de un archivo subido: modpack, mundo o mod.",
+    "MAX_EXTRACTED_MB": "Tamaño máximo (en MB) que puede ocupar un archivo comprimido una vez descomprimido. Frena los «zip bomb», que pesan poco pero llenan el disco al abrirlos.",
+    "LOGIN_MAX_FAILED_ATTEMPTS_PER_IP": "Intentos fallidos permitidos desde una misma IP (con cualquier usuario) antes de bloquearla temporalmente.",
 }
 
 
@@ -128,6 +137,9 @@ LOGIN_LOCKOUT_SECONDS = _values["LOGIN_LOCKOUT_SECONDS"]
 MOD_SEARCH_PAGE_SIZE = _values["MOD_SEARCH_PAGE_SIZE"]
 TEMP_DIR_MAX_AGE_SECONDS = _values["TEMP_DIR_MAX_AGE_SECONDS"]
 MODPACK_DUPLICATE_MATCH_THRESHOLD_PERCENT = _values["MODPACK_DUPLICATE_MATCH_THRESHOLD_PERCENT"]
+MAX_UPLOAD_MB = _values["MAX_UPLOAD_MB"]
+MAX_EXTRACTED_MB = _values["MAX_EXTRACTED_MB"]
+LOGIN_MAX_FAILED_ATTEMPTS_PER_IP = _values["LOGIN_MAX_FAILED_ATTEMPTS_PER_IP"]
 
 
 def get_all() -> dict:

@@ -13,6 +13,7 @@ Uso:
 """
 import bcrypt
 import getpass
+import os
 import re
 import secrets
 import sys
@@ -411,6 +412,9 @@ def main():
         username, password, existing_env.get("APP_PASSWORD_HASH", ""), mc_domain, curseforge_key,
         auto_update_enabled, auto_update_interval, telegram_token, telegram_chat,
     ))
+    # Lleva JWT_SECRET y el hash de la contraseña: solo lo lee el dueño.
+    if os.name == "posix":
+        ENV_FILE.chmod(0o600)
     COMPOSE_FILE.write_text(generate_compose(web_port, mc_port, java_version, servers_path, is_host_path))
 
     print("\n  ✓ .env generado")

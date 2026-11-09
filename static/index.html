@@ -5,16 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Minecraft Server Deployer</title>
 <link rel="icon" type="image/x-icon" href="/icon/favicon.ico">
-<script>
-  // El tema elegido se aplica antes de pintar nada, para que no se vea un
-  // instante el de por defecto (el resto de Apariencia está en appearance.js).
-  try {
-    var savedTheme = localStorage.getItem('mcd-theme');
-    if (savedTheme && savedTheme !== 'amethyst') {
-      document.documentElement.setAttribute('data-theme', savedTheme);
-    }
-  } catch (e) {}
-</script>
+<script src="/static/js/theme_boot.js"></script>
 <link rel="stylesheet" href="/static/css/base.css">
 <link rel="stylesheet" href="/static/css/themes.css">
 <link rel="stylesheet" href="/static/css/nav.css">
@@ -52,6 +43,7 @@
 <!-- include: partials/modals/editor.html -->
 <!-- include: partials/modals/mods.html -->
 <!-- include: partials/modals/clone.html -->
+<!-- include: partials/modals/password.html -->
 <!-- include: partials/overlays.html -->
 <script src="/static/js/utils.js"></script>
 <script src="/static/js/appearance.js"></script>
@@ -86,6 +78,7 @@
 <script src="/static/js/automation.js"></script>
 <script src="/static/js/notifications.js"></script>
 <script src="/static/js/users.js"></script>
+<script src="/static/js/password.js"></script>
 <script src="/static/js/config_admin.js"></script>
 <script src="/static/js/sysmon.js"></script>
 <script src="/static/js/steps.js"></script>

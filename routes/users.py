@@ -11,11 +11,10 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from services.users import list_users, create_user, delete_user
+from services.users import list_users, create_user, delete_user, set_password, validate_password
 from routes.auth import require_admin as _require_admin
 
 _USERNAME_RE = re.compile(r'^[a-zA-Z0-9_-]{1,16}$')
-_PRINTABLE_RE = re.compile(r'^[\x20-\x7E]+$')
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
@@ -37,13 +36,34 @@ def add_user(request: Request, body: CreateUserBody):
     username = body.username.strip()
     if not _USERNAME_RE.match(username):
         raise HTTPException(status_code=400, detail="Nombre de usuario inválido: solo letras, números, _ y - (máx. 16 caracteres)")
-    if len(body.password) < 8 or not _PRINTABLE_RE.match(body.password):
-        raise HTTPException(status_code=400, detail="Contraseña inválida: mínimo 8 caracteres, sin emojis ni símbolos raros")
+    try:
+        validate_password(body.password)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     try:
         user = create_user(username, body.password)
         return JSONResponse(user, status_code=201)
     except ValueError as e:
         raise HTTPException(status_code=409, detail=str(e))
+
+
+class ResetPasswordBody(BaseModel):
+    password: str
+
+
+@router.post("/{username}/password")
+def reset_user_password(username: str, request: Request, body: ResetPasswordBody):
+    """El admin pone una contraseña nueva a otro usuario (sin borrarlo y crearlo de nuevo). Cierra sus sesiones."""
+    _require_admin(request)
+    if username == request.state.user:
+        raise HTTPException(status_code=400, detail="Para tu propia contraseña usa «Cambiar contraseña» en el menú de tu usuario")
+    try:
+        set_password(username, body.password)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return JSONResponse({"success": True})
 
 
 @router.delete("/{username}")

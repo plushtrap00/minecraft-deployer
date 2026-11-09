@@ -167,7 +167,7 @@ function searchResultCardHtml(item, index, opts) {
   }).join('');
 
   var link = isWebUrl(item.page_url)
-    ? '<a class="mod-search-link" href="' + escHtml(item.page_url) + '" target="_blank" rel="noopener" title="' + escHtml(opts.linkTitle || 'Ver página') + '" aria-label="' + escHtml(opts.linkTitle || 'Ver página') + '" onclick="event.stopPropagation()">' + icon('globe') + '</a>'
+    ? '<a class="mod-search-link" href="' + escHtml(item.page_url) + '" target="_blank" rel="noopener" title="' + escHtml(opts.linkTitle || 'Ver página') + '" aria-label="' + escHtml(opts.linkTitle || 'Ver página') + '">' + icon('globe') + '</a>'
     : '';
 
   return '<div class="mod-search-result-item search-card' + (opts.selected ? ' selected' : '') + '" data-index="' + index + '" role="button" tabindex="0"'
@@ -582,7 +582,8 @@ function renderModSearchFilesPage() {
 }
 
 document.getElementById('mod-search-modal-body').addEventListener('click', function(event) {
-  if (modSearchBusy) {
+  // El enlace a la web del mod abre la página sin seleccionar la tarjeta.
+  if (modSearchBusy || event.target.closest('.mod-search-link')) {
     return;
   }
   var row = event.target.closest('.mod-search-result-item');

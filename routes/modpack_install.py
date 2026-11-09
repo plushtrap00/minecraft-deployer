@@ -26,6 +26,7 @@ from services.modpack_install import (
     ModpackDownloadBlocked,
 )
 from services.busy import BusyGuard
+from services.utils import check_ram_values
 
 router = APIRouter(prefix="/api/modpack-install", tags=["modpack-install"])
 
@@ -128,6 +129,7 @@ def install_stream(source: str, project_id: str, version_id: str, name: str, ram
             if source not in _SOURCES:
                 raise ValueError("source inválido")
             validate_new_server_name(name)
+            check_ram_values(ram_min, ram_max)
         except ValueError as e:
             yield f"data: {json.dumps({'type': 'error', 'detail': str(e)})}\n\n"
             return

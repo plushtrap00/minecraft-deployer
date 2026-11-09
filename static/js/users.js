@@ -14,7 +14,9 @@ function loadUsers() {
           ? '<span class="role-badge role-admin">Admin</span>'
           : '<span class="role-badge role-user">Usuario</span>';
         var actions = isAdmin ? '' :
-          '<div class="pe-actions"><button class="btn-danger user-delete-btn btn-xs" data-user="' + escHtml(u.username) + '">Eliminar</button></div>';
+          '<div class="pe-actions">'
+          + '<button class="btn-ghost user-password-btn btn-xs" data-user="' + escHtml(u.username) + '">Cambiar contraseña</button>'
+          + '<button class="btn-danger user-delete-btn btn-xs" data-user="' + escHtml(u.username) + '">Eliminar</button></div>';
         return '<div class="player-entry">'
           + '<span class="pe-name">' + escHtml(u.username) + '</span>'
           + badge + actions
@@ -57,6 +59,10 @@ document.getElementById('users-list').addEventListener('click', function(event) 
   if (btn) {
     deleteUser(btn.dataset.user);
   }
+  var pwBtn = event.target.closest('.user-password-btn');
+  if (pwBtn) {
+    openPasswordModal(pwBtn.dataset.user);
+  }
 });
 
 // Validación del formulario de nuevo usuario
@@ -73,6 +79,7 @@ function validateNewUsername(val) {
 function validateNewPassword(val) {
   if (!val) return 'La contraseña es obligatoria';
   if (val.length < 8) return 'Mínimo 8 caracteres';
+  if (val.length > 72) return 'Máximo 72 caracteres';
   if (!PRINTABLE_RE.test(val)) return 'Solo se permiten caracteres estándar (sin emojis ni símbolos raros)';
   return '';
 }

@@ -145,6 +145,9 @@ modFolderInput.addEventListener('change', function() {
 });
 
 function handleModFileSelected(file) {
+  if (!checkUploadSize(file)) {
+    return;
+  }
   if (file.name.toLowerCase().endsWith('.zip')) {
     uploadModsBulk([file]);
   } else {
@@ -341,6 +344,9 @@ function uploadModsBulk(fileList) {
   });
   if (!files.length) {
     showAlert('No se encontraron archivos .jar o .zip');
+    return;
+  }
+  if (!checkUploadSize(files)) {
     return;
   }
   setModOperationBusy(true);

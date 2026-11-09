@@ -47,3 +47,15 @@ async def valid_modpack(request: Request) -> None:
     modpack = request.path_params.get("modpack")
     if modpack is not None:
         modpack_path(modpack)
+
+
+def attachment_headers(filename: str) -> dict:
+    """
+    Cabecera Content-Disposition para descargar un archivo con ese nombre.
+    Los nombres de modpack/mundo pueden llevar comillas, tildes o espacios: se
+    da una versión ASCII sin caracteres problemáticos (filename=) y la exacta
+    codificada (filename*=, RFC 5987), que es la que usan los navegadores.
+    """
+    from urllib.parse import quote
+    ascii_name = "".join(ch if 32 <= ord(ch) < 127 and ch not in '"\\;' else "_" for ch in filename)
+    return {"Content-Disposition": f"attachment; filename=\"{ascii_name}\"; filename*=UTF-8''{quote(filename, safe='')}"}

@@ -20,7 +20,6 @@ Rutas:
 - POST /api/admin/notifications/detect-chat  → averigua el chat ID con el token del bot
 """
 import asyncio
-import bcrypt
 from pathlib import Path
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
@@ -28,7 +27,8 @@ from pydantic import BaseModel
 from dotenv import dotenv_values, set_key
 
 import app_constants
-from services import auto_update, notify
+from services import auto_update, notify, users
+from services.users import set_password
 from routes.auth import require_admin as _require_admin
 
 router = APIRouter(prefix="/api/admin", tags=["admin-config"])
@@ -90,10 +90,12 @@ async def update_env(request: Request, body: EnvUpdateBody):
 
     try:
         if body.new_password:
-            if len(body.new_password) < 8:
-                raise HTTPException(status_code=400, detail="La contraseña debe tener al menos 8 caracteres")
-            password_hash = bcrypt.hashpw(body.new_password.encode(), bcrypt.gensalt()).decode()
-            await asyncio.to_thread(set_key, str(_ENV_PATH), "APP_PASSWORD_HASH", password_hash, quote_mode="never")
+            # Se aplica al momento (no espera al reinicio) y cierra las
+            # sesiones abiertas del admin, igual que «Cambiar contraseña».
+            try:
+                await asyncio.to_thread(set_password, users.admin_username(), body.new_password)
+            except ValueError as e:
+                raise HTTPException(status_code=400, detail=str(e))
 
         for key, value in body.values.items():
             if key not in _ENV_EDITABLE_KEYS:

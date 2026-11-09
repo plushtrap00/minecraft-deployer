@@ -19,18 +19,21 @@ import base64
 import hashlib
 import hmac
 import json
+import math
 import time
 from pathlib import Path
 
 from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 from dotenv import load_dotenv
 import os
 
-from services.users import authenticate, password_fingerprint, role_of
+from services.users import authenticate, password_fingerprint, role_of, set_password, verify_password
 from app_constants import (
     JWT_TOKEN_EXPIRE_HOURS, LOGIN_MAX_FAILED_ATTEMPTS,
     LOGIN_ATTEMPT_WINDOW_SECONDS, LOGIN_LOCKOUT_SECONDS,
+    LOGIN_MAX_FAILED_ATTEMPTS_PER_IP,
 )
 
 _ENV_PATH = Path(__file__).parent.parent / ".env"
@@ -48,28 +51,58 @@ _MAX_FAILED_ATTEMPTS = LOGIN_MAX_FAILED_ATTEMPTS
 _ATTEMPT_WINDOW_SECONDS = LOGIN_ATTEMPT_WINDOW_SECONDS   # ventana en la que cuentan los fallos
 _LOCKOUT_SECONDS = LOGIN_LOCKOUT_SECONDS                 # cuánto dura el bloqueo al superar el máximo
 
-_failed_attempts: dict[str, list[float]] = {}  # clave "ip:usuario" -> timestamps de fallos
+# Dos contadores por intento fallido: "ip:usuario" (5 por defecto) e "ip"
+# sola (20 por defecto, con cualquier usuario). Sin el segundo, desde una
+# misma IP se podía ir probando contraseñas con un nombre de usuario distinto
+# cada vez sin llegar nunca al bloqueo.
+_failed_attempts: dict[str, list[float]] = {}  # clave -> timestamps de fallos
+_MAX_TRACKED_KEYS = 5000
 
 
-def _login_attempt_key(request: Request, username: str) -> str:
-    client_ip = request.client.host if request.client else "unknown"
-    return f"{client_ip}:{username.strip().lower()}"
+def _client_ip(request: Request) -> str:
+    return request.client.host if request.client else "unknown"
 
 
-def _seconds_locked_out(key: str) -> int | None:
+def _login_attempt_keys(request: Request, username: str) -> list[tuple[str, int]]:
+    ip = _client_ip(request)
+    return [
+        (f"{ip}:{username.strip().lower()}", _MAX_FAILED_ATTEMPTS),
+        (f"ip:{ip}", LOGIN_MAX_FAILED_ATTEMPTS_PER_IP),
+    ]
+
+
+def _seconds_locked_out(key: str, max_attempts: int = _MAX_FAILED_ATTEMPTS) -> int | None:
     """Devuelve segundos restantes de bloqueo, o None si no está bloqueado. De paso descarta intentos ya fuera de la ventana."""
     now = time.time()
     attempts = [t for t in _failed_attempts.get(key, []) if now - t < _ATTEMPT_WINDOW_SECONDS]
-    _failed_attempts[key] = attempts
-    if len(attempts) < _MAX_FAILED_ATTEMPTS:
+    if attempts:
+        _failed_attempts[key] = attempts
+    else:
+        _failed_attempts.pop(key, None)
+    if max_attempts <= 0 or len(attempts) < max_attempts:
         return None
-    trigger = attempts[-_MAX_FAILED_ATTEMPTS]  # el intento que hizo superar el máximo
+    trigger = attempts[-max_attempts]  # el intento que hizo superar el máximo
     remaining = _LOCKOUT_SECONDS - (now - trigger)
-    return int(remaining) if remaining > 0 else None
+    return math.ceil(remaining) if remaining > 0 else None
+
+
+def _prune_failed_attempts() -> None:
+    """Que el diccionario no crezca sin límite con miles de usuarios/IP distintos."""
+    if len(_failed_attempts) <= _MAX_TRACKED_KEYS:
+        return
+    now = time.time()
+    for key in [k for k, ts in _failed_attempts.items() if not ts or now - ts[-1] >= _ATTEMPT_WINDOW_SECONDS]:
+        _failed_attempts.pop(key, None)
+    # Si aun así hay demasiadas, fuera las más antiguas.
+    if len(_failed_attempts) > _MAX_TRACKED_KEYS:
+        oldest = sorted(_failed_attempts, key=lambda k: _failed_attempts[k][-1])
+        for key in oldest[: len(_failed_attempts) - _MAX_TRACKED_KEYS]:
+            _failed_attempts.pop(key, None)
 
 
 def _register_failed_attempt(key: str) -> None:
     _failed_attempts.setdefault(key, []).append(time.time())
+    _prune_failed_attempts()
 
 
 def _clear_failed_attempts(key: str) -> None:
@@ -160,8 +193,8 @@ def require_admin(request: Request) -> None:
 
 @router.post("/login")
 def login(request: Request, username: str = Form(...), password: str = Form(...)):
-    key = _login_attempt_key(request, username)
-    locked_seconds = _seconds_locked_out(key)
+    keys = _login_attempt_keys(request, username)
+    locked_seconds = max((s for s in (_seconds_locked_out(k, m) for k, m in keys) if s is not None), default=None)
     if locked_seconds is not None:
         raise HTTPException(
             status_code=429,
@@ -170,15 +203,58 @@ def login(request: Request, username: str = Form(...), password: str = Form(...)
 
     role = authenticate(username, password)
     if role is None:
-        _register_failed_attempt(key)
+        for key, _ in keys:
+            _register_failed_attempt(key)
         raise HTTPException(status_code=401, detail="Usuario o contraseña incorrectos")
 
-    _clear_failed_attempts(key)
+    for key, _ in keys:
+        _clear_failed_attempts(key)
     response = JSONResponse({"role": role, "user": username, "expires_in_hours": TOKEN_EXPIRE_HOURS})
+    _set_session_cookie(response, username)
+    return response
+
+
+def _set_session_cookie(response: JSONResponse, username: str) -> None:
     response.set_cookie(
         SESSION_COOKIE, create_token(username),
         max_age=TOKEN_EXPIRE_HOURS * 3600, httponly=True, samesite="strict", path="/",
     )
+
+
+class ChangePasswordBody(BaseModel):
+    current_password: str
+    new_password: str
+
+
+@router.post("/password")
+def change_own_password(request: Request, body: ChangePasswordBody):
+    """
+    Cambia la contraseña de quien tiene la sesión iniciada (admin o usuario
+    normal). Pide la actual: con una sesión olvidada abierta en otro equipo no
+    basta para quedarse con la cuenta. Las demás sesiones de ese usuario se
+    cierran (cambia la huella del hash); esta recibe una cookie nueva.
+    """
+    username = getattr(request.state, "user", None)
+    if not username:
+        raise HTTPException(status_code=401, detail="No autorizado")
+    key = f"pw:{username}"
+    locked_seconds = _seconds_locked_out(key)
+    if locked_seconds is not None:
+        raise HTTPException(status_code=429, detail=f"Demasiados intentos. Prueba de nuevo dentro de {locked_seconds} segundos.")
+    if not verify_password(username, body.current_password):
+        _register_failed_attempt(key)
+        raise HTTPException(status_code=400, detail="La contraseña actual no es correcta")
+    if body.new_password == body.current_password:
+        raise HTTPException(status_code=400, detail="La contraseña nueva es igual que la actual")
+    try:
+        set_password(username, body.new_password)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except OSError:
+        raise HTTPException(status_code=500, detail="No se pudo guardar la contraseña: el archivo no se puede escribir")
+    _clear_failed_attempts(key)
+    response = JSONResponse({"success": True})
+    _set_session_cookie(response, username)
     return response
 
 

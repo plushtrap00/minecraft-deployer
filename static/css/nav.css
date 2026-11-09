@@ -98,6 +98,18 @@
   color: var(--red);
 }
 
+/* Contraseña y Salir: solo icono en escritorio (llevan title y aria-label);
+   en el menú «Más» del móvil se ven con su texto. */
+@media (min-width: 761px) {
+  .nav-account span:not(.nav-badge) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+}
+
 .nav-more-btn {
   display: none;
 }
@@ -119,8 +131,9 @@
 }
 
 /* Pantallas medianas: sin texto en la administración, solo iconos (con
-   title/aria-label para saber qué es cada uno). */
-@media (max-width: 1060px) {
+   title/aria-label para saber qué es cada uno). Con texto, la barra entera
+   necesita unos 1310px: por debajo de eso se cortaba por la derecha. */
+@media (max-width: 1340px) {
   .nav {
     gap: 12px;
   }

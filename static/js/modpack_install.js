@@ -257,7 +257,11 @@ function renderDlResults(results) {
   });
 
   Array.prototype.forEach.call(body.querySelectorAll('.mod-search-result-item'), function(el) {
-    el.addEventListener('click', function() {
+    el.addEventListener('click', function(event) {
+      // El enlace a la web del modpack abre la página sin seleccionarlo.
+      if (event.target.closest('.mod-search-link')) {
+        return;
+      }
       Array.prototype.forEach.call(body.querySelectorAll('.search-card.selected'), function(c) { c.classList.remove('selected'); });
       this.classList.add('selected');
       selectModpackToInstall(dlSearchResultsCache[parseInt(this.dataset.index, 10)]);

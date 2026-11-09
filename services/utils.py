@@ -20,6 +20,7 @@ from pathlib import Path
 from fastapi import HTTPException
 
 from config import DEFAULT_SERVERS_PATH, CONFIG_EXTENSIONS
+from services.uploads import check_extracted_size
 
 KUBEJS_EXTENSIONS = {".js", ".ts", ".json", ".yaml", ".yml", ".txt", ".md"}
 WORLD_EXTENSIONS = {".json", ".txt", ".mcfunction", ".yaml", ".yml", ".mcmeta"}
@@ -203,6 +204,7 @@ def extract_archive(archive_path: Path, dest_path: Path) -> dict:
     Los .tar pasan por _safe_tar_extract (ver abajo); zipfile ya descarta por
     su cuenta las rutas que intentan salir de dest_path.
     """
+    check_extracted_size(archive_path, dest_path)
     dest_path.mkdir(parents=True, exist_ok=True)
     filename = archive_path.name.lower()
 
@@ -284,6 +286,17 @@ _XMS_RE = re.compile(r'-Xms\S+', re.IGNORECASE)
 _XMX_RE = re.compile(r'-Xmx\S+', re.IGNORECASE)
 _RAM_SCRIPT_NAMES = ("run.sh", "start.sh", "startserver.sh")
 
+# Un número entero con unidad M o G y nada más: el valor acaba tal cual en
+# run.sh, así que cualquier otro carácter (un espacio, un «;») permitiría
+# colar comandos de shell que se ejecutarían en el siguiente arranque.
+RAM_VALUE_RE = re.compile(r'^[1-9]\d{0,6}[MG]$', re.IGNORECASE)
+
+
+def check_ram_values(ram_min: str, ram_max: str) -> None:
+    """ValueError con un mensaje legible si alguno de los dos valores no es como «4G» o «2500M»."""
+    if not (RAM_VALUE_RE.match(ram_min or "") and RAM_VALUE_RE.match(ram_max or "")):
+        raise ValueError("Formato de RAM inválido (ej: 4G, 2500M)")
+
 
 def _detect_ram_in_text(text: str) -> tuple[str | None, str | None]:
     xms_m = re.search(r'-Xms(\S+)', text, re.IGNORECASE)
@@ -337,6 +350,7 @@ def configure_jvm_ram(dest_path: Path, ram_min: str, ram_max: str) -> str | None
     del que se ve). Devuelve el nombre del archivo modificado, o None si no se
     encontró ninguno de los sitios conocidos (no se toca nada en ese caso).
     """
+    check_ram_values(ram_min, ram_max)
     source = detect_jvm_ram(dest_path)["source"]
 
     # 1. user_jvm_args.txt (con RAM, o sin ella todavía: se añade)

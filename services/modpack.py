@@ -20,6 +20,7 @@ from pathlib import Path
 
 from config import DEFAULT_SERVERS_PATH
 from app_constants import LOG_CRASH_RETENTION_COUNT
+from services.secure_files import atomic_write_text
 
 # ── Detección de versión ───────────────────────────────────────────────────────
 
@@ -196,7 +197,7 @@ def save_server_property(modpack: str, key: str, value: str) -> bool:
         new_lines.append(line)
     if not found:
         new_lines.append(f"{key}={value}\n")
-    props_file.write_text("".join(new_lines), encoding="utf-8")
+    atomic_write_text(props_file, "".join(new_lines))
     return True
 
 

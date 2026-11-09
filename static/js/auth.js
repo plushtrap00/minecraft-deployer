@@ -3,6 +3,7 @@
 // navegador la manda sola en fetch, EventSource, XMLHttpRequest y enlaces de
 // descarga, así que aquí no se guarda ni se pasa ningún token.
 var currentRole = 'user';
+var currentUser = '';
 
 var _pendingFetches = {};
 
@@ -57,6 +58,7 @@ function applyRoleUI() {
 // pulsar "Salir".
 function logout() {
   currentRole = 'user';
+  currentUser = '';
   applyRoleUI();
   document.getElementById('login-screen').classList.remove('hidden');
   document.getElementById('login-pass').value = '';
@@ -67,8 +69,9 @@ function endSession() {
   fetch('/api/auth/logout', { method: 'POST' }).finally(logout);
 }
 
-function onLoginSuccess(role) {
+function onLoginSuccess(role, user) {
   currentRole = role || 'user';
+  currentUser = user || '';
   document.getElementById('login-screen').classList.add('hidden');
   applyRoleUI();
   // El primer intento de sysmon.js de comprobar auto-actualización sale
@@ -121,7 +124,7 @@ function doLogin() {
         errorEl.textContent = result.data.detail || 'Usuario o contraseña incorrectos.';
         return;
       }
-      onLoginSuccess(result.data.role);
+      onLoginSuccess(result.data.role, result.data.user);
     })
     .catch(function(error) {
       btn.disabled = false;
@@ -145,7 +148,7 @@ document.getElementById('login-form').addEventListener('submit', function(event)
     })
     .then(function(result) {
       if (result.ok) {
-        onLoginSuccess(result.data.role);
+        onLoginSuccess(result.data.role, result.data.user);
       } else {
         logout();
       }
