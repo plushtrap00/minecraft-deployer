@@ -92,5 +92,78 @@ class PlayerFilesTest(unittest.TestCase):
         self.assertEqual(offline, data)
 
 
+class AdaptPlayerUuidsTest(unittest.TestCase):
+    """online-mode cambiado después de instalar: los UUID se ajustan al arrancar."""
+    REAL = "0fd22dbf-6e4f-49fd-a555-15cb3a744c43"
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self.tmp.name)
+        (self.root / "pack").mkdir()
+        (self.root / ".global").mkdir()
+        (self.root / ".global" / "ops.json").write_text(json.dumps([
+            {"uuid": self.REAL, "name": "plushyyy", "level": 4, "bypassesPlayerLimit": False},
+        ]), encoding="utf-8")
+        self.patches = [
+            mock.patch.object(players, "DEFAULT_SERVERS_PATH", self.root),
+            mock.patch.object(players, "GLOBAL_DIR", self.root / ".global"),
+            mock.patch("services.utils.DEFAULT_SERVERS_PATH", self.root),
+            mock.patch.object(players, "_global_dir_initialized", True),
+        ]
+        for patch in self.patches:
+            patch.start()
+
+    def tearDown(self):
+        for patch in self.patches:
+            patch.stop()
+        self.tmp.cleanup()
+
+    def _set_mode(self, online: bool):
+        (self.root / "pack" / "server.properties").write_text(
+            "motd=x\nonline-mode=" + ("true" if online else "false") + "\n", encoding="utf-8")
+
+    def _write(self, fname, data):
+        (self.root / "pack" / fname).write_text(json.dumps(data), encoding="utf-8")
+
+    def _read(self, fname):
+        return json.loads((self.root / "pack" / fname).read_text(encoding="utf-8"))
+
+    def test_switched_to_offline_after_install(self):
+        # El caso real: instalado en online (UUID real) y luego online-mode=false.
+        self._set_mode(False)
+        self._write("ops.json", [{"uuid": self.REAL, "name": "plushyyy", "level": 4, "bypassesPlayerLimit": False}])
+        self._write("whitelist.json", [{"uuid": "d413b978-78d0-4db3-9c70-b3ea0c693953", "name": "Destro940"}])
+        self.assertEqual(players.adapt_player_uuids("pack"), ["ops.json", "whitelist.json"])
+        ops = self._read("ops.json")
+        self.assertEqual(ops[0]["uuid"], players.offline_uuid("plushyyy"))
+        self.assertEqual((ops[0]["level"], ops[0]["name"]), (4, "plushyyy"))
+        self.assertEqual(self._read("whitelist.json")[0]["uuid"], players.offline_uuid("Destro940"))
+        self.assertEqual(players.adapt_player_uuids("pack"), [])  # ya está bien: no reescribe
+
+    def test_switched_back_to_online_restores_real_uuid(self):
+        self._set_mode(True)
+        self._write("ops.json", [
+            {"uuid": players.offline_uuid("plushyyy"), "name": "plushyyy", "level": 4},
+            # Op dado en el juego estando offline y sin cuenta conocida: se deja.
+            {"uuid": players.offline_uuid("Desconocido"), "name": "Desconocido", "level": 4},
+        ])
+        self.assertEqual(players.adapt_player_uuids("pack"), ["ops.json"])
+        ops = self._read("ops.json")
+        self.assertEqual(ops[0]["uuid"], self.REAL)
+        self.assertEqual(ops[1]["uuid"], players.offline_uuid("Desconocido"))
+
+    def test_keeps_ops_added_in_game(self):
+        self._set_mode(False)
+        added_in_game = {"uuid": players.offline_uuid("Iguanazz"), "name": "Iguanazz", "level": 4}
+        self._write("ops.json", [added_in_game])
+        self.assertEqual(players.adapt_player_uuids("pack"), [])
+        self.assertEqual(self._read("ops.json"), [added_in_game])
+
+    def test_missing_or_broken_files_are_ignored(self):
+        self._set_mode(False)
+        (self.root / "pack" / "ops.json").write_text("{roto", encoding="utf-8")
+        self.assertEqual(players.adapt_player_uuids("pack"), [])
+
+
 if __name__ == "__main__":
     unittest.main()

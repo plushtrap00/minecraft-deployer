@@ -300,6 +300,60 @@ def _data_for_pack(fname: str, data: list, online: bool) -> list:
     return [{**entry, "uuid": offline_uuid(entry["name"])} if entry.get("name") else entry for entry in data]
 
 
+def adapt_player_uuids(pack: str) -> list:
+    """
+    Ajusta los UUID de los archivos de jugadores del modpack a su online-mode
+    ACTUAL. Al instalar ya se escriben bien (write_player_files), pero si
+    luego se cambia online-mode (desde el panel o a mano), los archivos se
+    quedaban con los UUID del modo anterior y Minecraft dejaba de reconocer
+    a esos jugadores: un op entraba como un jugador cualquiera.
+    - Offline: cada entrada con nombre pasa a su UUID offline.
+    - Online: las que tienen el UUID offline recuperan el real, sacado de los
+      archivos globales (que guardan siempre el de la cuenta); sin él se
+      dejan como están.
+    Se llama al arrancar, que es cuando Minecraft lee estos archivos; lo que
+    se haya añadido en el juego (/op) se conserva. Devuelve los archivos que
+    cambió.
+    """
+    online = _pack_online_mode(pack)
+    real_uuids = {}
+    if online:
+        for fname in PROFILE_FILES:
+            for entry in read_global_file(fname):
+                name = str(entry.get("name") or "").lower()
+                if name and is_valid_uuid(entry.get("uuid")) and entry["uuid"] != offline_uuid(entry["name"]):
+                    real_uuids.setdefault(name, entry["uuid"])
+
+    changed_files = []
+    for fname in PROFILE_FILES:
+        path = DEFAULT_SERVERS_PATH / pack / fname
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if not isinstance(data, list):
+            continue
+        changed = False
+        for entry in data:
+            name = entry.get("name") if isinstance(entry, dict) else None
+            if not name:
+                continue
+            offline = offline_uuid(name)
+            if not online:
+                target = offline
+            elif entry.get("uuid") == offline:
+                target = real_uuids.get(name.lower())
+            else:
+                target = None
+            if target and entry.get("uuid") != target:
+                entry["uuid"] = target
+                changed = True
+        if changed:
+            path.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
+            changed_files.append(fname)
+    return changed_files
+
+
 def write_player_files(pack: str) -> list:
     """
     Escribe los archivos globales de jugadores en la carpeta de un modpack

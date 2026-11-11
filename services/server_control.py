@@ -127,6 +127,16 @@ def start_server(modpack: str, force: bool = False, keep_output: bool = False) -
         # Antes de cada sesión se podan los logs rotados y crash reports viejos.
         prune_old_logs_and_crashes(modpack)
 
+        # Si se cambió online-mode desde la instalación, los ops/whitelist/bans
+        # tienen los UUID del otro modo y Minecraft no reconocería a nadie.
+        try:
+            from services.players import adapt_player_uuids
+            adapted = adapt_player_uuids(modpack)
+        except Exception:
+            adapted = []
+        if adapted:
+            deployer_line("Jugadores adaptados al online-mode actual del servidor: " + ", ".join(adapted))
+
         rcon_info = ensure_rcon_enabled(modpack)
         if rcon_info:
             proc_module.mc_rcon_host = rcon_info["host"]
