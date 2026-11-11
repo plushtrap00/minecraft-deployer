@@ -25,6 +25,7 @@ import json
 import time
 import re
 import shutil
+import struct
 import zipfile
 import threading
 import asyncio
@@ -338,7 +339,7 @@ def _resolve_modrinth_projects(project_ids: list) -> dict:
 
 
 def _sort_pack_entries(entries: list) -> list:
-    order = {"install": 0, "blocked": 1, "client_only": 2, "known_bad": 2, "not_needed": 3, "unresolved": 4}
+    order = {"install": 0, "blocked": 1, "client_only": 2, "not_in_server_pack": 2, "known_bad": 2, "not_needed": 3, "unresolved": 4}
     return sorted(entries, key=lambda e: (order.get(e["status"], 9), (e["name"] or "").lower()))
 
 
@@ -391,7 +392,7 @@ def get_modrinth_modpack_mods(project_id: str, version_id: str) -> dict:
             "mods": _sort_pack_entries(entries),
             "filenames": [Path(f["path"]).name for f in files if (f.get("env") or {}).get("server") != "unsupported"],
             "mc_version": deps.get("minecraft"),
-            "server_pack": False,
+            "server_pack": None,
         }
 
     return _cached_pack_contents(("modrinth", str(project_id), str(version_id)), compute)
@@ -685,18 +686,125 @@ def _resolve_curseforge_server_pack(server_pack_file_id: int) -> dict | None:
     return {"download_url": info["downloadUrl"], "filename": info.get("fileName") or "server-files.zip"}
 
 
+_REMOTE_ZIP_TAIL_BYTES = 65536 + 22
+_REMOTE_ZIP_MAX_DIRECTORY_BYTES = 32 * 1024 * 1024
+
+
+def _http_get_range(url: str, range_header: str) -> tuple[bytes, int]:
+    """GET con Range -> (bytes, tamaño total del archivo). Error si el servidor no admite rangos (no baja el archivo entero)."""
+    if urllib.parse.urlsplit(url).scheme.lower() not in ("http", "https"):
+        raise ValueError("solo http/https")
+    req = urllib.request.Request(url, headers={"User-Agent": "minecraft-deployer/1.0", "Range": range_header})
+    with urllib.request.urlopen(req, timeout=_HTTP_TIMEOUT) as resp:
+        content_range = resp.headers.get("Content-Range") or ""
+        if resp.status != 206 or "/" not in content_range:
+            raise ValueError("el servidor no admite descargas parciales")
+        total = int(content_range.rsplit("/", 1)[1])
+        return resp.read(_REMOTE_ZIP_MAX_DIRECTORY_BYTES + _REMOTE_ZIP_TAIL_BYTES), total
+
+
+def _list_remote_zip(url: str) -> list | None:
+    """
+    [(ruta, tamaño)] de un zip remoto leyendo solo su directorio central (el
+    final del archivo, unos KB) con peticiones Range, en vez de bajar el zip
+    entero — un Server Pack puede pesar cientos de MB. None si no se puede
+    (el servidor no admite rangos, zip raro...): quien llama tira de plan B.
+    """
+    try:
+        tail, total = _http_get_range(url, f"bytes=-{_REMOTE_ZIP_TAIL_BYTES}")
+        tail_start = total - len(tail)
+        eocd = tail.rfind(b"PK\x05\x06")
+        if eocd < 0 or len(tail) - eocd < 22:
+            return None
+        cd_size, cd_offset = struct.unpack("<II", tail[eocd + 12:eocd + 20])
+        if cd_size == 0xFFFFFFFF or cd_offset == 0xFFFFFFFF:
+            # ZIP64: el localizador va justo antes y apunta al registro EOCD64.
+            loc = eocd - 20
+            if loc < 0 or tail[loc:loc + 4] != b"PK\x06\x07":
+                return None
+            (eocd64_offset,) = struct.unpack("<Q", tail[loc + 8:loc + 16])
+            if eocd64_offset >= tail_start:
+                rec = tail[eocd64_offset - tail_start:eocd64_offset - tail_start + 56]
+            else:
+                rec, _ = _http_get_range(url, f"bytes={eocd64_offset}-{eocd64_offset + 55}")
+            if rec[:4] != b"PK\x06\x06":
+                return None
+            cd_size, cd_offset = struct.unpack("<QQ", rec[40:56])
+        if cd_size > _REMOTE_ZIP_MAX_DIRECTORY_BYTES:
+            return None
+        if cd_offset >= tail_start:
+            directory = tail[cd_offset - tail_start:cd_offset - tail_start + cd_size]
+        else:
+            directory, _ = _http_get_range(url, f"bytes={cd_offset}-{cd_offset + cd_size - 1}")
+        entries = []
+        pos = 0
+        while pos + 46 <= len(directory) and directory[pos:pos + 4] == b"PK\x01\x02":
+            flags = struct.unpack("<H", directory[pos + 8:pos + 10])[0]
+            size = struct.unpack("<I", directory[pos + 24:pos + 28])[0]
+            name_len, extra_len, comment_len = struct.unpack("<HHH", directory[pos + 28:pos + 34])
+            raw_name = directory[pos + 46:pos + 46 + name_len]
+            entries.append((raw_name.decode("utf-8" if flags & 0x800 else "cp437", errors="replace"), size))
+            pos += 46 + name_len + extra_len + comment_len
+        return entries or None
+    except Exception:
+        return None
+
+
 _CURSEFORGE_CLASS_KINDS = {CURSEFORGE_MOD_CLASS_ID: "mod", 12: "resourcepack", 6552: "shader", 6945: "datapack"}
+
+
+def _server_pack_entries(server_jars: list, manifest_entries: list) -> list:
+    """
+    Lista según el Server Pack (lo que de verdad acaba en mods/), con nombre,
+    icono y enlace sacados del manifest cuando el jar calza (por nombre exacto
+    o por huella, por si el Server Pack trae otra versión del mismo mod). Los
+    mods del manifest que no están en el Server Pack son los que el autor dejó
+    fuera del servidor (casi siempre, solo de cliente).
+    """
+    manifest_mods = [e for e in manifest_entries if e["kind"] == "mod" and e["filename"]]
+    by_name = {e["filename"]: e for e in manifest_mods}
+    by_fingerprint = {}
+    for e in manifest_mods:
+        by_fingerprint.setdefault(_dedup_fingerprint(e["filename"]), e)
+
+    matched = set()
+    entries = []
+    for filename, size in server_jars:
+        source = by_name.get(filename) or by_fingerprint.get(_dedup_fingerprint(filename))
+        if source:
+            matched.add(id(source))
+        entries.append({
+            "name": source["name"] if source else _display_name_from_filename(filename),
+            "filename": filename,
+            "icon_url": source["icon_url"] if source else None,
+            "page_url": source["page_url"] if source else None,
+            "description": source["description"] if source else None,
+            "kind": "mod",
+            "status": "known_bad" if _known_client_only_reason(filename) else "install",
+            "embedded": False, "size": size,
+        })
+    for e in manifest_entries:
+        if e["kind"] == "mod" and e["filename"] and id(e) not in matched:
+            entries.append({**e, "status": "not_in_server_pack"})
+        elif e["kind"] != "mod":
+            entries.append(e)
+    return entries
 
 
 def get_curseforge_modpack_mods(mod_id, file_id) -> dict:
     """
     Como get_modrinth_modpack_mods() pero para CurseForge, con el mismo
-    criterio que install_curseforge_modpack_stream() en su camino mod a mod:
-    lo que no es un mod (classId ≠ 6) no hace falta (not_needed), los
-    conocidos por romper el servidor se saltan (known_bad) y los que el autor
-    no deja bajar a terceros quedan para subirlos a mano (blocked).
-    `server_pack` avisa de que esa build trae «Server Files»: entonces se
-    instala ese paquete, cuya lista la decide el autor y puede no coincidir.
+    criterio que install_curseforge_modpack_stream():
+
+    - Si la build trae «Server Files» descargables, la instalación usa ese
+      paquete, así que la lista sale de él (leyendo solo su índice, ver
+      _list_remote_zip): server_pack = "exact". Si no se puede leer su
+      índice, se marca "approx" y lo bloqueado para terceros no se marca
+      como «a mano» (el Server Pack es otro archivo y ya lo incluye).
+    - Si no (no hay Server Pack o también está bloqueado), mod a mod: lo que
+      no es un mod no hace falta (not_needed), los conocidos por romper el
+      servidor se saltan (known_bad) y los que el autor no deja bajar a
+      terceros quedan para subirlos a mano (blocked). server_pack = None.
     """
     def compute():
         zf, version = _download_curseforge_pack_zip(mod_id, file_id)
@@ -731,11 +839,32 @@ def get_curseforge_modpack_mods(mod_id, file_id) -> dict:
             })
         entries.extend(_embedded_jar_entries(zf, (manifest.get("overrides", "overrides"),)))
         zf.close()
+
+        server_pack = None
+        server_pack_info = None
+        if version.get("server_pack_file_id"):
+            try:
+                server_pack_info = _resolve_curseforge_server_pack(version["server_pack_file_id"])
+            except Exception:
+                server_pack_info = None
+        if server_pack_info:
+            listing = _list_remote_zip(server_pack_info["download_url"])
+            server_jars = [
+                (name[len("mods/"):], size) for name, size in (listing or [])
+                if name.startswith("mods/") and name.lower().endswith(".jar") and "/" not in name[len("mods/"):]
+            ]
+            if server_jars:
+                entries = _server_pack_entries(server_jars, entries)
+                server_pack = "exact"
+            else:
+                entries = [{**e, "status": "install"} if e["status"] == "blocked" else e for e in entries]
+                server_pack = "approx"
+
         return {
             "mods": _sort_pack_entries(entries),
             "filenames": [info["fileName"] for info in resolved.values() if info.get("fileName")],
             "mc_version": (manifest.get("minecraft") or {}).get("version"),
-            "server_pack": bool(version.get("server_pack_file_id")),
+            "server_pack": server_pack,
         }
 
     return _cached_pack_contents(("curseforge", str(mod_id), str(file_id)), compute)

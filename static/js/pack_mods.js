@@ -7,6 +7,7 @@ var packModsState = { items: [], filter: 'all', query: '', token: 0 };
 
 var PACK_MOD_STATUS = {
   client_only: ['Solo cliente', 'El propio mod indica que no funciona en un servidor: no se instala.'],
+  not_in_server_pack: ['Solo cliente', 'El autor no lo incluye en su Server Pack: es un mod para los jugadores, el servidor no lo necesita.'],
   known_bad: ['Rompe el servidor', 'Se sabe que hace caer un servidor dedicado: no se instala.'],
   blocked: ['A mano', 'El autor no deja descargarlo desde otras aplicaciones: tendrás que subirlo tú después de instalar.'],
   not_needed: ['No hace falta', 'No es un mod (resource pack, shader…): el servidor no lo usa.'],
@@ -71,7 +72,7 @@ function openPackModsModal() {
         return;
       }
       packModsState.items = result.data.mods || [];
-      packModsState.serverPack = !!result.data.server_pack;
+      packModsState.serverPack = result.data.server_pack || null;
       renderPackModsSummary();
       renderPackMods();
     })
@@ -152,9 +153,12 @@ function renderPackMods() {
       || (item.name || '').toLowerCase().indexOf(query) !== -1
       || (item.filename || '').toLowerCase().indexOf(query) !== -1;
   });
-  var notice = packModsState.serverPack
-    ? '<div class="mb-s">' + noticeHtml('info', 'Esta versión trae «Server Files» oficiales y se instalará ese paquete: la lista final la decide el autor del modpack y puede variar un poco respecto a esta.') + '</div>'
-    : '';
+  var notice = '';
+  if (packModsState.serverPack === 'exact') {
+    notice = '<div class="mb-s">' + noticeHtml('info', 'Esta versión trae «Server Files» oficiales, así que se instala ese paquete tal cual: esta es su lista de mods.') + '</div>';
+  } else if (packModsState.serverPack === 'approx') {
+    notice = '<div class="mb-s">' + noticeHtml('info', 'Esta versión trae «Server Files» oficiales y se instalará ese paquete, pero no se ha podido leer su contenido: esta lista es la del modpack completo y el servidor puede llevar algunos mods menos (los de cliente).') + '</div>';
+  }
   if (!visible.length) {
     body.innerHTML = notice + (packModsState.items.length
       ? emptyArt('spyglass', 'Nada por aquí', query ? 'Ningún mod coincide con «' + query + '».' : 'No hay nada en este grupo.')
