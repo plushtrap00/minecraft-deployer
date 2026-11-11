@@ -189,7 +189,7 @@ function formatUptime(seconds) {
   return minutes + ' min';
 }
 
-// uptime_seconds llega con cada /metrics (cada minuto); entre medias se
+// uptime_seconds llega con cada /metrics (cada 10 s); entre medias se
 // cuenta en el navegador a partir del último valor recibido.
 var uptimeBase = null;
 

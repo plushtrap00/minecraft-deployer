@@ -43,7 +43,7 @@ function loadHistoryCharts() {
     if (currentPage === 'server' && !document.hidden && serverRunning) {
       fetchHistory();
     }
-  }, 5 * 60 * 1000);
+  }, 60 * 1000);  // una muestra nueva por minuto (services/scheduler.py)
 }
 
 function fetchHistory() {

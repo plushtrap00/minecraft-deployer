@@ -14,6 +14,7 @@ sesión de servidor en vez de en cada refresco de métricas.
 """
 import socket
 import struct
+import threading
 
 SERVERDATA_AUTH = 3
 SERVERDATA_AUTH_RESPONSE = 2
@@ -59,6 +60,10 @@ class RconConnection:
         self.timeout = timeout
         self._sock: socket.socket | None = None
         self._req_id = 1
+        # La usan a la vez el planificador (una muestra por minuto) y cada
+        # pestaña abierta en la página Servidor: sin esto dos comandos podían
+        # mezclar sus paquetes en el mismo socket.
+        self._lock = threading.RLock()
 
     def _authenticate(self):
         sock = socket.create_connection((self.host, self.port), timeout=self.timeout)
@@ -85,19 +90,21 @@ class RconConnection:
 
     def command(self, command: str) -> str:
         """Ejecuta un comando, reconectando de forma transparente si hace falta."""
-        if self._sock is None:
-            self._authenticate()
-        try:
-            return self._exec(command)
-        except (OSError, RconError):
-            self.close()
-            self._authenticate()
-            return self._exec(command)
+        with self._lock:
+            if self._sock is None:
+                self._authenticate()
+            try:
+                return self._exec(command)
+            except (OSError, RconError):
+                self.close()
+                self._authenticate()
+                return self._exec(command)
 
     def close(self):
-        if self._sock is not None:
-            try:
-                self._sock.close()
-            except Exception:
-                pass
-            self._sock = None
+        with self._lock:
+            if self._sock is not None:
+                try:
+                    self._sock.close()
+                except Exception:
+                    pass
+                self._sock = None

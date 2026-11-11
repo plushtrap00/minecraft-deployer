@@ -324,19 +324,31 @@ def refresh_via_rcon(conn: RconConnection, modloader: str | None):
         mc_metrics["rcon_status"] = f"sin conexión ({e})"
 
 
+# Varias pestañas (o personas) en la página Servidor piden métricas cada pocos
+# segundos: si se acaban de leer, se reutilizan en vez de repetir los comandos.
+METRICS_MIN_INTERVAL = 3.0
+_last_metrics_refresh = 0.0
+_metrics_refresh_lock = threading.Lock()
+
+
 def refresh_metrics() -> bool:
     """Refresca TPS/jugadores/RAM del servidor encendido. False si no hay servidor."""
+    global _last_metrics_refresh
     with proc_module.mc_process_lock:
         proc = proc_module.mc_process
         if proc is None or proc.poll() is not None:
             return False
         conn = proc_module.mc_rcon_conn
         modloader = proc_module.mc_modloader
-    if conn is not None:
-        refresh_via_rcon(conn, modloader)
-    else:
-        mc_metrics["rcon_status"] = "no configurado (reinicia el servidor desde el panel)"
-    read_proc_ram(proc.pid)
+    with _metrics_refresh_lock:
+        if time.monotonic() - _last_metrics_refresh < METRICS_MIN_INTERVAL:
+            return True
+        if conn is not None:
+            refresh_via_rcon(conn, modloader)
+        else:
+            mc_metrics["rcon_status"] = "no configurado (reinicia el servidor desde el panel)"
+        read_proc_ram(proc.pid)
+        _last_metrics_refresh = time.monotonic()
     return True
 
 

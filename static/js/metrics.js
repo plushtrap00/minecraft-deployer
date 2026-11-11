@@ -4,8 +4,12 @@
 
 // -- Métricas ------------------------------------------------------------------
 var metricsTimer = null;
+// Cada cuánto se piden: lo bastante a menudo para que se vea vivo sin cargar
+// el servidor (el panel reutiliza la lectura si otra pestaña la acaba de hacer).
+var METRICS_POLL_MS = 10000;
 // Últimas muestras de TPS/MSPT para las líneas de evolución (una por
-// consulta, cada minuto: 30 muestras = la última media hora).
+// consulta: 60 muestras cada 10 s = los últimos 10 minutos).
+var METRICS_SPARK_SAMPLES = 60;
 var metricsHistory = { tps: [], mspt: [] };
 
 // Si el servidor está en marcha se quieren métricas, pero mientras la
@@ -21,7 +25,7 @@ function startMetricsPolling() {
   }
   fetchMetrics();
   if (!metricsTimer) {
-    metricsTimer = setInterval(fetchMetrics, 60000);
+    metricsTimer = setInterval(fetchMetrics, METRICS_POLL_MS);
   }
   _startRelativeTicker();
 }
@@ -47,13 +51,14 @@ document.addEventListener('visibilitychange', function() {
   }
 });
 
+// Primero se le piden datos nuevos a Minecraft y luego se leen: así lo que se
+// ve es de ahora y no de la consulta anterior.
 function fetchMetrics() {
-  apiFetch('/api/server/metrics')
+  apiFetch('/api/server/metrics/refresh', { method: 'POST' })
+    .catch(function() {})
+    .then(function() { return apiFetch('/api/server/metrics'); })
     .then(function(response) { return response.json(); })
-    .then(function(data) {
-      updateMetricsUI(data);
-      apiFetch('/api/server/metrics/refresh', { method: 'POST' }).catch(function() {});
-    })
+    .then(updateMetricsUI)
     .catch(function() {});
 }
 
@@ -111,7 +116,7 @@ function renderMetric(kind, value) {
   card.className = 'metric ' + rating[0];
   var history = metricsHistory[kind];
   history.push(value);
-  if (history.length > 30) {
+  if (history.length > METRICS_SPARK_SAMPLES) {
     history.shift();
   }
   renderSpark(document.getElementById('spark-' + kind), history, kind === 'tps' ? [0, 20] : null);
