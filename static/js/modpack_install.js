@@ -301,6 +301,7 @@ function selectModpackToInstall(pack) {
   dlDuplicateMatches = [];
   dlInstallBlocked = false;
   updateDlInstallBtnAppearance();
+  setDlPackModsButton('hidden');
 
   var versionSelect = document.getElementById('dl-version-select');
   versionSelect.innerHTML = '<option value="">Cargando versiones…</option>';
@@ -403,6 +404,7 @@ function checkDlDuplicate() {
     dlDuplicateMatches = [];
     dlInstallBlocked = false;
     updateDlInstallBtnAppearance();
+    setDlPackModsButton('hidden');
     return;
   }
 
@@ -412,6 +414,7 @@ function checkDlDuplicate() {
   dlInstallBlocked = false;
   updateDlInstallBtnAppearance();
   warningEl.innerHTML = '<p class="empty-msg">Comprobando si ya está instalado…</p>';
+  setDlPackModsButton('loading');
 
   var url = '/api/modpack-install/check-existing?source=' + encodeURIComponent(dlSelectedPack.source)
     + '&project_id=' + encodeURIComponent(dlSelectedPack.id) + '&version_id=' + encodeURIComponent(versionId);
@@ -428,6 +431,8 @@ function checkDlDuplicate() {
       var data = result.ok ? result.data : {};
       dlDuplicateMatches = data.matches || [];
       dlInstallBlocked = !!data.blocked;
+      // Con el pack bloqueado tampoco se puede leer su lista de mods.
+      setDlPackModsButton(dlInstallBlocked ? 'hidden' : 'ready', data.summary);
       if (dlInstallBlocked) {
         warningEl.innerHTML = dlBlockedHtml(data.reason);
       } else if (dlDuplicateMatches.length) {
@@ -448,6 +453,7 @@ function checkDlDuplicate() {
       dlInstallBlocked = false;
       warningEl.innerHTML = '';
       updateDlInstallBtnAppearance();
+      setDlPackModsButton('ready');
     });
 }
 

@@ -1,0 +1,29 @@
+<!-- Modal: mods que trae un modpack antes de instalarlo (pack_mods.js) -->
+<div class="modal-overlay" id="pack-mods-modal" aria-labelledby="pack-mods-title">
+  <div class="modal modal-sm pack-mods-modal">
+    <div class="modal-header">
+      <span class="modal-icon"><svg class="icon"><use href="#i-package"/></svg></span>
+      <span class="modal-path" id="pack-mods-title">Mods del modpack</span>
+      <button class="modal-close" id="pack-mods-close" aria-label="Cerrar"><svg class="icon"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="pack-mods-toolbar">
+      <p class="pack-mods-summary" id="pack-mods-summary"></p>
+      <div class="pack-mods-controls">
+        <label class="search-field"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg><input type="text" id="pack-mods-filter" placeholder="Filtrar por nombre…" aria-label="Filtrar mods por nombre" autocomplete="off" spellcheck="false"></label>
+        <div class="segmented" role="group" aria-label="Qué mods mostrar" id="pack-mods-tabs">
+          <button type="button" class="segmented-btn active" data-filter="all" aria-pressed="true">Todos</button>
+          <button type="button" class="segmented-btn" data-filter="install" aria-pressed="false">Se instalan</button>
+          <button type="button" class="segmented-btn" data-filter="skip" aria-pressed="false">No se instalan</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="modal-scroll pack-mods-scroll" id="pack-mods-body"></div>
+    </div>
+    <div class="modal-footer">
+      <div class="modal-footer-actions">
+        <button class="btn-secondary" id="pack-mods-close2">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>

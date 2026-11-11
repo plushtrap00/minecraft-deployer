@@ -7,6 +7,7 @@ Endpoints:
 - GET /api/modpack-install/categories
 - GET /api/modpack-install/versions
 - GET /api/modpack-install/check-existing
+- GET /api/modpack-install/mods
 - GET /api/modpack-install/stream   (SSE — GET porque EventSource no soporta POST)
 """
 import json
@@ -22,7 +23,7 @@ from services.modpack_install import (
     search_modrinth_modpacks, get_modrinth_modpack_versions, install_modrinth_modpack_stream,
     search_curseforge_modpacks, get_curseforge_modpack_versions, install_curseforge_modpack_stream,
     get_modrinth_modpack_categories, get_curseforge_modpack_categories,
-    get_modrinth_modpack_files, get_curseforge_modpack_files, find_similar_installed_modpacks,
+    get_modrinth_modpack_mods, get_curseforge_modpack_mods, find_similar_installed_modpacks,
     ModpackDownloadBlocked,
 )
 from services.busy import BusyGuard
@@ -83,25 +84,39 @@ async def versions(source: str, project_id: str):
     return JSONResponse({"versions": result})
 
 
+async def _pack_contents(source: str, project_id: str, version_id: str) -> dict:
+    """Contenido de una versión de modpack (cacheado unos minutos en el servicio)."""
+    if source not in _SOURCES:
+        raise HTTPException(status_code=400, detail="source inválido")
+    if source == "modrinth":
+        return await asyncio.to_thread(get_modrinth_modpack_mods, project_id, version_id)
+    try:
+        cf_project_id = int(project_id)
+        cf_file_id = int(version_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="ID de CurseForge inválido")
+    return await asyncio.to_thread(get_curseforge_modpack_mods, cf_project_id, cf_file_id)
+
+
+def _mods_summary(contents: dict) -> dict:
+    mods = [m for m in contents["mods"] if m["kind"] == "mod"]
+    return {
+        "total": len(contents["mods"]),
+        "mods": len(mods),
+        "install": sum(1 for m in mods if m["status"] == "install"),
+    }
+
+
 @router.get("/check-existing")
 async def check_existing(source: str, project_id: str, version_id: str):
     """
     Comprueba si esta versión de modpack ya podría estar instalada en algún
     servidor existente, comparando su lista de mods (sin descargarlos) contra
     los mods ya instalados en cada servidor — ver find_similar_installed_modpacks().
+    De paso devuelve el recuento de mods para el botón «Ver mods».
     """
-    if source not in _SOURCES:
-        raise HTTPException(status_code=400, detail="source inválido")
     try:
-        if source == "modrinth":
-            filenames, mc_version = await asyncio.to_thread(get_modrinth_modpack_files, project_id, version_id)
-        else:
-            try:
-                cf_project_id = int(project_id)
-                cf_file_id = int(version_id)
-            except ValueError:
-                raise HTTPException(status_code=400, detail="ID de CurseForge inválido")
-            filenames, mc_version = await asyncio.to_thread(get_curseforge_modpack_files, cf_project_id, cf_file_id)
+        contents = await _pack_contents(source, project_id, version_id)
     except ModSearchError as e:
         raise HTTPException(status_code=502, detail=str(e))
     except ModpackDownloadBlocked as e:
@@ -115,8 +130,25 @@ async def check_existing(source: str, project_id: str, version_id: str):
         # desactualizado) — no necesariamente impide instalar, así que no
         # bloquea el botón, solo informa de que no se pudo comprobar.
         return JSONResponse({"matches": [], "checked": False, "blocked": False, "reason": str(e)})
-    matches = await asyncio.to_thread(find_similar_installed_modpacks, filenames, mc_version)
-    return JSONResponse({"matches": matches, "checked": True, "blocked": False})
+    matches = await asyncio.to_thread(find_similar_installed_modpacks, contents["filenames"], contents["mc_version"])
+    return JSONResponse({"matches": matches, "checked": True, "blocked": False, "summary": _mods_summary(contents)})
+
+
+@router.get("/mods")
+async def pack_mods(source: str, project_id: str, version_id: str):
+    """Mods (y demás archivos) que instalaría esta versión de modpack, sin descargarlos."""
+    try:
+        contents = await _pack_contents(source, project_id, version_id)
+    except ModSearchError as e:
+        raise HTTPException(status_code=502, detail=str(e))
+    except ModpackDownloadBlocked as e:
+        raise HTTPException(status_code=409, detail=str(e))
+    except RuntimeError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    return JSONResponse({
+        "mods": contents["mods"], "mc_version": contents["mc_version"],
+        "server_pack": contents["server_pack"], "summary": _mods_summary(contents),
+    })
 
 
 @router.get("/stream")

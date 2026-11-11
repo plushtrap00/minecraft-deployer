@@ -23,8 +23,10 @@ Formatos:
 import io
 import json
 import time
+import re
 import shutil
 import zipfile
+import threading
 import asyncio
 import urllib.request
 import urllib.parse
@@ -255,24 +257,144 @@ def _get_modrinth_pack_index(project_id: str, version_id: str) -> tuple[dict, zi
     return index, zf
 
 
-def get_modrinth_modpack_files(project_id: str, version_id: str) -> tuple[list, str | None]:
+# ── Contenido de un modpack (vista previa antes de instalar) ──────────────────
+# La comprobación de duplicados y el botón «Ver mods» piden lo mismo casi a la
+# vez: se guarda el resultado unos minutos (con un candado por clave) para que
+# el pack solo se descargue una vez. Lo guardado es la lista ya resuelta, no
+# el zip, así que ocupa poco aunque el pack pese cientos de MB.
+_PACK_CONTENTS_TTL_SECONDS = 600
+_PACK_CONTENTS_MAX = 16
+_pack_contents_cache: dict = {}
+_pack_contents_locks: dict = {}
+_pack_contents_guard = threading.Lock()
+
+
+def _cached_pack_contents(key: tuple, compute):
+    with _pack_contents_guard:
+        key_lock = _pack_contents_locks.setdefault(key, threading.Lock())
+    with key_lock:
+        hit = _pack_contents_cache.get(key)
+        if hit and time.time() - hit[0] < _PACK_CONTENTS_TTL_SECONDS:
+            return hit[1]
+        result = compute()
+        with _pack_contents_guard:
+            if len(_pack_contents_cache) >= _PACK_CONTENTS_MAX:
+                oldest = min(_pack_contents_cache, key=lambda k: _pack_contents_cache[k][0])
+                _pack_contents_cache.pop(oldest, None)
+                _pack_contents_locks.pop(oldest, None)
+            _pack_contents_cache[key] = (time.time(), result)
+        return result
+
+
+_MODRINTH_CDN_PROJECT_RE = re.compile(r"cdn\.modrinth\.com/data/([A-Za-z0-9]+)/")
+_PATH_KINDS = {"mods": "mod", "resourcepacks": "resourcepack", "shaderpacks": "shader", "datapacks": "datapack"}
+_MODRINTH_PROJECTS_CHUNK = 100
+
+
+def _kind_from_path(rel_path: str) -> str:
+    return _PATH_KINDS.get(rel_path.split("/", 1)[0], "other")
+
+
+def _display_name_from_filename(filename: str) -> str:
+    return re.sub(r"\.(jar|zip|disabled)$", "", filename, flags=re.IGNORECASE)
+
+
+def _embedded_jar_entries(zf: zipfile.ZipFile, override_dirs: tuple) -> list:
+    """Jars metidos dentro del propio pack (overrides/mods/...), que no son referencias a descargar."""
+    entries = []
+    seen = set()
+    for overrides_dir in override_dirs:
+        prefix = overrides_dir + "/mods/"
+        for info in zf.infolist():
+            name = info.filename
+            if not name.startswith(prefix) or not name.lower().endswith(".jar"):
+                continue
+            filename = name[len(prefix):]
+            if "/" in filename or filename in seen:
+                continue
+            seen.add(filename)
+            entries.append({
+                "name": _display_name_from_filename(filename), "filename": filename,
+                "icon_url": None, "page_url": None, "description": None,
+                "kind": "mod", "status": "install", "embedded": True, "size": info.file_size,
+            })
+    return entries
+
+
+def _resolve_modrinth_projects(project_ids: list) -> dict:
+    """GET /v2/projects?ids=[...] por tandas -> {project_id: proyecto}. Sin red, devuelve lo que haya podido."""
+    result = {}
+    for i in range(0, len(project_ids), _MODRINTH_PROJECTS_CHUNK):
+        chunk = project_ids[i:i + _MODRINTH_PROJECTS_CHUNK]
+        url = "https://api.modrinth.com/v2/projects?ids=" + urllib.parse.quote(json.dumps(chunk))
+        try:
+            data = _http_get_json(url)
+        except Exception:
+            continue
+        for p in data or []:
+            if p.get("id"):
+                result[p["id"]] = p
+    return result
+
+
+def _sort_pack_entries(entries: list) -> list:
+    order = {"install": 0, "blocked": 1, "client_only": 2, "known_bad": 2, "not_needed": 3, "unresolved": 4}
+    return sorted(entries, key=lambda e: (order.get(e["status"], 9), (e["name"] or "").lower()))
+
+
+def get_modrinth_modpack_mods(project_id: str, version_id: str) -> dict:
     """
-    Nombres de archivo (mods, sin overrides) + versión de MC de una versión de
-    modpack, sin descargar los mods en sí (solo el .mrpack, que es liviano:
-    los mods son URLs externas, no van embebidos) — usado por
-    find_similar_installed_modpacks() para comprobar si ya está instalado
-    ANTES de descargar nada pesado.
+    Lo que traería una versión de modpack de Modrinth, sin descargar ningún
+    mod: el .mrpack solo trae URLs. Cada entrada lleva `status` con lo que
+    haría la instalación con ella (ver install_modrinth_modpack_stream):
+    install, client_only (env.server = unsupported) o known_bad
+    (_KNOWN_CLIENT_ONLY_MOD_IDS). `filenames` mantiene el criterio de
+    siempre para find_similar_installed_modpacks().
     """
-    index, _zf = _get_modrinth_pack_index(project_id, version_id)
-    deps = index.get("dependencies", {})
-    mc_version = deps.get("minecraft")
-    files = index.get("files", [])
-    filenames = [
-        Path(f["path"]).name
-        for f in files
-        if f.get("path") and (f.get("env") or {}).get("server") != "unsupported"
-    ]
-    return filenames, mc_version
+    def compute():
+        index, zf = _get_modrinth_pack_index(project_id, version_id)
+        deps = index.get("dependencies", {})
+        files = [f for f in index.get("files", []) if f.get("path")]
+
+        project_ids = []
+        for f in files:
+            match = _MODRINTH_CDN_PROJECT_RE.search(" ".join(f.get("downloads") or []))
+            f["_project_id"] = match.group(1) if match else None
+            if f["_project_id"] and f["_project_id"] not in project_ids:
+                project_ids.append(f["_project_id"])
+        projects = _resolve_modrinth_projects(project_ids) if project_ids else {}
+
+        entries = []
+        for f in files:
+            rel_path = f["path"]
+            filename = Path(rel_path).name
+            kind = _kind_from_path(rel_path)
+            if (f.get("env") or {}).get("server") == "unsupported":
+                status = "client_only"
+            elif kind == "mod" and _known_client_only_reason(filename):
+                status = "known_bad"
+            else:
+                status = "install"
+            project = projects.get(f["_project_id"]) or {}
+            page_url = None
+            if project.get("slug"):
+                page_url = f"https://modrinth.com/{project.get('project_type') or 'mod'}/{project['slug']}"
+            entries.append({
+                "name": project.get("title") or _display_name_from_filename(filename),
+                "filename": filename, "icon_url": project.get("icon_url"), "page_url": page_url,
+                "description": project.get("description"), "kind": kind, "status": status,
+                "embedded": False, "size": f.get("fileSize"),
+            })
+        entries.extend(_embedded_jar_entries(zf, ("overrides", "server-overrides")))
+        zf.close()
+        return {
+            "mods": _sort_pack_entries(entries),
+            "filenames": [Path(f["path"]).name for f in files if (f.get("env") or {}).get("server") != "unsupported"],
+            "mc_version": deps.get("minecraft"),
+            "server_pack": False,
+        }
+
+    return _cached_pack_contents(("modrinth", str(project_id), str(version_id)), compute)
 
 
 def _store_modpack_logo(server_dir: Path, source: str, project_id) -> None:
@@ -489,7 +611,7 @@ def _resolve_curseforge_file_urls(file_ids: list) -> dict:
         with urllib.request.urlopen(req, timeout=_HTTP_TIMEOUT) as resp:
             data = json.loads(resp.read().decode("utf-8", errors="replace"))
         for f in data.get("data", []):
-            result[f["id"]] = {"downloadUrl": f.get("downloadUrl"), "fileName": f.get("fileName")}
+            result[f["id"]] = {"downloadUrl": f.get("downloadUrl"), "fileName": f.get("fileName"), "fileLength": f.get("fileLength")}
     return result
 
 
@@ -503,6 +625,11 @@ def _resolve_curseforge_project_classes(project_ids: list) -> dict:
     servidor (un resource pack o shader no lo usa el server, son 100% del
     lado cliente).
     """
+    return {pid: project.get("classId") for pid, project in _resolve_curseforge_projects(project_ids).items()}
+
+
+def _resolve_curseforge_projects(project_ids: list) -> dict:
+    """POST /v1/mods (bulk) -> {projectID: proyecto completo} (nombre, logo, enlaces, classId...)."""
     headers = _curseforge_headers()
     result = {}
     for i in range(0, len(project_ids), _CURSEFORGE_BULK_FILES_CHUNK):
@@ -516,7 +643,7 @@ def _resolve_curseforge_project_classes(project_ids: list) -> dict:
         with urllib.request.urlopen(req, timeout=_HTTP_TIMEOUT) as resp:
             data = json.loads(resp.read().decode("utf-8", errors="replace"))
         for m in data.get("data", []):
-            result[m["id"]] = m.get("classId")
+            result[m["id"]] = m
     return result
 
 
@@ -558,22 +685,60 @@ def _resolve_curseforge_server_pack(server_pack_file_id: int) -> dict | None:
     return {"download_url": info["downloadUrl"], "filename": info.get("fileName") or "server-files.zip"}
 
 
-def get_curseforge_modpack_files(mod_id, file_id) -> tuple[list, str | None]:
+_CURSEFORGE_CLASS_KINDS = {CURSEFORGE_MOD_CLASS_ID: "mod", 12: "resourcepack", 6552: "shader", 6945: "datapack"}
+
+
+def get_curseforge_modpack_mods(mod_id, file_id) -> dict:
     """
-    Igual que get_modrinth_modpack_files() pero para CurseForge: el manifest
-    solo trae referencias (projectID/fileID), así que hace falta resolverlas
-    a nombres de archivo reales vía la API (sin descargar los jars) — mismo
-    endpoint bulk que ya usa _resolve_curseforge_file_urls() al instalar.
+    Como get_modrinth_modpack_mods() pero para CurseForge, con el mismo
+    criterio que install_curseforge_modpack_stream() en su camino mod a mod:
+    lo que no es un mod (classId ≠ 6) no hace falta (not_needed), los
+    conocidos por romper el servidor se saltan (known_bad) y los que el autor
+    no deja bajar a terceros quedan para subirlos a mano (blocked).
+    `server_pack` avisa de que esa build trae «Server Files»: entonces se
+    instala ese paquete, cuya lista la decide el autor y puede no coincidir.
     """
-    zf, _version = _download_curseforge_pack_zip(mod_id, file_id)
-    manifest = json.loads(zf.read("manifest.json"))
-    zf.close()
-    mc_version = (manifest.get("minecraft") or {}).get("version")
-    file_refs = manifest.get("files", [])
-    file_ids = [f["fileID"] for f in file_refs if f.get("fileID")]
-    resolved = _resolve_curseforge_file_urls(file_ids)
-    filenames = [info["fileName"] for info in resolved.values() if info.get("fileName")]
-    return filenames, mc_version
+    def compute():
+        zf, version = _download_curseforge_pack_zip(mod_id, file_id)
+        manifest = json.loads(zf.read("manifest.json"))
+        refs = [f for f in manifest.get("files", []) if f.get("fileID")]
+        resolved = _resolve_curseforge_file_urls([f["fileID"] for f in refs])
+        project_ids = list({f["projectID"] for f in refs if f.get("projectID")})
+        projects = _resolve_curseforge_projects(project_ids) if project_ids else {}
+
+        entries = []
+        for ref in refs:
+            info = resolved.get(ref["fileID"]) or {}
+            project = projects.get(ref.get("projectID")) or {}
+            filename = info.get("fileName")
+            class_id = project.get("classId", CURSEFORGE_MOD_CLASS_ID)
+            kind = _CURSEFORGE_CLASS_KINDS.get(class_id, "other")
+            if class_id != CURSEFORGE_MOD_CLASS_ID:
+                status = "not_needed"
+            elif filename and _known_client_only_reason(filename):
+                status = "known_bad"
+            elif not info:
+                status = "unresolved"
+            elif not info.get("downloadUrl"):
+                status = "blocked"
+            else:
+                status = "install"
+            entries.append({
+                "name": project.get("name") or (_display_name_from_filename(filename) if filename else f"Archivo {ref['fileID']}"),
+                "filename": filename, "icon_url": (project.get("logo") or {}).get("thumbnailUrl"),
+                "page_url": (project.get("links") or {}).get("websiteUrl"), "description": project.get("summary"),
+                "kind": kind, "status": status, "embedded": False, "size": info.get("fileLength"),
+            })
+        entries.extend(_embedded_jar_entries(zf, (manifest.get("overrides", "overrides"),)))
+        zf.close()
+        return {
+            "mods": _sort_pack_entries(entries),
+            "filenames": [info["fileName"] for info in resolved.values() if info.get("fileName")],
+            "mc_version": (manifest.get("minecraft") or {}).get("version"),
+            "server_pack": bool(version.get("server_pack_file_id")),
+        }
+
+    return _cached_pack_contents(("curseforge", str(mod_id), str(file_id)), compute)
 
 
 async def install_curseforge_modpack_stream(mod_id, file_id, server_name: str, ram_min: str, ram_max: str):
@@ -775,7 +940,7 @@ def find_similar_installed_modpacks(filenames: list, mc_version: str | None) -> 
     el pack sí lo hace.
 
     No requiere descargar ningún mod: filenames viene de
-    get_modrinth_modpack_files()/get_curseforge_modpack_files(), que solo leen
+    get_modrinth_modpack_mods()/get_curseforge_modpack_mods(), que solo leen
     el índice/manifest del pack, y lo instalado se compara por nombre de
     archivo en disco.
     """
