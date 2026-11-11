@@ -98,11 +98,23 @@ def _bootstrap_common_files(server_dir: Path, mc_version: str, loader_key: str |
 
     # detect_modpack_version() prioriza variables.txt: sin esto, la app no
     # reconocería el modloader/versión hasta el primer parseo de nombres de jar.
+    # Si el modpack ya trae uno (p. ej. los de ServerPackCreator, cuyo
+    # start.sh saca de ahí JAVA, JAVA_ARGS, la versión del ServerStarterJar...)
+    # NO se pisa: antes se sustituía por estas tres líneas y el servidor no
+    # arrancaba («: orden no encontrada» con JAVA vacío, y un server.jar que
+    # en realidad era la página «Not Found»). Solo se añade lo que falte.
     loader_display = LOADER_DISPLAY_NAMES.get(loader_key, "Vanilla") if loader_key else "Vanilla"
-    lines = [f'MINECRAFT_VERSION="{mc_version}"\n', f'MODLOADER="{loader_display}"\n']
+    wanted = {"MINECRAFT_VERSION": mc_version, "MODLOADER": loader_display}
     if loader_version:
-        lines.append(f'MODLOADER_VERSION="{loader_version}"\n')
-    (server_dir / "variables.txt").write_text("".join(lines), encoding="utf-8")
+        wanted["MODLOADER_VERSION"] = loader_version
+    vars_path = server_dir / "variables.txt"
+    existing = vars_path.read_text(encoding="utf-8", errors="replace") if vars_path.exists() else ""
+    present = set(re.findall(r'^\s*([A-Z_]+)\s*=', existing, re.MULTILINE))
+    missing = [f'{key}="{value}"\n' for key, value in wanted.items() if key not in present]
+    if missing:
+        if existing and not existing.endswith("\n"):
+            existing += "\n"
+        vars_path.write_text(existing + "".join(missing), encoding="utf-8")
 
 
 async def create_server_stream(

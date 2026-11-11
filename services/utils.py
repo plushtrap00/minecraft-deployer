@@ -304,6 +304,42 @@ def _detect_ram_in_text(text: str) -> tuple[str | None, str | None]:
     return (xms_m.group(1) if xms_m else None, xmx_m.group(1) if xmx_m else None)
 
 
+def _script_code_only(text: str) -> str:
+    """
+    El script sin comentarios: todo lo que va desde el primer «#» de cada
+    línea fuera. Así no cuenta como RAM real un ejemplo como el de los
+    start.sh de ServerPackCreator (echo "# To set the minimum to 2.5GB: -Xms2500M"),
+    ni se reescribe al guardar.
+    """
+    return "\n".join(line.split("#", 1)[0] for line in text.splitlines())
+
+
+_WRITES_USER_JVM_ARGS_RE = re.compile(r'>>?\s*"?user_jvm_args\.txt')
+
+
+def _jvm_args_generated_from_variables(server_dir: Path) -> bool:
+    """
+    True si el script de arranque rehace user_jvm_args.txt a partir de
+    JAVA_ARGS de variables.txt en cada arranque (los start.sh de
+    ServerPackCreator: «Edit JAVA_ARGS in your variables.txt. Do not edit
+    user_jvm_args.txt directly!»). En esos packs la RAM tiene que ir en
+    variables.txt: lo que se escriba en user_jvm_args.txt se pierde al
+    arrancar, aunque después de un arranque ahí aparezca -Xmx.
+    """
+    vars_path = server_dir / "variables.txt"
+    if not vars_path.exists():
+        return False
+    if not re.search(r'^\s*JAVA_ARGS\s*=\s*"', vars_path.read_text(encoding="utf-8", errors="replace"), re.IGNORECASE | re.MULTILINE):
+        return False
+    for script_name in _RAM_SCRIPT_NAMES:
+        script_path = server_dir / script_name
+        if script_path.exists():
+            text = script_path.read_text(encoding="utf-8", errors="replace")
+            if "JAVA_ARGS" in text and _WRITES_USER_JVM_ARGS_RE.search(text):
+                return True
+    return False
+
+
 def detect_jvm_ram(server_dir: Path) -> dict:
     """
     Detecta la RAM configurada actualmente, sin modificar nada. Devuelve
@@ -313,6 +349,12 @@ def detect_jvm_ram(server_dir: Path) -> dict:
     archivo existe pero aún no tiene RAM (ver el comentario de arriba).
     """
     jvm_path = server_dir / "user_jvm_args.txt"
+    vars_path = server_dir / "variables.txt"
+    if _jvm_args_generated_from_variables(server_dir):
+        m = re.search(r'JAVA_ARGS\s*=\s*"([^"]*)"', vars_path.read_text(encoding="utf-8", errors="replace"), re.IGNORECASE)
+        ram_min, ram_max = _detect_ram_in_text(m.group(1)) if m else (None, None)
+        return {"ram_min": ram_min, "ram_max": ram_max, "source": "variables.txt", "unset": not (ram_min or ram_max)}
+
     if jvm_path.exists():
         active_text = "\n".join(
             line for line in jvm_path.read_text(encoding="utf-8").splitlines()
@@ -322,7 +364,6 @@ def detect_jvm_ram(server_dir: Path) -> dict:
         if ram_min or ram_max:
             return {"ram_min": ram_min, "ram_max": ram_max, "source": "user_jvm_args.txt", "unset": False}
 
-    vars_path = server_dir / "variables.txt"
     if vars_path.exists():
         m = re.search(r'JAVA_ARGS\s*=\s*"([^"]*)"', vars_path.read_text(encoding="utf-8"), re.IGNORECASE)
         if m:
@@ -334,7 +375,8 @@ def detect_jvm_ram(server_dir: Path) -> dict:
         script_path = server_dir / script_name
         if not script_path.exists():
             continue
-        ram_min, ram_max = _detect_ram_in_text(script_path.read_text(encoding="utf-8", errors="replace"))
+        code = _script_code_only(script_path.read_text(encoding="utf-8", errors="replace"))
+        ram_min, ram_max = _detect_ram_in_text(code)
         if ram_min or ram_max:
             return {"ram_min": ram_min, "ram_max": ram_max, "source": script_name, "unset": False}
 
@@ -416,11 +458,16 @@ def configure_jvm_ram(dest_path: Path, ram_min: str, ram_max: str) -> str | None
         if not script_path.exists():
             continue
         text = script_path.read_text(encoding="utf-8", errors="replace")
-        if not (_XMS_RE.search(text) or _XMX_RE.search(text)):
+        code = _script_code_only(text)
+        if not (_XMS_RE.search(code) or _XMX_RE.search(code)):
             continue
-        new_text = _XMS_RE.sub(f"-Xms{ram_min}", text)
-        new_text = _XMX_RE.sub(f"-Xmx{ram_max}", new_text)
-        script_path.write_text(new_text, encoding="utf-8")
+        new_lines = []
+        for line in text.splitlines(keepends=True):
+            cut = line.find("#")
+            head, tail = (line, "") if cut < 0 else (line[:cut], line[cut:])
+            head = _XMX_RE.sub(f"-Xmx{ram_max}", _XMS_RE.sub(f"-Xms{ram_min}", head))
+            new_lines.append(head + tail)
+        script_path.write_text("".join(new_lines), encoding="utf-8")
         return script_name
 
     return None
