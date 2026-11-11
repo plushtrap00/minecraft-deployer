@@ -57,6 +57,24 @@ def deployer_line(text: str) -> None:
 
 
 # ── Arrancar ──────────────────────────────────────────────────────────────────
+_SOURCE_VARIABLES_RE = re.compile(
+    rb'(?m)^([ \t]*(?:source|\.)[ \t]+["\']?(?:\./)?variables\.txt["\']?[ \t]*)(\r?)$'
+)
+
+
+def patch_sourced_variables(script: bytes) -> bytes:
+    """
+    Los start.sh de ServerPackCreator leen RESTART y WAIT_FOR_USER_INPUT de
+    variables.txt («source ./variables.txt») al ejecutarse, así que ni el
+    parche de RESTART de arriba ni las variables de entorno del Popen les
+    afectan. Justo después de esa línea se fuerzan las dos a false: con
+    WAIT_FOR_USER_INPUT=true, al cerrarse Minecraft por su cuenta (caída o
+    /stop en el juego) el script se quedaba en «Press any key to continue»
+    esperando una tecla que nunca llega, y el panel lo seguía viendo en marcha.
+    """
+    return _SOURCE_VARIABLES_RE.sub(rb'\1\2\nRESTART=false\2\nWAIT_FOR_USER_INPUT=false\2', script)
+
+
 def start_server(modpack: str, force: bool = False, keep_output: bool = False) -> None:
     """
     Arranca el servidor. Lanza HTTPException (400/404) o PendingModsError si
@@ -95,6 +113,7 @@ def start_server(modpack: str, force: bool = False, keep_output: bool = False) -
             rb'\1false',
             script_content
         )
+        script_content = patch_sourced_variables(script_content)
         tmp = tempfile.NamedTemporaryFile(mode='wb', suffix='.sh', dir=str(server_dir), delete=False)
         tmp.write(script_content)
         tmp.close()
@@ -138,6 +157,7 @@ def start_server(modpack: str, force: bool = False, keep_output: bool = False) -
         proc_module.mc_running_modpack = modpack
 
         threading.Thread(target=proc_module._reader_thread, args=(proc, patched_script), daemon=True).start()
+        threading.Thread(target=proc_module._script_watchdog, args=(proc,), daemon=True).start()
 
         if proc_module.mc_rcon_conn is not None:
             threading.Thread(

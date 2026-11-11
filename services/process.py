@@ -12,6 +12,7 @@ Contiene:
 """
 import os
 import re
+import signal
 import subprocess
 import threading
 import time
@@ -233,6 +234,71 @@ def _notify_stopped():
         for client in mc_sse_clients:
             _send_to_client(client, line)
             _send_to_client(client, "__STOPPED__")
+
+
+# ── Script atascado tras cerrarse Minecraft ────────────────────────────────────
+# Algunos scripts de arranque piden una tecla («Press any key to continue») o
+# preguntan algo al cerrarse Minecraft. Por stdin les llega lo que escribe el
+# panel, que nunca contesta: el script se queda vivo, sin java, y el panel lo
+# sigue viendo en marcha (sin avisar de la caída ni reiniciarlo). Este hilo
+# vigila el árbol de procesos: si ya hubo java y desaparece, manda un Intro
+# (la respuesta por defecto de cualquier pregunta así) y, si al rato sigue sin
+# java, cierra el script entero. Un Intro de más no hace daño: como mucho le
+# llega a la consola del siguiente java como una línea vacía.
+SCRIPT_WATCHDOG_INTERVAL = 2
+SCRIPT_NUDGE_EVERY = 8      # segundos sin java entre cada Intro (como mucho 3)
+SCRIPT_KILL_AFTER = 60      # segundos sin java hasta cerrar el script
+
+
+def _script_watchdog(proc, interval: float = SCRIPT_WATCHDOG_INTERVAL,
+                     nudge_every: float = SCRIPT_NUDGE_EVERY, kill_after: float = SCRIPT_KILL_AFTER):
+    java_seen = False
+    gone_since = None
+    nudges = 0
+    while proc.poll() is None:
+        time.sleep(interval)
+        if proc.poll() is not None:
+            return
+        if mc_stop_requested:
+            # Lo para stop_server(), que ya espera a java y cierra el grupo.
+            gone_since = None
+            continue
+        if find_java_descendant_pid(proc.pid) is not None:
+            java_seen = True
+            gone_since = None
+            nudges = 0
+            continue
+        if not java_seen:
+            continue  # aún preparando (descargas, instalador...): no se toca
+        now = time.monotonic()
+        if gone_since is None:
+            gone_since = now
+            continue
+        idle = now - gone_since
+        if idle >= kill_after:
+            _broadcast("\x1b[33m[Deployer] El script de arranque sigue abierto sin Minecraft; se cierra.\x1b[0m")
+            _kill_process_group(proc)
+            return
+        if nudges < 3 and idle >= nudge_every * (nudges + 1):
+            if nudges == 0:
+                _broadcast("\x1b[33m[Deployer] Minecraft se ha cerrado pero el script de arranque sigue esperando: se le envía Intro.\x1b[0m")
+            nudges += 1
+            try:
+                with mc_process_lock:
+                    proc.stdin.write(b"\n")
+                    proc.stdin.flush()
+            except Exception:
+                pass
+
+
+def _kill_process_group(proc) -> None:
+    try:
+        os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
+    except Exception:
+        try:
+            proc.kill()
+        except Exception:
+            pass
 
 
 # ── Reader thread ──────────────────────────────────────────────────────────────
