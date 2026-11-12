@@ -170,7 +170,7 @@ class PlayerStatsTest(unittest.TestCase):
         player = player_stats.player_stats(name)["players"][0]
         self.assertEqual((player["play_seconds"], player["deaths"], player["blocks_mined"]), (60, 1, 5))
 
-    def test_same_player_after_online_mode_change_is_merged(self):
+    def test_only_stats_of_current_online_mode_are_shown(self):
         from services.players import offline_uuid
         name = "pm" + str(time.time_ns())
         server = make_modpack(name)
@@ -187,9 +187,10 @@ class PlayerStatsTest(unittest.TestCase):
                 "minecraft:custom": {"minecraft:play_time": ticks, "minecraft:deaths": deaths},
             }}))
         players = player_stats.player_stats(name)["players"]
-        self.assertEqual(len(players), 1)
-        self.assertEqual(players[0]["uuid"], offline)
-        self.assertEqual((players[0]["play_seconds"], players[0]["deaths"]), (3660, 3))
+        self.assertEqual([(p["uuid"], p["play_seconds"], p["deaths"]) for p in players], [(offline, 3600, 2)])
+        props.write_text(props.read_text(encoding="utf-8").replace("online-mode=false", "online-mode=true"), encoding="utf-8")
+        players = player_stats.player_stats(name)["players"]
+        self.assertEqual([(p["uuid"], p["play_seconds"], p["deaths"]) for p in players], [(premium, 60, 1)])
 
 
 class HistoryTest(unittest.TestCase):

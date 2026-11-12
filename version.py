@@ -6,6 +6,8 @@ documentación de la API. Cada commit sube la versión (2.A.B, cada cifra de 0
 a 9: después de 2.0.9 va 2.1.0) y se etiqueta con `git tag v<versión>`.
 
 Historial resumido:
+- 2.0.4 (2026-11-12): en vez de juntarlas, las estadísticas enseñan solo las
+  del online-mode actual (UUID offline o premium).
 - 2.0.3 (2026-11-12): las estadísticas juntan al mismo jugador cuando se
   cambió online-mode con el mundo ya jugado (salía dos veces, una por UUID).
 - 2.0.2 (2026-11-11): las métricas de la página Servidor se refrescan cada
@@ -21,4 +23,4 @@ Historial resumido:
   otros usuarios.
 - 1.x: todo lo anterior (sin numerar).
 """
-APP_VERSION = "2.0.3"
+APP_VERSION = "2.0.4"
