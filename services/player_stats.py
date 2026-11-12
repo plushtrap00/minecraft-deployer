@@ -7,6 +7,11 @@ leídas de lo que el propio Minecraft guarda en el mundo:
 - usercache.json (en la carpeta del servidor): de UUID a nombre.
 - <mundo>/playerdata/<uuid>.dat: la fecha de modificación es la última vez
   que el servidor guardó al jugador (al salir o en el autoguardado).
+
+Si se cambia online-mode con el mundo ya jugado, Minecraft da a cada jugador
+otro UUID (el premium o el «OfflinePlayer:nombre») y el mundo acaba con dos
+archivos de estadísticas para la misma persona. Se juntan por nombre: se suman
+los números y se queda el UUID del online-mode actual (para la cabeza/skin).
 """
 import json
 from datetime import datetime
@@ -14,6 +19,7 @@ from pathlib import Path
 
 from config import DEFAULT_SERVERS_PATH
 from services.modpack import parse_server_properties
+from services.players import _pack_online_mode, offline_uuid
 
 TICKS_PER_SECOND = 20
 
@@ -90,5 +96,35 @@ def player_stats(modpack: str) -> dict:
                 "last_seen": datetime.fromtimestamp(last_seen).isoformat(timespec="seconds"),
                 **_summarize(data),
             })
+    players = _merge_same_name(players, _pack_online_mode(modpack))
     players.sort(key=lambda p: p["play_seconds"], reverse=True)
     return {"world": world, "players": players}
+
+
+def _merge_same_name(players: list, online: bool) -> list:
+    """Junta las entradas de un mismo nombre (UUID premium + UUID offline)."""
+    merged, order = {}, []
+    for player in players:
+        key = (player["name"] or "").lower() or player["uuid"]
+        if key not in merged:
+            merged[key] = [player]
+            order.append(key)
+        else:
+            merged[key].append(player)
+    result = []
+    for key in order:
+        group = merged[key]
+        if len(group) == 1:
+            result.append(group[0])
+            continue
+        name = group[0]["name"]
+        wanted = offline_uuid(name) if not online else None
+        current = next((p for p in group if p["uuid"] == wanted), None) if wanted else             next((p for p in group if p["uuid"] != offline_uuid(name)), None)
+        current = current or max(group, key=lambda p: p["last_seen"])
+        combined = {"uuid": current["uuid"], "name": name,
+                    "last_seen": max(p["last_seen"] for p in group)}
+        for field in ("play_seconds", "deaths", "mob_kills", "player_kills", "jumps", "blocks_mined"):
+            combined[field] = sum(p[field] for p in group)
+        combined["distance_km"] = round(sum(p["distance_km"] for p in group), 1)
+        result.append(combined)
+    return result
