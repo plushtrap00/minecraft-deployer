@@ -9,9 +9,6 @@ var kubejsFiles = {};
 var selectedConfigPath = null;
 var filteredModKeys = [];
 var filteredKjsKeys = [];
-var modPage = 0;
-var kjsPage = 0;
-var PAGE_SIZE = 25;
 // Último /api/modpacks por nombre: la cabecera del modpack que se gestiona
 // lo usa para el logo y el color del modloader.
 var modpackInfo = {};

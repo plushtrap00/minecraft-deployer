@@ -2,9 +2,9 @@
 var rawLogContent = '';
 var currentLogFile = '';
 
-// Tamaño de página del visor (líneas), mismo criterio que MOD_MODAL_PAGE_SIZE/
-// PAGE_SIZE en el resto de la app: constante de renderizado del cliente, no
-// un ajuste de servidor — un log rotado puede tener varios miles de líneas y
+// Tamaño de página del visor (líneas). Es de las pocas listas que siguen
+// paginadas (las ya cargadas se pintan enteras en su scroll): constante del
+// cliente, no un ajuste de servidor — un log rotado puede tener varios miles de líneas y
 // meterlas todas en el DOM de una vez arriesga colgar la pestaña.
 var LOG_PAGE_SIZE = 500;
 var logViewState = { lines: [], totalLines: 0, page: 0 };

@@ -1,4 +1,7 @@
-// Árboles de archivos paginados de las pestañas Config de mods y KubeJS.
+// Árboles de archivos de las pestañas Config de mods y KubeJS. Se pintan
+// enteros dentro de la caja con scroll (.mod-tree-body): los grupos salen
+// plegados, así que aunque haya cientos de mods no pesa, y paginar además
+// del scroll solo obligaba a ir pasando páginas.
 
 // -- Config de mods -----------------------------------------------------------
 function loadModConfigs() {
@@ -8,8 +11,7 @@ function loadModConfigs() {
     .then(function(data) {
       modConfigs = data.mods;
       filteredModKeys = sortedKeys(modConfigs, null);
-      modPage = 0;
-      renderTreePage('mod');
+      renderTree('mod');
     })
     .catch(function() {
       document.getElementById('mod-tree').innerHTML =
@@ -20,18 +22,7 @@ function loadModConfigs() {
 document.getElementById('mod-search').addEventListener('input', function() {
   activeModFilter = this.value;
   filteredModKeys = sortedKeys(modConfigs, this.value);
-  modPage = 0;
-  renderTreePage('mod');
-});
-
-document.getElementById('pg-prev').addEventListener('click', function() {
-  modPage--;
-  renderTreePage('mod');
-});
-
-document.getElementById('pg-next').addEventListener('click', function() {
-  modPage++;
-  renderTreePage('mod');
+  renderTree('mod');
 });
 
 
@@ -45,8 +36,7 @@ function loadKubejs() {
         tab.style.display = 'inline-block';
         kubejsFiles = data.groups;
         filteredKjsKeys = sortedKeys(kubejsFiles, null);
-        kjsPage = 0;
-        renderTreePage('kjs');
+        renderTree('kjs');
         var downloadBtn = document.getElementById('btn-download-kjs');
         downloadBtn.href = '/api/modpacks/' + encodeURIComponent(currentModpack)
           + '/kubejs/download';
@@ -61,18 +51,7 @@ function loadKubejs() {
 document.getElementById('kubejs-search').addEventListener('input', function() {
   activeKjsFilter = this.value;
   filteredKjsKeys = sortedKeys(kubejsFiles, this.value);
-  kjsPage = 0;
-  renderTreePage('kjs');
-});
-
-document.getElementById('kpg-prev').addEventListener('click', function() {
-  kjsPage--;
-  renderTreePage('kjs');
-});
-
-document.getElementById('kpg-next').addEventListener('click', function() {
-  kjsPage++;
-  renderTreePage('kjs');
+  renderTree('kjs');
 });
 
 
@@ -114,31 +93,47 @@ function getFilteredFiles(files, groupKey, filter) {
   return files.filter(function(filename) { return filename.toLowerCase().indexOf(filterLower) !== -1; });
 }
 
-function renderTreePage(which) {
+// Texto del pie del árbol: el total, o «X de Y» si hay un filtro puesto.
+function treeCountText(shown, total, singular, plural, hasFilter) {
+  var noun = total === 1 ? singular : plural;
+  return hasFilter ? shown + ' de ' + total + ' ' + noun : total + ' ' + noun;
+}
+
+// Cuenta los archivos de los grupos dados (solo los que pasan el filtro, si hay).
+function countTreeFiles(data, keys, filter, filterFn) {
+  return keys.reduce(function(sum, key) {
+    return sum + (filter ? filterFn(data[key], key, filter) : data[key]).length;
+  }, 0);
+}
+
+function renderTree(which) {
   var isKjs = which === 'kjs';
   var keys = isKjs ? filteredKjsKeys : filteredModKeys;
   var data = isKjs ? kubejsFiles : modConfigs;
-  var page = isKjs ? kjsPage : modPage;
   var filter = isKjs ? activeKjsFilter : activeModFilter;
   var treeId = isKjs ? 'kubejs-tree' : 'mod-tree';
-  var pgId = isKjs ? 'kubejs-pagination' : 'mod-pagination';
-  var prevId = isKjs ? 'kpg-prev' : 'pg-prev';
-  var nextId = isKjs ? 'kpg-next' : 'pg-next';
-  var infoId = isKjs ? 'kpg-info' : 'pg-info';
+  var countId = isKjs ? 'kubejs-tree-count' : 'mod-tree-count';
   var itemClass = isKjs ? 'kjs-file-item mod-file-item' : 'cfg-file-item mod-file-item';
   var tree = document.getElementById(treeId);
-  var pg = document.getElementById(pgId);
-  var total = keys.length;
-  if (!total) {
+  var count = document.getElementById(countId);
+  var hasFilter = filter.length > 0;
+  // Config cuenta mods (la raíz de config/ no es un mod); KubeJS cuenta
+  // archivos, porque sus grupos son carpetas y no mods.
+  if (isKjs) {
+    count.textContent = treeCountText(countTreeFiles(data, keys, filter, getFilteredFiles),
+      countTreeFiles(data, Object.keys(data), '', getFilteredFiles), 'archivo', 'archivos', hasFilter);
+  } else {
+    var notRoot = function(key) { return key !== '__root__'; };
+    count.textContent = treeCountText(keys.filter(notRoot).length,
+      Object.keys(data).filter(notRoot).length, 'mod', 'mods', hasFilter);
+  }
+  count.style.display = '';
+  if (!keys.length) {
     tree.innerHTML = '<p class="empty-msg pad-m">Sin resultados</p>';
-    pg.style.display = 'none';
     return;
   }
-  var hasFilter = filter.length > 0;
-  var start = page * PAGE_SIZE;
-  var end = Math.min(start + PAGE_SIZE, total);
   var html = '';
-  keys.slice(start, end).forEach(function(key) {
+  keys.forEach(function(key) {
     var label;
     if (key === '__root__') {
       label = isKjs ? 'Raíz de kubejs' : 'Raíz de config';
@@ -179,13 +174,4 @@ function renderTreePage(which) {
       this.nextElementSibling.classList.toggle('open');
     });
   });
-  var totalPages = Math.ceil(total / PAGE_SIZE);
-  pg.style.display = 'flex';
-  if (totalPages > 1) {
-    document.getElementById(infoId).textContent = 'Pág.' + (page + 1) + '/' + totalPages + ' (' + total + ')';
-  } else {
-    document.getElementById(infoId).textContent = total + ' mods';
-  }
-  document.getElementById(prevId).disabled = page === 0;
-  document.getElementById(nextId).disabled = page >= totalPages - 1;
 }

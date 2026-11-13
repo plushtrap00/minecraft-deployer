@@ -215,7 +215,6 @@ function uploadMod(file) {
 
 // -- Subida masiva (.zip / carpeta) --------------------------------------------
 var lastBulkData = null;
-var MOD_MODAL_PAGE_SIZE = 10;
 
 // needs_confirmation mezcla dos motivos bien distintos (item.reason):
 // "downgrade" (versión más antigua que la instalada) y "client_only" (mod
@@ -477,9 +476,10 @@ modUploadModalBody.addEventListener('click', function(event) {
 
 
 // -- Modal: paginación genérica -------------------------------------------------
-// totalPages lo calcula quien llama: sobre un array ya cargado en memoria
-// (Math.ceil(items.length / MOD_MODAL_PAGE_SIZE)) o sobre un total que vive
-// en el servidor (Math.ceil(total / limit), como la búsqueda de mods online).
+// Solo para listas que de verdad no conviene pintar enteras: resultados que
+// llegan del servidor página a página (búsqueda de mods/modpacks online,
+// totalPages = Math.ceil(total / limit)) o logs de miles de líneas. Las
+// listas ya cargadas en memoria se pintan enteras dentro de su scroll.
 function renderModModalPagination(containerId, page, totalPages, onChange) {
   var container = document.getElementById(containerId);
   if (totalPages <= 1) {
@@ -503,28 +503,27 @@ function renderModModalPagination(containerId, page, totalPages, onChange) {
 
 
 // -- Modal: lista simple de mods (agregados / ya instalados / con error) ------
-var modListState = { items: [], page: 0 };
 
 function openModListModal(title, icon, items) {
   document.getElementById('mod-list-modal-title').textContent = title;
   document.getElementById('mod-list-modal-icon').innerHTML = emojiIcon(icon);
-  modListState = { items: items, page: 0 };
-  renderModListModalPage();
+  renderModListModal(items);
   document.getElementById('mod-list-modal').classList.add('show');
 }
 
-function renderModListModalPage() {
+// Texto «N mods» del pie de los modales de mods.
+function modCountText(n) {
+  return n + (n === 1 ? ' mod' : ' mods');
+}
+
+function renderModListModal(items) {
   var body = document.getElementById('mod-list-modal-body');
-  var start = modListState.page * MOD_MODAL_PAGE_SIZE;
-  var pageItems = modListState.items.slice(start, start + MOD_MODAL_PAGE_SIZE);
-  body.innerHTML = pageItems.map(function(item) {
+  body.innerHTML = items.map(function(item) {
     var detail = item.detail ? '<div class="mod-modal-detail">' + escHtml(item.detail) + '</div>' : '';
     return '<div class="mod-modal-item"><div class="mod-info"><div class="mod-display">' + escHtml(item.display_name) + '</div>' + detail + '</div></div>';
   }).join('');
-  renderModModalPagination('mod-list-modal-pagination', modListState.page, Math.max(1, Math.ceil(modListState.items.length / MOD_MODAL_PAGE_SIZE)), function(p) {
-    modListState.page = p;
-    renderModListModalPage();
-  });
+  body.scrollTop = 0;
+  document.getElementById('mod-list-modal-count').textContent = modCountText(items.length);
 }
 
 document.getElementById('mod-list-modal-close').addEventListener('click', function() {
@@ -541,10 +540,10 @@ document.getElementById('mod-list-modal').addEventListener('click', function(eve
 
 
 // -- Modal: formulario para aceptar/rechazar degradar versión ------------------
-var downgradeState = { items: [], page: 0, batchId: null, selected: {} };
+var downgradeState = { items: [], batchId: null, selected: {} };
 
 function openDowngradeModal(batchId, items) {
-  downgradeState = { items: items, page: 0, batchId: batchId, selected: {} };
+  downgradeState = { items: items, batchId: batchId, selected: {} };
   items.forEach(function(item) {
     downgradeState.selected[item.filename] = false;
   });
@@ -564,15 +563,13 @@ function openDowngradeModal(batchId, items) {
   document.getElementById('mod-downgrade-reject-all').style.display = '';
   document.getElementById('mod-downgrade-confirm').disabled = false;
   document.getElementById('mod-downgrade-reject-all').disabled = false;
-  renderDowngradeModalPage();
+  renderDowngradeModal();
   document.getElementById('mod-downgrade-modal').classList.add('show');
 }
 
-function renderDowngradeModalPage() {
+function renderDowngradeModal() {
   var body = document.getElementById('mod-downgrade-modal-body');
-  var start = downgradeState.page * MOD_MODAL_PAGE_SIZE;
-  var pageItems = downgradeState.items.slice(start, start + MOD_MODAL_PAGE_SIZE);
-  body.innerHTML = pageItems.map(function(item) {
+  body.innerHTML = downgradeState.items.map(function(item) {
     var checked = downgradeState.selected[item.filename] ? ' checked' : '';
     var detail = item.reason === 'client_only'
       ? escHtml(item.detail || 'Este mod parece ser solo de cliente.')
@@ -587,17 +584,15 @@ function renderDowngradeModalPage() {
       downgradeState.selected[this.dataset.filename] = this.checked;
     });
   });
-  renderModModalPagination('mod-downgrade-modal-pagination', downgradeState.page, Math.max(1, Math.ceil(downgradeState.items.length / MOD_MODAL_PAGE_SIZE)), function(p) {
-    downgradeState.page = p;
-    renderDowngradeModalPage();
-  });
+  body.scrollTop = 0;
+  document.getElementById('mod-downgrade-modal-count').textContent = modCountText(downgradeState.items.length);
 }
 
 function submitDowngradeDecision(acceptFilenames) {
   setModOperationBusy(true);
   document.getElementById('mod-downgrade-confirm').disabled = true;
   document.getElementById('mod-downgrade-reject-all').disabled = true;
-  document.getElementById('mod-downgrade-modal-pagination').innerHTML = '';
+  document.getElementById('mod-downgrade-modal-count').textContent = '';
   document.getElementById('mod-downgrade-modal-body').innerHTML = modUploadProgressHtml('Aplicando cambios...');
 
   apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/upload-bulk/confirm', {

@@ -13,7 +13,7 @@ var modSearchQuery = '';
 var modSearchOffset = 0;
 var modSearchLimit = 20;
 var modSearchTotal = 0;
-var modSearchFilesState = { items: [], page: 0, mod: null };
+var modSearchFilesState = { items: [], mod: null };
 
 // -- Caché en memoria (LRU simple) ---------------------------------------------
 // Nada de esto persiste entre recargas de página a propósito: es solo para no
@@ -482,7 +482,7 @@ function renderModSearchResults(results) {
   });
 }
 
-// -- Versiones/archivos de un mod (todas las traídas de una vez, paginadas en cliente) --
+// -- Versiones/archivos de un mod (todas las traídas de una vez, sin paginar) --
 
 function openModSearchFiles(mod) {
   document.getElementById('mod-search-pagination').innerHTML = '';
@@ -490,8 +490,8 @@ function openModSearchFiles(mod) {
   var cacheKey = mod.source + '|' + mod.id;
   var cachedFiles = modSearchFilesCache.get(cacheKey);
   if (cachedFiles) {
-    modSearchFilesState = { items: cachedFiles, page: 0, mod: mod };
-    renderModSearchFilesPage();
+    modSearchFilesState = { items: cachedFiles, mod: mod };
+    renderModSearchFiles();
     return;
   }
 
@@ -508,15 +508,15 @@ function openModSearchFiles(mod) {
       }
       var files = result.data.files || [];
       modSearchFilesCache.set(cacheKey, files);
-      modSearchFilesState = { items: files, page: 0, mod: mod };
-      renderModSearchFilesPage();
+      modSearchFilesState = { items: files, mod: mod };
+      renderModSearchFiles();
     })
     .catch(function(error) {
       body.innerHTML = modSearchBackButtonHtml() + modErrorHtml('No se pudo conectar con el panel: ' + error.message);
     });
 }
 
-function renderModSearchFilesPage() {
+function renderModSearchFiles() {
   var body = document.getElementById('mod-search-modal-body');
   var mod = modSearchFilesState.mod;
   var files = modSearchFilesState.items;
@@ -544,15 +544,13 @@ function renderModSearchFilesPage() {
     return;
   }
 
-  var start = modSearchFilesState.page * MOD_MODAL_PAGE_SIZE;
-  var pageItems = files.slice(start, start + MOD_MODAL_PAGE_SIZE);
-  var list = pageItems.map(function(f, i) {
+  var list = files.map(function(f, i) {
     var available = !!f.download_url;
     var channel = SEARCH_RELEASE_TYPES[f.release_type];
     var when = searchUpdatedText(f.file_date);
     var mcVersions = (f.game_versions || []).filter(function(v) { return /^\d/.test(v); });
     var tags = (channel ? '<span class="release-tag ' + channel.cls + '">' + channel.label + '</span>' : '')
-      + (start + i === 0 ? '<span class="release-tag newest">Más reciente</span>' : '')
+      + (i === 0 ? '<span class="release-tag newest">Más reciente</span>' : '')
       + mcVersions.slice(0, 3).map(function(v) { return '<span class="search-chip">MC ' + escHtml(v) + '</span>'; }).join('')
       + (when ? '<span class="search-stat">' + icon('clock') + when + '</span>' : '');
     return '<div class="search-file-row">'
@@ -563,7 +561,7 @@ function renderModSearchFilesPage() {
       + '</div>'
       + '<div class="mod-search-file-action">'
       + (available
-        ? '<button type="button" class="btn-sm mod-search-install" data-index="' + (start + i) + '">' + icon('download') + 'Instalar</button>'
+        ? '<button type="button" class="btn-sm mod-search-install" data-index="' + i + '">' + icon('download') + 'Instalar</button>'
         : '<span class="text-muted text-xs">Sin descarga directa</span>')
       + '</div>'
       + '</div>';
@@ -574,11 +572,7 @@ function renderModSearchFilesPage() {
     applyModSearchImage(img, img.dataset.iconUrl);
   });
 
-  var totalPages = Math.max(1, Math.ceil(files.length / MOD_MODAL_PAGE_SIZE));
-  renderModModalPagination('mod-search-pagination', modSearchFilesState.page, totalPages, function(p) {
-    modSearchFilesState.page = p;
-    renderModSearchFilesPage();
-  });
+  document.getElementById('mod-search-pagination').innerHTML = '';
 }
 
 document.getElementById('mod-search-modal-body').addEventListener('click', function(event) {
@@ -642,7 +636,7 @@ function installSearchedMod(mod, file, buttonEl) {
         // en vez de sustituirla por el aviso: si no, el modal se quedaba sin
         // forma de volver salvo tocando los filtros.
         mod.installed = true;
-        renderModSearchFilesPage();
+        renderModSearchFiles();
         var header = body.querySelector('.mod-search-files-header');
         if (header) {
           header.insertAdjacentHTML('afterend', '<div class="mb-m">' + noticeHtml('ok', 'Mod instalado: ' + escHtml(result.data.filename)) + '</div>');

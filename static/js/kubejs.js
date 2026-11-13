@@ -60,7 +60,7 @@ document.getElementById('kjs-confirm-new').addEventListener('click', function() 
           if (kdata.exists) {
             kubejsFiles = kdata.groups;
             filteredKjsKeys = sortedKeys(kubejsFiles, activeKjsFilter);
-            renderTreePage('kjs');
+            renderTree('kjs');
             openFile(data.path, 'kjs');
           }
         });

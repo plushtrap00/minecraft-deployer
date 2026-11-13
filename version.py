@@ -6,6 +6,9 @@ documentación de la API. Cada commit sube la versión (2.A.B, cada cifra de 0
 a 9: después de 2.0.9 va 2.1.0) y se etiqueta con `git tag v<versión>`.
 
 Historial resumido:
+- 2.0.5 (2026-11-13): fuera la paginación en las listas que ya tenían
+  scroll (Config de mods, KubeJS, archivos de mundo, modales de mods y
+  versiones de un mod): se ven enteras, con el total debajo.
 - 2.0.4 (2026-11-12): en vez de juntarlas, las estadísticas enseñan solo las
   del online-mode actual (UUID offline o premium).
 - 2.0.3 (2026-11-12): las estadísticas juntan al mismo jugador cuando se
@@ -23,4 +26,4 @@ Historial resumido:
   otros usuarios.
 - 1.x: todo lo anterior (sin numerar).
 """
-APP_VERSION = "2.0.4"
+APP_VERSION = "2.0.5"

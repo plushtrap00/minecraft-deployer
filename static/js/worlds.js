@@ -363,7 +363,6 @@ function updateTypeDesc() {
 // -- Archivos de mundo ---------------------------------------------------------
 var worldFiles = {};
 var filteredWfKeys = [];
-var wfPage = 0;
 var activeWfFilter = '';
 var selectedWfWorld = null;
 
@@ -387,7 +386,7 @@ function loadWorldFilesTab() {
         loadWorldFiles(select.value);
       } else {
         document.getElementById('wf-tree').innerHTML = '<p class="empty-msg pad-m">No hay mundos detectados</p>';
-        document.getElementById('wf-pagination').style.display = 'none';
+        document.getElementById('wf-tree-count').style.display = 'none';
       }
     })
     .catch(function() {
@@ -409,8 +408,7 @@ function loadWorldFiles(worldName) {
     .then(function(data) {
       worldFiles = data.groups;
       filteredWfKeys = wfSortedKeys(activeWfFilter);
-      wfPage = 0;
-      renderWfTreePage();
+      renderWfTree();
     })
     .catch(function() {
       document.getElementById('wf-tree').innerHTML = '<p class="empty-msg pad-m text-red">Error al cargar archivos</p>';
@@ -420,18 +418,7 @@ function loadWorldFiles(worldName) {
 document.getElementById('wf-search').addEventListener('input', function() {
   activeWfFilter = this.value;
   filteredWfKeys = wfSortedKeys(activeWfFilter);
-  wfPage = 0;
-  renderWfTreePage();
-});
-
-document.getElementById('wfpg-prev').addEventListener('click', function() {
-  wfPage--;
-  renderWfTreePage();
-});
-
-document.getElementById('wfpg-next').addEventListener('click', function() {
-  wfPage++;
-  renderWfTreePage();
+  renderWfTree();
 });
 
 function wfSortedKeys(filter) {
@@ -468,20 +455,22 @@ function wfGetFilteredFiles(files, groupKey, filter) {
   return files.filter(function(f) { return f.toLowerCase().indexOf(filterLower) !== -1; });
 }
 
-function renderWfTreePage() {
+// Mismo árbol que Config/KubeJS (ver file_tree.js): entero, sin paginar.
+function renderWfTree() {
   var tree = document.getElementById('wf-tree');
-  var pg = document.getElementById('wf-pagination');
-  var total = filteredWfKeys.length;
-  if (!total) {
+  var count = document.getElementById('wf-tree-count');
+  var hasFilter = activeWfFilter.length > 0;
+  count.textContent = treeCountText(
+    countTreeFiles(worldFiles, filteredWfKeys, activeWfFilter, wfGetFilteredFiles),
+    countTreeFiles(worldFiles, Object.keys(worldFiles), '', wfGetFilteredFiles),
+    'archivo', 'archivos', hasFilter);
+  count.style.display = '';
+  if (!filteredWfKeys.length) {
     tree.innerHTML = '<p class="empty-msg pad-m">Sin resultados</p>';
-    pg.style.display = 'none';
     return;
   }
-  var hasFilter = activeWfFilter.length > 0;
-  var start = wfPage * PAGE_SIZE;
-  var end = Math.min(start + PAGE_SIZE, total);
   var html = '';
-  filteredWfKeys.slice(start, end).forEach(function(key) {
+  filteredWfKeys.forEach(function(key) {
     var label = key === '__root__' ? 'Raíz del mundo' : key;
     var allFiles = worldFiles[key];
     var files = wfGetFilteredFiles(allFiles, key, activeWfFilter);
@@ -517,13 +506,4 @@ function renderWfTreePage() {
       this.nextElementSibling.classList.toggle('open');
     });
   });
-  var totalPages = Math.ceil(total / PAGE_SIZE);
-  pg.style.display = 'flex';
-  if (totalPages > 1) {
-    document.getElementById('wfpg-info').textContent = 'Pág.' + (wfPage + 1) + '/' + totalPages + ' (' + total + ')';
-  } else {
-    document.getElementById('wfpg-info').textContent = total + ' archivos';
-  }
-  document.getElementById('wfpg-prev').disabled = wfPage === 0;
-  document.getElementById('wfpg-next').disabled = wfPage >= totalPages - 1;
 }
