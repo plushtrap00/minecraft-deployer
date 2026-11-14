@@ -6,6 +6,10 @@ documentación de la API. Cada commit sube la versión (2.A.B, cada cifra de 0
 a 9: después de 2.0.9 va 2.1.0) y se etiqueta con `git tag v<versión>`.
 
 Historial resumido:
+- 2.1.2 (2026-11-14): contraste AA (4,5:1) en todos los temas: texto oscuro
+  en los botones de color de los diálogos y la insignia roja, números de
+  línea de logs, días de las tareas, rojo de los botones de peligro y
+  colores §0/§1/§4/§5/§8/§9 de Minecraft.
 - 2.1.1 (2026-11-14): esquinas concéntricas (radio interior = exterior -
   padding) en segmentados, interruptor de red, menú de Mods, listas de los
   desplegables, cajón del menú en móvil y muestras de tema.
@@ -40,4 +44,4 @@ Historial resumido:
   otros usuarios.
 - 1.x: todo lo anterior (sin numerar).
 """
-APP_VERSION = "2.1.1"
+APP_VERSION = "2.1.2"

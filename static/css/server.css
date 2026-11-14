@@ -591,17 +591,19 @@
 }
 
 /* Colores y estilos de Minecraft (§0-§f, §l, §o, §n, §m). Los dos más
-   oscuros se aclaran para que se lean sobre la consola. */
-.mc-0 { color: #6b6b6b; }
-.mc-1 { color: #5b6cf0; }
+   oscuros se aclaran para que se lean (4,5:1) sobre la consola y las
+   tarjetas de todos los temas, sin perder el orden negro < gris oscuro <
+   gris. */
+.mc-0 { color: #969696; }
+.mc-1 { color: #818ef3; }
 .mc-2 { color: #2fbf2f; }
 .mc-3 { color: #2fc4c4; }
-.mc-4 { color: #d43a3a; }
-.mc-5 { color: #c447c4; }
+.mc-4 { color: #e17777; }
+.mc-5 { color: #d273d2; }
 .mc-6 { color: #ffaa00; }
-.mc-7 { color: #aaaaaa; }
-.mc-8 { color: #7a7a7a; }
-.mc-9 { color: #6f6fff; }
+.mc-7 { color: #c6c6c6; }
+.mc-8 { color: #a8a8a8; }
+.mc-9 { color: #8989ff; }
 .mc-a { color: #55ff55; }
 .mc-b { color: #55ffff; }
 .mc-c { color: #ff5555; }

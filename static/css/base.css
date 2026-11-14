@@ -40,8 +40,10 @@
   --red: #f0646a;
   --red-rgb: 240, 100, 106;
   --red-strong: #ff8a8f;
+  --on-red: #1d0b08;
   --yellow: #e8b54a;
   --yellow-rgb: 232, 181, 74;
+  --on-yellow: #2a1d00;
   --info: #8fb8f0;
 
   --console-bg: #110f14;
@@ -515,7 +517,7 @@ a.btn-ghost {
 
 .btn-danger {
   background: rgba(var(--red-rgb), .15);
-  color: var(--red);
+  color: var(--red-strong);
   border: 1px solid rgba(var(--red-rgb), .3);
 }
 
@@ -702,7 +704,7 @@ a.btn-ghost {
 
 .notice-ok { background: rgba(var(--green-rgb), .1); border-color: rgba(var(--green-rgb), .3); color: var(--green); }
 .notice-warn { background: rgba(var(--yellow-rgb), .1); border-color: rgba(var(--yellow-rgb), .35); color: var(--yellow); }
-.notice-error { background: rgba(var(--red-rgb), .1); border-color: rgba(var(--red-rgb), .3); color: var(--red); }
+.notice-error { background: rgba(var(--red-rgb), .1); border-color: rgba(var(--red-rgb), .3); color: var(--red-strong); }
 .notice-info { background: rgba(var(--accent-rgb), .07); border-color: rgba(var(--accent-rgb), .2); color: var(--muted); }
 
 /* Variante con título y pasos (p. ej. modpack con descarga bloqueada). */
@@ -1038,9 +1040,9 @@ code {
 
 /* Botón de confirmar del diálogo: rojo para lo destructivo (por defecto),
    acento o amarillo para lo demás (showConfirm(..., { tone })). */
-.dialog-footer .btn-tone-red { background: var(--red); color: #fff; }
-.dialog-footer .btn-tone-accent { background: var(--accent); color: #fff; }
-.dialog-footer .btn-tone-yellow { background: var(--yellow); color: #fff; }
+.dialog-footer .btn-tone-red { background: var(--red); color: var(--on-red); }
+.dialog-footer .btn-tone-accent { background: var(--accent); color: var(--on-accent); }
+.dialog-footer .btn-tone-yellow { background: var(--yellow); color: var(--on-yellow); }
 
 /* Avisos: se apilan (el más reciente abajo) en vez de pisarse unos a otros.
    Van por encima de los modales (1000) para que se vea, por ejemplo, el

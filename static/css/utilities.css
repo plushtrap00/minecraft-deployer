@@ -174,5 +174,5 @@ mark.hl {
   padding: 1px 6px;
   border-radius: var(--radius-tag);
   background: rgba(var(--red-rgb), .15);
-  color: var(--red);
+  color: var(--red-strong);
 }

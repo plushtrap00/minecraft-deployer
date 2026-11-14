@@ -220,7 +220,7 @@
 }
 
 .result-box.error h3 {
-  color: var(--red);
+  color: var(--red-strong);
 }
 
 .result-msg {

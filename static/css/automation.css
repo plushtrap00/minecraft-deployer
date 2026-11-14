@@ -108,12 +108,12 @@ input.auto-num {
   font-size: 10px;
   font-weight: 600;
   background: rgba(var(--muted-rgb), .12);
-  color: rgba(var(--muted-rgb), .7);
+  color: var(--muted);
 }
 
 .day-chip.on {
   background: rgba(var(--accent-rgb), .22);
-  color: var(--accent);
+  color: var(--accent-hover);
 }
 
 .task-status {
