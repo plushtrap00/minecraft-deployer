@@ -340,21 +340,23 @@ document.getElementById('modal-save-btn').addEventListener('click', function() {
     form.append('world_name', selectedWfWorld);
   }
   var endpoint = type === 'kjs' ? '/kubejs-file' : (type === 'wf' ? '/world-file' : '/config-file');
-  apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + endpoint, {
-    method: 'POST',
-    body: form
-  })
-    .then(function(response) { return response.json(); })
-    .then(function(data) {
-      if (data.success) {
-        cfgRawText = textToSave;
-        editorBaseline = currentEditorText();
-        showToast('Archivo guardado', 'success');
-      } else {
-        showToast(data.detail || 'No se pudo guardar el archivo', 'error');
-      }
+  busyWhile(document.getElementById('modal-save-btn'), function() {
+    return apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + endpoint, {
+      method: 'POST',
+      body: form
     })
-    .catch(function() { showToast('No se pudo guardar el archivo', 'error'); });
+      .then(function(response) { return response.json(); })
+      .then(function(data) {
+        if (data.success) {
+          cfgRawText = textToSave;
+          editorBaseline = currentEditorText();
+          showToast('Archivo guardado', 'success');
+        } else {
+          showToast(data.detail || 'No se pudo guardar el archivo', 'error');
+        }
+      })
+      .catch(function() { showToast('No se pudo guardar el archivo', 'error'); });
+  });
 });
 
 // Ctrl+S (o Cmd+S) guarda el archivo abierto, como en cualquier editor.

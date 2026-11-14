@@ -570,7 +570,11 @@ document.getElementById('stop-btn').addEventListener('click', function() {
   showConfirm(
     '¿Forzar la parada?',
     'Mata el proceso como Ctrl+C, sin esperar a que se guarde el mundo. Úsalo solo si «Detener» no responde.',
-    function() { apiFetch('/api/server/stop', { method: 'POST' }).catch(function() {}); },
+    function() {
+      busyWhile(document.getElementById('stop-btn'), function() {
+        return apiFetch('/api/server/stop', { method: 'POST' }).catch(function() {});
+      });
+    },
     { confirmLabel: 'Forzar parada' }
   );
 });

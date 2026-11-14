@@ -55,12 +55,12 @@ function renderWorlds(data) {
 document.addEventListener('click', function(event) {
   var activateBtn = event.target.closest('.wc-activate');
   if (activateBtn) {
-    activateWorld(activateBtn.dataset.world);
+    activateWorld(activateBtn.dataset.world, activateBtn);
     return;
   }
   var deleteBtn = event.target.closest('.wc-delete');
   if (deleteBtn) {
-    deleteWorld(deleteBtn.dataset.world);
+    deleteWorld(deleteBtn.dataset.world, deleteBtn);
     return;
   }
   if (event.target.closest('.wc-download')) {
@@ -68,53 +68,57 @@ document.addEventListener('click', function(event) {
   }
 });
 
-function activateWorld(name) {
+function activateWorld(name, button) {
   showConfirm(
     'Activar el mundo "' + name + '"',
     'El servidor usará este mundo en el próximo inicio.',
-    function() { doActivateWorld(name); }
+    function() { doActivateWorld(name, button); }
   );
 }
 
-function doActivateWorld(name) {
+function doActivateWorld(name, button) {
   var form = new FormData();
   form.append('world_name', name);
-  apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/worlds/activate', {
-    method: 'POST',
-    body: form
-  })
-    .then(function(response) { return response.json(); })
-    .then(function(data) {
-      if (data.success) {
-        showToast('Mundo activado', 'success');
-        loadWorlds();
-        loadServerProps();
-      }
+  busyWhile(button, function() {
+    return apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/worlds/activate', {
+      method: 'POST',
+      body: form
     })
-    .catch(function() { showToast('No se pudo activar el mundo', 'error'); });
+      .then(function(response) { return response.json(); })
+      .then(function(data) {
+        if (data.success) {
+          showToast('Mundo activado', 'success');
+          loadWorlds();
+          loadServerProps();
+        }
+      })
+      .catch(function() { showToast('No se pudo activar el mundo', 'error'); });
+  });
 }
 
-function deleteWorld(name) {
+function deleteWorld(name, button) {
   showConfirm(
     'Borrar "' + name + '"',
     'Se borrarán también sus dimensiones nether y end. Esta acción no se puede deshacer.',
-    function() { doDeleteWorld(name); }
+    function() { doDeleteWorld(name, button); }
   );
 }
 
-function doDeleteWorld(name) {
-  apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/worlds/' + encodeURIComponent(name), {
-    method: 'DELETE'
-  })
-    .then(function(response) { return response.json(); })
-    .then(function(data) {
-      if (data.success) {
-        showToast('Mundo borrado', 'success');
-        unlockAchievement('tnt');
-        loadWorlds();
-      }
+function doDeleteWorld(name, button) {
+  busyWhile(button, function() {
+    return apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/worlds/' + encodeURIComponent(name), {
+      method: 'DELETE'
     })
-    .catch(function() { showToast('No se pudo borrar el mundo', 'error'); });
+      .then(function(response) { return response.json(); })
+      .then(function(data) {
+        if (data.success) {
+          showToast('Mundo borrado', 'success');
+          unlockAchievement('tnt');
+          loadWorlds();
+        }
+      })
+      .catch(function() { showToast('No se pudo borrar el mundo', 'error'); });
+  });
 }
 
 
@@ -215,31 +219,33 @@ var typeDescs = {
     form.append('level_type', worldType);
     form.append('seed', document.getElementById('nw-seed').value.trim());
     form.append('activate', nwActivate ? '1' : '0');
-    apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/worlds/create', {
-      method: 'POST',
-      body: form
-    })
-      .then(function(response) {
-        return response.json().then(function(data) {
-          return { ok: response.ok, data: data };
-        });
+    busyWhile(document.getElementById('nw-confirm'), function() {
+      return apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/worlds/create', {
+        method: 'POST',
+        body: form
       })
-      .then(function(result) {
-        if (result.ok && result.data.success) {
-          showToast(result.data.message, 'success');
-          unlockAchievement('new-world');
-          document.getElementById('new-world-form').style.display = 'none';
-          document.getElementById('nw-name').value = '';
-          document.getElementById('nw-seed').value = '';
-          loadWorlds();
-          if (nwActivate) {
-            loadServerProps();
+        .then(function(response) {
+          return response.json().then(function(data) {
+            return { ok: response.ok, data: data };
+          });
+        })
+        .then(function(result) {
+          if (result.ok && result.data.success) {
+            showToast(result.data.message, 'success');
+            unlockAchievement('new-world');
+            document.getElementById('new-world-form').style.display = 'none';
+            document.getElementById('nw-name').value = '';
+            document.getElementById('nw-seed').value = '';
+            loadWorlds();
+            if (nwActivate) {
+              loadServerProps();
+            }
+          } else {
+            showToast(result.data.detail || 'Error', 'error');
           }
-        } else {
-          showToast(result.data.detail || 'Error', 'error');
-        }
-      })
-      .catch(function() { showToast('No se pudo preparar el mundo', 'error'); });
+        })
+        .catch(function() { showToast('No se pudo preparar el mundo', 'error'); });
+    });
   });
 })();
 

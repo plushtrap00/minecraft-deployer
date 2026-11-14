@@ -94,9 +94,11 @@ document.getElementById('backup-list').addEventListener('click', function(event)
   var when = row.querySelector('.backup-date strong').textContent;
   if (button.dataset.action === 'delete') {
     showConfirm('¿Borrar esta copia?', 'La copia del ' + when + ' se borrará para siempre.', function() {
-      apiJson(backupUrl(modpack, name), { method: 'DELETE' }).then(function(result) {
-        showToast(result.ok ? 'Copia borrada' : (result.data.detail || 'No se pudo borrar'), result.ok ? 'success' : 'error');
-        loadBackups();
+      busyWhile(button, function() {
+        return apiJson(backupUrl(modpack, name), { method: 'DELETE' }).then(function(result) {
+          showToast(result.ok ? 'Copia borrada' : (result.data.detail || 'No se pudo borrar'), result.ok ? 'success' : 'error');
+          loadBackups();
+        });
       });
     }, { confirmLabel: 'Borrar' });
     return;

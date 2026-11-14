@@ -101,9 +101,9 @@ document.addEventListener('click', function(event) {
     var type = removeBtn.dataset.type;
     var name = removeBtn.dataset.name;
     if (type === 'op') {
-      removeOp(name);
+      removeOp(name, removeBtn);
     } else if (type === 'wl') {
-      removeWhitelist(name);
+      removeWhitelist(name, removeBtn);
     }
     return;
   }
@@ -112,9 +112,9 @@ document.addEventListener('click', function(event) {
     var unbanType = unbanBtn.dataset.type;
     var unbanName = unbanBtn.dataset.name;
     if (unbanType === 'player') {
-      unbanPlayer(unbanName);
+      unbanPlayer(unbanName, unbanBtn);
     } else if (unbanType === 'ip') {
-      unbanIp(unbanName);
+      unbanIp(unbanName, unbanBtn);
     }
   }
 });
@@ -152,13 +152,15 @@ document.getElementById('btn-add-op').addEventListener('click', function() {
   var form = new FormData();
   form.append('name', name);
   form.append('level', '4');
-  apiCall('POST', '/api/players/op', form, 'Op añadido: ' + name)
-    .then(function(ok) {
-      document.getElementById('op-name-input').value = '';
-      if (ok) {
-        unlockAchievement('first-op');
-      }
-    });
+  busyWhile(document.getElementById('btn-add-op'), function() {
+    return apiCall('POST', '/api/players/op', form, 'Op añadido: ' + name)
+      .then(function(ok) {
+        document.getElementById('op-name-input').value = '';
+        if (ok) {
+          unlockAchievement('first-op');
+        }
+      });
+  });
 });
 
 document.getElementById('op-name-input').addEventListener('keydown', function(event) {
@@ -167,16 +169,18 @@ document.getElementById('op-name-input').addEventListener('keydown', function(ev
   }
 });
 
-function removeOp(name) {
+function removeOp(name, button) {
   showConfirm(
     'Quitar op a ' + name,
     'Se eliminará como operador en todos los servidores.',
-    function() { doRemoveOp(name); }
+    function() { doRemoveOp(name, button); }
   );
 }
 
-function doRemoveOp(name) {
-  apiCall('DELETE', '/api/players/op/' + encodeURIComponent(name), null, 'Op eliminado: ' + name);
+function doRemoveOp(name, button) {
+  busyWhile(button, function() {
+    return apiCall('DELETE', '/api/players/op/' + encodeURIComponent(name), null, 'Op eliminado: ' + name);
+  });
 }
 
 // Add whitelist
@@ -188,8 +192,10 @@ document.getElementById('btn-add-wl').addEventListener('click', function() {
   }
   var form = new FormData();
   form.append('name', name);
-  apiCall('POST', '/api/players/whitelist', form, 'Añadido a la whitelist: ' + name)
-    .then(function() { document.getElementById('wl-name-input').value = ''; });
+  busyWhile(document.getElementById('btn-add-wl'), function() {
+    return apiCall('POST', '/api/players/whitelist', form, 'Añadido a la whitelist: ' + name)
+      .then(function() { document.getElementById('wl-name-input').value = ''; });
+  });
 });
 
 document.getElementById('wl-name-input').addEventListener('keydown', function(event) {
@@ -198,16 +204,18 @@ document.getElementById('wl-name-input').addEventListener('keydown', function(ev
   }
 });
 
-function removeWhitelist(name) {
+function removeWhitelist(name, button) {
   showConfirm(
     'Eliminar de whitelist',
     'Se eliminará a ' + name + ' de la whitelist global.',
-    function() { doRemoveWhitelist(name); }
+    function() { doRemoveWhitelist(name, button); }
   );
 }
 
-function doRemoveWhitelist(name) {
-  apiCall('DELETE', '/api/players/whitelist/' + encodeURIComponent(name), null, 'Quitado de la whitelist: ' + name);
+function doRemoveWhitelist(name, button) {
+  busyWhile(button, function() {
+    return apiCall('DELETE', '/api/players/whitelist/' + encodeURIComponent(name), null, 'Quitado de la whitelist: ' + name);
+  });
 }
 
 // Ban player
@@ -221,28 +229,32 @@ document.getElementById('btn-ban-player').addEventListener('click', function() {
   var form = new FormData();
   form.append('name', name);
   form.append('reason', reason);
-  apiCall('POST', '/api/players/ban', form, 'Baneado: ' + name).then(function(ok) {
-    if (ok) {
-      unlockAchievement('iron-fist');
-    }
-    document.getElementById('ban-name-input').value = '';
-    document.getElementById('ban-reason-input').value = '';
+  busyWhile(document.getElementById('btn-ban-player'), function() {
+    return apiCall('POST', '/api/players/ban', form, 'Baneado: ' + name).then(function(ok) {
+      if (ok) {
+        unlockAchievement('iron-fist');
+      }
+      document.getElementById('ban-name-input').value = '';
+      document.getElementById('ban-reason-input').value = '';
+    });
   });
 });
 
-function unbanPlayer(name) {
+function unbanPlayer(name, button) {
   showConfirm(
     'Desbanear a ' + name,
     'Se desbaneará en todos los servidores.',
-    function() { doUnbanPlayer(name); }
+    function() { doUnbanPlayer(name, button); }
   );
 }
 
-function doUnbanPlayer(name) {
-  apiCall('DELETE', '/api/players/ban/' + encodeURIComponent(name), null, 'Desbaneado: ' + name).then(function(ok) {
-    if (ok) {
-      unlockAchievement('mercy');
-    }
+function doUnbanPlayer(name, button) {
+  busyWhile(button, function() {
+    return apiCall('DELETE', '/api/players/ban/' + encodeURIComponent(name), null, 'Desbaneado: ' + name).then(function(ok) {
+      if (ok) {
+        unlockAchievement('mercy');
+      }
+    });
   });
 }
 
@@ -257,42 +269,48 @@ document.getElementById('btn-ban-ip').addEventListener('click', function() {
   var form = new FormData();
   form.append('ip', ip);
   form.append('reason', reason);
-  apiCall('POST', '/api/players/ban-ip', form, 'IP baneada: ' + ip).then(function(ok) {
-    if (ok) {
-      unlockAchievement('iron-fist');
-    }
-    document.getElementById('ban-ip-input').value = '';
-    document.getElementById('ban-ip-reason-input').value = '';
+  busyWhile(document.getElementById('btn-ban-ip'), function() {
+    return apiCall('POST', '/api/players/ban-ip', form, 'IP baneada: ' + ip).then(function(ok) {
+      if (ok) {
+        unlockAchievement('iron-fist');
+      }
+      document.getElementById('ban-ip-input').value = '';
+      document.getElementById('ban-ip-reason-input').value = '';
+    });
   });
 });
 
-function unbanIp(ip) {
+function unbanIp(ip, button) {
   showConfirm(
     'Desbanear IP ' + ip,
     'Se desbaneará en todos los servidores.',
-    function() { doUnbanIp(ip); }
+    function() { doUnbanIp(ip, button); }
   );
 }
 
-function doUnbanIp(ip) {
-  apiCall('DELETE', '/api/players/ban-ip/' + encodeURIComponent(ip), null, 'IP desbaneada: ' + ip).then(function(ok) {
-    if (ok) {
-      unlockAchievement('mercy');
-    }
+function doUnbanIp(ip, button) {
+  busyWhile(button, function() {
+    return apiCall('DELETE', '/api/players/ban-ip/' + encodeURIComponent(ip), null, 'IP desbaneada: ' + ip).then(function(ok) {
+      if (ok) {
+        unlockAchievement('mercy');
+      }
+    });
   });
 }
 
 // Sync all
 document.getElementById('btn-sync-all').addEventListener('click', function() {
-  apiFetch('/api/players/sync', { method: 'POST' })
-    .then(function(response) { return response.json(); })
-    .then(function(data) {
-      if (data.warning) {
-        showToast(data.warning, '');
-      } else {
-        showToast('Sincronizado con todos los servidores', 'success');
-      }
-    })
-    .catch(function() { showToast('No se pudo sincronizar con los servidores', 'error'); });
+  busyWhile(document.getElementById('btn-sync-all'), function() {
+    return apiFetch('/api/players/sync', { method: 'POST' })
+      .then(function(response) { return response.json(); })
+      .then(function(data) {
+        if (data.warning) {
+          showToast(data.warning, '');
+        } else {
+          showToast('Sincronizado con todos los servidores', 'success');
+        }
+      })
+      .catch(function() { showToast('No se pudo sincronizar con los servidores', 'error'); });
+  });
 });
 

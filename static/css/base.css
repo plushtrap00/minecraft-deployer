@@ -524,6 +524,33 @@ button:disabled:hover {
   cursor: not-allowed;
 }
 
+/* Botón ocupado mientras dura su petición (busyWhile en utils.js): conserva
+   su color, enseña un spinner en lugar del icono y no admite otro clic. */
+button.is-busy {
+  cursor: progress;
+  pointer-events: none;
+  opacity: .8;
+}
+
+.btn-spinner {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  vertical-align: -.15em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: btn-spin .7s linear infinite;
+}
+
+.btn-spinner.has-label {
+  margin-right: 6px;
+}
+
+@keyframes btn-spin {
+  to { transform: rotate(360deg); }
+}
+
 .btn-secondary {
   background: var(--surface-raised);
   border-color: var(--border);

@@ -235,5 +235,7 @@ function _stopRelativeTicker() {
 
 document.getElementById('btn-refresh-metrics').addEventListener('click', function() {
   fetchMetrics();
-  apiFetch('/api/server/metrics/refresh', { method: 'POST' }).catch(function() {});
+  busyWhile(document.getElementById('btn-refresh-metrics'), function() {
+    return apiFetch('/api/server/metrics/refresh', { method: 'POST' }).catch(function() {});
+  });
 });

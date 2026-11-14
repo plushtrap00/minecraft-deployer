@@ -146,12 +146,12 @@ function renderModsList(mods) {
 document.getElementById('mods-list').addEventListener('click', function(event) {
   var deleteBtn = event.target.closest('.mod-delete');
   if (deleteBtn) {
-    deleteMod(deleteBtn.dataset.filename);
+    deleteMod(deleteBtn.dataset.filename, deleteBtn);
     return;
   }
   var toggleBtn = event.target.closest('.mod-toggle');
   if (toggleBtn) {
-    toggleMod(toggleBtn.dataset.filename);
+    toggleMod(toggleBtn.dataset.filename, toggleBtn);
     return;
   }
   var changeVersionBtn = event.target.closest('.mod-change-version');
@@ -160,25 +160,27 @@ document.getElementById('mods-list').addEventListener('click', function(event) {
   }
 });
 
-function toggleMod(filename) {
-  apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/' + encodeURIComponent(filename) + '/toggle', {
-    method: 'POST'
-  })
-    .then(function(response) {
-      return response.json().then(function(data) { return { ok: response.ok, data: data }; });
+function toggleMod(filename, button) {
+  busyWhile(button, function() {
+    return apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/' + encodeURIComponent(filename) + '/toggle', {
+      method: 'POST'
     })
-    .then(function(result) {
-      if (result.ok && result.data.success) {
-        showToast(result.data.enabled ? 'Mod habilitado' : 'Mod deshabilitado', 'success');
-        loadModsList();
-        if (result.data.enabled) {
-          checkModDependencies(false);
+      .then(function(response) {
+        return response.json().then(function(data) { return { ok: response.ok, data: data }; });
+      })
+      .then(function(result) {
+        if (result.ok && result.data.success) {
+          showToast(result.data.enabled ? 'Mod habilitado' : 'Mod deshabilitado', 'success');
+          loadModsList();
+          if (result.data.enabled) {
+            checkModDependencies(false);
+          }
+        } else {
+          showToast(result.data.detail || 'Error al cambiar el estado del mod', 'error');
         }
-      } else {
-        showToast(result.data.detail || 'Error al cambiar el estado del mod', 'error');
-      }
-    })
-    .catch(function() { showToast('No se pudo conectar con el panel. Comprueba la conexión y vuelve a intentarlo.', 'error'); });
+      })
+      .catch(function() { showToast('No se pudo conectar con el panel. Comprueba la conexión y vuelve a intentarlo.', 'error'); });
+  });
 }
 
 
@@ -226,25 +228,27 @@ document.getElementById('mod-delete-disabled-confirm').addEventListener('click',
     return;
   }
 
-  apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/delete-disabled', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ filenames: filenames })
-  })
-    .then(function(response) { return response.json(); })
-    .then(function(data) {
-      document.getElementById('mod-delete-disabled-modal').classList.remove('show');
-      if (data.errors && data.errors.length) {
-        showToast(data.deleted.length + ' borrado(s), ' + data.errors.length + ' con error', 'error');
-      } else {
-        showToast(data.deleted.length + ' mod(s) borrado(s)', 'success');
-        if (data.deleted.length) {
-          unlockAchievement('tidy');
-        }
-      }
-      loadModsList();
+  busyWhile(document.getElementById('mod-delete-disabled-confirm'), function() {
+    return apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/delete-disabled', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ filenames: filenames })
     })
-    .catch(function() { showToast('No se pudo conectar con el panel. Comprueba la conexión y vuelve a intentarlo.', 'error'); });
+      .then(function(response) { return response.json(); })
+      .then(function(data) {
+        document.getElementById('mod-delete-disabled-modal').classList.remove('show');
+        if (data.errors && data.errors.length) {
+          showToast(data.deleted.length + ' borrado(s), ' + data.errors.length + ' con error', 'error');
+        } else {
+          showToast(data.deleted.length + ' mod(s) borrado(s)', 'success');
+          if (data.deleted.length) {
+            unlockAchievement('tidy');
+          }
+        }
+        loadModsList();
+      })
+      .catch(function() { showToast('No se pudo conectar con el panel. Comprueba la conexión y vuelve a intentarlo.', 'error'); });
+  });
 });
 
 document.getElementById('mod-delete-disabled-cancel').addEventListener('click', function() {
@@ -556,31 +560,33 @@ document.getElementById('mod-download-modal').addEventListener('click', function
   }
 });
 
-function deleteMod(filename) {
+function deleteMod(filename, button) {
   showConfirm(
     'Borrar "' + filename + '"',
     'Esta acción no se puede deshacer.',
-    function() { doDeleteMod(filename); }
+    function() { doDeleteMod(filename, button); }
   );
 }
 
-function doDeleteMod(filename) {
-  apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/' + encodeURIComponent(filename), {
-    method: 'DELETE'
-  })
-    .then(function(response) { return response.json(); })
-    .then(function(data) {
-      if (data.success) {
-        showToast('Mod borrado', 'success');
-        loadModsList();
-        if (document.getElementById('mod-duplicates-modal').classList.contains('show')) {
-          openDuplicatesModal();
-        }
-      } else {
-        showToast(data.detail || 'Error al borrar', 'error');
-      }
+function doDeleteMod(filename, button) {
+  busyWhile(button, function() {
+    return apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/' + encodeURIComponent(filename), {
+      method: 'DELETE'
     })
-    .catch(function() { showToast('No se pudo conectar con el panel. Comprueba la conexión y vuelve a intentarlo.', 'error'); });
+      .then(function(response) { return response.json(); })
+      .then(function(data) {
+        if (data.success) {
+          showToast('Mod borrado', 'success');
+          loadModsList();
+          if (document.getElementById('mod-duplicates-modal').classList.contains('show')) {
+            openDuplicatesModal();
+          }
+        } else {
+          showToast(data.detail || 'Error al borrar', 'error');
+        }
+      })
+      .catch(function() { showToast('No se pudo conectar con el panel. Comprueba la conexión y vuelve a intentarlo.', 'error'); });
+  });
 }
 
 function applyModsFilters() {

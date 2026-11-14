@@ -50,7 +50,7 @@ function renderDuplicatesModal(groups) {
 document.getElementById('mod-duplicates-modal-body').addEventListener('click', function(event) {
   var deleteBtn = event.target.closest('.mod-delete');
   if (deleteBtn) {
-    deleteMod(deleteBtn.dataset.filename);
+    deleteMod(deleteBtn.dataset.filename, deleteBtn);
   }
 });
 

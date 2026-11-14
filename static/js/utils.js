@@ -33,6 +33,49 @@ function loadingHtml() {
   return '<div class="skeleton-rows" role="status" aria-label="Cargando"><div></div><div></div><div></div></div>';
 }
 
+// Botón ocupado mientras dura su petición: spinner en lugar del icono (o
+// delante del texto), aria-busy y sin admitir un segundo clic. No se usa
+// `disabled` para que conserve su color (el gris de desactivado lo hacía
+// saltar). `run` devuelve la promesa de la petición; si el botón ya está
+// ocupado no se llama. Con button null solo ejecuta `run`.
+function busyWhile(button, run) {
+  if (button && button.classList.contains('is-busy')) {
+    return Promise.resolve();
+  }
+  setBusy(button, true);
+  return Promise.resolve()
+    .then(run)
+    .finally(function() { setBusy(button, false); });
+}
+
+function setBusy(button, busy) {
+  if (!button) {
+    return;
+  }
+  if (busy) {
+    button._idleHtml = button.innerHTML;
+    var labelled = button.textContent.trim() !== '';
+    var spinner = '<span class="btn-spinner' + (labelled ? ' has-label' : '') + '" aria-hidden="true"></span>';
+    var firstIcon = button.querySelector(':scope > svg.icon:first-child');
+    if (firstIcon) {
+      firstIcon.outerHTML = spinner;
+    } else {
+      button.insertAdjacentHTML('afterbegin', spinner);
+    }
+    button.classList.add('is-busy');
+    button.setAttribute('aria-busy', 'true');
+    button.setAttribute('aria-disabled', 'true');
+    return;
+  }
+  if (button._idleHtml !== undefined) {
+    button.innerHTML = button._idleHtml;
+    delete button._idleHtml;
+  }
+  button.classList.remove('is-busy');
+  button.removeAttribute('aria-busy');
+  button.removeAttribute('aria-disabled');
+}
+
 // apiFetch + JSON en una sola promesa que nunca falla: { ok, status, data }.
 // Si no hay conexión, ok es false y data.detail explica el problema.
 function apiJson(url, opts) {

@@ -40,34 +40,36 @@ document.getElementById('kjs-confirm-new').addEventListener('click', function() 
   var form = new FormData();
   form.append('subfolder', subfolder);
   form.append('filename', filename);
-  apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/kubejs-new', {
-    method: 'POST',
-    body: form
-  })
-    .then(function(r) {
-      if (!r.ok) {
-        return r.json().then(function(err) { throw new Error(err.detail || 'Error al crear'); });
-      }
-      return r.json();
+  busyWhile(document.getElementById('kjs-confirm-new'), function() {
+    return apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/kubejs-new', {
+      method: 'POST',
+      body: form
     })
-    .then(function(data) {
-      document.getElementById('kjs-new-file-form').style.display = 'none';
-      document.getElementById('kjs-new-filename').value = '';
-      showToast('Archivo creado', 'success');
-      apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/kubejs')
-        .then(function(r) { return r.json(); })
-        .then(function(kdata) {
-          if (kdata.exists) {
-            kubejsFiles = kdata.groups;
-            filteredKjsKeys = sortedKeys(kubejsFiles, activeKjsFilter);
-            renderTree('kjs');
-            openFile(data.path, 'kjs');
-          }
-        });
-    })
-    .catch(function(err) {
-      showToast(err.message, 'error');
-    });
+      .then(function(r) {
+        if (!r.ok) {
+          return r.json().then(function(err) { throw new Error(err.detail || 'Error al crear'); });
+        }
+        return r.json();
+      })
+      .then(function(data) {
+        document.getElementById('kjs-new-file-form').style.display = 'none';
+        document.getElementById('kjs-new-filename').value = '';
+        showToast('Archivo creado', 'success');
+        apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/kubejs')
+          .then(function(r) { return r.json(); })
+          .then(function(kdata) {
+            if (kdata.exists) {
+              kubejsFiles = kdata.groups;
+              filteredKjsKeys = sortedKeys(kubejsFiles, activeKjsFilter);
+              renderTree('kjs');
+              openFile(data.path, 'kjs');
+            }
+          });
+      })
+      .catch(function(err) {
+        showToast(err.message, 'error');
+      });
+  });
 });
 
 
@@ -79,22 +81,24 @@ document.getElementById('modal-kjs-delete-btn').addEventListener('click', functi
   var path = selectedConfigPath.slice(4);
   var filename = path.split('/').pop();
   showConfirm('Borrar "' + filename + '"', 'Esta acción no se puede deshacer.', function() {
-    apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/kubejs-file?path=' + encodeURIComponent(path), {
-      method: 'DELETE'
-    })
-      .then(function(response) {
-        return response.json().then(function(data) { return { ok: response.ok, data: data }; });
+    busyWhile(document.getElementById('modal-kjs-delete-btn'), function() {
+      return apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/kubejs-file?path=' + encodeURIComponent(path), {
+        method: 'DELETE'
       })
-      .then(function(result) {
-        if (result.ok && result.data.success) {
-          showToast('Archivo borrado', 'success');
-          closeModal(true);
-          loadKubejs();
-        } else {
-          showToast(result.data.detail || 'Error al borrar', 'error');
-        }
-      })
-      .catch(function() { showToast('No se pudo conectar con el panel. Comprueba la conexión y vuelve a intentarlo.', 'error'); });
+        .then(function(response) {
+          return response.json().then(function(data) { return { ok: response.ok, data: data }; });
+        })
+        .then(function(result) {
+          if (result.ok && result.data.success) {
+            showToast('Archivo borrado', 'success');
+            closeModal(true);
+            loadKubejs();
+          } else {
+            showToast(result.data.detail || 'Error al borrar', 'error');
+          }
+        })
+        .catch(function() { showToast('No se pudo conectar con el panel. Comprueba la conexión y vuelve a intentarlo.', 'error'); });
+    });
   });
 });
 
@@ -159,23 +163,25 @@ document.getElementById('kjs-move-confirm').addEventListener('click', function()
   var form = new FormData();
   form.append('from_path', fromPath);
   form.append('to_path', toPath);
-  apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/kubejs-move', {
-    method: 'POST',
-    body: form
-  })
-    .then(function(r) {
-      if (!r.ok) {
-        return r.json().then(function(err) { throw new Error(err.detail || 'Error al mover'); });
-      }
-      return r.json();
+  busyWhile(document.getElementById('kjs-move-confirm'), function() {
+    return apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/kubejs-move', {
+      method: 'POST',
+      body: form
     })
-    .then(function() {
-      showToast('Archivo movido', 'success');
-      document.getElementById('kjs-move-form').style.display = 'none';
-      closeModal();
-      loadKubejs();
-    })
-    .catch(function(err) {
-      showToast(err.message, 'error');
-    });
+      .then(function(r) {
+        if (!r.ok) {
+          return r.json().then(function(err) { throw new Error(err.detail || 'Error al mover'); });
+        }
+        return r.json();
+      })
+      .then(function() {
+        showToast('Archivo movido', 'success');
+        document.getElementById('kjs-move-form').style.display = 'none';
+        closeModal();
+        loadKubejs();
+      })
+      .catch(function(err) {
+        showToast(err.message, 'error');
+      });
+  });
 });

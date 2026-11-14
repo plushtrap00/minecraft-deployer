@@ -207,27 +207,31 @@ document.getElementById('task-list').addEventListener('click', function(event) {
     openTaskForm(task);
   } else if (action === 'delete') {
     showConfirm('¿Borrar la tarea?', describeTaskTitle(task) + ' a las ' + task.time + '.', function() {
-      apiJson('/api/automation/tasks/' + encodeURIComponent(task.id), { method: 'DELETE' }).then(function(result) {
-        if (!result.ok) {
-          showToast(result.data.detail || 'No se pudo borrar', 'error');
-          return;
-        }
-        automationData.tasks = automationData.tasks.filter(function(t) { return t.id !== task.id; });
-        renderTasks();
-        showToast('Tarea borrada', 'success');
+      busyWhile(button, function() {
+        return apiJson('/api/automation/tasks/' + encodeURIComponent(task.id), { method: 'DELETE' }).then(function(result) {
+          if (!result.ok) {
+            showToast(result.data.detail || 'No se pudo borrar', 'error');
+            return;
+          }
+          automationData.tasks = automationData.tasks.filter(function(t) { return t.id !== task.id; });
+          renderTasks();
+          showToast('Tarea borrada', 'success');
+        });
       });
     }, { confirmLabel: 'Borrar' });
   } else if (action === 'run') {
     var disruptive = task.kind === 'restart' || task.kind === 'stop';
     var run = function() {
-      apiJson('/api/automation/tasks/' + encodeURIComponent(task.id) + '/run', { method: 'POST' }).then(function(result) {
-        showToast(result.ok ? result.data.message : (result.data.detail || 'No se pudo ejecutar'), result.ok ? 'success' : 'error');
-        // El resultado llega cuando termina: se vuelve a mirar en un rato.
-        setTimeout(function() {
-          if (currentPage === 'automation') {
-            loadAutomation();
-          }
-        }, disruptive && task.warn_minutes ? 4000 : 2500);
+      busyWhile(button, function() {
+        return apiJson('/api/automation/tasks/' + encodeURIComponent(task.id) + '/run', { method: 'POST' }).then(function(result) {
+          showToast(result.ok ? result.data.message : (result.data.detail || 'No se pudo ejecutar'), result.ok ? 'success' : 'error');
+          // El resultado llega cuando termina: se vuelve a mirar en un rato.
+          setTimeout(function() {
+            if (currentPage === 'automation') {
+              loadAutomation();
+            }
+          }, disruptive && task.warn_minutes ? 4000 : 2500);
+        });
       });
     };
     if (disruptive || task.kind === 'start') {

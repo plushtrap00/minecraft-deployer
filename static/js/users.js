@@ -28,36 +28,38 @@ function loadUsers() {
     });
 }
 
-function deleteUser(username) {
+function deleteUser(username, button) {
   showConfirm(
     'Eliminar a ' + username,
     'Esta cuenta ya no podrá entrar al panel. Esta acción no se puede deshacer.',
-    function() { doDeleteUser(username); },
+    function() { doDeleteUser(username, button); },
     { confirmLabel: 'Eliminar usuario' }
   );
 }
 
-function doDeleteUser(username) {
-  apiFetch('/api/users/' + encodeURIComponent(username), { method: 'DELETE' })
-    .then(function(r) {
-      return r.json().then(function(d) { return { ok: r.ok, d: d }; });
-    })
-    .then(function(res) {
-      if (res.ok) {
-        showToast('Usuario eliminado', 'success');
-        loadUsers();
-      } else {
-        showToast(res.d.detail || 'No se pudo eliminar el usuario', 'error');
-      }
-    })
-    .catch(function() { showToast('No se pudo conectar con el panel', 'error'); });
+function doDeleteUser(username, button) {
+  busyWhile(button, function() {
+    return apiFetch('/api/users/' + encodeURIComponent(username), { method: 'DELETE' })
+      .then(function(r) {
+        return r.json().then(function(d) { return { ok: r.ok, d: d }; });
+      })
+      .then(function(res) {
+        if (res.ok) {
+          showToast('Usuario eliminado', 'success');
+          loadUsers();
+        } else {
+          showToast(res.d.detail || 'No se pudo eliminar el usuario', 'error');
+        }
+      })
+      .catch(function() { showToast('No se pudo conectar con el panel', 'error'); });
+  });
 }
 
 document.getElementById('btn-refresh-users').addEventListener('click', loadUsers);
 document.getElementById('users-list').addEventListener('click', function(event) {
   var btn = event.target.closest('.user-delete-btn');
   if (btn) {
-    deleteUser(btn.dataset.user);
+    deleteUser(btn.dataset.user, btn);
   }
   var pwBtn = event.target.closest('.user-password-btn');
   if (pwBtn) {

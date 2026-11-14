@@ -6,6 +6,9 @@ documentación de la API. Cada commit sube la versión (2.A.B, cada cifra de 0
 a 9: después de 2.0.9 va 2.1.0) y se etiqueta con `git tag v<versión>`.
 
 Historial resumido:
+- 2.1.5 (2026-11-14): estado de carga en todos los botones que esperan al
+  servidor (spinner, sin doble clic): jugadores, mundos, mods, KubeJS,
+  editor, server.properties, usuarios, copias, tareas y Forzar parada.
 - 2.1.4 (2026-11-14): saltos de línea equilibrados en títulos y textos
   centrados (text-wrap: balance) y sin palabras huérfanas en párrafos y
   pistas (text-wrap: pretty).
@@ -50,4 +53,4 @@ Historial resumido:
   otros usuarios.
 - 1.x: todo lo anterior (sin numerar).
 """
-APP_VERSION = "2.1.4"
+APP_VERSION = "2.1.5"

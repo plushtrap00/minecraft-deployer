@@ -186,21 +186,23 @@ document.getElementById('save-props-btn').addEventListener('click', function() {
   var newText = buildPropsText(props, originalPropsText);
   var form = new FormData();
   form.append('content', newText);
-  apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/server-properties', {
-    method: 'POST',
-    body: form
-  })
-    .then(function(response) { return response.json(); })
-    .then(function(data) {
-      if (data.success) {
-        originalPropsText = newText;
-        propsSnapshot = readPropsForm();
-        showToast('server.properties guardado', 'success');
-      } else {
-        showToast(data.detail || 'No se pudo guardar server.properties', 'error');
-      }
+  busyWhile(document.getElementById('save-props-btn'), function() {
+    return apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/server-properties', {
+      method: 'POST',
+      body: form
     })
-    .catch(function() { showToast('No se pudo guardar server.properties', 'error'); });
+      .then(function(response) { return response.json(); })
+      .then(function(data) {
+        if (data.success) {
+          originalPropsText = newText;
+          propsSnapshot = readPropsForm();
+          showToast('server.properties guardado', 'success');
+        } else {
+          showToast(data.detail || 'No se pudo guardar server.properties', 'error');
+        }
+      })
+      .catch(function() { showToast('No se pudo guardar server.properties', 'error'); });
+  });
 });
 
 // Ctrl+S (o Cmd+S) guarda server.properties si es la pestaña que se ve.
