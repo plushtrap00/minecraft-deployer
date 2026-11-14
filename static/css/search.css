@@ -490,10 +490,8 @@
   white-space: nowrap;
 }
 
-.release-tag.release { --tag-rgb: var(--green-rgb); }
 .release-tag.beta { --tag-rgb: var(--yellow-rgb); }
 .release-tag.alpha { --tag-rgb: var(--red-rgb); }
-.release-tag.newest { --tag-rgb: var(--accent-rgb); }
 
 .mod-search-install {
   display: inline-flex;

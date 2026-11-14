@@ -151,7 +151,6 @@ function searchResultCardHtml(item, index, opts) {
     + (opts.installed ? '<span class="search-slot-check" title="Ya instalado">' + icon('check') + '</span>' : '')
     + '</span>';
 
-  var badge = opts.installed ? '<span class="mod-search-badge">Instalado</span>' : '';
   var author = item.author ? '<span class="search-card-author">de ' + escHtml(item.author) + '</span>' : '';
   var desc = item.description ? '<div class="mod-search-desc">' + escHtml(item.description) + '</div>' : '';
 
@@ -174,7 +173,7 @@ function searchResultCardHtml(item, index, opts) {
     + ' aria-label="' + escHtml((opts.kind || 'Ver') + ' ' + (item.title || '')) + '">'
     + slot
     + '<div class="mod-search-info">'
-    + '<div class="mod-search-title-row"><span class="mod-search-title">' + escHtml(item.title) + '</span>' + badge + '</div>'
+    + '<div class="mod-search-title-row"><span class="mod-search-title">' + escHtml(item.title) + '</span></div>'
     + author
     + desc
     + '<div class="search-card-foot">' + stats + loaders + cats + '</div>'
@@ -222,7 +221,6 @@ function searchSummaryHtml(total, query, noun) {
 }
 
 var SEARCH_RELEASE_TYPES = {
-  release: { label: 'Estable', cls: 'release' },
   beta: { label: 'Beta', cls: 'beta' },
   alpha: { label: 'Alfa', cls: 'alpha' }
 };
@@ -550,7 +548,6 @@ function renderModSearchFiles() {
     var when = searchUpdatedText(f.file_date);
     var mcVersions = (f.game_versions || []).filter(function(v) { return /^\d/.test(v); });
     var tags = (channel ? '<span class="release-tag ' + channel.cls + '">' + channel.label + '</span>' : '')
-      + (i === 0 ? '<span class="release-tag newest">Más reciente</span>' : '')
       + mcVersions.slice(0, 3).map(function(v) { return '<span class="search-chip">MC ' + escHtml(v) + '</span>'; }).join('')
       + (when ? '<span class="search-stat">' + icon('clock') + when + '</span>' : '');
     return '<div class="search-file-row">'
