@@ -6,6 +6,8 @@ documentación de la API. Cada commit sube la versión (2.A.B, cada cifra de 0
 a 9: después de 2.0.9 va 2.1.0) y se etiqueta con `git tag v<versión>`.
 
 Historial resumido:
+- 2.0.7 (2026-11-14): fuera etiquetas repetidas (aria-label igual al texto
+  y tooltips repetidos en el menú, y el tooltip de «Más opciones» en Mods).
 - 2.0.6 (2026-11-14): fuera insignias de relleno en el buscador de mods
   («Estable», «Más reciente» y el «Instalado» repetido junto al check).
 - 2.0.5 (2026-11-13): fuera la paginación en las listas que ya tenían
@@ -28,4 +30,4 @@ Historial resumido:
   otros usuarios.
 - 1.x: todo lo anterior (sin numerar).
 """
-APP_VERSION = "2.0.6"
+APP_VERSION = "2.0.7"

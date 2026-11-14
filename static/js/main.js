@@ -263,10 +263,10 @@ document.addEventListener('keydown', function(event) {
 });
 
 // Los botones de administración se quedan solo con el icono en pantallas
-// medianas: el texto se copia a title/aria-label para que se sepa qué son.
+// medianas: el texto se copia al title para que se sepa qué son al pasar el
+// ratón (el span sigue ahí, oculto solo a la vista, para lectores de pantalla).
 document.querySelectorAll('.nav-aside button').forEach(function(button) {
   var label = button.querySelector('span').textContent;
-  button.setAttribute('aria-label', label);
   if (!button.title) {
     button.title = label;
   }
