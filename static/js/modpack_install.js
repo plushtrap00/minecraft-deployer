@@ -392,7 +392,7 @@ function updateDlInstallBtnAppearance() {
     btn.textContent = 'Descarga bloqueada por el autor';
     return;
   }
-  btn.textContent = 'Descargar e instalar';
+  btn.innerHTML = icon('download') + 'Descargar e instalar';
 }
 
 function checkDlDuplicate() {

@@ -332,7 +332,20 @@
 }
 
 .deploy-btn {
-  padding: 10px 22px;
+  padding: 12px 28px;
+  font-size: var(--fs-lg);
+}
+
+/* Botón final de cada modo: la acción a la que lleva toda la página. Cuando
+   ya está todo listo se despega del fondo con un halo verde. (Va con
+   .step-action delante para ganar a .btn-go:active de scene.css, que se
+   carga después.) */
+.step-action .deploy-btn:not(:disabled):not(.is-blocked) {
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .25), 0 4px 16px rgba(var(--go-rgb), .35);
+}
+
+.step-action .deploy-btn:not(:disabled):not(.is-blocked):active {
+  box-shadow: inset 0 -1px 0 rgba(0, 0, 0, .25), 0 2px 8px rgba(var(--go-rgb), .3);
 }
 
 /* Falta algo obligatorio: se ve inactivo, pero sigue respondiendo al clic
