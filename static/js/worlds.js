@@ -28,7 +28,7 @@ function renderWorlds(data) {
       ? '<span class="world-active-badge">Activo</span>'
       : '';
     var activateBtn = !world.active
-      ? '<button class="btn-secondary wc-activate btn-xs" data-world="' + escHtml(world.name) + '">Activar</button>'
+      ? '<button class="btn-secondary wc-activate btn-xs" data-world="' + escHtml(world.name) + '">' + icon('check') + 'Activar</button>'
       : '';
     var deleteBtn = !world.active
       ? '<button class="btn-danger wc-delete btn-xs" data-world="' + escHtml(world.name) + '">' + icon('trash-2') + 'Borrar</button>'

@@ -15,8 +15,8 @@ function loadUsers() {
           : '<span class="role-badge role-user">Usuario</span>';
         var actions = isAdmin ? '' :
           '<div class="pe-actions">'
-          + '<button class="btn-ghost user-password-btn btn-xs" data-user="' + escHtml(u.username) + '">Cambiar contraseña</button>'
-          + '<button class="btn-danger user-delete-btn btn-xs" data-user="' + escHtml(u.username) + '">Eliminar</button></div>';
+          + '<button class="btn-ghost user-password-btn btn-xs" data-user="' + escHtml(u.username) + '">' + icon('lock') + 'Cambiar contraseña</button>'
+          + '<button class="btn-danger user-delete-btn btn-xs" data-user="' + escHtml(u.username) + '">' + icon('trash-2') + 'Eliminar</button></div>';
         return '<div class="player-entry">'
           + '<span class="pe-name">' + escHtml(u.username) + '</span>'
           + badge + actions
