@@ -351,6 +351,7 @@ document.getElementById('modal-save-btn').addEventListener('click', function() {
           cfgRawText = textToSave;
           editorBaseline = currentEditorText();
           showToast('Archivo guardado', 'success');
+        flashDone(document.getElementById('modal-save-btn'));
         } else {
           showToast(data.detail || 'No se pudo guardar el archivo', 'error');
         }

@@ -168,12 +168,12 @@ function fmtSize(bytes) {
 // -- Deploy -------------------------------------------------------------------
 document.getElementById('deploy-btn').addEventListener('click', function() {
   if (!selectedFile) {
-    showAlert('Elige primero el archivo del modpack.');
+    flagField(document.getElementById('drop-zone'), 'Elige primero el archivo del modpack.');
     return;
   }
   var folderName = document.getElementById('folder-name').value.trim();
   if (!folderName) {
-    showAlert('Escribe un nombre para el servidor.');
+    flagField(document.getElementById('folder-name'), 'Escribe un nombre para el servidor.');
     return;
   }
   if (ramEnabled && ramFieldsError('')) {

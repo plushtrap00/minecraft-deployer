@@ -37,7 +37,7 @@ function renderWorlds(data) {
     var downloadBtn = '<a href="' + downloadUrl + '" download="' + escHtml(world.name) + '.zip" class="btn-secondary btn-xs no-underline wc-download">' + icon('download') + 'Descargar</a>';
     var worldIcon = icon('map');
     var activeClass = world.active ? ' active-world' : '';
-    html += '<div class="world-card' + activeClass + '">'
+    html += '<div class="world-card' + activeClass + freshClass('world', world.name) + '">'
       + '<span class="world-icon">' + worldIcon + '</span>'
       + '<div class="flex-1">'
       + '<div class="fw-semibold">' + escHtml(world.name) + ' ' + activeBadge + '</div>'
@@ -200,7 +200,7 @@ var typeDescs = {
   document.getElementById('nw-confirm').addEventListener('click', function() {
     var name = document.getElementById('nw-name').value.trim();
     if (!name) {
-      showAlert('Escribe un nombre para el mundo');
+      flagField(document.getElementById('nw-name'), 'Escribe un nombre para el mundo');
       return;
     }
     var sel = document.getElementById('nw-type-select');
@@ -211,9 +211,10 @@ var typeDescs = {
       worldType = sel.value;
     }
     if (!worldType) {
-      showAlert('Escribe el tipo de mundo');
+      flagField(document.getElementById('nw-type-custom'), 'Escribe el tipo de mundo');
       return;
     }
+    markFresh('world', name);
     var form = new FormData();
     form.append('world_name', name);
     form.append('level_type', worldType);
@@ -300,9 +301,10 @@ var uwActivate = true;
     }
     var worldName = document.getElementById('uw-name').value.trim();
     if (!worldName) {
-      showAlert('Escribe un nombre para el mundo');
+      flagField(document.getElementById('uw-name'), 'Escribe un nombre para el mundo');
       return;
     }
+    markFresh('world', worldName);
 
     var confirmBtn = document.getElementById('uw-confirm');
     var progress = document.getElementById('uw-progress');

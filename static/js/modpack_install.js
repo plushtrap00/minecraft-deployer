@@ -488,12 +488,12 @@ document.getElementById('dl-install-btn').addEventListener('click', function() {
   }
   var versionId = document.getElementById('dl-version-select').value;
   if (!versionId) {
-    showToast('Elige una versión del modpack', 'error');
+    flagField(document.getElementById('dl-version-select'), 'Elige una versión del modpack');
     return;
   }
   var serverName = dlServerName();
   if (!serverName) {
-    showToast('Escribe un nombre para el servidor', 'error');
+    flagField(document.getElementById('dl-server-name'), 'Escribe un nombre para el servidor');
     return;
   }
   if (ramFieldsError('dl-')) {

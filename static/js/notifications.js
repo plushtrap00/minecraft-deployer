@@ -99,13 +99,14 @@ document.getElementById('notify-test-btn').addEventListener('click', function() 
 
 document.getElementById('notify-save-btn').addEventListener('click', function() {
   var btn = this;
-  btn.disabled = true;
-  postNotify('/api/admin/notifications', notifyFormValues()).then(function(result) {
-    btn.disabled = false;
-    if (result.ok) {
-      showToast('Avisos guardados', 'success');
-    } else {
-      showToast(result.data.detail || 'No se pudieron guardar los avisos', 'error');
-    }
+  busyWhile(btn, function() {
+    return postNotify('/api/admin/notifications', notifyFormValues()).then(function(result) {
+      if (result.ok) {
+        showToast('Avisos guardados', 'success');
+        flashDone(btn);
+      } else {
+        showToast(result.data.detail || 'No se pudieron guardar los avisos', 'error');
+      }
+    });
   });
 });

@@ -25,13 +25,13 @@ document.getElementById('kjs-confirm-new').addEventListener('click', function() 
   if (subfolderSel === '__custom__') {
     subfolder = document.getElementById('kjs-custom-folder').value.trim().replace(/\\/g, '/');
     if (!subfolder) {
-      showToast('Escribe una ruta de carpeta', 'error');
+      flagField(document.getElementById('kjs-custom-folder'), 'Escribe una ruta de carpeta');
       return;
     }
   }
   var filename = document.getElementById('kjs-new-filename').value.trim();
   if (!filename) {
-    showToast('Escribe un nombre de archivo', 'error');
+    flagField(document.getElementById('kjs-new-filename'), 'Escribe un nombre de archivo');
     return;
   }
   if (!filename.includes('.')) {
@@ -149,13 +149,13 @@ document.getElementById('kjs-move-confirm').addEventListener('click', function()
   if (subfolderSel === '__custom__') {
     subfolder = document.getElementById('kjs-move-custom-folder').value.trim().replace(/\\/g, '/');
     if (!subfolder) {
-      showToast('Escribe una ruta de carpeta', 'error');
+      flagField(document.getElementById('kjs-move-custom-folder'), 'Escribe una ruta de carpeta');
       return;
     }
   }
   var filename = document.getElementById('kjs-move-filename').value.trim();
   if (!filename) {
-    showToast('Escribe un nombre de archivo', 'error');
+    flagField(document.getElementById('kjs-move-filename'), 'Escribe un nombre de archivo');
     return;
   }
   var toPath = subfolder === '__root__' ? filename : subfolder.replace(/^\/+|\/+$/g, '') + '/' + filename;

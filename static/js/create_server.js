@@ -100,18 +100,18 @@ var CREATE_LOG_RENDER_THROTTLE_MS = 200;
 document.getElementById('create-server-btn').addEventListener('click', function() {
   var name = document.getElementById('create-name').value.trim();
   if (!name) {
-    showToast('Escribe un nombre para el servidor', 'error');
+    flagField(document.getElementById('create-name'), 'Escribe un nombre para el servidor');
     return;
   }
   var mcVersion = document.getElementById('create-mc-version').value;
   if (!mcVersion) {
-    showToast('Elige una versión de Minecraft', 'error');
+    flagField(document.getElementById('create-mc-version'), 'Elige una versión de Minecraft');
     return;
   }
   var loader = document.getElementById('create-loader').value;
   var loaderVersion = loader === 'vanilla' ? '' : document.getElementById('create-loader-version').value;
   if (loader !== 'vanilla' && !loaderVersion) {
-    showToast('Elige una versión del modloader', 'error');
+    flagField(document.getElementById('create-loader-version'), 'Elige una versión del modloader');
     return;
   }
   if (ramFieldsError('create-')) {

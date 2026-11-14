@@ -65,7 +65,7 @@ function renderPlayerList(containerId, players, type, extraFn) {
   var removeLabel = type === 'op' ? 'Quitar op' : 'Quitar';
   el.innerHTML = '<div class="player-grid">' + players.map(function(player) {
     var name = player.name || player.uuid || '?';
-    return '<div class="player-tile">' + headHtml(player.name, player.uuid, 'lg')
+    return '<div class="player-tile' + freshClass(type, name) + '">' + headHtml(player.name, player.uuid, 'lg')
       + '<div class="player-tile-info"><div class="pe-name">' + escHtml(name) + '</div>'
       + (extraFn ? extraFn(player) : '') + '</div>'
       + '<button class="btn-ghost btn-xs player-remove-btn" data-type="' + type + '" data-name="' + escHtml(name) + '"'
@@ -85,7 +85,7 @@ function renderBanList(containerId, bans, type) {
     var avatar = type === 'ip'
       ? '<span class="player-head lg ip-avatar" aria-hidden="true">' + icon('globe') + '</span>'
       : headHtml(ban.name, ban.uuid, 'lg');
-    return '<div class="player-tile banned">' + avatar
+    return '<div class="player-tile banned' + freshClass(type, name) + '">' + avatar
       + '<div class="player-tile-info"><div class="pe-name">' + escHtml(name) + '</div>'
       + (ban.reason ? '<div class="pe-meta" title="' + escHtml(ban.reason) + '">' + escHtml(ban.reason) + '</div>' : '')
       + '</div>'
@@ -146,9 +146,10 @@ function apiCall(method, url, body, successMsg) {
 document.getElementById('btn-add-op').addEventListener('click', function() {
   var name = document.getElementById('op-name-input').value.trim();
   if (!name) {
-    showAlert('Escribe un nombre');
+    flagField(document.getElementById('op-name-input'), 'Escribe un nombre');
     return;
   }
+  markFresh('op', name);
   var form = new FormData();
   form.append('name', name);
   form.append('level', '4');
@@ -187,9 +188,10 @@ function doRemoveOp(name, button) {
 document.getElementById('btn-add-wl').addEventListener('click', function() {
   var name = document.getElementById('wl-name-input').value.trim();
   if (!name) {
-    showAlert('Escribe un nombre');
+    flagField(document.getElementById('wl-name-input'), 'Escribe un nombre');
     return;
   }
+  markFresh('wl', name);
   var form = new FormData();
   form.append('name', name);
   busyWhile(document.getElementById('btn-add-wl'), function() {
@@ -222,9 +224,10 @@ function doRemoveWhitelist(name, button) {
 document.getElementById('btn-ban-player').addEventListener('click', function() {
   var name = document.getElementById('ban-name-input').value.trim();
   if (!name) {
-    showAlert('Escribe un nombre');
+    flagField(document.getElementById('ban-name-input'), 'Escribe un nombre');
     return;
   }
+  markFresh('player', name);
   var reason = document.getElementById('ban-reason-input').value.trim() || '';
   var form = new FormData();
   form.append('name', name);
@@ -262,9 +265,10 @@ function doUnbanPlayer(name, button) {
 document.getElementById('btn-ban-ip').addEventListener('click', function() {
   var ip = document.getElementById('ban-ip-input').value.trim();
   if (!ip) {
-    showAlert('Escribe una IP');
+    flagField(document.getElementById('ban-ip-input'), 'Escribe una IP');
     return;
   }
+  markFresh('ip', ip);
   var reason = document.getElementById('ban-ip-reason-input').value.trim() || '';
   var form = new FormData();
   form.append('ip', ip);

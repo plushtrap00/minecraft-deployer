@@ -551,6 +551,51 @@ button.is-busy {
   to { transform: rotate(360deg); }
 }
 
+/* Respuestas animadas (utils.js). Con «reducir movimiento» la regla global
+   las deja en su estado final: borde rojo, fondo marcado, check fijo. */
+
+/* flagField: el campo que falta tiembla y queda en rojo hasta que se toca. */
+.is-invalid,
+.is-invalid:focus {
+  border-color: var(--red);
+  box-shadow: 0 0 0 3px rgba(var(--red-rgb), .22);
+  animation: field-shake .36s ease-in-out;
+}
+
+@keyframes field-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-5px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(3px); }
+}
+
+/* markFresh: lo recién añadido destella con el acento y se apaga solo. */
+.is-fresh {
+  animation: fresh-flash 1.6s ease-out;
+}
+
+@keyframes fresh-flash {
+  0%, 25% {
+    background-color: rgba(var(--accent-rgb), .22);
+    box-shadow: 0 0 0 2px rgba(var(--accent-rgb), .6);
+  }
+  100% {
+    box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0);
+  }
+}
+
+/* flashDone: el check de «Guardado» entra con un pequeño salto. */
+button.is-done > .icon:first-child {
+  margin-right: 6px;
+  animation: done-pop .35s cubic-bezier(.34, 1.7, .5, 1);
+}
+
+@keyframes done-pop {
+  from { transform: scale(.3); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
 .btn-secondary {
   background: var(--surface-raised);
   border-color: var(--border);

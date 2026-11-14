@@ -197,6 +197,7 @@ document.getElementById('save-props-btn').addEventListener('click', function() {
           originalPropsText = newText;
           propsSnapshot = readPropsForm();
           showToast('server.properties guardado', 'success');
+        flashDone(document.getElementById('save-props-btn'));
         } else {
           showToast(data.detail || 'No se pudo guardar server.properties', 'error');
         }

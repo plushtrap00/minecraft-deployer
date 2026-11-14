@@ -48,6 +48,72 @@ function busyWhile(button, run) {
     .finally(function() { setBusy(button, false); });
 }
 
+// Campo que falta o no vale: tiembla, se marca en rojo y recibe el foco, con
+// el motivo en un aviso. La marca se quita en cuanto se escribe o se elige
+// algo. Sustituye al diálogo modal, que tapaba justo el campo a rellenar.
+function flagField(field, message) {
+  showToast(message, 'error');
+  if (!field) {
+    return;
+  }
+  field.classList.remove('is-invalid');
+  void field.offsetWidth;  // reinicia la animación si ya estaba marcado
+  field.classList.add('is-invalid');
+  field.setAttribute('aria-invalid', 'true');
+  if (typeof field.focus === 'function') {
+    field.focus();
+  }
+  var clear = function() {
+    field.classList.remove('is-invalid');
+    field.removeAttribute('aria-invalid');
+    field.removeEventListener('input', clear);
+    field.removeEventListener('change', clear);
+  };
+  field.addEventListener('input', clear);
+  field.addEventListener('change', clear);
+}
+
+// Lo recién añadido destella una vez al volver a pintar su lista, para ver
+// dónde ha caído. markFresh() antes de pedirlo; freshClass() al pintar cada
+// fila. Caduca a los 10 s por si la petición falla y no llega a aparecer.
+var freshItems = {};
+
+function markFresh(kind, key) {
+  freshItems[kind] = { key: String(key).toLowerCase(), until: Date.now() + 10000 };
+}
+
+function freshClass(kind, key) {
+  var item = freshItems[kind];
+  if (!item || Date.now() > item.until || item.key !== String(key).toLowerCase()) {
+    return '';
+  }
+  delete freshItems[kind];
+  return ' is-fresh';
+}
+
+// Confirmación en el propio botón tras guardar: check y «Guardado» durante un
+// momento. Si el botón sigue ocupado (busyWhile), se aplica al terminar.
+function flashDone(button, label) {
+  if (!button) {
+    return;
+  }
+  if (button.classList.contains('is-busy')) {
+    button._pendingDone = label || 'Guardado';
+    return;
+  }
+  if (button.classList.contains('is-done')) {
+    clearTimeout(button._doneTimer);
+  } else {
+    button._doneIdleHtml = button.innerHTML;
+  }
+  button.innerHTML = icon('check') + escHtml(label || 'Guardado');
+  button.classList.add('is-done');
+  button._doneTimer = setTimeout(function() {
+    button.innerHTML = button._doneIdleHtml;
+    button.classList.remove('is-done');
+  }, 1600);
+}
+
 function setBusy(button, busy) {
   if (!button) {
     return;
@@ -74,6 +140,11 @@ function setBusy(button, busy) {
   button.classList.remove('is-busy');
   button.removeAttribute('aria-busy');
   button.removeAttribute('aria-disabled');
+  if (button._pendingDone) {
+    var label = button._pendingDone;
+    delete button._pendingDone;
+    flashDone(button, label);
+  }
 }
 
 // apiFetch + JSON en una sola promesa que nunca falla: { ok, status, data }.
