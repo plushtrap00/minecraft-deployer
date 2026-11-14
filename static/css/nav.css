@@ -222,7 +222,7 @@
   .nav-aside .nav-action {
     padding: 12px;
     border-bottom: none;
-    border-radius: var(--radius-control);
+    border-radius: calc(var(--radius) - 6px); /* exterior - padding del cajón */
     font-size: var(--fs-md);
   }
 

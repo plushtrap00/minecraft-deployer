@@ -21,7 +21,7 @@
   border: none;
   color: var(--muted);
   font-size: var(--fs-sm);
-  border-radius: calc(var(--radius-control) - 2px);
+  border-radius: calc(var(--radius-control) - 3px); /* exterior - padding de .segmented */
 }
 
 .segmented-btn:hover {

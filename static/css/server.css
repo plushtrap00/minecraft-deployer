@@ -680,7 +680,7 @@
   left: 3px;
   width: 18px;
   height: 18px;
-  border-radius: 50%;
+  border-radius: calc(var(--radius) - 3px); /* exterior - hueco de 3px */
   background: #fff;
   transition: left .2s;
 }

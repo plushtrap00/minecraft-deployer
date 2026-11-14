@@ -629,7 +629,7 @@ body {
   padding: 6px 6px 8px;
   background: var(--bg);
   border: 2px solid var(--border);
-  border-radius: var(--radius-control);
+  border-radius: var(--radius);
   color: var(--muted);
   font-size: var(--fs-xs);
   font-weight: 600;
@@ -650,7 +650,7 @@ body {
   display: grid;
   grid-template-columns: 2fr 1fr 1fr;
   height: 34px;
-  border-radius: var(--radius-tag);
+  border-radius: calc(var(--radius) - 6px); /* exterior - padding de .theme-option */
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, .08);
 }

@@ -508,7 +508,7 @@
   min-width: 220px;
   background: var(--card);
   border: 1px solid var(--border);
-  border-radius: var(--radius-control);
+  border-radius: var(--radius);
   box-shadow: 0 8px 24px rgba(0, 0, 0, .35);
   padding: 6px;
   z-index: 30;
@@ -529,7 +529,7 @@
   color: var(--text);
   font-size: var(--fs-sm);
   padding: 8px 10px;
-  border-radius: var(--radius-control);
+  border-radius: calc(var(--radius) - 6px); /* exterior - padding del menú */
   cursor: pointer;
   white-space: nowrap;
 }

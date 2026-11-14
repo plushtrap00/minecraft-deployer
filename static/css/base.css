@@ -391,7 +391,7 @@ select option {
     background: var(--surface-raised);
     color: var(--text);
     border: 1px solid var(--border-strong);
-    border-radius: var(--radius-control);
+    border-radius: var(--radius);
     box-shadow: 0 10px 28px rgba(0, 0, 0, .45);
   }
 
@@ -400,7 +400,7 @@ select option {
     align-items: center;
     gap: 8px;
     padding: 7px 10px;
-    border-radius: var(--radius-tag);
+    border-radius: calc(var(--radius) - 4px); /* exterior - padding de la lista */
     background: none;
     font-size: var(--fs-md);
     cursor: pointer;
