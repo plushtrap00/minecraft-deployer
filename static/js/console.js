@@ -17,7 +17,7 @@ function setConsoleView(chat) {
   var input = document.getElementById('cmd-input');
   input.placeholder = chat ? 'Escribe un mensaje para los jugadores…' : 'Escribe un comando: say Hola, list, whitelist add Alex…';
   input.setAttribute('aria-label', chat ? 'Mensaje para los jugadores' : 'Comando para el servidor');
-  document.querySelector('.cmd-prompt').textContent = chat ? '💬' : '>';
+  document.querySelector('.cmd-prompt').innerHTML = chat ? icon('message-square') : '&gt;';
   var consoleEl = document.getElementById('console');
   consoleEl.scrollTop = consoleEl.scrollHeight;
 }

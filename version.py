@@ -6,6 +6,8 @@ documentación de la API. Cada commit sube la versión (2.A.B, cada cifra de 0
 a 9: después de 2.0.9 va 2.1.0) y se etiqueta con `git tag v<versión>`.
 
 Historial resumido:
+- 2.1.0 (2026-11-14): el prompt de la consola en modo chat usa el icono de
+  la pestaña Chat en vez del emoji 💬.
 - 2.0.9 (2026-11-14): iconos coherentes: todas las acciones de barra y de
   fila llevan icono (mundos, usuarios, KubeJS, modloader, Forzar parada) y
   «Instalar servidor» usa el mismo icono que su pestaña «Subir un modpack».
@@ -35,4 +37,4 @@ Historial resumido:
   otros usuarios.
 - 1.x: todo lo anterior (sin numerar).
 """
-APP_VERSION = "2.0.9"
+APP_VERSION = "2.1.0"
