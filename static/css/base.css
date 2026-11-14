@@ -103,6 +103,32 @@ body {
   text-align: center;
 }
 
+/* Saltos de línea equilibrados. Títulos y textos cortos centrados reparten
+   las palabras entre las líneas (balance), para que no quede una sola
+   colgando; párrafos y pistas solo evitan la palabra huérfana al final
+   (pretty). En lo que va en una línea con «…» no cambia nada. */
+h1, h2, h3, h4,
+[class$="-title"], [class*="-title "],
+.login-subtitle,
+.empty-msg,
+.empty-art-text,
+.mod-deps-empty-desc,
+.log-placeholder,
+.drop-zone,
+.mod-upload-zone,
+.toast {
+  text-wrap: balance;
+}
+
+p, li,
+.hint,
+.field-hint,
+.notice,
+.dialog-body,
+.step-lead {
+  text-wrap: pretty;
+}
+
 button,
 input,
 select,
