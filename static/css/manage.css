@@ -92,7 +92,6 @@
 }
 
 .pack-num {
-  font-variant-numeric: tabular-nums;
   font-size: var(--fs-sm);
 }
 

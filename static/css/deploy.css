@@ -286,7 +286,6 @@
   font-size: var(--fs-sm);
   font-weight: 600;
   color: var(--muted);
-  font-variant-numeric: tabular-nums;
 }
 
 .step.done .step-num {

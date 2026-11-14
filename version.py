@@ -6,6 +6,9 @@ documentación de la API. Cada commit sube la versión (2.A.B, cada cifra de 0
 a 9: después de 2.0.9 va 2.1.0) y se etiqueta con `git tag v<versión>`.
 
 Historial resumido:
+- 2.1.3 (2026-11-14): cifras tabulares en todo el panel; las métricas (TPS,
+  MSPT, jugadores, RAM) ya no cambian de ancho al contar en la fuente de
+  bloque.
 - 2.1.2 (2026-11-14): contraste AA (4,5:1) en todos los temas: texto oscuro
   en los botones de color de los diálogos y la insignia roja, números de
   línea de logs, días de las tareas, rojo de los botones de peligro y
@@ -44,4 +47,4 @@ Historial resumido:
   otros usuarios.
 - 1.x: todo lo anterior (sin numerar).
 """
-APP_VERSION = "2.1.2"
+APP_VERSION = "2.1.3"

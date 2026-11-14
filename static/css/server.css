@@ -299,7 +299,6 @@
   font-size: var(--fs-3xl);
   font-weight: 500;
   line-height: 1.15;
-  font-variant-numeric: tabular-nums;
   color: var(--text);
 }
 

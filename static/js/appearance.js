@@ -105,13 +105,19 @@ document.getElementById('appearance-close').addEventListener('click', function()
 
 // -- Números que cuentan hasta su valor ---------------------------------------
 // suffixHtml va detrás tal cual (p. ej. ' <small>de 20</small>').
+// Cada cifra en su caja de ancho fijo (.tnum-d): la fuente de bloque no
+// tiene cifras tabulares y el número bailaba al contar.
+function tabularDigits(text) {
+  return String(text).replace(/\d/g, '<span class="tnum-d">$&</span>');
+}
+
 function animateNumber(el, value, decimals, suffixHtml) {
   var to = Number(value);
   var from = parseFloat(el.dataset.num);
   el.dataset.num = String(to);
   var suffix = suffixHtml || '';
   if (isNaN(from) || from === to || prefersReducedMotion() || document.hidden) {
-    el.innerHTML = to.toFixed(decimals) + suffix;
+    el.innerHTML = tabularDigits(to.toFixed(decimals)) + suffix;
     return;
   }
   var started = performance.now();
@@ -122,7 +128,7 @@ function animateNumber(el, value, decimals, suffixHtml) {
     }
     var t = Math.min(1, (now - started) / duration);
     var eased = 1 - Math.pow(1 - t, 3);
-    el.innerHTML = (from + (to - from) * eased).toFixed(decimals) + suffix;
+    el.innerHTML = tabularDigits((from + (to - from) * eased).toFixed(decimals)) + suffix;
     if (t < 1) {
       requestAnimationFrame(frame);
     }

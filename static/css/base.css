@@ -87,6 +87,20 @@ body {
   line-height: 1.5;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
+  /* Cifras del mismo ancho en todo el panel, para que los números que
+     cambian no bailen y las columnas cuadren. Plex ya las trae así; esto
+     cubre las fuentes de reserva mientras carga. */
+  font-variant-numeric: tabular-nums;
+}
+
+/* Pixelify Sans no tiene cifras tabulares (el 1 es más estrecho que el 0)
+   y la propiedad de arriba no le hace nada: los números que se animan en
+   esa fuente meten cada cifra en una caja del ancho del 0 (tabularDigits
+   en appearance.js). */
+.tnum-d {
+  display: inline-block;
+  width: 1ch;
+  text-align: center;
 }
 
 button,
