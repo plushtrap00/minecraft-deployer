@@ -186,7 +186,7 @@ def _sample(node):
 def backend_messages():
     """(archivo:línea, texto) de cada detail= de HTTPException y cada notify(...)."""
     found = []
-    for path in list((ROOT / "routes").glob("*.py")) + list((ROOT / "services").glob("*.py")) + [ROOT / "main.py"]:
+    for path in list((ROOT / "routes").glob("*.py")) + list((ROOT / "services").glob("*.py")) + [ROOT / "main.py", ROOT / "app_constants.py", ROOT / "config.py"]:
         tree = ast.parse(path.read_text(encoding="utf-8"))
         for node in ast.walk(tree):
             if not isinstance(node, ast.Call):

@@ -127,6 +127,15 @@ class EnJsonTests(unittest.TestCase):
                     missing.append(f"{path.name}: {phrase}")
         self.assertEqual(missing, [])
 
+    def test_constants_texts_translated(self):
+        # Configuración → Constantes: las descripciones y categorías vienen de
+        # app_constants.py y el panel las pasa por t() al pintarlas.
+        import app_constants
+        table = i18n.load("en")
+        texts = set(app_constants.DESCRIPTIONS.values()) | set(app_constants.CATEGORIES.values())
+        missing = sorted(t for t in texts if i18n.normalize(t) not in table)
+        self.assertEqual(missing, [])
+
     def test_whole_page_translated(self):
         self.assertEqual(i18n.untranslated(render_index(), "en"), [])
 
