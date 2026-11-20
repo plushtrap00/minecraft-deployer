@@ -6,6 +6,10 @@ documentación de la API. Cada commit sube la versión (2.A.B, cada cifra de 0
 a 9: después de 2.0.9 va 2.1.0) y se etiqueta con `git tag v<versión>`.
 
 Historial resumido:
+- 2.2.2 (2026-11-20): todo el texto fijo del panel ya sale en inglés si lo
+  eliges: páginas, pestañas, formularios, ventanas y la Ayuda. Los mensajes
+  que aparecen al usar el panel (avisos, estados, listas) llegarán en la
+  siguiente versión.
 - 2.2.1 (2026-11-20): primer paso para tener el panel en inglés. En
   Apariencia se elige el idioma (también desde la pantalla de entrada) y en
   Configuración el idioma por defecto. De momento están traducidos la
@@ -79,4 +83,4 @@ Historial resumido:
   otros usuarios.
 - 1.x: todo lo anterior (sin numerar).
 """
-APP_VERSION = "2.2.1"
+APP_VERSION = "2.2.2"

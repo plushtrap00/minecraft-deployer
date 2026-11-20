@@ -40,6 +40,11 @@ _TOKEN_RE = re.compile(
 _ATTR_RE = re.compile(r'\b(' + "|".join(_TRANSLATED_ATTRS) + r')="([^"]*)"')
 _LETTER_RE = re.compile(r"[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]")
 _PARAM_RE = re.compile(r"\{(\w+)\}")
+# Nombres técnicos que se quedan igual en todos los idiomas: sin minúsculas
+# (GB, WARN, JWT_SECRET, ERROR / FATAL) o una sola palabra con signos o
+# números (startup_scripts/, .jar, -Xms, user_jvm_args.txt).
+_LOWER_RE = re.compile(r"[a-záéíóúüñ]")
+_TECHNICAL_TOKEN_RE = re.compile(r"^\S*[./_\-:#0-9]\S*$")
 
 _cache: dict = {}
 
@@ -123,13 +128,19 @@ def _phrase_pattern(key: str) -> re.Pattern:
     return re.compile(r"\s+".join(parts))
 
 
+def needs_translation(text: str) -> bool:
+    """Si un texto es una frase a traducir (y no un número o nombre técnico)."""
+    text = text.strip()
+    return bool(_LOWER_RE.search(text)) and not _TECHNICAL_TOKEN_RE.match(text)
+
+
 def _translate_text(text: str, table: dict, missing: list | None) -> str:
     core = text.strip()
     if not core or not _LETTER_RE.search(core):
         return text
     translated = table.get(normalize(core))
     if translated is None:
-        if missing is not None:
+        if missing is not None and needs_translation(core):
             missing.append(normalize(core))
         return text
     start = text.index(core[0])
@@ -146,7 +157,7 @@ def _translate_tag(tag: str, table: dict, missing: list | None) -> str:
             return match.group(0)
         translated = table.get(normalize(value))
         if translated is None:
-            if missing is not None:
+            if missing is not None and needs_translation(value):
                 missing.append(normalize(value))
             return match.group(0)
         return f'{match.group(1)}="{translated}"'

@@ -2,16 +2,14 @@
 Idiomas del panel (services/i18n.py, static/i18n/en.json, static/js/i18n.js).
 
 Además de probar la traducción, vigila el mapa: que sea JSON válido sin
-claves repetidas, que cada traducción tenga los mismos huecos {x} que su
-frase, que todo t('…') del JavaScript tenga traducción y que los trozos ya
-traducidos (COMPLETE_PARTIALS) no tengan ninguna frase sin traducir. Cada
-fase de la traducción añade sus trozos a esa lista.
+claves repetidas, que cada traducción tenga los mismos huecos {x} y etiquetas
+que su frase, que todo t('…') del JavaScript tenga traducción y que no quede
+ninguna frase del HTML sin traducir.
 """
 import json
 import os
 import re
 import unittest
-import warnings
 from types import SimpleNamespace
 from typing import Any
 from unittest import mock
@@ -21,14 +19,8 @@ from services.frontend import STATIC_DIR, _expand, render_index
 
 EN_JSON = STATIC_DIR / "i18n" / "en.json"
 
-# Trozos que ya están traducidos del todo: una frase nueva sin traducir en
-# ellos hace fallar el test.
-COMPLETE_PARTIALS = [
-    "partials/nav.html",
-    "partials/login.html",
-    "partials/overlays.html",
-    "partials/scene.html",
-]
+# Desde la fase 2 todo el HTML está traducido: una frase nueva sin su
+# traducción en en.json hace fallar test_whole_page_translated.
 
 TABLE = {
     "Guardar": "Save",
@@ -135,16 +127,16 @@ class EnJsonTests(unittest.TestCase):
                     missing.append(f"{path.name}: {phrase}")
         self.assertEqual(missing, [])
 
-    def test_complete_partials_fully_translated(self):
-        for rel in COMPLETE_PARTIALS:
-            html = _expand((STATIC_DIR / rel).read_text(encoding="utf-8"), 0)
-            self.assertEqual(i18n.untranslated(html, "en"), [], rel)
+    def test_whole_page_translated(self):
+        self.assertEqual(i18n.untranslated(render_index(), "en"), [])
 
-    def test_report_pending_phrases(self):
-        # Solo avisa (las fases siguientes van traduciendo el resto).
-        pending = i18n.untranslated(render_index(), "en")
-        if pending:
-            warnings.warn(f"{len(pending)} frases del HTML aún sin traducir al inglés", stacklevel=1)
+    def test_every_partial_translated(self):
+        # También los trozos con parámetros {{x}} (se rellenan con algo neutro).
+        for path in sorted((STATIC_DIR / "partials").rglob("*.html")):
+            source = path.read_text(encoding="utf-8")
+            source = re.sub(r"\{\{[\w-]+\}\}", "x", source)
+            html = _expand(source, 0)
+            self.assertEqual(i18n.untranslated(html, "en"), [], path.name)
 
 
 class IndexRouteTests(unittest.TestCase):
