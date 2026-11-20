@@ -2,7 +2,8 @@
 routes/system.py - Endpoints generales del sistema.
 
 Rutas:
-- GET  /                        → sirve index.html
+- GET  /                        → sirve index.html (en el idioma de la petición)
+- GET  /i18n/{lang}.js          → el mapa de traducciones para t() (services/i18n.py)
 - GET  /api/system-info         → RAM total del sistema
 - GET  /api/disk-usage          → uso de disco
 - GET  /api/modpacks            → lista de modpacks con metadata
@@ -14,6 +15,7 @@ Rutas:
 - POST /api/auto-update/apply   → aplica el pull pendiente y reinicia la app
 """
 import asyncio
+import json
 import os
 import re
 import shutil
@@ -28,6 +30,7 @@ from services.modpack import detect_modpack_version
 from services.pending_mods import get_pending_mods
 from services import auto_update
 from services.frontend import render_index
+from services import i18n
 from services.visuals import pack_icon_path, image_type
 from routes.deps import modpack_path
 from version import APP_VERSION
@@ -60,19 +63,51 @@ def _versioned_asset(match: re.Match) -> str:
     return f'{attr}="/static/{rel_path}?v={_asset_version(rel_path)}"'
 
 
+def _i18n_version(lang: str) -> str:
+    try:
+        return str((i18n.I18N_DIR / f"{lang}.json").stat().st_mtime_ns)
+    except OSError:
+        return _PROCESS_START
+
+
 @router.get("/", response_class=HTMLResponse)
-def index():
-    html = _STATIC_ASSET_RE.sub(_versioned_asset, render_index())
+def index(request: Request):
+    lang = i18n.request_lang(request)
+    html = i18n.translate_html(render_index(), lang)
+    html = html.replace('<html lang="es">', f'<html lang="{lang}">', 1)
+    html = _STATIC_ASSET_RE.sub(_versioned_asset, html)
     # Datos que el JavaScript necesita desde el primer momento (antes incluso
     # de iniciar sesión), sin una petición aparte.
     meta = (
         f'<meta name="app-version" content="{APP_VERSION}">\n'
         f'<meta name="max-upload-mb" content="{int(MAX_UPLOAD_MB)}">\n'
+        f'<meta name="app-lang" content="{lang}">\n'
     )
     html = html.replace("</head>", meta + "</head>", 1)
+    # El mapa de t() va antes que cualquier otro script (en español no hace falta).
+    if lang != i18n.DEFAULT_LANG:
+        html = html.replace(
+            '<script src="/static/js/i18n.js',
+            f'<script src="/i18n/{lang}.js?v={_i18n_version(lang)}"></script>\n<script src="/static/js/i18n.js',
+            1,
+        )
     return HTMLResponse(
         content=html,
         headers={"Cache-Control": "no-cache, no-store, must-revalidate"},
+    )
+
+
+@router.get("/i18n/{lang}.js")
+def i18n_script(lang: str):
+    """El mapa de frases de un idioma como JS (la CSP no deja scripts en línea)."""
+    if lang not in i18n.LANGS:
+        raise HTTPException(status_code=404)
+    body = "window.I18N_DICT = " + json.dumps(i18n.load(lang), ensure_ascii=False) + ";\n"
+    return Response(
+        content=body,
+        media_type="text/javascript; charset=utf-8",
+        # La URL lleva ?v=<fecha del .json>: una traducción nueva es otra URL.
+        headers={"Cache-Control": "public, max-age=31536000, immutable"},
     )
 
 

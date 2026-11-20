@@ -55,6 +55,30 @@
   line-height: 1;
 }
 
+/* Cambio de idioma en el login: discreto, abajo a la derecha de la tarjeta. */
+.login-lang {
+  align-self: flex-end;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: -4px -8px -10px 0;
+  padding: 6px 8px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: var(--fs-xs);
+}
+
+.login-lang:hover {
+  background: none;
+  color: var(--text);
+}
+
+.login-lang .icon {
+  width: 14px;
+  height: 14px;
+}
+
 .login-subtitle {
   margin: -4px 0 6px;
   font-size: var(--fs-sm);

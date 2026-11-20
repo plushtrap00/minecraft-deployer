@@ -70,7 +70,9 @@ class FrontendGlobalsTest(unittest.TestCase):
         # La versión de cada CSS/JS sale de la fecha de su archivo: un git
         # pull sin reiniciar el panel tiene que cambiar la URL de lo cambiado.
         from routes.system import index, _asset_version
-        html = index().body.decode("utf-8")
+        from types import SimpleNamespace
+        request = SimpleNamespace(cookies={}, headers={})
+        html = bytes(index(request).body).decode("utf-8")  # type: ignore[arg-type]
         refs = re.findall(r'(?:href|src)="/static/([^"?]+)(\?v=(\d+))?"', html)
         self.assertTrue(refs)
         for rel_path, _, version in refs:

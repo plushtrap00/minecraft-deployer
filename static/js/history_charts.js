@@ -137,9 +137,9 @@ function drawPerfChart(figure, chart) {
     midnight.setHours(24, 0, 0, 0);
     first = midnight.getTime() / 1000;
   }
-  for (var t = first; t < now; t += step) {
-    var label = perfHours <= 24 ? perfTimeLabel(t) : new Date(t * 1000).toLocaleDateString('es-ES', { weekday: 'short' });
-    parts.push('<text class="perf-axis" x="' + x(t).toFixed(1) + '" y="' + (height - 6) + '" text-anchor="middle">' + escHtml(label) + '</text>');
+  for (var tick = first; tick < now; tick += step) {
+    var label = perfHours <= 24 ? perfTimeLabel(tick) : new Date(tick * 1000).toLocaleDateString('es-ES', { weekday: 'short' });
+    parts.push('<text class="perf-axis" x="' + x(tick).toFixed(1) + '" y="' + (height - 6) + '" text-anchor="middle">' + escHtml(label) + '</text>');
   }
 
   // La línea se corta donde faltan muestras (servidor apagado).

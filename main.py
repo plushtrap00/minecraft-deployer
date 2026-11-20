@@ -89,7 +89,9 @@ class AuthMiddleware(BaseHTTPMiddleware):
         path = request.url.path
 
         # Dejar pasar rutas públicas y archivos estáticos (CSS/JS/iconos)
-        if path in PUBLIC_PATHS or path.startswith("/static/") or path.startswith("/icon/"):
+        # /i18n/: las traducciones hacen falta ya en la pantalla de login.
+        if (path in PUBLIC_PATHS or path.startswith("/static/") or path.startswith("/icon/")
+                or path.startswith("/i18n/")):
             return await call_next(request)
 
         # La sesión llega en la cookie (también en EventSource y descargas,

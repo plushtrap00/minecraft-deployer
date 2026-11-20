@@ -32,7 +32,7 @@ from pydantic import BaseModel
 from dotenv import dotenv_values, set_key
 
 import app_constants
-from services import auto_update, notify, users
+from services import auto_update, i18n, notify, users
 from services.users import set_password
 from routes.auth import require_admin as _require_admin
 
@@ -47,6 +47,7 @@ _ENV_PATH = Path(__file__).parent.parent / ".env"
 _ENV_EDITABLE_KEYS = [
     "APP_USERNAME", "JWT_SECRET", "WEB_PORT", "SERVERS_PATH", "MC_DOMAIN",
     "CURSEFORGE_API_KEY", "AUTO_UPDATE_ENABLED", "AUTO_UPDATE_INTERVAL_SECONDS",
+    "APP_LANGUAGE",
 ]
 
 # Secretos del formulario: nunca salen hacia el navegador (ver docstring). La
@@ -54,6 +55,10 @@ _ENV_EDITABLE_KEYS = [
 # sin él no se pueden firmar sesiones.
 _ENV_SECRET_KEYS = {"JWT_SECRET", "CURSEFORGE_API_KEY"}
 _ENV_CLEARABLE_SECRETS = {"CURSEFORGE_API_KEY"}
+
+# Lo que vale una clave que no está en el .env: el formulario la muestra así y
+# guardar ese mismo valor no cuenta como cambio.
+_ENV_DEFAULTS = {"APP_LANGUAGE": i18n.DEFAULT_LANG}
 
 
 @router.get("/env")
@@ -63,6 +68,8 @@ def get_env(request: Request):
     result: dict = {
         key: values.get(key, "") for key in _ENV_EDITABLE_KEYS if key not in _ENV_SECRET_KEYS
     }
+    for key, default in _ENV_DEFAULTS.items():
+        result[key] = result.get(key) or default
     result["secrets_set"] = {key: bool(values.get(key)) for key in sorted(_ENV_SECRET_KEYS)}
     # WEB_PORT/SERVERS_PATH en Docker los controla docker-compose.yml (mapeo de
     # puertos y volumen/carpeta), no este .env — el frontend usa esto para
@@ -111,7 +118,7 @@ async def update_env(request: Request, body: EnvUpdateBody):
     # nada previo con qué compararla.
     current = dotenv_values(_ENV_PATH) if _ENV_PATH.exists() else {}
     changed = bool(body.new_password) or any(
-        str(current.get(key) or "") != value for key, value in changes.items()
+        str(current.get(key) or _ENV_DEFAULTS.get(key, "")) != value for key, value in changes.items()
     )
     if not changed:
         return JSONResponse({"success": True, "changed": False})
@@ -121,6 +128,8 @@ async def update_env(request: Request, body: EnvUpdateBody):
     for key, value in changes.items():
         if any(ch in value for ch in "\r\n\x00"):
             raise HTTPException(status_code=400, detail=f"{key} no puede contener saltos de línea")
+    if changes.get("APP_LANGUAGE", i18n.DEFAULT_LANG) not in i18n.LANGS:
+        raise HTTPException(status_code=400, detail="Idioma no disponible")
 
     try:
         if body.new_password:

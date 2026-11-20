@@ -1,7 +1,7 @@
 // -- Configuración (solo admin): .env y .APP_CONSTANTS -------------------------
 var CFG_ENV_TEXT_KEYS = [
   'APP_USERNAME', 'JWT_SECRET', 'WEB_PORT', 'SERVERS_PATH',
-  'MC_DOMAIN', 'CURSEFORGE_API_KEY', 'AUTO_UPDATE_INTERVAL_SECONDS',
+  'MC_DOMAIN', 'CURSEFORGE_API_KEY', 'AUTO_UPDATE_INTERVAL_SECONDS', 'APP_LANGUAGE',
 ];
 
 // -- Sub-pestañas: Variables de entorno / Constantes de la app --------------

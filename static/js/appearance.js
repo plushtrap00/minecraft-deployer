@@ -25,6 +25,32 @@ function prefersReducedMotion() {
   return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
+// -- Idioma --------------------------------------------------------------------
+// La lista y setLanguage() están en i18n.js. Cada idioma se escribe en su
+// propio idioma, para que se reconozca aunque no se entienda el actual.
+function renderLangOptions() {
+  var current = currentLang();
+  document.getElementById('lang-grid').innerHTML = I18N_LANGS.map(function(lang) {
+    return '<button type="button" class="lang-option" role="radio" lang="' + lang.id + '" data-lang="' + lang.id + '"'
+      + ' aria-checked="' + (lang.id === current ? 'true' : 'false') + '">' + escHtml(lang.name) + '</button>';
+  }).join('');
+}
+
+document.getElementById('lang-grid').addEventListener('click', function(event) {
+  var option = event.target.closest('.lang-option');
+  if (option) {
+    setLanguage(option.dataset.lang);
+  }
+});
+
+(function() {
+  var other = I18N_LANGS.filter(function(lang) { return lang.id !== currentLang(); })[0];
+  var button = document.getElementById('login-lang');
+  document.getElementById('login-lang-name').textContent = other.name;
+  button.setAttribute('lang', other.id);
+  button.addEventListener('click', function() { setLanguage(other.id); });
+})();
+
 // -- Temas ---------------------------------------------------------------------
 // Los colores de cada tema están en themes.css; aquí solo el nombre y las
 // muestras del selector (fondo, tarjeta, acento).
@@ -56,7 +82,7 @@ function renderThemeOptions() {
       + ' aria-checked="' + (theme.id === current ? 'true' : 'false') + '">'
       + '<span class="theme-swatch" aria-hidden="true">'
       + theme.swatch.map(function(color) { return '<span style="background:' + color + '"></span>'; }).join('')
-      + '</span><span class="theme-name">' + theme.name + '</span></button>';
+      + '</span><span class="theme-name">' + escHtml(t(theme.name)) + '</span></button>';
   }).join('');
 }
 
@@ -92,6 +118,7 @@ document.getElementById('theme-grid').addEventListener('keydown', function(event
 
 // -- Diálogo de Apariencia -----------------------------------------------------
 function openAppearance() {
+  renderLangOptions();
   renderThemeOptions();
   applySoundToggle();
   renderAchievementList();
@@ -126,10 +153,10 @@ function animateNumber(el, value, decimals, suffixHtml) {
     if (el.dataset.num !== String(to)) {
       return;
     }
-    var t = Math.min(1, (now - started) / duration);
-    var eased = 1 - Math.pow(1 - t, 3);
+    var progress = Math.min(1, (now - started) / duration);
+    var eased = 1 - Math.pow(1 - progress, 3);
     el.innerHTML = tabularDigits((from + (to - from) * eased).toFixed(decimals)) + suffix;
-    if (t < 1) {
+    if (progress < 1) {
       requestAnimationFrame(frame);
     }
   }
