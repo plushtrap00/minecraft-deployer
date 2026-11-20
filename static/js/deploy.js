@@ -195,9 +195,9 @@ document.getElementById('deploy-btn').addEventListener('click', function() {
       progress += Math.random() * 8;
       setFill(fill, Math.min(progress, 85));
       if (progress < 40) {
-        status.textContent = 'Subiendo ' + selectedFile.name + '...';
+        status.textContent = 'Subiendo ' + selectedFile.name + '…';
       } else {
-        status.textContent = 'Descomprimiendo...';
+        status.textContent = 'Descomprimiendo…';
       }
     }
   }, 300);

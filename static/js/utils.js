@@ -36,7 +36,7 @@ function icon(name) {
 }
 
 // Bloque de carga con la forma aproximada de una lista (ver .skeleton-rows en
-// base.css), en lugar de un "Cargando..." suelto.
+// base.css), en lugar de un "Cargando…" suelto.
 function loadingHtml() {
   return '<div class="skeleton-rows" role="status" aria-label="Cargando"><div></div><div></div><div></div></div>';
 }
@@ -400,7 +400,7 @@ document.getElementById('dialog-overlay').addEventListener('click', function(eve
 // las funciones de mostrar/ocultar, para que cualquier archivo pueda usarlas
 // sin duplicar el overlay ni su poll.
 function showRestartOverlay(title, sub) {
-  document.getElementById('restart-overlay-title').textContent = title || 'La app se está reiniciando...';
+  document.getElementById('restart-overlay-title').textContent = title || 'La app se está reiniciando…';
   document.getElementById('restart-overlay-sub').textContent = sub || 'Esto puede tardar unos segundos. No cierres esta pestaña.';
   document.getElementById('restart-overlay').classList.add('show');
 }

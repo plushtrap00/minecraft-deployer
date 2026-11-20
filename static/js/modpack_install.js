@@ -193,7 +193,7 @@ function runDlSearch(query, offset) {
   }
 
   var body = document.getElementById('dl-search-results');
-  body.innerHTML = modSearchSpinnerHtml('Buscando...');
+  body.innerHTML = modSearchSpinnerHtml('Buscando…');
 
   var url = '/api/modpack-install/search?source=' + encodeURIComponent(dlSource)
     + '&query=' + encodeURIComponent(query) + '&offset=' + offset;
@@ -350,7 +350,7 @@ function updateDlServerNameSuggestion() {
   var input = document.getElementById('dl-server-name');
   var hint = document.getElementById('dl-server-name-hint');
   var suggestion = suggestedDlServerName();
-  input.placeholder = suggestion || 'ej: atm10, prominence2...';
+  input.placeholder = suggestion || 'ej: atm10, prominence2…';
   var showHint = !!suggestion && !input.value.trim();
   hint.hidden = !showHint;
   hint.innerHTML = showHint ? 'Si lo dejas en blanco, se llamará <strong>' + escHtml(suggestion) + '</strong>.' : '';
@@ -381,7 +381,7 @@ function updateDlInstallBtnAppearance() {
     return;
   }
   // El botón vive en la tarjeta "4 · Instalar modpack", separada de donde
-  // aparece el aviso de "Comprobando si ya está instalado..." (tarjeta "2");
+  // aparece el aviso de "Comprobando si ya está instalado…" (tarjeta "2");
   // sin este texto en el propio botón, mientras se comprueba solo se veía
   // deshabilitado sin ninguna pista de por qué, como si estuviera roto.
   if (dlDuplicateCheckPending) {

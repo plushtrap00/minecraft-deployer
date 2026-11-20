@@ -14,20 +14,28 @@
   position: relative;
 }
 
-.pass-wrapper input[type=password] {
-  padding-right: 40px;
+/* También cuando el ojo lo pasa a texto: si no, lo escrito se mete debajo
+   del botón. */
+.pass-wrapper input {
+  padding-right: 44px;
 }
 
 .btn-pass-toggle {
   position: absolute;
-  right: 8px;
+  right: 2px;
   top: 50%;
   transform: translateY(-50%);
   background: none;
   border: none;
   color: var(--muted);
   cursor: pointer;
-  padding: 4px 6px;
+  /* Zona de toque de 40x40 (antes 27x23, difícil de acertar con el dedo). */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0;
   font-size: var(--fs-md);
   line-height: 1;
 }

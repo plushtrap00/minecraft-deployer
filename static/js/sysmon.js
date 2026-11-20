@@ -240,7 +240,7 @@ function applyAutoUpdate() {
   var btn = document.getElementById('auto-update-apply-btn');
   if (btn) {
     btn.disabled = true;
-    btn.textContent = 'Actualizando...';
+    btn.textContent = 'Actualizando…';
   }
   apiFetch('/api/auto-update/apply', { method: 'POST' })
     .then(function(response) {
@@ -249,7 +249,7 @@ function applyAutoUpdate() {
     .then(function(result) {
       if (result.ok) {
         showToast('Actualización aplicada. Reiniciando la app…', 'success');
-        beginRestartWatch('Aplicando la actualización...', 'Esto puede tardar unos segundos. No cierres esta pestaña.');
+        beginRestartWatch('Aplicando la actualización…', 'Esto puede tardar unos segundos. No cierres esta pestaña.');
       } else {
         showToast(result.data.detail || 'No se pudo actualizar', 'error');
         if (btn) {
@@ -262,7 +262,7 @@ function applyAutoUpdate() {
       // La conexión cortándose aquí es justo la señal esperada de que la app
       // ya está reiniciando -- no se trata como un error real.
       showToast('Actualización enviada. Reiniciando la app…', 'success');
-      beginRestartWatch('Aplicando la actualización...', 'Esto puede tardar unos segundos. No cierres esta pestaña.');
+      beginRestartWatch('Aplicando la actualización…', 'Esto puede tardar unos segundos. No cierres esta pestaña.');
     });
 }
 
@@ -420,7 +420,7 @@ function renderAutoUpdateSection() {
   html += '<div class="sysmon-section-title">Actualizaciones de la app</div>';
 
   if (autoUpdateRestarting) {
-    html += '<span class="sysmon-no-temps">Actualización aplicada, esperando a que la app vuelva a responder...</span></div>';
+    html += '<span class="sysmon-no-temps">Actualización aplicada, esperando a que la app vuelva a responder…</span></div>';
     return html;
   }
 

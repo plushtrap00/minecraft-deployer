@@ -161,7 +161,7 @@ function uploadMod(file) {
     return;
   }
   setModOperationBusy(true);
-  openModUploadModal(modUploadProgressHtml('Subiendo y verificando ' + file.name + '...'));
+  openModUploadModal(modUploadProgressHtml('Subiendo y verificando ' + file.name + '…'));
 
   var form = new FormData();
   form.append('file', file);
@@ -349,7 +349,7 @@ function uploadModsBulk(fileList) {
     return;
   }
   setModOperationBusy(true);
-  openModUploadModal(modUploadProgressHtml('Subiendo ' + files.length + ' archivo(s)...'));
+  openModUploadModal(modUploadProgressHtml('Subiendo ' + files.length + ' archivo(s)…'));
 
   var form = new FormData();
   files.forEach(function(f) { form.append('files', f); });
@@ -369,14 +369,14 @@ function uploadModsBulk(fileList) {
     function(loaded) {
       if (isZip) {
         var pct = Math.min(100, Math.round((loaded / totalBytes) * 100));
-        setModUploadProgressText('Subiendo ' + files[0].name + '... ' + pct + '%');
+        setModUploadProgressText('Subiendo ' + files[0].name + '… ' + pct + '%');
         return;
       }
       var idx = cumulative.findIndex(function(threshold) { return loaded <= threshold; });
       if (idx === -1) {
         idx = files.length - 1;
       }
-      setModUploadProgressText('Enviando mod ' + (idx + 1) + ' de ' + files.length + ': ' + files[idx].name + '...');
+      setModUploadProgressText('Enviando mod ' + (idx + 1) + ' de ' + files.length + ': ' + files[idx].name + '…');
     }
   )
     .then(function(result) {
@@ -406,7 +406,7 @@ function streamModsBulkProgress(jobId) {
       return;
     }
     if (data.type === 'progress') {
-      setModUploadProgressText('Verificando mod ' + data.current + ' de ' + data.total + ': ' + (data.display_name || data.filename) + '...');
+      setModUploadProgressText('Verificando mod ' + data.current + ' de ' + data.total + ': ' + (data.display_name || data.filename) + '…');
     } else if (data.type === 'done') {
       source.close();
       setModOperationBusy(false);
@@ -593,7 +593,7 @@ function submitDowngradeDecision(acceptFilenames) {
   document.getElementById('mod-downgrade-confirm').disabled = true;
   document.getElementById('mod-downgrade-reject-all').disabled = true;
   document.getElementById('mod-downgrade-modal-count').textContent = '';
-  document.getElementById('mod-downgrade-modal-body').innerHTML = modUploadProgressHtml('Aplicando cambios...');
+  document.getElementById('mod-downgrade-modal-body').innerHTML = modUploadProgressHtml('Aplicando cambios…');
 
   apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/upload-bulk/confirm', {
     method: 'POST',

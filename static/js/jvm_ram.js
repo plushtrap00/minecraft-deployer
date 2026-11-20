@@ -13,7 +13,7 @@ function loadRamConfig() {
     return;
   }
   var body = document.getElementById('ram-cfg-body');
-  body.innerHTML = '<p class="empty-msg">Detectando configuración de RAM...</p>';
+  body.innerHTML = '<p class="empty-msg">Detectando configuración de RAM…</p>';
   apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/ram')
     .then(function(response) { return response.json(); })
     .then(function(data) { renderRamConfig(data); })

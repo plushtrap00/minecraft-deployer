@@ -130,7 +130,7 @@
   pointer-events: none;
   display: flex;
   gap: 8px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, .3);
+  box-shadow: 0 4px 14px rgba(var(--shadow-rgb), .3);
   z-index: 2;
 }
 

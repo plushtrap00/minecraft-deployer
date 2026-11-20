@@ -328,9 +328,9 @@
   height: 60px;
   background:
     linear-gradient(color-mix(in srgb, var(--slot-glow) 34%, transparent), color-mix(in srgb, var(--slot-glow) 18%, transparent)),
-    rgba(0, 0, 0, .32);
+    rgba(var(--shadow-rgb), .32);
   box-shadow:
-    inset 2px 2px 0 rgba(0, 0, 0, .45),
+    inset 2px 2px 0 rgba(var(--shadow-rgb), .45),
     inset -2px -2px 0 rgba(255, 255, 255, .09);
   overflow: hidden;
 }

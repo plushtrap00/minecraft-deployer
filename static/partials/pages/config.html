@@ -25,7 +25,10 @@
         </div>
         <div class="prop-field">
           <label class="prop-label">JWT_SECRET <span class="label-note label-note-warn">(reinicia todas las sesiones)</span></label>
-          <input type="text" id="cfg-env-JWT_SECRET" class="w-full" autocomplete="off" spellcheck="false">
+          <div class="pass-wrapper">
+            <input type="password" id="cfg-env-JWT_SECRET" class="w-full" autocomplete="off" spellcheck="false">
+            <button type="button" id="cfg-jwt-vis" class="btn-pass-toggle" title="Mostrar u ocultar el secreto" aria-label="Mostrar u ocultar el secreto"><svg class="icon" aria-hidden="true"><use href="#i-eye"/></svg></button>
+          </div>
         </div>
         <div class="prop-field">
           <label class="prop-label">Puerto web</label>
@@ -43,7 +46,10 @@
         </div>
         <div class="prop-field">
           <label class="prop-label">API key de CurseForge</label>
-          <input type="text" id="cfg-env-CURSEFORGE_API_KEY" class="w-full" autocomplete="off" spellcheck="false">
+          <div class="pass-wrapper">
+            <input type="password" id="cfg-env-CURSEFORGE_API_KEY" class="w-full" autocomplete="off" spellcheck="false">
+            <button type="button" id="cfg-cf-vis" class="btn-pass-toggle" title="Mostrar u ocultar la API key" aria-label="Mostrar u ocultar la API key"><svg class="icon" aria-hidden="true"><use href="#i-eye"/></svg></button>
+          </div>
         </div>
         <div class="prop-field">
           <label class="prop-label">Auto-actualización habilitada</label>

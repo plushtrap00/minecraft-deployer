@@ -293,7 +293,7 @@ var uwActivate = true;
     var fileInput = document.getElementById('uw-file');
     var file = fileInput.files[0];
     if (!file) {
-      showAlert('Selecciona un archivo de mundo (.zip, .tar.gz...)');
+      showAlert('Selecciona un archivo de mundo (.zip, .tar.gz…)');
       return;
     }
     if (!checkUploadSize(file)) {
@@ -311,7 +311,7 @@ var uwActivate = true;
     confirmBtn.disabled = true;
     progress.style.display = 'block';
     progress.style.color = 'var(--muted)';
-    progress.textContent = 'Subiendo ' + file.name + '... 0%';
+    progress.textContent = 'Subiendo ' + file.name + '… 0%';
 
     var form = new FormData();
     form.append('file', file);
@@ -323,7 +323,7 @@ var uwActivate = true;
       form,
       function(loaded) {
         var pct = Math.min(100, Math.round((loaded / file.size) * 100));
-        progress.textContent = 'Subiendo ' + file.name + '... ' + pct + '%';
+        progress.textContent = 'Subiendo ' + file.name + '… ' + pct + '%';
       }
     )
       .then(function(result) {
@@ -381,7 +381,7 @@ function loadWorldFilesTab() {
     .then(function(data) {
       var worlds = data.worlds || [];
       var prev = select.value;
-      select.innerHTML = '<option value="">Selecciona un mundo...</option>' + worlds.map(function(w) {
+      select.innerHTML = '<option value="">Selecciona un mundo…</option>' + worlds.map(function(w) {
         return '<option value="' + escHtml(w.name) + '">' + escHtml(w.name) + (w.active ? ' (activo)' : '') + '</option>';
       }).join('');
       var keepPrev = worlds.some(function(w) { return w.name === prev; });

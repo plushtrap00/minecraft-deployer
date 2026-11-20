@@ -14,6 +14,9 @@
   --go: #6fbf4f;
   --go-hover: #86d465;
   --go-rgb: 111, 191, 79;
+  /* Sombras, velos y bordes oscuros: se usan como rgba(var(--shadow-rgb), alfa)
+     para que un tema pueda cambiarlas todas a la vez. */
+  --shadow-rgb: 0, 0, 0;
   --on-go: #0e2208;
 
   --scene-night-top: #120f22;

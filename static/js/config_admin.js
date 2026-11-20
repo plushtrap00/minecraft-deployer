@@ -120,11 +120,20 @@ document.getElementById('config-env-form').addEventListener('click', function(ev
   }
 });
 
-document.getElementById('cfg-toggle-pass-vis').addEventListener('click', function() {
-  var inp = document.getElementById('cfg-env-new-password');
-  inp.type = inp.type === 'password' ? 'text' : 'password';
-  this.innerHTML = icon(inp.type === 'password' ? 'eye' : 'eye-off');
-});
+// Ojo para ver lo que hay en un campo oculto: la contraseña nueva y los dos
+// secretos del .env (JWT_SECRET y la API key de CurseForge), que de entrada
+// van tapados para que no se vean en pantalla ni en una captura.
+function bindPassToggle(buttonId, inputId) {
+  document.getElementById(buttonId).addEventListener('click', function() {
+    var inp = document.getElementById(inputId);
+    inp.type = inp.type === 'password' ? 'text' : 'password';
+    this.innerHTML = icon(inp.type === 'password' ? 'eye' : 'eye-off');
+  });
+}
+
+bindPassToggle('cfg-toggle-pass-vis', 'cfg-env-new-password');
+bindPassToggle('cfg-jwt-vis', 'cfg-env-JWT_SECRET');
+bindPassToggle('cfg-cf-vis', 'cfg-env-CURSEFORGE_API_KEY');
 
 document.getElementById('cfg-save-env-btn').addEventListener('click', function() {
   var btn = this;
@@ -240,7 +249,7 @@ function doAppRestart(btn) {
     .then(function(result) {
       if (result.ok) {
         showToast('Reiniciando la app…', 'success');
-        beginRestartWatch('Aplicando los cambios de configuración...', 'Esto puede tardar unos segundos. No cierres esta pestaña.');
+        beginRestartWatch('Aplicando los cambios de configuración…', 'Esto puede tardar unos segundos. No cierres esta pestaña.');
       } else {
         showToast(result.data.detail || 'No se pudo reiniciar', 'error');
         if (btn) {
@@ -252,6 +261,6 @@ function doAppRestart(btn) {
       // La conexión cortándose aquí es justo la señal esperada de que la app
       // ya está reiniciando -- no se trata como un error real.
       showToast('Reiniciando la app…', 'success');
-      beginRestartWatch('Aplicando los cambios de configuración...', 'Esto puede tardar unos segundos. No cierres esta pestaña.');
+      beginRestartWatch('Aplicando los cambios de configuración…', 'Esto puede tardar unos segundos. No cierres esta pestaña.');
     });
 }

@@ -12,7 +12,7 @@ function openDuplicatesModal() {
   if (!currentModpack) {
     return;
   }
-  document.getElementById('mod-duplicates-modal-body').innerHTML = '<p class="empty-msg">Buscando posibles duplicados...</p>';
+  document.getElementById('mod-duplicates-modal-body').innerHTML = '<p class="empty-msg">Buscando posibles duplicados…</p>';
   document.getElementById('mod-duplicates-modal').classList.add('show');
 
   apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/duplicates')
@@ -73,7 +73,7 @@ function openClientOnlyModal() {
   if (!currentModpack) {
     return;
   }
-  document.getElementById('mod-client-only-modal-body').innerHTML = '<p class="empty-msg">Analizando metadata de los mods...</p>';
+  document.getElementById('mod-client-only-modal-body').innerHTML = '<p class="empty-msg">Analizando metadata de los mods…</p>';
   document.getElementById('mod-client-only-modal').classList.add('show');
 
   apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/client-only')

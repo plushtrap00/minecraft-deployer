@@ -69,7 +69,7 @@ document.getElementById('modloader-verify-btn').addEventListener('click', functi
   }
   var version = select.value;
   var resultEl = document.getElementById('modloader-check-result');
-  resultEl.innerHTML = '<div class="text-muted text-sm">Verificando compatibilidad con los mods instalados...</div>';
+  resultEl.innerHTML = '<div class="text-muted text-sm">Verificando compatibilidad con los mods instalados…</div>';
   document.getElementById('modloader-install-btn').disabled = true;
   modloaderCheckedVersion = null;
 
@@ -85,7 +85,7 @@ document.getElementById('modloader-verify-btn').addEventListener('click', functi
       return;
     }
     if (data.type === 'progress') {
-      resultEl.innerHTML = '<div class="text-muted text-sm">Verificando compatibilidad... ('
+      resultEl.innerHTML = '<div class="text-muted text-sm">Verificando compatibilidad… ('
         + data.current + '/' + data.total + ') ' + escHtml(data.display_name) + '</div>';
     } else if (data.type === 'result') {
       source.close();
@@ -191,7 +191,7 @@ function startModloaderInstall(version) {
   document.getElementById('modloader-modal').classList.remove('show');
   setModOperationBusy(true);
   openModUploadModal(
-    modUploadProgressHtml('Instalando ' + loaderDisplay + ' ' + version + '...'),
+    modUploadProgressHtml('Instalando ' + loaderDisplay + ' ' + version + '…'),
     'Cambio de modloader', '🔧'
   );
 

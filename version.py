@@ -6,6 +6,13 @@ documentación de la API. Cada commit sube la versión (2.A.B, cada cifra de 0
 a 9: después de 2.0.9 va 2.1.0) y se etiqueta con `git tag v<versión>`.
 
 Historial resumido:
+- 2.1.9 (2026-11-20): el panel se ve bien en el móvil: Logs pone la lista
+  encima del visor, el buscador de Mods ocupa su propia fila, la barra de
+  disco de Instalar ya no desaparece, el título de Jugadores no se estruja y
+  el botón del ojo es más fácil de pulsar. JWT_SECRET y la API key de
+  CurseForge salen tapados en Configuración (con el ojo para verlos).
+  Además: puntos suspensivos y comillas «» en los textos, y un único color
+  de tema para las sombras.
 - 2.1.8 (2026-11-20): antes de actualizar, Sistema → Actualizaciones enseña
   qué trae la nueva versión: las novedades de cada versión pendiente (sacadas
   de este historial) y, por su asunto, los commits que no tienen entrada.
@@ -64,4 +71,4 @@ Historial resumido:
   otros usuarios.
 - 1.x: todo lo anterior (sin numerar).
 """
-APP_VERSION = "2.1.8"
+APP_VERSION = "2.1.9"

@@ -411,7 +411,7 @@ function runModSearch(query, offset) {
   }
 
   var body = document.getElementById('mod-search-modal-body');
-  body.innerHTML = modSearchSpinnerHtml('Buscando...');
+  body.innerHTML = modSearchSpinnerHtml('Buscando…');
 
   var url = '/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/search?source=' + encodeURIComponent(modSearchSource)
     + '&query=' + encodeURIComponent(query) + '&offset=' + offset;
@@ -494,7 +494,7 @@ function openModSearchFiles(mod) {
   }
 
   var body = document.getElementById('mod-search-modal-body');
-  body.innerHTML = modSearchSpinnerHtml('Buscando versiones compatibles...');
+  body.innerHTML = modSearchSpinnerHtml('Buscando versiones compatibles…');
   apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/search/' + encodeURIComponent(mod.source) + '/' + encodeURIComponent(mod.id) + '/files')
     .then(function(response) {
       return response.json().then(function(data) { return { ok: response.ok, data: data }; });
@@ -604,7 +604,7 @@ document.getElementById('mod-search-modal-body').addEventListener('click', funct
 function installSearchedMod(mod, file, buttonEl) {
   modSearchBusy = true;
   buttonEl.disabled = true;
-  buttonEl.textContent = 'Instalando...';
+  buttonEl.textContent = 'Instalando…';
 
   apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/search/install', {
     method: 'POST',

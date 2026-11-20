@@ -74,7 +74,7 @@ function loadPendingMods() {
       }
       banner.innerHTML = icon('clock') + ' <strong>' + pending.length + ' mod(s) pendientes de instalar</strong> — '
         + 'el autor de este modpack bloqueó su descarga por terceros, así que hay que importarlos a mano '
-        + '(arriba: arrastra el .jar o usa "Subir carpeta de mods"). El servidor no arrancará hasta que estén todos: '
+        + '(arriba: arrastra el .jar o usa «Subir carpeta de mods»). El servidor no arrancará hasta que estén todos: '
         + pending.map(escHtml).join(', ');
       banner.style.display = '';
     })
@@ -289,7 +289,7 @@ function checkModDependencies(manual) {
     return;
   }
   if (manual) {
-    openModDepsModal(modSearchSpinnerHtml('Comprobando las dependencias de los mods instalados...'));
+    openModDepsModal(modSearchSpinnerHtml('Comprobando las dependencias de los mods instalados…'));
   }
   apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/dependencies')
     .then(function(response) {
@@ -359,7 +359,7 @@ function installModDependencies(missing) {
     return { dep_id: m.dep_id, requested_by: m.requested_by || [], state: 'pending' };
   });
   setModDepsBusy(true);
-  renderModDeps('Preparando...', null);
+  renderModDeps('Preparando…', null);
 
   var url = '/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/dependencies/install/stream';
   var source = new EventSource(url);
@@ -433,7 +433,7 @@ function renderModDeps(progressText, result) {
     }
   } else {
     var n = modDepsState.rows.length;
-    summary = '<div class="mod-deps-summary info">Faltan <b>' + n + '</b> dependencia' + (n === 1 ? '' : 's') + ' obligatoria' + (n === 1 ? '' : 's') + '. Instalándola' + (n === 1 ? '' : 's') + '...</div>';
+    summary = '<div class="mod-deps-summary info">Faltan <b>' + n + '</b> dependencia' + (n === 1 ? '' : 's') + ' obligatoria' + (n === 1 ? '' : 's') + '. Instalándola' + (n === 1 ? '' : 's') + '…</div>';
   }
 
   var rows = modDepsState.rows.map(function(row) {

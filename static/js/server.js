@@ -430,7 +430,7 @@ document.getElementById('net-toggle-track').addEventListener('keydown', function
 // panel), así que se dispara un re-chequeo completo con progreso (SSE: abre
 // cada mod instalado para comparar su mod_id/versión real) antes de decidir
 // si de verdad hay que bloquear el arranque. Por eso la ruedita de "Comprobando
-// mods pendientes..." solo aparece cuando hacía falta — el caso normal (sin
+// mods pendientes…" solo aparece cuando hacía falta — el caso normal (sin
 // nada pendiente) arranca sin ningún paso extra.
 function startServer(modpack) {
   setHeroState('starting', 'Preparando…', modpack);

@@ -36,6 +36,22 @@
     justify-content: flex-end;
   }
 
+  /* Logs: la lista de archivos encima del visor (lado a lado, el visor se
+     quedaba en ~110px y el buscador se salía de la pantalla). */
+  .log-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Mods: el buscador en su propia fila, a todo lo ancho; el filtro y
+     "Más opciones" debajo. */
+  .filter-row {
+    flex-wrap: wrap;
+  }
+
+  .filter-row > input[type=text] {
+    flex: 1 1 100%;
+  }
+
   /* Tabs de gestión: scroll horizontal */
   .mgmt-tabs {
     overflow-x: auto;
