@@ -228,19 +228,19 @@ async def modpack_size(name: str):
 
 
 @router.get("/api/auto-update/status")
-def auto_update_status():
-    return JSONResponse(auto_update.get_status())
+def auto_update_status(request: Request):
+    return JSONResponse(auto_update.localize_status(auto_update.get_status(), i18n.request_lang(request)))
 
 
 @router.post("/api/auto-update/check")
-async def auto_update_check():
+async def auto_update_check(request: Request):
     """Fuerza una comprobación inmediata contra GitHub (botón "Comprobar ahora")."""
     import asyncio
     try:
         status = await asyncio.to_thread(auto_update.check_now)
     except RuntimeError as e:
         raise HTTPException(status_code=502, detail=f"No se pudo comprobar: {e}")
-    return JSONResponse(status)
+    return JSONResponse(auto_update.localize_status(status, i18n.request_lang(request)))
 
 
 @router.post("/api/auto-update/apply")

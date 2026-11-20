@@ -3,6 +3,7 @@ Novedades de la actualización pendiente (services/auto_update.py): qué
 entradas del historial de version.py y qué commits se enseñan en el panel
 antes de pulsar "Actualizar ahora".
 """
+import json
 import shutil
 import subprocess
 import tempfile
@@ -10,7 +11,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from services import auto_update
+from services import auto_update, i18n
 
 
 def version_file(version: str, entries: list) -> str:
@@ -72,6 +73,38 @@ class PendingChangesTests(unittest.TestCase):
             self.assertEqual(result["other_commits"], ["feat: algo (v2.1.6)"])
 
 
+class TranslatedChangelogTests(unittest.TestCase):
+    def test_each_change_takes_its_language(self):
+        source = version_file("2.1.7", [ENTRY_7, ENTRY_6, ENTRY_5])
+        changelogs = {"en": auto_update.parse_changelog(json.dumps({
+            "//": "comentario", "2.1.7": "smoother\n  animations.", "2.1.5": "loading state."}))}
+        status = auto_update.pending_changes("2.1.5", source, [], changelogs)
+        en = auto_update.localize_status(status, "en")
+        self.assertEqual([c["text"] for c in en["changes"]],
+                         ["smoother animations.", "respuestas animadas al guardar («Guardado»), sin diálogo."])
+        es = auto_update.localize_status(status, "es")
+        self.assertEqual(es["changes"][0]["text"], "animaciones más fluidas (barras y sol/luna con transform), «iconos» ocultos.")
+        self.assertNotIn("texts", en["changes"][0])
+        # localize_status no toca el estado guardado.
+        self.assertIn("texts", status["changes"][0])
+
+    def test_broken_changelog_is_ignored(self):
+        for source in ("", "no es json", "[1, 2]", '{"2.1.7": 5}'):
+            self.assertEqual(auto_update.parse_changelog(source), {})
+
+    def test_every_history_entry_translated_in_every_language(self):
+        root = Path(__file__).resolve().parent.parent
+        _, entries = auto_update.parse_version_file((root / "version.py").read_text(encoding="utf-8"))
+        versions = {e["version"] for e in entries}
+        for lang in i18n.LANGS:
+            if lang == i18n.DEFAULT_LANG:
+                continue
+            path = root / auto_update.CHANGELOG_DIR / f"{lang}.json"
+            table = auto_update.parse_changelog(path.read_text(encoding="utf-8"))
+            self.assertEqual(sorted(versions - set(table)), [], f"Entradas sin traducir en {path.name}")
+            self.assertEqual(sorted(set(table) - versions), [], f"Versiones que no están en version.py: {path.name}")
+
+
 def git(cwd, *args):
     subprocess.run(["git", *args], cwd=str(cwd), check=True, capture_output=True, text=True)
 
@@ -94,7 +127,11 @@ class FetchFromRealRepoTests(unittest.TestCase):
         self.clone = self.tmp / "clone"
         git(self.tmp, "clone", "-q", str(origin), str(self.clone))
         (origin / "version.py").write_text(version_file("2.1.6", [ENTRY_6, ENTRY_5]), encoding="utf-8")
-        git(origin, "commit", "-q", "-am", "feat: animated feedback (v2.1.6)")
+        changelog = origin / auto_update.CHANGELOG_DIR / "en.json"
+        changelog.parent.mkdir(parents=True)
+        changelog.write_text(json.dumps({"2.1.6": "animated feedback when saving."}), encoding="utf-8")
+        git(origin, "add", ".")
+        git(origin, "commit", "-q", "-m", "feat: animated feedback (v2.1.6)")
         (origin / "README").write_text("x", encoding="utf-8")
         git(origin, "add", ".")
         git(origin, "commit", "-q", "-m", "docs: readme")
@@ -112,6 +149,10 @@ class FetchFromRealRepoTests(unittest.TestCase):
             self.assertEqual([c["version"] for c in status["changes"]], ["2.1.6"])
             self.assertEqual(status["changes"][0]["text"], "respuestas animadas al guardar («Guardado»), sin diálogo.")
             self.assertEqual(status["other_commits"], ["docs: readme"])
+            # El historial en inglés sale del origin: el clon aún no lo tiene.
+            self.assertFalse((self.clone / auto_update.CHANGELOG_DIR).exists())
+            self.assertEqual(auto_update.localize_status(status, "en")["changes"][0]["text"],
+                             "animated feedback when saving.")
 
             auto_update.apply_update()
             status = auto_update.get_status()

@@ -15,7 +15,9 @@ tocar nada.
 Junto al número de commits pendientes se guardan las novedades que traen
 (pending_changes()): las entradas del historial de version.py de origin/main
 más nuevas que la versión instalada, que ya están escritas para el usuario y
-en castellano. Los commits que no suben versión ni dejan entrada aparecen por
+en castellano. Las traducciones van aparte, un archivo por idioma en
+static/i18n/changelog/<idioma>.json ({versión: texto}), y se leen también de
+origin/main; localize_status() da a cada cuenta las de su idioma. Los commits que no suben versión ni dejan entrada aparecen por
 su asunto, para que ninguno quede sin explicar.
 
 El reinicio posterior sale con código de error controlado — funciona igual
@@ -27,6 +29,7 @@ Deshabilitado por defecto (AUTO_UPDATE_ENABLED=false): ni siquiera comprobar
 solo es algo que un usuario debería pedir a propósito en su .env.
 """
 import ast
+import json
 import os
 import re
 import time
@@ -37,10 +40,13 @@ from pathlib import Path
 from config import AUTO_UPDATE_ENABLED, AUTO_UPDATE_INTERVAL_SECONDS
 from app_constants import AUTO_UPDATE_CHECK_INITIAL_DELAY_SECONDS, AUTO_UPDATE_GIT_TIMEOUT_SECONDS
 from services import process as proc_module
+from services import i18n
 from services.busy import is_busy, busy_reasons
 from version import APP_VERSION
 
 _REPO_DIR = Path(__file__).resolve().parent.parent
+# Historiales traducidos, relativo al repo (se piden a git con esta ruta).
+CHANGELOG_DIR = "static/i18n/changelog"
 _INITIAL_DELAY_SECONDS = AUTO_UPDATE_CHECK_INITIAL_DELAY_SECONDS
 _GIT_TIMEOUT_SECONDS = AUTO_UPDATE_GIT_TIMEOUT_SECONDS
 
@@ -144,12 +150,28 @@ def parse_version_file(source: str) -> tuple:
     return version, entries
 
 
-def pending_changes(local_version: str, remote_source: str, commit_subjects: list) -> dict:
+def parse_changelog(source: str) -> dict:
+    """Un historial traducido (static/i18n/changelog/<idioma>.json): {versión: texto}."""
+    try:
+        data = json.loads(source)
+    except ValueError:
+        return {}
+    if not isinstance(data, dict):
+        return {}
+    return {key: " ".join(value.split()) for key, value in data.items()
+            if not key.startswith("//") and isinstance(value, str) and value.strip()}
+
+
+def pending_changes(local_version: str, remote_source: str, commit_subjects: list,
+                    changelogs: dict | None = None) -> dict:
     """
     Qué trae la actualización: las entradas del historial remoto más nuevas
     que local_version (de la más reciente a la más antigua) y los asuntos de
     los commits pendientes cuya versión no tiene entrada (o que no suben
     versión).
+
+    changelogs ({idioma: {versión: texto}}) son los historiales traducidos;
+    cada entrada guarda los suyos en "texts" y localize_status() elige.
     """
     remote_version, entries = None, []
     if remote_source:
@@ -159,6 +181,9 @@ def pending_changes(local_version: str, remote_source: str, commit_subjects: lis
             pass
     local = _version_tuple(local_version)
     changes = [e for e in entries if _version_tuple(e["version"]) > local]
+    for change in changes:
+        change["texts"] = {lang: table[change["version"]]
+                           for lang, table in (changelogs or {}).items() if change["version"] in table}
     covered = {e["version"] for e in changes}
     other = []
     for subject in commit_subjects:
@@ -176,7 +201,24 @@ def _fetch_pending_changes() -> dict:
         subjects = [line.strip() for line in log.stdout.splitlines() if line.strip()]
     show = _git(["show", "origin/main:version.py"])
     remote_source = show.stdout if show.returncode == 0 else ""
-    return pending_changes(APP_VERSION, remote_source, subjects)
+    # Los historiales traducidos, también los de origin/main: los locales aún
+    # no tienen las entradas nuevas.
+    changelogs = {}
+    for lang in i18n.LANGS:
+        if lang == i18n.DEFAULT_LANG:
+            continue
+        shown = _git(["show", f"origin/main:{CHANGELOG_DIR}/{lang}.json"])
+        if shown.returncode == 0:
+            changelogs[lang] = parse_changelog(shown.stdout)
+    return pending_changes(APP_VERSION, remote_source, subjects, changelogs)
+
+
+def localize_status(status: dict, lang: str) -> dict:
+    """El estado con el texto de cada novedad en el idioma pedido (si no, en español)."""
+    changes = [{key: value for key, value in change.items() if key != "texts"}
+               | {"text": (change.get("texts") or {}).get(lang, change["text"])}
+               for change in status.get("changes") or []]
+    return {**status, "changes": changes}
 
 
 def _store_check_result(behind: int) -> None:
