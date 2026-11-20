@@ -6,6 +6,9 @@ documentación de la API. Cada commit sube la versión (2.A.B, cada cifra de 0
 a 9: después de 2.0.9 va 2.1.0) y se etiqueta con `git tag v<versión>`.
 
 Historial resumido:
+- 2.1.8 (2026-11-20): antes de actualizar, Sistema → Actualizaciones enseña
+  qué trae la nueva versión: las novedades de cada versión pendiente (sacadas
+  de este historial) y, por su asunto, los commits que no tienen entrada.
 - 2.1.7 (2026-11-20): animaciones más fluidas (barras de progreso,
   interruptores y el sol/luna de la escena se mueven con transform, no con
   width/left), iconos ocultos a los lectores de pantalla, los botones se
@@ -61,4 +64,4 @@ Historial resumido:
   otros usuarios.
 - 1.x: todo lo anterior (sin numerar).
 """
-APP_VERSION = "2.1.7"
+APP_VERSION = "2.1.8"

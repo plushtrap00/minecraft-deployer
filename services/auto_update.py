@@ -12,6 +12,12 @@ que revisa de nuevo en ese momento que no haya ningún servidor de Minecraft
 corriendo ni ninguna subida/instalación en curso (services.busy) antes de
 tocar nada.
 
+Junto al número de commits pendientes se guardan las novedades que traen
+(pending_changes()): las entradas del historial de version.py de origin/main
+más nuevas que la versión instalada, que ya están escritas para el usuario y
+en castellano. Los commits que no suben versión ni dejan entrada aparecen por
+su asunto, para que ninguno quede sin explicar.
+
 El reinicio posterior sale con código de error controlado — funciona igual
 tanto si la app corre nativa bajo systemd (Restart=on-failure) como en Docker
 (restart: unless-stopped), sin necesitar llamar a systemctl/docker ni darle
@@ -20,7 +26,9 @@ permisos de sudo extra al proceso.
 Deshabilitado por defecto (AUTO_UPDATE_ENABLED=false): ni siquiera comprobar
 solo es algo que un usuario debería pedir a propósito en su .env.
 """
+import ast
 import os
+import re
 import time
 import threading
 import subprocess
@@ -30,6 +38,7 @@ from config import AUTO_UPDATE_ENABLED, AUTO_UPDATE_INTERVAL_SECONDS
 from app_constants import AUTO_UPDATE_CHECK_INITIAL_DELAY_SECONDS, AUTO_UPDATE_GIT_TIMEOUT_SECONDS
 from services import process as proc_module
 from services.busy import is_busy, busy_reasons
+from version import APP_VERSION
 
 _REPO_DIR = Path(__file__).resolve().parent.parent
 _INITIAL_DELAY_SECONDS = AUTO_UPDATE_CHECK_INITIAL_DELAY_SECONDS
@@ -42,6 +51,11 @@ _status = {
     "last_check": None,
     "commits_behind": 0,
     "last_error": None,
+    # Qué trae la actualización pendiente (ver pending_changes()); vacío y
+    # None mientras no haya commits nuevos.
+    "remote_version": None,
+    "changes": [],
+    "other_commits": [],
 }
 
 # Se enciende cuando se guarda un cambio real en .env o .APP_CONSTANTS (ver
@@ -79,7 +93,8 @@ def running_in_docker() -> bool:
 def _git(args: list) -> subprocess.CompletedProcess:
     return subprocess.run(
         ["git", *args], cwd=str(_REPO_DIR),
-        capture_output=True, text=True, timeout=_GIT_TIMEOUT_SECONDS,
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        timeout=_GIT_TIMEOUT_SECONDS,
     )
 
 
@@ -91,6 +106,87 @@ def _commits_behind() -> int:
     if count.returncode != 0:
         raise RuntimeError(f"git rev-list falló: {count.stderr.strip()}")
     return int(count.stdout.strip() or "0")
+
+
+# Una entrada del historial de version.py: "- 2.1.7 (2026-11-20): texto",
+# con el texto siguiendo en las líneas sangradas de debajo.
+_HISTORY_ENTRY_RE = re.compile(
+    r"^- (\d+(?:\.\d+)+) \((\d{4}-\d{2}-\d{2})\): (.*?)(?=^- |\Z)",
+    re.MULTILINE | re.DOTALL,
+)
+# Asunto de un commit que sube versión: "... (v2.1.7)".
+_SUBJECT_VERSION_RE = re.compile(r"\(v(\d+(?:\.\d+)+)\)\s*$")
+
+
+def _version_tuple(version: str) -> tuple:
+    try:
+        return tuple(int(part) for part in version.split("."))
+    except ValueError:
+        return ()
+
+
+def parse_version_file(source: str) -> tuple:
+    """
+    Saca de un version.py (como texto, sin ejecutarlo) su APP_VERSION y las
+    entradas del historial del docstring: (versión, [{version, date, text}]).
+    """
+    tree = ast.parse(source)
+    version = None
+    for node in tree.body:
+        if (isinstance(node, ast.Assign) and len(node.targets) == 1
+                and isinstance(node.targets[0], ast.Name) and node.targets[0].id == "APP_VERSION"
+                and isinstance(node.value, ast.Constant) and isinstance(node.value.value, str)):
+            version = node.value.value
+    entries = []
+    for match in _HISTORY_ENTRY_RE.finditer(ast.get_docstring(tree) or ""):
+        text = " ".join(match.group(3).split())
+        entries.append({"version": match.group(1), "date": match.group(2), "text": text})
+    return version, entries
+
+
+def pending_changes(local_version: str, remote_source: str, commit_subjects: list) -> dict:
+    """
+    Qué trae la actualización: las entradas del historial remoto más nuevas
+    que local_version (de la más reciente a la más antigua) y los asuntos de
+    los commits pendientes cuya versión no tiene entrada (o que no suben
+    versión).
+    """
+    remote_version, entries = None, []
+    if remote_source:
+        try:
+            remote_version, entries = parse_version_file(remote_source)
+        except SyntaxError:
+            pass
+    local = _version_tuple(local_version)
+    changes = [e for e in entries if _version_tuple(e["version"]) > local]
+    covered = {e["version"] for e in changes}
+    other = []
+    for subject in commit_subjects:
+        match = _SUBJECT_VERSION_RE.search(subject)
+        if not (match and match.group(1) in covered):
+            other.append(subject)
+    return {"remote_version": remote_version, "changes": changes, "other_commits": other}
+
+
+def _fetch_pending_changes() -> dict:
+    """Novedades de HEAD..origin/main; nunca falla (sin datos si git falla)."""
+    subjects = []
+    log = _git(["log", "--format=%s", "HEAD..origin/main"])
+    if log.returncode == 0:
+        subjects = [line.strip() for line in log.stdout.splitlines() if line.strip()]
+    show = _git(["show", "origin/main:version.py"])
+    remote_source = show.stdout if show.returncode == 0 else ""
+    return pending_changes(APP_VERSION, remote_source, subjects)
+
+
+def _store_check_result(behind: int) -> None:
+    _status["last_check"] = time.time()
+    _status["commits_behind"] = behind
+    _status["last_error"] = None
+    if behind > 0:
+        _status.update(_fetch_pending_changes())
+    else:
+        _status.update({"remote_version": None, "changes": [], "other_commits": []})
 
 
 def _pull() -> None:
@@ -119,9 +215,7 @@ def _check_and_update_once() -> None:
         _log(f"no se pudo comprobar actualizaciones: {e}")
         return
 
-    _status["last_check"] = time.time()
-    _status["commits_behind"] = behind
-    _status["last_error"] = None
+    _store_check_result(behind)
     if behind > 0:
         _log(f"hay {behind} commit(s) nuevos disponibles — esperando que se aplique desde el panel.")
 
@@ -149,9 +243,7 @@ def check_now() -> dict:
         _status["last_check"] = time.time()
         _status["last_error"] = str(e)
         raise RuntimeError(str(e))
-    _status["last_check"] = time.time()
-    _status["commits_behind"] = behind
-    _status["last_error"] = None
+    _store_check_result(behind)
     return get_status()
 
 
@@ -171,9 +263,7 @@ def apply_update() -> None:
 
     _log("aplicando actualización pedida desde el panel...")
     _pull()
-    _status["commits_behind"] = 0
-    _status["last_check"] = time.time()
-    _status["last_error"] = None
+    _store_check_result(0)
 
 
 def restart_now() -> None:

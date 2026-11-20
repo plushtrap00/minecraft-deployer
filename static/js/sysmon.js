@@ -339,7 +339,16 @@ function renderSysmon(stats) {
   html += renderAutoUpdateSection();
   html += renderRestartPendingSection();
 
-  document.getElementById('sysmon-body').innerHTML = html;
+  // El cuerpo se reescribe con cada lectura (cada pocos segundos): la lista
+  // de novedades conserva su scroll para poder leerla entera.
+  var body = document.getElementById('sysmon-body');
+  var oldList = body.querySelector('.update-changes-list');
+  var listScroll = oldList ? oldList.scrollTop : 0;
+  body.innerHTML = html;
+  var newList = body.querySelector('.update-changes-list');
+  if (newList && listScroll) {
+    newList.scrollTop = listScroll;
+  }
 }
 
 // Aparece solo cuando queda un cambio de .env o de constantes guardado pero
@@ -378,6 +387,33 @@ function autoUpdateRow(label, value, tone) {
     + '</div>';
 }
 
+// Qué trae la actualización pendiente: las entradas del historial de
+// version.py más nuevas que la instalada (ya en castellano, para el usuario) y
+// los commits sin entrada, por su asunto. Ver pending_changes() en
+// services/auto_update.py.
+function updateChangesHtml(status) {
+  var changes = status.changes || [];
+  var others = status.other_commits || [];
+  if (!changes.length && !others.length) {
+    return '';
+  }
+  var html = '<div class="update-changes">'
+    + '<div class="update-changes-title">Qué trae'
+    + (status.remote_version ? ' la ' + escHtml(status.remote_version) : '') + '</div>'
+    + '<ul class="update-changes-list">';
+  changes.forEach(function(change) {
+    var text = change.text.charAt(0).toUpperCase() + change.text.slice(1);
+    html += '<li><span class="update-change-version">' + escHtml(change.version) + '</span>'
+      + '<span class="update-change-text">' + escHtml(text) + '</span></li>';
+  });
+  if (others.length) {
+    html += '<li><span class="update-change-version">' + (changes.length ? 'Además' : 'Commits') + '</span>'
+      + '<span class="update-change-text">' + others.map(escHtml).join('<br>') + '</span></li>';
+  }
+  html += '</ul></div>';
+  return html;
+}
+
 function renderAutoUpdateSection() {
   var status = lastAutoUpdateStatus;
   var html = '<div class="sysmon-section">';
@@ -403,6 +439,7 @@ function renderAutoUpdateSection() {
 
   if (status.commits_behind > 0) {
     html += autoUpdateRow('Estado', status.commits_behind + ' commit(s) nuevos disponibles', 'yellow');
+    html += updateChangesHtml(status);
 
     var blockedReason = status.server_running
       ? 'hay un servidor de Minecraft en marcha'

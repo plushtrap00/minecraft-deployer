@@ -194,6 +194,50 @@
   color: var(--muted);
 }
 
+/* Novedades de la actualización pendiente (updateChangesHtml en sysmon.js):
+   una entrada por versión, la más nueva arriba, con su número a la
+   izquierda. Si son muchas, la lista hace scroll en vez de alargar el panel. */
+.update-changes {
+  margin: 8px 0;
+  font-size: var(--fs-sm);
+}
+
+.update-changes-title {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.update-changes-list {
+  list-style: none;
+  max-height: 240px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+}
+
+.update-changes-list li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  padding: 8px 12px;
+  line-height: 1.45;
+}
+
+.update-changes-list li + li {
+  border-top: 1px solid var(--border);
+}
+
+.update-change-version {
+  color: var(--accent);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.update-change-text {
+  overflow-wrap: break-word;
+  text-wrap: pretty;
+}
+
 .sysmon-no-temps {
   font-size: var(--fs-sm);
   color: var(--muted);
