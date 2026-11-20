@@ -297,7 +297,7 @@ function serverCard(pack) {
   }
   var facts = ['<span>' + icon('clock') + escHtml(pack.last_played ? t('Arrancado {when}', { when: formatRelativeDate(pack.last_played) }) : t('Sin estrenar')) + '</span>'];
   if (pack.mods_count) {
-    facts.push('<span>' + icon('puzzle') + pack.mods_count + (pack.mods_count === 1 ? ' mod' : ' mods') + '</span>');
+    facts.push('<span>' + icon('puzzle') + pack.mods_count + ' ' + (pack.mods_count === 1 ? t('mod') : t('mods')) + '</span>');
   }
   if (!pack.start_script) {
     facts.push('<span class="server-card-warn">' + icon('triangle-alert') + t('No tiene script de arranque') + '</span>');

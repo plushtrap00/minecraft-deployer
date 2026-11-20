@@ -15,7 +15,7 @@ function openModloaderModal() {
   }
   document.getElementById('modloader-install-btn').disabled = true;
   modloaderCheckedVersion = null;
-  document.getElementById('modloader-modal-body').innerHTML = '<p class="empty-msg">Cargando versiones disponibles…</p>';
+  document.getElementById('modloader-modal-body').innerHTML = '<p class="empty-msg">' + t('Cargando versiones disponibles…') + '</p>';
   document.getElementById('modloader-modal').classList.add('show');
 
   apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/modloader/versions')
@@ -24,31 +24,30 @@ function openModloaderModal() {
     })
     .then(function(result) {
       if (!result.ok) {
-        document.getElementById('modloader-modal-body').innerHTML = modErrorHtml(result.data.detail || 'Error desconocido');
+        document.getElementById('modloader-modal-body').innerHTML = modErrorHtml(result.data.detail || t('Error desconocido'));
         return;
       }
       modloaderInfo = result.data;
       renderModloaderModalBody();
     })
     .catch(function(error) {
-      document.getElementById('modloader-modal-body').innerHTML = modErrorHtml('No se pudo conectar con el panel: ' + error.message);
+      document.getElementById('modloader-modal-body').innerHTML = modErrorHtml(t('No se pudo conectar con el panel: {error}', { error: error.message }));
     });
 }
 
 function renderModloaderModalBody() {
   var body = document.getElementById('modloader-modal-body');
   var info = modloaderInfo;
-  var html = '<p class="mb-s text-md">Loader actual: <b>' + escHtml(info.loader_display)
+  var html = '<p class="mb-s text-md">' + t('Loader actual:') + ' <b>' + escHtml(info.loader_display)
     + ' ' + escHtml(info.current_version || '?') + '</b> · MC <b>' + escHtml(info.mc_version) + '</b></p>';
 
   if (!info.available.length) {
-    html += '<p class="empty-msg">No hay otras versiones de ' + escHtml(info.loader_display)
-      + ' disponibles para MC ' + escHtml(info.mc_version) + '.</p>';
+    html += '<p class="empty-msg">' + escHtml(t('No hay otras versiones de {loader} disponibles para MC {mc}.', { loader: info.loader_display, mc: info.mc_version })) + '</p>';
     body.innerHTML = html;
     return;
   }
 
-  html += '<label class="block-label">Nueva versión:</label>'
+  html += '<label class="block-label">' + t('Nueva versión:') + '</label>'
     + '<select id="modloader-version-select" class="w-full">'
     + info.available.map(function(v) { return '<option value="' + escHtml(v) + '">' + escHtml(v) + '</option>'; }).join('')
     + '</select>'
@@ -69,7 +68,7 @@ document.getElementById('modloader-verify-btn').addEventListener('click', functi
   }
   var version = select.value;
   var resultEl = document.getElementById('modloader-check-result');
-  resultEl.innerHTML = '<div class="text-muted text-sm">Verificando compatibilidad con los mods instalados…</div>';
+  resultEl.innerHTML = '<div class="text-muted text-sm">' + t('Verificando compatibilidad con los mods instalados…') + '</div>';
   document.getElementById('modloader-install-btn').disabled = true;
   modloaderCheckedVersion = null;
 
@@ -85,34 +84,34 @@ document.getElementById('modloader-verify-btn').addEventListener('click', functi
       return;
     }
     if (data.type === 'progress') {
-      resultEl.innerHTML = '<div class="text-muted text-sm">Verificando compatibilidad… ('
+      resultEl.innerHTML = '<div class="text-muted text-sm">' + t('Verificando compatibilidad…') + ' ('
         + data.current + '/' + data.total + ') ' + escHtml(data.display_name) + '</div>';
     } else if (data.type === 'result') {
       source.close();
       if (data.compatible) {
-        resultEl.innerHTML = noticeHtml('ok', 'Todos los mods siguen siendo compatibles.');
+        resultEl.innerHTML = noticeHtml('ok', t('Todos los mods siguen siendo compatibles.'));
         modloaderCheckedVersion = version;
         document.getElementById('modloader-install-btn').disabled = false;
       } else {
         var names = data.incompatible_mods.map(function(m) {
-          return escHtml(m.display_name) + ' (requiere ' + escHtml(m.required) + ')';
+          return escHtml(m.display_name) + ' (' + escHtml(t('requiere {version}', { version: m.required })) + ')';
         }).join(', ');
-        var msg = 'El servidor no arrancaría con esta versión: dejarían de ser compatibles: ' + names + '.';
+        var msg = t('El servidor no arrancaría con esta versión: dejarían de ser compatibles: {mods}.', { mods: names });
         if (data.min_required_version) {
-          msg += ' Hace falta al menos la versión ' + escHtml(data.min_required_version)
-            + ' de ' + escHtml(modloaderInfo.loader_display) + ' para que TODOS los mods instalados funcionen.';
+          msg += ' ' + t('Hace falta al menos la versión {version} de {loader} para que TODOS los mods instalados funcionen.',
+            { version: escHtml(data.min_required_version), loader: escHtml(modloaderInfo.loader_display) });
         }
         resultEl.innerHTML = modErrorHtml(msg);
       }
     } else if (data.type === 'error') {
       source.close();
-      resultEl.innerHTML = modErrorHtml(data.detail || 'Error desconocido');
+      resultEl.innerHTML = modErrorHtml(data.detail || t('Error desconocido'));
     }
   };
 
   source.onerror = function() {
     source.close();
-    resultEl.innerHTML = modErrorHtml('Se perdió la conexión al verificar la compatibilidad.');
+    resultEl.innerHTML = modErrorHtml(t('Se perdió la conexión al verificar la compatibilidad.'));
   };
 });
 
@@ -122,8 +121,8 @@ document.getElementById('modloader-install-btn').addEventListener('click', funct
   }
   var version = modloaderCheckedVersion;
   showConfirm(
-    'Cambiar a ' + modloaderInfo.loader_display + ' ' + version,
-    'Esto reemplaza los archivos del modloader del servidor. Asegúrate de que el servidor esté detenido.',
+    t('Cambiar a {target}', { target: modloaderInfo.loader_display + ' ' + version }),
+    t('Esto reemplaza los archivos del modloader del servidor. Asegúrate de que el servidor esté detenido.'),
     function() { startModloaderInstall(version); }
   );
 });
@@ -139,7 +138,7 @@ function startModloaderInstall(version) {
 
   function pushLogLine(message) {
     if (message.length > MODLOADER_LOG_MAX_LINE_LENGTH) {
-      message = message.slice(0, MODLOADER_LOG_MAX_LINE_LENGTH) + '… [línea truncada]';
+      message = message.slice(0, MODLOADER_LOG_MAX_LINE_LENGTH) + '… [' + t('línea truncada') + ']';
     }
     installLogLines.push(message);
     if (installLogLines.length > MODLOADER_LOG_MAX_LINES) {
@@ -192,7 +191,7 @@ function startModloaderInstall(version) {
   setModOperationBusy(true);
   openModUploadModal(
     modUploadProgressHtml('Instalando ' + loaderDisplay + ' ' + version + '…'),
-    'Cambio de modloader', '🔧'
+    t('Cambio de modloader'), '🔧'
   );
 
   var url = '/api/modpacks/' + encodeURIComponent(currentModpack) + '/modloader/install/stream'
@@ -213,8 +212,8 @@ function startModloaderInstall(version) {
       source.close();
       setModOperationBusy(false);
       var resultHtml = data.success
-        ? noticeHtml('ok', 'Modloader actualizado a ' + escHtml(data.version) + '.')
-        : modErrorHtml(data.detail || 'Error desconocido');
+        ? noticeHtml('ok', escHtml(t('Modloader actualizado a {version}.', { version: data.version })))
+        : modErrorHtml(data.detail || t('Error desconocido'));
       finish(resultHtml);
       if (data.success) {
         loadModpackVersion();
@@ -222,14 +221,14 @@ function startModloaderInstall(version) {
     } else if (data.type === 'error') {
       source.close();
       setModOperationBusy(false);
-      finish(modErrorHtml(data.detail || 'Error desconocido'));
+      finish(modErrorHtml(data.detail || t('Error desconocido')));
     }
   };
 
   source.onerror = function() {
     source.close();
     setModOperationBusy(false);
-    finish(modErrorHtml('Se perdió la conexión durante la instalación. Revisa el estado del servidor manualmente.'));
+    finish(modErrorHtml(t('Se perdió la conexión durante la instalación. Revisa el estado del servidor manualmente.')));
   };
 }
 

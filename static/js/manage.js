@@ -22,7 +22,7 @@ function loadModpacks() {
     .then(function(response) { return response.json(); })
     .then(function(data) { renderModpacks(data.modpacks); })
     .catch(function() {
-      list.innerHTML = '<p class="empty-msg error-msg">No se pudo cargar la lista de modpacks. Pulsa «Actualizar» para reintentarlo.</p>';
+      list.innerHTML = '<p class="empty-msg error-msg">' + t('No se pudo cargar la lista de modpacks. Pulsa «Actualizar» para reintentarlo.') + '</p>';
     });
 }
 
@@ -47,9 +47,9 @@ function renderModpacks(packs) {
     renderMgmtHeader(currentModpack);
   }
   if (!packs || !packs.length) {
-    list.innerHTML = emptyArt('chest', 'El cofre está vacío',
-      'Todavía no hay modpacks instalados. Sube uno, créalo desde cero o búscalo en Modrinth o CurseForge.',
-      '<button class="btn-go" id="packs-empty-install">' + icon('package-plus') + 'Instalar un modpack</button>');
+    list.innerHTML = emptyArt('chest', t('El cofre está vacío'),
+      t('Todavía no hay modpacks instalados. Sube uno, créalo desde cero o búscalo en Modrinth o CurseForge.'),
+      '<button class="btn-go" id="packs-empty-install">' + icon('package-plus') + t('Instalar un modpack') + '</button>');
     document.getElementById('packs-empty-install').addEventListener('click', function() {
       document.getElementById('tab-deploy').click();
     });
@@ -59,21 +59,21 @@ function renderModpacks(packs) {
   table.className = 'pack-table';
   table.setAttribute('role', 'table');
   table.innerHTML = '<div class="pack-row pack-row-head" role="row">'
-    + '<span role="columnheader">Nombre</span>'
-    + '<span role="columnheader">Versión</span>'
-    + '<span role="columnheader">Mods</span>'
-    + '<span role="columnheader">Último arranque</span>'
-    + '<span role="columnheader">Tamaño</span>'
-    + '<span role="columnheader"><span class="visually-hidden">Acciones</span></span>'
+    + '<span role="columnheader">' + t('Nombre') + '</span>'
+    + '<span role="columnheader">' + t('Versión') + '</span>'
+    + '<span role="columnheader">' + t('Mods') + '</span>'
+    + '<span role="columnheader">' + t('Último arranque') + '</span>'
+    + '<span role="columnheader">' + t('Tamaño') + '</span>'
+    + '<span role="columnheader"><span class="visually-hidden">' + t('Acciones') + '</span></span>'
     + '</div>';
   packs.forEach(function(pack) {
     var flags = [];
     if (!pack.start_script) {
-      flags.push('<span class="pack-flag pack-flag-bad">No tiene script de arranque</span>');
+      flags.push('<span class="pack-flag pack-flag-bad">' + t('No tiene script de arranque') + '</span>');
     }
     if (pack.pending_mods && pack.pending_mods.length) {
       flags.push('<span class="pack-flag pack-flag-warn" title="' + escHtml(pack.pending_mods.join(', ')) + '">'
-        + pack.pending_mods.length + (pack.pending_mods.length === 1 ? ' mod pendiente' : ' mods pendientes') + '</span>');
+        + pack.pending_mods.length + (pack.pending_mods.length === 1 ? t(' mod pendiente') : t(' mods pendientes')) + '</span>');
     }
     var row = document.createElement('div');
     row.className = 'pack-row modpack-card' + (pack.name === currentModpack ? ' selected' : '');
@@ -87,9 +87,9 @@ function renderModpacks(packs) {
       + '<span class="pack-version" role="cell">' + loaderTag(pack.modloader)
       + (pack.mc_version ? ' <span>' + escHtml(pack.mc_version) + '</span>' : '') + '</span>'
       + '<span class="pack-num" role="cell" data-label="Mods">' + (pack.mods_count === null || pack.mods_count === undefined ? '—' : pack.mods_count) + '</span>'
-      + '<span class="pack-muted" role="cell" data-label="Último arranque">' + (pack.last_played ? formatRelativeDate(pack.last_played) : 'Nunca') + '</span>'
+      + '<span class="pack-muted" role="cell" data-label="Último arranque">' + (pack.last_played ? formatRelativeDate(pack.last_played) : t('Nunca')) + '</span>'
       + '<span class="pack-num pack-size" role="cell" data-label="Tamaño">…</span>'
-      + '<span class="pack-actions" role="cell"><button class="btn-secondary btn-sm">Gestionar</button></span>';
+      + '<span class="pack-actions" role="cell"><button class="btn-secondary btn-sm">' + t('Gestionar') + '</button></span>';
     row.querySelector('button').addEventListener('click', function(event) {
       event.stopPropagation();
       openModpack(pack.name);
@@ -162,18 +162,18 @@ document.getElementById('btn-delete-modpack').addEventListener('click', function
   }
   var name = currentModpack;
   showConfirm(
-    '¿Borrar "' + name + '"?',
-    'Se borrará la carpeta del modpack por completo.',
+    t('¿Borrar «{name}»?', { name: name }),
+    t('Se borrará la carpeta del modpack por completo.'),
     function() {
       showConfirm(
-        '¿Estás seguro?',
-        'Los mundos se perderán, y la configuración de mods y KubeJS también.',
+        t('¿Estás seguro?'),
+        t('Los mundos se perderán, y la configuración de mods y KubeJS también.'),
         function() {
           showConfirm(
-            'Última oportunidad',
-            '¿Estás seguro de que quieres borrar "' + name + '"? Esta acción no se puede deshacer.',
+            t('Última oportunidad'),
+            t('¿Estás seguro de que quieres borrar «{name}»? Esta acción no se puede deshacer.', { name: name }),
             function() { deleteModpack(name); },
-            { confirmLabel: 'Sí, borrar definitivamente' }
+            { confirmLabel: t('Sí, borrar definitivamente') }
           );
         }
       );
@@ -188,18 +188,18 @@ function deleteModpack(name) {
     })
     .then(function(result) {
       if (result.ok) {
-        showToast('Modpack "' + name + '" borrado', 'success');
+        showToast(t('Modpack «{name}» borrado', { name: name }), 'success');
         if (currentModpack === name) {
           closeModpackPanel();
           replaceRoute();
         }
         loadModpacks();
       } else {
-        showToast(result.data.detail || 'No se pudo borrar', 'error');
+        showToast(result.data.detail || t('No se pudo borrar'), 'error');
       }
     })
     .catch(function() {
-      showToast('No se pudo conectar con el panel. Comprueba la conexión y vuelve a intentarlo.', 'error');
+      showToast(t('No se pudo conectar con el panel. Comprueba la conexión y vuelve a intentarlo.'), 'error');
     });
 }
 

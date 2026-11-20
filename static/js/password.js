@@ -86,7 +86,7 @@ document.getElementById('password-form').addEventListener('submit', function(eve
     body: JSON.stringify(body),
   }).then(function(result) {
     submit.disabled = false;
-    submit.textContent = 'Guardar';
+    submit.textContent = t('Guardar');
     if (!result.ok) {
       errorEl.textContent = result.data.detail || t('No se pudo cambiar la contraseña');
       return;

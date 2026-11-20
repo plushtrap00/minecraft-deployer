@@ -196,13 +196,13 @@ document.getElementById('save-props-btn').addEventListener('click', function() {
         if (data.success) {
           originalPropsText = newText;
           propsSnapshot = readPropsForm();
-          showToast('server.properties guardado', 'success');
+          showToast(t('server.properties guardado'), 'success');
         flashDone(document.getElementById('save-props-btn'));
         } else {
-          showToast(data.detail || 'No se pudo guardar server.properties', 'error');
+          showToast(data.detail || t('No se pudo guardar server.properties'), 'error');
         }
       })
-      .catch(function() { showToast('No se pudo guardar server.properties', 'error'); });
+      .catch(function() { showToast(t('No se pudo guardar server.properties'), 'error'); });
   });
 });
 

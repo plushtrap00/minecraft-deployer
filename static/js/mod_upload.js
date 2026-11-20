@@ -13,7 +13,7 @@ var modUploadModalBody = document.getElementById('mod-upload-modal-body');
 var modUploadModalCloseBtn = document.getElementById('mod-upload-modal-close');
 
 function openModUploadModal(html, title, icon) {
-  document.getElementById('mod-upload-modal-title').textContent = title || 'Subida de mods';
+  document.getElementById('mod-upload-modal-title').textContent = title || t('Subida de mods');
   document.getElementById('mod-upload-modal-icon').innerHTML = emojiIcon(icon || '📦');
   modUploadModalBody.innerHTML = html;
   modUploadModal.classList.add('show');
@@ -89,7 +89,7 @@ window.addEventListener('beforeunload', function(event) {
 // suben/verifican/instalan mods, evitando dejar una operación a medias.
 function guardModOperationNav() {
   if (modOperationBusy) {
-    showToast('Espera a que termine la operación con los mods antes de salir de esta sección', 'error');
+    showToast(t('Espera a que termine la operación con los mods antes de salir de esta sección'), 'error');
     return true;
   }
   return false;
@@ -99,7 +99,7 @@ function modUploadProgressHtml(text) {
   return '<div class="mod-upload-progress">'
     + '<div class="mod-upload-spinner"></div>'
     + '<div><div id="mod-upload-progress-text" class="fw-semibold">' + escHtml(text) + '</div>'
-    + '<div class="mod-upload-keep-open">No cierres ni recargues esta pestaña hasta que termine.</div></div>'
+    + '<div class="mod-upload-keep-open">' + t('No cierres ni recargues esta pestaña hasta que termine.') + '</div></div>'
     + '</div>'
     + '<div id="mod-upload-extra"></div>';
 }
@@ -119,7 +119,7 @@ modUploadZone.addEventListener('drop', function(event) {
   event.preventDefault();
   this.classList.remove('drag-over');
   if (modOperationBusy) {
-    showToast('Espera a que termine la operación actual', 'error');
+    showToast(t('Espera a que termine la operación actual'), 'error');
     return;
   }
   if (event.dataTransfer.files[0]) {
@@ -157,11 +157,11 @@ function handleModFileSelected(file) {
 
 function uploadMod(file) {
   if (!file.name.toLowerCase().endsWith('.jar')) {
-    showAlert('Solo se aceptan archivos .jar o .zip');
+    showAlert(t('Solo se aceptan archivos .jar o .zip'));
     return;
   }
   setModOperationBusy(true);
-  openModUploadModal(modUploadProgressHtml('Subiendo y verificando ' + file.name + '…'));
+  openModUploadModal(modUploadProgressHtml(t('Subiendo y verificando {file}…', { file: file.name })));
 
   var form = new FormData();
   form.append('file', file);
@@ -195,20 +195,20 @@ function uploadMod(file) {
         var replacedMsg = '';
         if (result.data.replaced_filename) {
           replacedMsg = '<div class="text-muted text-xs mt-xs">'
-            + 'Se reemplazó ' + escHtml(result.data.replaced_filename)
+            + escHtml(t('Se reemplazó {file}', { file: result.data.replaced_filename }))
             + ' (v' + escHtml(result.data.previous_version) + ' → v' + escHtml(result.data.mod_version) + ')</div>';
         }
-        setModUploadModalBody(noticeHtml('ok', 'Mod instalado: ' + escHtml(result.data.filename) + info) + replacedMsg);
+        setModUploadModalBody(noticeHtml('ok', escHtml(t('Mod instalado: {file}', { file: result.data.filename })) + info) + replacedMsg);
         loadModsList();
         checkModDependencies(false);
       } else {
-        setModUploadModalBody(modErrorHtml(result.data.detail || 'No se pudo instalar el mod'));
+        setModUploadModalBody(modErrorHtml(result.data.detail || t('No se pudo instalar el mod')));
       }
     })
     .catch(function(error) {
       setModOperationBusy(false);
       modFileInput.value = '';
-      setModUploadModalBody(modErrorHtml('No se pudo conectar con el panel: ' + error.message));
+      setModUploadModalBody(modErrorHtml(t('No se pudo conectar con el panel: {error}', { error: error.message })));
     });
 }
 
@@ -224,20 +224,20 @@ var lastBulkData = null;
 // correcto en vez de asumir siempre "versión anterior".
 var NEEDS_CONFIRMATION_LABELS = {
   downgrade: {
-    title: 'Mods con versión más antigua que la instalada',
-    many: function(n) { return n + ' mods requieren verificación de versión anterior'; },
-    fewPrefix: 'Verificación para pasar a versión anterior: ',
+    title: t('Mods con versión más antigua que la instalada'),
+    many: function(n) { return t('{n} mods requieren verificación de versión anterior', { n: n }); },
+    fewPrefix: t('Verificación para pasar a versión anterior: '),
   },
   client_only: {
-    title: 'Mods que parecen ser solo de cliente',
-    many: function(n) { return n + ' mods parecen ser solo de cliente'; },
-    fewPrefix: 'Parecen ser solo de cliente: ',
+    title: t('Mods que parecen ser solo de cliente'),
+    many: function(n) { return t('{n} mods parecen ser solo de cliente', { n: n }); },
+    fewPrefix: t('Parecen ser solo de cliente: '),
   },
 };
 var NEEDS_CONFIRMATION_MIXED = {
-  title: 'Mods que necesitan confirmación',
-  many: function(n) { return n + ' mods necesitan confirmación (versión anterior o solo cliente)'; },
-  fewPrefix: 'Necesitan confirmación: ',
+  title: t('Mods que necesitan confirmación'),
+  many: function(n) { return t('{n} mods necesitan confirmación (versión anterior o solo cliente)', { n: n }); },
+  fewPrefix: t('Necesitan confirmación: '),
 };
 
 function needsConfirmationLabels(items) {
@@ -250,10 +250,10 @@ function needsConfirmationLabels(items) {
 // fragmento de frase en vez de etiqueta completa — para "N mods aceptados
 // aunque {fragmento}" / lo que haga falta.
 var FLAGGED_REASON_PHRASE = {
-  downgrade: 'con versión más antigua que la instalada',
-  client_only: 'categorizados como solo de cliente',
+  downgrade: t('con versión más antigua que la instalada'),
+  client_only: t('categorizados como solo de cliente'),
 };
-var FLAGGED_REASON_PHRASE_MIXED = 'marcados para revisión (versión anterior o solo cliente)';
+var FLAGGED_REASON_PHRASE_MIXED = t('marcados para revisión (versión anterior o solo cliente)');
 
 function flaggedReasonPhrase(items) {
   var reasons = items.reduce(function(set, it) { set[it.reason || 'downgrade'] = true; return set; }, {});
@@ -264,28 +264,28 @@ function flaggedReasonPhrase(items) {
 function acceptedFlaggedLabels(items) {
   var phrase = flaggedReasonPhrase(items);
   return {
-    many: function(n) { return n + ' mods han sido aceptados por el usuario aunque fuesen ' + phrase; },
-    fewPrefix: 'Aceptados igualmente por el usuario: ',
+    many: function(n) { return t('{n} mods han sido aceptados por el usuario aunque fuesen {why}', { n: n, why: phrase }); },
+    fewPrefix: t('Aceptados igualmente por el usuario: '),
   };
 }
 
 function rejectedFlaggedLabels(items) {
   return {
-    many: function(n) { return n + ' mods han sido rechazados por el usuario'; },
-    fewPrefix: 'Rechazados por el usuario: ',
+    many: function(n) { return t('{n} mods han sido rechazados por el usuario', { n: n }); },
+    fewPrefix: t('Rechazados por el usuario: '),
   };
 }
 
 var BULK_CATEGORIES = [
   {
-    key: 'added', icon: 'circle-check', tone: 'green', modalTitle: 'Mods agregados', modalType: 'list',
-    many: function(n) { return n + ' mods agregados'; },
-    fewPrefix: 'Se han agregado los mods: '
+    key: 'added', icon: 'circle-check', tone: 'green', modalTitle: t('Mods agregados'), modalType: 'list',
+    many: function(n) { return t('{n} mods agregados', { n: n }); },
+    fewPrefix: t('Se han agregado los mods: ')
   },
   {
-    key: 'already_installed', icon: 'info', tone: 'muted', modalTitle: 'Mods ya instalados', modalType: 'list',
-    many: function(n) { return n + ' mods ya estaban instalados'; },
-    fewPrefix: 'Ya están instalados los mods: '
+    key: 'already_installed', icon: 'info', tone: 'muted', modalTitle: t('Mods ya instalados'), modalType: 'list',
+    many: function(n) { return t('{n} mods ya estaban instalados', { n: n }); },
+    fewPrefix: t('Ya están instalados los mods: ')
   },
   {
     key: 'needs_confirmation', icon: 'triangle-alert', tone: 'yellow', modalType: 'downgrade',
@@ -296,17 +296,17 @@ var BULK_CATEGORIES = [
   // datos, así que renderBulkResult() las salta igual que cualquier
   // categoría vacía.
   {
-    key: 'accepted_flagged', icon: 'circle-check', tone: 'green', modalTitle: 'Mods instalados igualmente', modalType: 'list',
+    key: 'accepted_flagged', icon: 'circle-check', tone: 'green', modalTitle: t('Mods instalados igualmente'), modalType: 'list',
     dynamicLabels: true, labelFn: acceptedFlaggedLabels
   },
   {
-    key: 'rejected_flagged', icon: 'ban', tone: 'muted', modalTitle: 'Mods rechazados', modalType: 'list',
+    key: 'rejected_flagged', icon: 'ban', tone: 'muted', modalTitle: t('Mods rechazados'), modalType: 'list',
     dynamicLabels: true, labelFn: rejectedFlaggedLabels
   },
   {
-    key: 'errors', icon: 'circle-x', tone: 'red', modalTitle: 'Mods con error', modalType: 'list',
-    many: function(n) { return n + ' mods con error'; },
-    fewPrefix: 'No se pudieron agregar los mods: '
+    key: 'errors', icon: 'circle-x', tone: 'red', modalTitle: t('Mods con error'), modalType: 'list',
+    many: function(n) { return t('{n} mods con error', { n: n }); },
+    fewPrefix: t('No se pudieron agregar los mods: ')
   }
 ];
 
@@ -331,7 +331,7 @@ function xhrPostFormData(url, form, onProgress) {
       resolve({ ok: xhr.status >= 200 && xhr.status < 300, data: data });
     };
     xhr.onerror = function() {
-      reject(new Error('Error de red'));
+      reject(new Error(t('Error de red')));
     };
     xhr.send(form);
   });
@@ -342,14 +342,14 @@ function uploadModsBulk(fileList) {
     return f.name.toLowerCase().endsWith('.jar') || f.name.toLowerCase().endsWith('.zip');
   });
   if (!files.length) {
-    showAlert('No se encontraron archivos .jar o .zip');
+    showAlert(t('No se encontraron archivos .jar o .zip'));
     return;
   }
   if (!checkUploadSize(files)) {
     return;
   }
   setModOperationBusy(true);
-  openModUploadModal(modUploadProgressHtml('Subiendo ' + files.length + ' archivo(s)…'));
+  openModUploadModal(modUploadProgressHtml(t('Subiendo {n} archivo(s)…', { n: files.length })));
 
   var form = new FormData();
   files.forEach(function(f) { form.append('files', f); });
@@ -369,14 +369,14 @@ function uploadModsBulk(fileList) {
     function(loaded) {
       if (isZip) {
         var pct = Math.min(100, Math.round((loaded / totalBytes) * 100));
-        setModUploadProgressText('Subiendo ' + files[0].name + '… ' + pct + '%');
+        setModUploadProgressText(t('Subiendo {file}…', { file: files[0].name }) + ' ' + pct + '%');
         return;
       }
       var idx = cumulative.findIndex(function(threshold) { return loaded <= threshold; });
       if (idx === -1) {
         idx = files.length - 1;
       }
-      setModUploadProgressText('Enviando mod ' + (idx + 1) + ' de ' + files.length + ': ' + files[idx].name + '…');
+      setModUploadProgressText(t('Enviando mod {i} de {total}: {file}…', { i: idx + 1, total: files.length, file: files[idx].name }));
     }
   )
     .then(function(result) {
@@ -385,12 +385,12 @@ function uploadModsBulk(fileList) {
         streamModsBulkProgress(result.data.job_id);
       } else {
         setModOperationBusy(false);
-        setModUploadModalBody(modErrorHtml(result.data.detail || 'Error desconocido'));
+        setModUploadModalBody(modErrorHtml(result.data.detail || t('Error desconocido')));
       }
     })
     .catch(function(error) {
       setModOperationBusy(false);
-      setModUploadModalBody(modErrorHtml('No se pudo conectar con el panel: ' + error.message));
+      setModUploadModalBody(modErrorHtml(t('No se pudo conectar con el panel: {error}', { error: error.message })));
     });
 }
 
@@ -406,7 +406,7 @@ function streamModsBulkProgress(jobId) {
       return;
     }
     if (data.type === 'progress') {
-      setModUploadProgressText('Verificando mod ' + data.current + ' de ' + data.total + ': ' + (data.display_name || data.filename) + '…');
+      setModUploadProgressText(t('Verificando mod {i} de {total}: {file}…', { i: data.current, total: data.total, file: data.display_name || data.filename }));
     } else if (data.type === 'done') {
       source.close();
       setModOperationBusy(false);
@@ -418,14 +418,14 @@ function streamModsBulkProgress(jobId) {
     } else if (data.type === 'error') {
       source.close();
       setModOperationBusy(false);
-      setModUploadModalBody(modErrorHtml(data.detail || 'Error desconocido'));
+      setModUploadModalBody(modErrorHtml(data.detail || t('Error desconocido')));
     }
   };
 
   source.onerror = function() {
     source.close();
     setModOperationBusy(false);
-    setModUploadModalBody(modErrorHtml('Se perdió la conexión mientras se verificaban los mods'));
+    setModUploadModalBody(modErrorHtml(t('Se perdió la conexión mientras se verificaban los mods')));
   };
 }
 
@@ -457,7 +457,7 @@ function renderBulkResult(data) {
       + '<span class="bulk-result-icon">' + icon(cat.icon) + '</span><span class="bulk-result-link">' + escHtml(labels.many(items.length)) + '</span></div>';
   }).join('');
 
-  setModUploadModalBody(rows || '<div class="bulk-result-row text-muted">No se procesó ningún mod.</div>');
+  setModUploadModalBody(rows || '<div class="bulk-result-row text-muted">' + t('No se procesó ningún mod.') + '</div>');
 }
 
 modUploadModalBody.addEventListener('click', function(event) {
@@ -487,7 +487,7 @@ function renderModModalPagination(containerId, page, totalPages, onChange) {
     return;
   }
   container.innerHTML = '<button type="button" class="btn-secondary" id="' + containerId + '-prev"' + (page === 0 ? ' disabled' : '') + '>‹ Anterior</button>'
-    + '<span>Página ' + (page + 1) + ' / ' + totalPages + '</span>'
+    + '<span>' + t('Página {n} / {total}', { n: page + 1, total: totalPages }) + '</span>'
     + '<button type="button" class="btn-secondary" id="' + containerId + '-next"' + (page >= totalPages - 1 ? ' disabled' : '') + '>Siguiente ›</button>';
   document.getElementById(containerId + '-prev').addEventListener('click', function() {
     if (page > 0) {
@@ -513,7 +513,7 @@ function openModListModal(title, icon, items) {
 
 // Texto «N mods» del pie de los modales de mods.
 function modCountText(n) {
-  return n + (n === 1 ? ' mod' : ' mods');
+  return n + ' ' + (n === 1 ? t('mod') : t('mods'));
 }
 
 function renderModListModal(items) {
@@ -552,11 +552,11 @@ function openDowngradeModal(batchId, items) {
   var reasons = items.reduce(function(set, it) { set[it.reason || 'downgrade'] = true; return set; }, {});
   var reasonKeys = Object.keys(reasons);
   var titleByReason = {
-    downgrade: 'Mods con versión más antigua que la instalada',
-    client_only: 'Mods que parecen ser solo de cliente',
+    downgrade: t('Mods con versión más antigua que la instalada'),
+    client_only: t('Mods que parecen ser solo de cliente'),
   };
   document.getElementById('mod-downgrade-modal-title').textContent =
-    (reasonKeys.length === 1 && titleByReason[reasonKeys[0]]) || 'Mods que necesitan confirmación';
+    (reasonKeys.length === 1 && titleByReason[reasonKeys[0]]) || t('Mods que necesitan confirmación');
   // Por si el modal se reabre con un lote nuevo justo después de haber
   // resuelto uno anterior (que los deja ocultos, ver renderDowngradeResult).
   document.getElementById('mod-downgrade-confirm').style.display = '';
@@ -572,8 +572,8 @@ function renderDowngradeModal() {
   body.innerHTML = downgradeState.items.map(function(item) {
     var checked = downgradeState.selected[item.filename] ? ' checked' : '';
     var detail = item.reason === 'client_only'
-      ? escHtml(item.detail || 'Este mod parece ser solo de cliente.')
-      : 'v' + escHtml(item.mod_version) + ' reemplazaría a v' + escHtml(item.existing_version) + ' (' + escHtml(item.existing_filename) + ')';
+      ? escHtml(item.detail || t('Este mod parece ser solo de cliente.'))
+      : escHtml(t('v{new} reemplazaría a v{old}', { new: item.mod_version, old: item.existing_version })) + ' (' + escHtml(item.existing_filename) + ')';
     return '<label class="mod-modal-item cursor-pointer">'
       + '<input type="checkbox" class="mod-downgrade-check" data-filename="' + escHtml(item.filename) + '"' + checked + '>'
       + '<div class="mod-info"><div class="mod-display">' + escHtml(item.display_name) + '</div>'
@@ -593,7 +593,7 @@ function submitDowngradeDecision(acceptFilenames) {
   document.getElementById('mod-downgrade-confirm').disabled = true;
   document.getElementById('mod-downgrade-reject-all').disabled = true;
   document.getElementById('mod-downgrade-modal-count').textContent = '';
-  document.getElementById('mod-downgrade-modal-body').innerHTML = modUploadProgressHtml('Aplicando cambios…');
+  document.getElementById('mod-downgrade-modal-body').innerHTML = modUploadProgressHtml(t('Aplicando cambios…'));
 
   apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/upload-bulk/confirm', {
     method: 'POST',
@@ -608,13 +608,13 @@ function submitDowngradeDecision(acceptFilenames) {
         loadModsList();
         checkModDependencies(false);
       } else {
-        document.getElementById('mod-downgrade-modal-body').innerHTML = modErrorHtml(data.detail || 'Error al confirmar');
+        document.getElementById('mod-downgrade-modal-body').innerHTML = modErrorHtml(data.detail || t('Error al confirmar'));
         document.getElementById('mod-downgrade-confirm').disabled = false;
         document.getElementById('mod-downgrade-reject-all').disabled = false;
       }
     })
     .catch(function() {
-      document.getElementById('mod-downgrade-modal-body').innerHTML = modErrorHtml('No se pudo conectar con el panel. Vuelve a intentarlo.');
+      document.getElementById('mod-downgrade-modal-body').innerHTML = modErrorHtml(t('No se pudo conectar con el panel. Vuelve a intentarlo.'));
       document.getElementById('mod-downgrade-confirm').disabled = false;
       document.getElementById('mod-downgrade-reject-all').disabled = false;
     })
@@ -629,13 +629,13 @@ function renderDowngradeResult(data) {
   var html = '';
   if (applied.length) {
     html += '<div class="bulk-result-row text-green"><span class="bulk-result-icon">' + icon('circle-check') + '</span>'
-      + '<span>Instalados de todas formas: <b>' + applied.map(function(it) { return escHtml(it.display_name); }).join('</b>, <b>') + '</b></span></div>';
+      + '<span>' + t('Instalados de todas formas:') + ' <b>' + applied.map(function(it) { return escHtml(it.display_name); }).join('</b>, <b>') + '</b></span></div>';
   }
   if (skipped.length) {
     html += '<div class="bulk-result-row text-muted"><span class="bulk-result-icon">' + icon('square') + '</span>'
-      + '<span>Sin cambios (no aceptados): <b>' + skipped.map(function(it) { return escHtml(it.display_name); }).join('</b>, <b>') + '</b></span></div>';
+      + '<span>' + t('Sin cambios (no aceptados):') + ' <b>' + skipped.map(function(it) { return escHtml(it.display_name); }).join('</b>, <b>') + '</b></span></div>';
   }
-  document.getElementById('mod-downgrade-modal-body').innerHTML = html || '<div class="bulk-result-row text-muted">No se aplicó ningún cambio.</div>';
+  document.getElementById('mod-downgrade-modal-body').innerHTML = html || '<div class="bulk-result-row text-muted">' + t('No se aplicó ningún cambio.') + '</div>';
   // Viven en el <div class="modal-footer"> aparte del cuerpo, así que
   // reemplazar mod-downgrade-modal-body no los toca — sin esto quedaban
   // visibles pero deshabilitados para siempre, sin ninguna acción posible.

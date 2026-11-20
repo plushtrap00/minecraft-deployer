@@ -143,7 +143,7 @@ function renderAchievementList() {
     var hidden = item.secret && !unlocked;
     var when = Number(readPref('ach-' + item.id, ''));
     var hint = !unlocked ? (hidden ? 'Logro secreto' : item.hint)
-      : (when ? 'Conseguido el ' + new Date(when).toLocaleDateString('es-ES') : 'Conseguido');
+      : (when ? 'Conseguido el ' + new Date(when).toLocaleDateString(APP_LOCALE) : 'Conseguido');
     return '<li class="achievement-row' + (unlocked ? ' unlocked' : '') + (hidden ? ' secret' : '') + '"'
       + (unlocked ? ' title="' + escHtml(item.hint) + '"' : '') + '>'
       + '<span class="achievement-icon">' + achievementIconHtml(item, unlocked) + '</span>'

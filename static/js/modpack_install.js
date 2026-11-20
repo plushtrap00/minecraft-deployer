@@ -100,7 +100,7 @@ dlCategoryPanelToggle.addEventListener('click', function() {
 function loadDlCategories(source) {
   var cached = dlCategoriesCache.get(source);
   if (cached) {
-    dlCategoryPanelBody.innerHTML = renderModSearchCategoryOptions(cached) || '<p class="empty-msg pad-s">Sin categorías</p>';
+    dlCategoryPanelBody.innerHTML = renderModSearchCategoryOptions(cached) || '<p class="empty-msg pad-s">' + t('Sin categorías') + '</p>';
     return;
   }
   dlCategoryPanelBody.innerHTML = loadingHtml();
@@ -110,15 +110,15 @@ function loadDlCategories(source) {
     })
     .then(function(result) {
       if (!result.ok) {
-        dlCategoryPanelBody.innerHTML = '<p class="empty-msg pad-s">Error al cargar categorías</p>';
+        dlCategoryPanelBody.innerHTML = '<p class="empty-msg pad-s">' + t('Error al cargar categorías') + '</p>';
         return;
       }
       var cats = result.data.categories || [];
       dlCategoriesCache.set(source, cats);
-      dlCategoryPanelBody.innerHTML = renderModSearchCategoryOptions(cats) || '<p class="empty-msg pad-s">Sin categorías</p>';
+      dlCategoryPanelBody.innerHTML = renderModSearchCategoryOptions(cats) || '<p class="empty-msg pad-s">' + t('Sin categorías') + '</p>';
     })
     .catch(function() {
-      dlCategoryPanelBody.innerHTML = '<p class="empty-msg pad-s">Error al cargar categorías</p>';
+      dlCategoryPanelBody.innerHTML = '<p class="empty-msg pad-s">' + t('Error al cargar categorías') + '</p>';
     });
 }
 
@@ -193,7 +193,7 @@ function runDlSearch(query, offset) {
   }
 
   var body = document.getElementById('dl-search-results');
-  body.innerHTML = modSearchSpinnerHtml('Buscando…');
+  body.innerHTML = modSearchSpinnerHtml(t('Buscando…'));
 
   var url = '/api/modpack-install/search?source=' + encodeURIComponent(dlSource)
     + '&query=' + encodeURIComponent(query) + '&offset=' + offset;
@@ -217,7 +217,7 @@ function runDlSearch(query, offset) {
         return; // se disparó otra búsqueda mientras esta estaba en vuelo
       }
       if (!result.ok) {
-        body.innerHTML = modErrorHtml(result.data.detail || 'Error al buscar');
+        body.innerHTML = modErrorHtml(result.data.detail || t('Error al buscar'));
         return;
       }
       dlOffset = offset;
@@ -230,7 +230,7 @@ function runDlSearch(query, offset) {
       if (requestToken !== dlRequestToken) {
         return;
       }
-      body.innerHTML = modErrorHtml('No se pudo conectar con el panel: ' + error.message);
+      body.innerHTML = modErrorHtml(t('No se pudo conectar con el panel: {error}', { error: error.message }));
     });
 }
 
@@ -238,7 +238,7 @@ function renderDlResults(results) {
   dlSearchResultsCache = results;
   var body = document.getElementById('dl-search-results');
   if (!results.length) {
-    body.innerHTML = emptyArt('spyglass', 'Ningún modpack a la vista', 'Prueba con otras palabras, otra versión de Minecraft o quita alguna categoría.');
+    body.innerHTML = emptyArt('spyglass', t('Ningún modpack a la vista'), t('Prueba con otras palabras, otra versión de Minecraft o quita alguna categoría.'));
     document.getElementById('dl-search-pagination').innerHTML = '';
     document.getElementById('dl-search-summary').innerHTML = '';
     return;
@@ -246,11 +246,11 @@ function renderDlResults(results) {
   body.innerHTML = '<div class="search-card-list">' + results.map(function(item, i) {
     var selected = dlSelectedPack && dlSelectedPack.source === item.source && String(dlSelectedPack.id) === String(item.id);
     return searchResultCardHtml(item, i, {
-      fallbackIcon: 'package', linkTitle: 'Ver la página del modpack', selected: selected, kind: 'Elegir'
+      fallbackIcon: 'package', linkTitle: t('Ver la página del modpack'), selected: selected, kind: t('Elegir')
     });
   }).join('') + '</div>';
   body.scrollTop = 0;
-  document.getElementById('dl-search-summary').innerHTML = searchSummaryHtml(dlTotal, dlQuery, dlTotal === 1 ? 'modpack' : 'modpacks');
+  document.getElementById('dl-search-summary').innerHTML = searchSummaryHtml(dlTotal, dlQuery, 'modpack');
 
   Array.prototype.forEach.call(body.querySelectorAll('img[data-icon-url]'), function(img) {
     applyModSearchImage(img, img.dataset.iconUrl);
@@ -285,7 +285,7 @@ function selectModpackToInstall(pack) {
   // La misma tarjeta del resultado, "encantada", como recordatorio de qué se
   // va a instalar. Sin role=button: aquí no se pulsa.
   var chosen = document.getElementById('dl-selected-pack');
-  chosen.innerHTML = searchResultCardHtml(pack, 0, { fallbackIcon: 'package', linkTitle: 'Ver la página del modpack', selected: true })
+  chosen.innerHTML = searchResultCardHtml(pack, 0, { fallbackIcon: 'package', linkTitle: t('Ver la página del modpack'), selected: true })
     .replace(' role="button" tabindex="0"', '');
   chosen.firstChild.removeAttribute('aria-label');
   Array.prototype.forEach.call(chosen.querySelectorAll('img[data-icon-url]'), function(img) {
@@ -304,7 +304,7 @@ function selectModpackToInstall(pack) {
   setDlPackModsButton('hidden');
 
   var versionSelect = document.getElementById('dl-version-select');
-  versionSelect.innerHTML = '<option value="">Cargando versiones…</option>';
+  versionSelect.innerHTML = '<option value="">' + t('Cargando versiones…') + '</option>';
 
   apiFetch('/api/modpack-install/versions?source=' + encodeURIComponent(pack.source) + '&project_id=' + encodeURIComponent(pack.id))
     .then(function(response) {
@@ -312,7 +312,7 @@ function selectModpackToInstall(pack) {
     })
     .then(function(result) {
       if (!result.ok || !result.data.versions.length) {
-        versionSelect.innerHTML = '<option value="">Sin versiones disponibles</option>';
+        versionSelect.innerHTML = '<option value="">' + t('Sin versiones disponibles') + '</option>';
         return;
       }
       versionSelect.innerHTML = result.data.versions.map(function(v) {
@@ -322,7 +322,7 @@ function selectModpackToInstall(pack) {
       checkDlDuplicate();
     })
     .catch(function() {
-      versionSelect.innerHTML = '<option value="">Error de red</option>';
+      versionSelect.innerHTML = '<option value="">' + t('Error de red') + '</option>';
     });
 
   updateDlServerNameSuggestion();
@@ -350,10 +350,10 @@ function updateDlServerNameSuggestion() {
   var input = document.getElementById('dl-server-name');
   var hint = document.getElementById('dl-server-name-hint');
   var suggestion = suggestedDlServerName();
-  input.placeholder = suggestion || 'ej: atm10, prominence2…';
+  input.placeholder = suggestion || t('ej: atm10, prominence2…');
   var showHint = !!suggestion && !input.value.trim();
   hint.hidden = !showHint;
-  hint.innerHTML = showHint ? 'Si lo dejas en blanco, se llamará <strong>' + escHtml(suggestion) + '</strong>.' : '';
+  hint.innerHTML = showHint ? t('Si lo dejas en blanco, se llamará') + ' <strong>' + escHtml(suggestion) + '</strong>.' : '';
 }
 
 document.getElementById('dl-server-name').addEventListener('input', updateDlServerNameSuggestion);
@@ -385,14 +385,14 @@ function updateDlInstallBtnAppearance() {
   // sin este texto en el propio botón, mientras se comprueba solo se veía
   // deshabilitado sin ninguna pista de por qué, como si estuviera roto.
   if (dlDuplicateCheckPending) {
-    btn.textContent = 'Comprobando si ya está instalado…';
+    btn.textContent = t('Comprobando si ya está instalado…');
     return;
   }
   if (dlInstallBlocked) {
-    btn.textContent = 'Descarga bloqueada por el autor';
+    btn.textContent = t('Descarga bloqueada por el autor');
     return;
   }
-  btn.innerHTML = icon('download') + 'Descargar e instalar';
+  btn.innerHTML = icon('download') + t('Descargar e instalar');
 }
 
 function checkDlDuplicate() {
@@ -413,7 +413,7 @@ function checkDlDuplicate() {
   dlDuplicateMatches = [];
   dlInstallBlocked = false;
   updateDlInstallBtnAppearance();
-  warningEl.innerHTML = '<p class="empty-msg">Comprobando si ya está instalado…</p>';
+  warningEl.innerHTML = '<p class="empty-msg">' + t('Comprobando si ya está instalado…') + '</p>';
   setDlPackModsButton('loading');
 
   var url = '/api/modpack-install/check-existing?source=' + encodeURIComponent(dlSelectedPack.source)
@@ -438,7 +438,7 @@ function checkDlDuplicate() {
       } else if (dlDuplicateMatches.length) {
         warningEl.innerHTML = dlDuplicateWarningHtml(dlDuplicateMatches);
       } else if (result.ok && data.checked === false) {
-        warningEl.innerHTML = '<p class="empty-msg">No se pudo comprobar si ya está instalado (' + escHtml(data.reason || 'motivo desconocido') + ').</p>';
+        warningEl.innerHTML = '<p class="empty-msg">' + escHtml(t('No se pudo comprobar si ya está instalado ({reason}).', { reason: t(data.reason || 'motivo desconocido') })) + '</p>';
       } else {
         warningEl.innerHTML = '';
       }
@@ -459,22 +459,22 @@ function checkDlDuplicate() {
 
 function dlDuplicateWarningHtml(matches) {
   var lines = matches.map(function(m) {
-    return '«' + escHtml(m.server_name) + '» (' + m.overlap_pct + '% de mods coinciden)';
+    return t('«{name}» ({pct}% de mods coinciden)', { name: escHtml(m.server_name), pct: m.overlap_pct });
   }).join(', ');
-  return '<div class="mt-s">' + noticeHtml('warn', 'Esta versión se parece a lo ya instalado en ' + lines + '. Puede que ya la tengas: revísalo antes de crear otro servidor.') + '</div>';
+  return '<div class="mt-s">' + noticeHtml('warn', t('Esta versión se parece a lo ya instalado en {servers}. Puede que ya la tengas: revísalo antes de crear otro servidor.', { servers: lines })) + '</div>';
 }
 
 function dlBlockedHtml(reason) {
   var pageLink = dlSelectedPack && isWebUrl(dlSelectedPack.page_url)
-    ? '<a href="' + escHtml(dlSelectedPack.page_url) + '" target="_blank" rel="noopener">la página del modpack en CurseForge</a>'
-    : 'la página del modpack en CurseForge';
+    ? '<a href="' + escHtml(dlSelectedPack.page_url) + '" target="_blank" rel="noopener">' + t('la página del modpack en CurseForge') + '</a>'
+    : t('la página del modpack en CurseForge');
   return '<div class="notice notice-error notice-block">'
-    + '<div class="notice-title">' + icon('ban') + escHtml(reason || 'El autor bloqueó la descarga de este modpack por terceros.') + '</div>'
-    + '<div class="notice-body">Cómo instalarlo de todas formas:</div>'
+    + '<div class="notice-title">' + icon('ban') + escHtml(reason || t('El autor bloqueó la descarga de este modpack por terceros.')) + '</div>'
+    + '<div class="notice-body">' + t('Cómo instalarlo de todas formas:') + '</div>'
     + '<ol class="notice-steps">'
-    + '<li>Entra en ' + pageLink + ' y ve a la pestaña <b>Files</b>.</li>'
-    + '<li>Si esa versión tiene un archivo de <b>«Server Files»</b> aparte del pack normal, descárgalo y súbelo aquí con <b>«Subir un modpack»</b>.</li>'
-    + '<li>Si no hay server files, crea un servidor vacío con <b>«Crear desde cero»</b> usando el modloader y la versión de Minecraft que se ven en el desplegable de arriba, y añade los mods a mano (subiéndolos o con «Buscar mods online» una vez creado).</li>'
+    + '<li>' + t('Entra en {page} y ve a la pestaña <b>Files</b>.', { page: pageLink }) + '</li>'
+    + '<li>' + t('Si esa versión tiene un archivo de <b>«Server Files»</b> aparte del pack normal, descárgalo y súbelo aquí con <b>«Subir un modpack»</b>.') + '</li>'
+    + '<li>' + t('Si no hay server files, crea un servidor vacío con <b>«Crear desde cero»</b> usando el modloader y la versión de Minecraft que se ven en el desplegable de arriba, y añade los mods a mano (subiéndolos o con «Buscar mods online» una vez creado).') + '</li>'
     + '</ol></div>';
 }
 
@@ -483,17 +483,17 @@ var DL_LOG_RENDER_THROTTLE_MS = 200;
 
 document.getElementById('dl-install-btn').addEventListener('click', function() {
   if (!dlSelectedPack) {
-    showToast('Elige un modpack primero', 'error');
+    showToast(t('Elige un modpack primero'), 'error');
     return;
   }
   var versionId = document.getElementById('dl-version-select').value;
   if (!versionId) {
-    flagField(document.getElementById('dl-version-select'), 'Elige una versión del modpack');
+    flagField(document.getElementById('dl-version-select'), t('Elige una versión del modpack'));
     return;
   }
   var serverName = dlServerName();
   if (!serverName) {
-    flagField(document.getElementById('dl-server-name'), 'Escribe un nombre para el servidor');
+    flagField(document.getElementById('dl-server-name'), t('Escribe un nombre para el servidor'));
     return;
   }
   if (ramFieldsError('dl-')) {
@@ -575,8 +575,8 @@ document.getElementById('dl-install-btn').addEventListener('click', function() {
     } else if (data.type === 'done') {
       source.close();
       var resultHtml = data.success
-        ? noticeHtml('ok', 'Servidor «' + escHtml(data.name) + '» creado a partir del modpack.')
-        : modErrorHtml(data.detail || 'Error desconocido');
+        ? noticeHtml('ok', t('Servidor «{name}» creado a partir del modpack.', { name: escHtml(data.name) }))
+        : modErrorHtml(data.detail || t('Error desconocido'));
       finish(resultHtml);
       if (data.success) {
         loadModpacks();
@@ -585,12 +585,12 @@ document.getElementById('dl-install-btn').addEventListener('click', function() {
       }
     } else if (data.type === 'error') {
       source.close();
-      finish(modErrorHtml(data.detail || 'Error desconocido'));
+      finish(modErrorHtml(data.detail || t('Error desconocido')));
     }
   };
 
   source.onerror = function() {
     source.close();
-    finish(modErrorHtml('Se perdió la conexión durante la instalación del modpack.'));
+    finish(modErrorHtml(t('Se perdió la conexión durante la instalación del modpack.')));
   };
 });

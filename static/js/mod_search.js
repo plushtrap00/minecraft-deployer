@@ -148,16 +148,16 @@ function searchResultCardHtml(item, index, opts) {
     + (item.icon_url
       ? '<img class="mod-search-icon" data-icon-url="' + escHtml(item.icon_url) + '" alt="" loading="lazy" decoding="async">'
       : '<span class="mod-search-icon mod-search-icon-empty">' + icon(opts.fallbackIcon || 'puzzle') + '</span>')
-    + (opts.installed ? '<span class="search-slot-check" title="Ya instalado">' + icon('check') + '</span>' : '')
+    + (opts.installed ? '<span class="search-slot-check" title="' + t('Ya instalado') + '">' + icon('check') + '</span>' : '')
     + '</span>';
 
-  var author = item.author ? '<span class="search-card-author">de ' + escHtml(item.author) + '</span>' : '';
+  var author = item.author ? '<span class="search-card-author">' + escHtml(t('de {author}', { author: item.author })) + '</span>' : '';
   var desc = item.description ? '<div class="mod-search-desc">' + escHtml(item.description) + '</div>' : '';
 
   var updated = searchUpdatedText(item.updated);
-  var stats = '<span class="search-stat search-stat-dl" title="' + escHtml((item.downloads || 0).toLocaleString('es-ES')) + ' descargas">'
+  var stats = '<span class="search-stat search-stat-dl" title="' + escHtml(t('{n} descargas', { n: (item.downloads || 0).toLocaleString(APP_LOCALE) })) + '">'
     + icon('download') + '<b>' + formatDownloads(item.downloads) + '</b></span>'
-    + (updated ? '<span class="search-stat" title="Última actualización">' + icon('clock') + updated + '</span>' : '');
+    + (updated ? '<span class="search-stat" title="' + t('Última actualización') + '">' + icon('clock') + updated + '</span>' : '');
   var loaders = opts.hideLoaders ? '' : (item.loaders || []).filter(function(l) { return SEARCH_LOADER_NAMES[l]; }).map(function(l) {
     return '<span class="loader-tag" data-loader="' + l + '">' + SEARCH_LOADER_NAMES[l] + '</span>';
   }).join('');
@@ -166,11 +166,11 @@ function searchResultCardHtml(item, index, opts) {
   }).join('');
 
   var link = isWebUrl(item.page_url)
-    ? '<a class="mod-search-link" href="' + escHtml(item.page_url) + '" target="_blank" rel="noopener" title="' + escHtml(opts.linkTitle || 'Ver página') + '" aria-label="' + escHtml(opts.linkTitle || 'Ver página') + '">' + icon('globe') + '</a>'
+    ? '<a class="mod-search-link" href="' + escHtml(item.page_url) + '" target="_blank" rel="noopener" title="' + escHtml(opts.linkTitle || t('Ver página')) + '" aria-label="' + escHtml(opts.linkTitle || t('Ver página')) + '">' + icon('globe') + '</a>'
     : '';
 
   return '<div class="mod-search-result-item search-card' + (opts.selected ? ' selected' : '') + '" data-index="' + index + '" role="button" tabindex="0"'
-    + ' aria-label="' + escHtml((opts.kind || 'Ver') + ' ' + (item.title || '')) + '">'
+    + ' aria-label="' + escHtml((opts.kind || t('Ver')) + ' ' + (item.title || '')) + '">'
     + slot
     + '<div class="mod-search-info">'
     + '<div class="mod-search-title-row"><span class="mod-search-title">' + escHtml(item.title) + '</span></div>'
@@ -213,16 +213,18 @@ function clearCategoryChecks(panelBody) {
 }
 
 // Pie de la lista: cuántos resultados hay, al lado de la paginación.
-function searchSummaryHtml(total, query, noun) {
-  var n = (total || 0).toLocaleString('es-ES');
+// kind: 'mod' o 'modpack'.
+function searchSummaryHtml(total, query, kind) {
+  var n = '<b>' + (total || 0).toLocaleString(APP_LOCALE) + '</b>';
+  var noun = total === 1 ? t(kind) : t(kind + 's');
   return query
-    ? '<b>' + n + '</b> ' + noun + ' para «' + escHtml(query) + '»'
-    : '<b>' + n + '</b> ' + noun + ', los más descargados primero';
+    ? t('{n} {noun} para «{query}»', { n: n, noun: noun, query: escHtml(query) })
+    : t('{n} {noun}, los más descargados primero', { n: n, noun: noun });
 }
 
 var SEARCH_RELEASE_TYPES = {
-  beta: { label: 'Beta', cls: 'beta' },
-  alpha: { label: 'Alfa', cls: 'alpha' }
+  beta: { label: t('Beta'), cls: 'beta' },
+  alpha: { label: t('Alfa'), cls: 'alpha' }
 };
 
 function modSearchSpinnerHtml(text) {
@@ -230,7 +232,7 @@ function modSearchSpinnerHtml(text) {
 }
 
 function modSearchBackButtonHtml() {
-  return '<button type="button" class="btn-secondary btn-sm mod-search-back mb-s">' + icon('chevron-left') + 'Volver a resultados</button>';
+  return '<button type="button" class="btn-secondary btn-sm mod-search-back mb-s">' + icon('chevron-left') + t('Volver a resultados') + '</button>';
 }
 
 // query precargada: usado tanto por "Buscar mods" (vacía) como por
@@ -316,7 +318,7 @@ function renderModSearchCategoryOptions(categories) {
 function loadModSearchCategories(source) {
   var cached = modSearchCategoriesCache.get(source);
   if (cached) {
-    modSearchCategoryPanelBody.innerHTML = renderModSearchCategoryOptions(cached) || '<p class="empty-msg pad-s">Sin categorías</p>';
+    modSearchCategoryPanelBody.innerHTML = renderModSearchCategoryOptions(cached) || '<p class="empty-msg pad-s">' + t('Sin categorías') + '</p>';
     return;
   }
   modSearchCategoryPanelBody.innerHTML = loadingHtml();
@@ -327,15 +329,15 @@ function loadModSearchCategories(source) {
     .then(function(result) {
       if (!result.ok) {
         modSearchCategoryPanelBody.innerHTML = '';
-        document.getElementById('mod-search-modal-body').innerHTML = modErrorHtml(result.data.detail || 'No se pudieron cargar las categorías');
+        document.getElementById('mod-search-modal-body').innerHTML = modErrorHtml(result.data.detail || t('No se pudieron cargar las categorías'));
         return;
       }
       var cats = result.data.categories || [];
       modSearchCategoriesCache.set(source, cats);
-      modSearchCategoryPanelBody.innerHTML = renderModSearchCategoryOptions(cats) || '<p class="empty-msg pad-s">Sin categorías</p>';
+      modSearchCategoryPanelBody.innerHTML = renderModSearchCategoryOptions(cats) || '<p class="empty-msg pad-s">' + t('Sin categorías') + '</p>';
     })
     .catch(function() {
-      modSearchCategoryPanelBody.innerHTML = '<p class="empty-msg pad-s">Error al cargar categorías</p>';
+      modSearchCategoryPanelBody.innerHTML = '<p class="empty-msg pad-s">' + t('Error al cargar categorías') + '</p>';
     });
 }
 
@@ -411,7 +413,7 @@ function runModSearch(query, offset) {
   }
 
   var body = document.getElementById('mod-search-modal-body');
-  body.innerHTML = modSearchSpinnerHtml('Buscando…');
+  body.innerHTML = modSearchSpinnerHtml(t('Buscando…'));
 
   var url = '/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/search?source=' + encodeURIComponent(modSearchSource)
     + '&query=' + encodeURIComponent(query) + '&offset=' + offset;
@@ -429,7 +431,7 @@ function runModSearch(query, offset) {
         return; // se disparó otra búsqueda mientras esta estaba en vuelo
       }
       if (!result.ok) {
-        body.innerHTML = modErrorHtml(result.data.detail || 'Error al buscar');
+        body.innerHTML = modErrorHtml(result.data.detail || t('Error al buscar'));
         return;
       }
       modSearchOffset = offset;
@@ -444,14 +446,14 @@ function runModSearch(query, offset) {
       if (requestToken !== modSearchRequestToken) {
         return;
       }
-      body.innerHTML = modErrorHtml('No se pudo conectar con el panel: ' + error.message);
+      body.innerHTML = modErrorHtml(t('No se pudo conectar con el panel: {error}', { error: error.message }));
     });
 }
 
 function renderModSearchResults(results) {
   var body = document.getElementById('mod-search-modal-body');
   if (!results.length) {
-    body.innerHTML = emptyArt('spyglass', 'Ningún mod a la vista', 'No hay resultados para esta versión y modloader. Prueba con otras palabras o quita algún filtro.');
+    body.innerHTML = emptyArt('spyglass', t('Ningún mod a la vista'), t('No hay resultados para esta versión y modloader. Prueba con otras palabras o quita algún filtro.'));
     document.getElementById('mod-search-pagination').innerHTML = '';
     document.getElementById('mod-search-summary').innerHTML = '';
     return;
@@ -460,14 +462,14 @@ function renderModSearchResults(results) {
   // desde caché (blob ya descargado) o disparando la descarga una sola vez.
   body.innerHTML = '<div class="search-card-list">' + results.map(function(mod, i) {
     return searchResultCardHtml(mod, i, {
-      fallbackIcon: 'puzzle', linkTitle: 'Ver la página del mod', installed: mod.installed, kind: 'Ver versiones de',
+      fallbackIcon: 'puzzle', linkTitle: t('Ver la página del mod'), installed: mod.installed, kind: t('Ver versiones de'),
       // Ya vienen filtrados por el modloader del servidor: no aportan nada.
       hideLoaders: true
     });
   }).join('') + '</div>';
   body.scrollTop = 0;
   body._modSearchResults = results;
-  document.getElementById('mod-search-summary').innerHTML = searchSummaryHtml(modSearchTotal, modSearchQuery, modSearchTotal === 1 ? 'mod' : 'mods');
+  document.getElementById('mod-search-summary').innerHTML = searchSummaryHtml(modSearchTotal, modSearchQuery, 'mod');
 
   Array.prototype.forEach.call(body.querySelectorAll('img[data-icon-url]'), function(img) {
     applyModSearchImage(img, img.dataset.iconUrl);
@@ -494,14 +496,14 @@ function openModSearchFiles(mod) {
   }
 
   var body = document.getElementById('mod-search-modal-body');
-  body.innerHTML = modSearchSpinnerHtml('Buscando versiones compatibles…');
+  body.innerHTML = modSearchSpinnerHtml(t('Buscando versiones compatibles…'));
   apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/search/' + encodeURIComponent(mod.source) + '/' + encodeURIComponent(mod.id) + '/files')
     .then(function(response) {
       return response.json().then(function(data) { return { ok: response.ok, data: data }; });
     })
     .then(function(result) {
       if (!result.ok) {
-        body.innerHTML = modSearchBackButtonHtml() + modErrorHtml(result.data.detail || 'Error al obtener versiones');
+        body.innerHTML = modSearchBackButtonHtml() + modErrorHtml(result.data.detail || t('Error al obtener versiones'));
         return;
       }
       var files = result.data.files || [];
@@ -510,7 +512,7 @@ function openModSearchFiles(mod) {
       renderModSearchFiles();
     })
     .catch(function(error) {
-      body.innerHTML = modSearchBackButtonHtml() + modErrorHtml('No se pudo conectar con el panel: ' + error.message);
+      body.innerHTML = modSearchBackButtonHtml() + modErrorHtml(t('No se pudo conectar con el panel: {error}', { error: error.message }));
     });
 }
 
@@ -518,10 +520,10 @@ function renderModSearchFiles() {
   var body = document.getElementById('mod-search-modal-body');
   var mod = modSearchFilesState.mod;
   var files = modSearchFilesState.items;
-  var badge = mod.installed ? ' <span class="mod-search-badge">Instalado</span>' : '';
+  var badge = mod.installed ? ' <span class="mod-search-badge">' + t('Instalado') + '</span>' : '';
   var color = /^#[0-9a-f]{6}$/i.test(mod.color || '') ? mod.color : '';
   var header = '<div class="mod-search-files-header">'
-    + '<button type="button" class="btn-secondary btn-sm mod-search-back">' + icon('chevron-left') + 'Volver a resultados</button>'
+    + '<button type="button" class="btn-secondary btn-sm mod-search-back">' + icon('chevron-left') + t('Volver a resultados') + '</button>'
     + '<div class="search-files-mod">'
     + '<span class="search-slot search-slot-sm"' + (color ? ' style="--slot-glow:' + color + '"' : '') + '>'
     + (mod.icon_url
@@ -529,15 +531,15 @@ function renderModSearchFiles() {
       : '<span class="mod-search-icon mod-search-icon-empty">' + icon('puzzle') + '</span>')
     + '</span>'
     + '<div class="min-w-0"><div class="mod-search-title">' + escHtml(mod.title) + badge + '</div>'
-    + (mod.author ? '<div class="search-card-author">de ' + escHtml(mod.author) + '</div>' : '')
+    + (mod.author ? '<div class="search-card-author">' + escHtml(t('de {author}', { author: mod.author })) + '</div>' : '')
     + '</div></div>'
     + '</div>';
   document.getElementById('mod-search-summary').innerHTML = files.length
-    ? '<b>' + files.length + '</b> ' + (files.length === 1 ? 'versión compatible' : 'versiones compatibles')
+    ? '<b>' + files.length + '</b> ' + (files.length === 1 ? t('versión compatible') : t('versiones compatibles'))
     : '';
 
   if (!files.length) {
-    body.innerHTML = header + '<p class="empty-msg">No hay versiones compatibles con la versión/modloader de este servidor.</p>';
+    body.innerHTML = header + '<p class="empty-msg">' + t('No hay versiones compatibles con la versión/modloader de este servidor.') + '</p>';
     document.getElementById('mod-search-pagination').innerHTML = '';
     return;
   }
@@ -558,8 +560,8 @@ function renderModSearchFiles() {
       + '</div>'
       + '<div class="mod-search-file-action">'
       + (available
-        ? '<button type="button" class="btn-sm mod-search-install" data-index="' + i + '">' + icon('download') + 'Instalar</button>'
-        : '<span class="text-muted text-xs">Sin descarga directa</span>')
+        ? '<button type="button" class="btn-sm mod-search-install" data-index="' + i + '">' + icon('download') + t('Instalar') + '</button>'
+        : '<span class="text-muted text-xs">' + t('Sin descarga directa') + '</span>')
       + '</div>'
       + '</div>';
   }).join('');
@@ -604,7 +606,7 @@ document.getElementById('mod-search-modal-body').addEventListener('click', funct
 function installSearchedMod(mod, file, buttonEl) {
   modSearchBusy = true;
   buttonEl.disabled = true;
-  buttonEl.textContent = 'Instalando…';
+  buttonEl.textContent = t('Instalando…');
 
   apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/search/install', {
     method: 'POST',
@@ -627,7 +629,7 @@ function installSearchedMod(mod, file, buttonEl) {
       }
       var body = document.getElementById('mod-search-modal-body');
       if (result.ok && result.data.success) {
-        showToast('Mod instalado: ' + result.data.filename, 'success');
+        showToast(t('Mod instalado: {file}', { file: result.data.filename }), 'success');
         unlockAchievement('handyman');
         // Se vuelve a pintar la lista de versiones (con «Volver a resultados»)
         // en vez de sustituirla por el aviso: si no, el modal se quedaba sin
@@ -636,7 +638,7 @@ function installSearchedMod(mod, file, buttonEl) {
         renderModSearchFiles();
         var header = body.querySelector('.mod-search-files-header');
         if (header) {
-          header.insertAdjacentHTML('afterend', '<div class="mb-m">' + noticeHtml('ok', 'Mod instalado: ' + escHtml(result.data.filename)) + '</div>');
+          header.insertAdjacentHTML('afterend', '<div class="mb-m">' + noticeHtml('ok', escHtml(t('Mod instalado: {file}', { file: result.data.filename }))) + '</div>');
         }
         // El flag "installed" de otras páginas ya cacheadas puede haber
         // quedado desactualizado con este mod recién instalado.
@@ -645,14 +647,14 @@ function installSearchedMod(mod, file, buttonEl) {
         checkModDependencies(false);
       } else {
         buttonEl.disabled = false;
-        buttonEl.textContent = 'Instalar';
-        showToast(result.data.detail || 'Error al instalar', 'error');
+        buttonEl.textContent = t('Instalar');
+        showToast(result.data.detail || t('Error al instalar'), 'error');
       }
     })
     .catch(function(error) {
       modSearchBusy = false;
       buttonEl.disabled = false;
-      buttonEl.textContent = 'Instalar';
-      showToast('No se pudo conectar con el panel: ' + error.message, 'error');
+      buttonEl.textContent = t('Instalar');
+      showToast(t('No se pudo conectar con el panel: {error}', { error: error.message }), 'error');
     });
 }

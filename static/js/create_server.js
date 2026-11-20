@@ -43,7 +43,7 @@ function loadCreateMcVersions() {
       onCreateLoaderOrVersionChange();
     })
     .catch(function() {
-      select.innerHTML = '<option value="">Error al cargar versiones</option>';
+      select.innerHTML = '<option value="">' + t('Error al cargar versiones') + '</option>';
     });
 }
 
@@ -64,7 +64,7 @@ function onCreateLoaderOrVersionChange() {
 
   versionField.style.display = '';
   var loaderSelect = document.getElementById('create-loader-version');
-  loaderSelect.innerHTML = '<option value="">Cargando…</option>';
+  loaderSelect.innerHTML = '<option value="">' + t('Cargando…') + '</option>';
   hint.textContent = '';
   if (!mcVersion) {
     return;
@@ -76,13 +76,13 @@ function onCreateLoaderOrVersionChange() {
     })
     .then(function(result) {
       if (!result.ok) {
-        loaderSelect.innerHTML = '<option value="">No se pudieron cargar</option>';
-        hint.textContent = result.data.detail || 'Error al consultar versiones';
+        loaderSelect.innerHTML = '<option value="">' + t('No se pudieron cargar') + '</option>';
+        hint.textContent = result.data.detail || t('Error al consultar versiones');
         return;
       }
       if (!result.data.versions.length) {
-        loaderSelect.innerHTML = '<option value="">Sin versiones disponibles</option>';
-        hint.textContent = 'No hay versiones de ' + result.data.loader_display + ' para MC ' + mcVersion + '. Prueba otra versión de Minecraft.';
+        loaderSelect.innerHTML = '<option value="">' + t('Sin versiones disponibles') + '</option>';
+        hint.textContent = t('No hay versiones de {loader} para MC {mc}. Prueba otra versión de Minecraft.', { loader: result.data.loader_display, mc: mcVersion });
         return;
       }
       loaderSelect.innerHTML = result.data.versions.map(function(v) {
@@ -90,7 +90,7 @@ function onCreateLoaderOrVersionChange() {
       }).join('');
     })
     .catch(function() {
-      loaderSelect.innerHTML = '<option value="">Error de red</option>';
+      loaderSelect.innerHTML = '<option value="">' + t('Error de red') + '</option>';
     });
 }
 
@@ -100,18 +100,18 @@ var CREATE_LOG_RENDER_THROTTLE_MS = 200;
 document.getElementById('create-server-btn').addEventListener('click', function() {
   var name = document.getElementById('create-name').value.trim();
   if (!name) {
-    flagField(document.getElementById('create-name'), 'Escribe un nombre para el servidor');
+    flagField(document.getElementById('create-name'), t('Escribe un nombre para el servidor'));
     return;
   }
   var mcVersion = document.getElementById('create-mc-version').value;
   if (!mcVersion) {
-    flagField(document.getElementById('create-mc-version'), 'Elige una versión de Minecraft');
+    flagField(document.getElementById('create-mc-version'), t('Elige una versión de Minecraft'));
     return;
   }
   var loader = document.getElementById('create-loader').value;
   var loaderVersion = loader === 'vanilla' ? '' : document.getElementById('create-loader-version').value;
   if (loader !== 'vanilla' && !loaderVersion) {
-    flagField(document.getElementById('create-loader-version'), 'Elige una versión del modloader');
+    flagField(document.getElementById('create-loader-version'), t('Elige una versión del modloader'));
     return;
   }
   if (ramFieldsError('create-')) {
@@ -191,8 +191,8 @@ document.getElementById('create-server-btn').addEventListener('click', function(
     } else if (data.type === 'done') {
       source.close();
       var resultHtml = data.success
-        ? noticeHtml('ok', 'Servidor «' + escHtml(data.name) + '» creado. Ya puedes subirle mods desde Modpacks.')
-        : modErrorHtml(data.detail || 'Error desconocido');
+        ? noticeHtml('ok', t('Servidor «{name}» creado. Ya puedes subirle mods desde Modpacks.', { name: escHtml(data.name) }))
+        : modErrorHtml(data.detail || t('Error desconocido'));
       finish(resultHtml);
       if (data.success) {
         loadModpacks();
@@ -201,12 +201,12 @@ document.getElementById('create-server-btn').addEventListener('click', function(
       }
     } else if (data.type === 'error') {
       source.close();
-      finish(modErrorHtml(data.detail || 'Error desconocido'));
+      finish(modErrorHtml(data.detail || t('Error desconocido')));
     }
   };
 
   source.onerror = function() {
     source.close();
-    finish(modErrorHtml('Se perdió la conexión durante la creación del servidor.'));
+    finish(modErrorHtml(t('Se perdió la conexión durante la creación del servidor.')));
   };
 });

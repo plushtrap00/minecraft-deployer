@@ -9,7 +9,7 @@ function loadWorlds() {
     .then(function(response) { return response.json(); })
     .then(function(data) { renderWorlds(data); })
     .catch(function() {
-      list.innerHTML = '<p class="empty-msg text-red">Error al cargar mundos</p>';
+      list.innerHTML = '<p class="empty-msg text-red">' + t('Error al cargar mundos') + '</p>';
     });
 }
 
@@ -17,37 +17,37 @@ function renderWorlds(data) {
   var list = document.getElementById('worlds-list');
   var worlds = data.worlds;
   if (!worlds || !worlds.length) {
-    list.innerHTML = emptyArt('map', 'Aún no hay mundo', 'Se genera la primera vez que arranca el servidor.', null, true)
-      + '<p class="hint mt-s">Mundo configurado: <code>' + escHtml(data.active || 'world') + '</code>'
+    list.innerHTML = emptyArt('map', t('Aún no hay mundo'), t('Se genera la primera vez que arranca el servidor.'), null, true)
+      + '<p class="hint mt-s">' + t('Mundo configurado:') + ' <code>' + escHtml(data.active || 'world') + '</code>'
       + ' · Tipo: <code>' + escHtml(data.level_type || 'minecraft:normal') + '</code></p>';
     return;
   }
   var html = '';
   worlds.forEach(function(world) {
     var activeBadge = world.active
-      ? '<span class="world-active-badge">Activo</span>'
+      ? '<span class="world-active-badge">' + t('Activo') + '</span>'
       : '';
     var activateBtn = !world.active
-      ? '<button class="btn-secondary wc-activate btn-xs" data-world="' + escHtml(world.name) + '">' + icon('check') + 'Activar</button>'
+      ? '<button class="btn-secondary wc-activate btn-xs" data-world="' + escHtml(world.name) + '">' + icon('check') + t('Activar') + '</button>'
       : '';
     var deleteBtn = !world.active
-      ? '<button class="btn-danger wc-delete btn-xs" data-world="' + escHtml(world.name) + '">' + icon('trash-2') + 'Borrar</button>'
+      ? '<button class="btn-danger wc-delete btn-xs" data-world="' + escHtml(world.name) + '">' + icon('trash-2') + t('Borrar') + '</button>'
       : '';
     var downloadUrl = '/api/modpacks/' + encodeURIComponent(currentModpack) + '/worlds/' + encodeURIComponent(world.name) + '/download';
-    var downloadBtn = '<a href="' + downloadUrl + '" download="' + escHtml(world.name) + '.zip" class="btn-secondary btn-xs no-underline wc-download">' + icon('download') + 'Descargar</a>';
+    var downloadBtn = '<a href="' + downloadUrl + '" download="' + escHtml(world.name) + '.zip" class="btn-secondary btn-xs no-underline wc-download">' + icon('download') + t('Descargar') + '</a>';
     var worldIcon = icon('map');
     var activeClass = world.active ? ' active-world' : '';
     html += '<div class="world-card' + activeClass + freshClass('world', world.name) + '">'
       + '<span class="world-icon">' + worldIcon + '</span>'
       + '<div class="flex-1">'
       + '<div class="fw-semibold">' + escHtml(world.name) + ' ' + activeBadge + '</div>'
-      + '<div class="text-muted text-xs">' + escHtml(world.size_mb) + ' MB en disco</div>'
+      + '<div class="text-muted text-xs">' + escHtml(t('{size} MB en disco', { size: world.size_mb })) + '</div>'
       + '</div>'
       + '<div class="wc-actions">' + activateBtn + downloadBtn + deleteBtn + '</div>'
       + '</div>';
   });
   var seedHint = data.seed ? ' · Seed: <code>' + escHtml(data.seed) + '</code>' : '';
-  html += '<p class="hint mt-s">Tipo actual: <code>' + escHtml(data.level_type || 'minecraft:normal') + '</code>'
+  html += '<p class="hint mt-s">' + t('Tipo actual:') + ' <code>' + escHtml(data.level_type || 'minecraft:normal') + '</code>'
     + seedHint + '</p>';
   list.innerHTML = html;
 }
@@ -70,8 +70,8 @@ document.addEventListener('click', function(event) {
 
 function activateWorld(name, button) {
   showConfirm(
-    'Activar el mundo "' + name + '"',
-    'El servidor usará este mundo en el próximo inicio.',
+    t('Activar el mundo «{name}»', { name: name }),
+    t('El servidor usará este mundo en el próximo inicio.'),
     function() { doActivateWorld(name, button); }
   );
 }
@@ -87,19 +87,19 @@ function doActivateWorld(name, button) {
       .then(function(response) { return response.json(); })
       .then(function(data) {
         if (data.success) {
-          showToast('Mundo activado', 'success');
+          showToast(t('Mundo activado'), 'success');
           loadWorlds();
           loadServerProps();
         }
       })
-      .catch(function() { showToast('No se pudo activar el mundo', 'error'); });
+      .catch(function() { showToast(t('No se pudo activar el mundo'), 'error'); });
   });
 }
 
 function deleteWorld(name, button) {
   showConfirm(
-    'Borrar "' + name + '"',
-    'Se borrarán también sus dimensiones nether y end. Esta acción no se puede deshacer.',
+    t('Borrar «{name}»', { name: name }),
+    t('Se borrarán también sus dimensiones nether y end. Esta acción no se puede deshacer.'),
     function() { doDeleteWorld(name, button); }
   );
 }
@@ -112,12 +112,12 @@ function doDeleteWorld(name, button) {
       .then(function(response) { return response.json(); })
       .then(function(data) {
         if (data.success) {
-          showToast('Mundo borrado', 'success');
+          showToast(t('Mundo borrado'), 'success');
           unlockAchievement('tnt');
           loadWorlds();
         }
       })
-      .catch(function() { showToast('No se pudo borrar el mundo', 'error'); });
+      .catch(function() { showToast(t('No se pudo borrar el mundo'), 'error'); });
   });
 }
 
@@ -126,14 +126,14 @@ function doDeleteWorld(name, button) {
 var nwActivate = true;
 
 var typeDescs = {
-  'minecraft:normal':      'Mundo estándar con biomas variados, estructuras y terreno natural.',
-  'minecraft:large_biomes':'Igual que el normal pero los biomas son mucho más grandes. Ideal para exploración.',
-  'minecraft:amplified':   'Terreno extremo: montañas gigantescas, ravines profundísimas y posibles islas flotantes.',
-  'minecraft:flat':        'Mundo completamente plano. Perfecto para construcciones y redstone a gran escala.',
-  'biomesoplenty':         'Añade más de 90 biomas nuevos. Requiere el mod Biomes O Plenty instalado.',
-  'terraforged':           'Generación de terreno realista y detallada. Requiere el mod TerraForged instalado.',
-  'skyblockbuilder:skyblock': 'Mundo skyblock (islas vacías) generado por SkyblockBuilder — necesario para que el mod cree equipo/isla al unirse; "Normal" genera terreno vanilla normal aunque el mod esté instalado.',
-  'custom':                'Introduce manualmente el identificador del tipo de mundo del mod que quieras usar.'
+  'minecraft:normal':      t('Mundo estándar con biomas variados, estructuras y terreno natural.'),
+  'minecraft:large_biomes':t('Igual que el normal pero los biomas son mucho más grandes. Ideal para exploración.'),
+  'minecraft:amplified':   t('Terreno extremo: montañas gigantescas, ravines profundísimas y posibles islas flotantes.'),
+  'minecraft:flat':        t('Mundo completamente plano. Perfecto para construcciones y redstone a gran escala.'),
+  'biomesoplenty':         t('Añade más de 90 biomas nuevos. Requiere el mod Biomes O Plenty instalado.'),
+  'terraforged':           t('Generación de terreno realista y detallada. Requiere el mod TerraForged instalado.'),
+  'skyblockbuilder:skyblock': t('Mundo skyblock (islas vacías) generado por SkyblockBuilder — necesario para que el mod cree equipo/isla al unirse; "Normal" genera terreno vanilla normal aunque el mod esté instalado.'),
+  'custom':                t('Introduce manualmente el identificador del tipo de mundo del mod que quieras usar.')
 };
 
 (function() {
@@ -159,15 +159,15 @@ var typeDescs = {
           var skyblock = document.getElementById('opt-sky');
           if (bop) {
             bop.disabled = !data.has_biomesoplenty;
-            bop.textContent = 'Biomes O Plenty' + (data.has_biomesoplenty ? ' — detectado' : ' — mod no detectado');
+            bop.textContent = 'Biomes O Plenty' + ' — ' + (data.has_biomesoplenty ? t('detectado') : t('mod no detectado'));
           }
           if (terraForged) {
             terraForged.disabled = !data.has_terraforged;
-            terraForged.textContent = 'TerraForged' + (data.has_terraforged ? ' — detectado' : ' — mod no detectado');
+            terraForged.textContent = 'TerraForged' + ' — ' + (data.has_terraforged ? t('detectado') : t('mod no detectado'));
           }
           if (skyblock) {
             skyblock.disabled = !data.has_skyblockbuilder;
-            skyblock.textContent = 'Skyblock (SkyblockBuilder)' + (data.has_skyblockbuilder ? ' — detectado' : ' — mod no detectado');
+            skyblock.textContent = 'Skyblock (SkyblockBuilder)' + ' — ' + (data.has_skyblockbuilder ? t('detectado') : t('mod no detectado'));
             // A diferencia de BOP/TerraForged (cosméticos, cualquiera de los
             // dos sirve como terreno "normal" si se elige mal), elegir el
             // tipo equivocado aquí no es solo distinto: SkyblockBuilder
@@ -200,7 +200,7 @@ var typeDescs = {
   document.getElementById('nw-confirm').addEventListener('click', function() {
     var name = document.getElementById('nw-name').value.trim();
     if (!name) {
-      flagField(document.getElementById('nw-name'), 'Escribe un nombre para el mundo');
+      flagField(document.getElementById('nw-name'), t('Escribe un nombre para el mundo'));
       return;
     }
     var sel = document.getElementById('nw-type-select');
@@ -211,7 +211,7 @@ var typeDescs = {
       worldType = sel.value;
     }
     if (!worldType) {
-      flagField(document.getElementById('nw-type-custom'), 'Escribe el tipo de mundo');
+      flagField(document.getElementById('nw-type-custom'), t('Escribe el tipo de mundo'));
       return;
     }
     markFresh('world', name);
@@ -242,10 +242,10 @@ var typeDescs = {
               loadServerProps();
             }
           } else {
-            showToast(result.data.detail || 'Error', 'error');
+            showToast(result.data.detail || t('Error'), 'error');
           }
         })
-        .catch(function() { showToast('No se pudo preparar el mundo', 'error'); });
+        .catch(function() { showToast(t('No se pudo preparar el mundo'), 'error'); });
     });
   });
 })();
@@ -293,7 +293,7 @@ var uwActivate = true;
     var fileInput = document.getElementById('uw-file');
     var file = fileInput.files[0];
     if (!file) {
-      showAlert('Selecciona un archivo de mundo (.zip, .tar.gz…)');
+      showAlert(t('Selecciona un archivo de mundo (.zip, .tar.gz…)'));
       return;
     }
     if (!checkUploadSize(file)) {
@@ -301,7 +301,7 @@ var uwActivate = true;
     }
     var worldName = document.getElementById('uw-name').value.trim();
     if (!worldName) {
-      flagField(document.getElementById('uw-name'), 'Escribe un nombre para el mundo');
+      flagField(document.getElementById('uw-name'), t('Escribe un nombre para el mundo'));
       return;
     }
     markFresh('world', worldName);
@@ -311,7 +311,7 @@ var uwActivate = true;
     confirmBtn.disabled = true;
     progress.style.display = 'block';
     progress.style.color = 'var(--muted)';
-    progress.textContent = 'Subiendo ' + file.name + '… 0%';
+    progress.textContent = t('Subiendo {file}…', { file: file.name }) + ' 0%';
 
     var form = new FormData();
     form.append('file', file);
@@ -323,7 +323,7 @@ var uwActivate = true;
       form,
       function(loaded) {
         var pct = Math.min(100, Math.round((loaded / file.size) * 100));
-        progress.textContent = 'Subiendo ' + file.name + '… ' + pct + '%';
+        progress.textContent = t('Subiendo {file}…', { file: file.name }) + ' ' + pct + '%';
       }
     )
       .then(function(result) {
@@ -331,7 +331,7 @@ var uwActivate = true;
         if (result.ok && result.data.success) {
           progress.textContent = '';
           progress.style.display = 'none';
-          showToast('Mundo subido (' + result.data.size_mb + ' MB)', 'success');
+          showToast(t('Mundo subido ({size} MB)', { size: result.data.size_mb }), 'success');
           unlockAchievement('new-world');
           document.getElementById('upload-world-form').style.display = 'none';
           fileInput.value = '';
@@ -342,13 +342,13 @@ var uwActivate = true;
           }
         } else {
           progress.style.color = 'var(--red)';
-          progress.textContent = result.data.detail || 'Error al subir el mundo';
+          progress.textContent = result.data.detail || t('Error al subir el mundo');
         }
       })
       .catch(function() {
         confirmBtn.disabled = false;
         progress.style.color = 'var(--red)';
-        progress.textContent = 'Error de red al subir el mundo';
+        progress.textContent = t('Error de red al subir el mundo');
       });
   });
 })();
@@ -381,8 +381,8 @@ function loadWorldFilesTab() {
     .then(function(data) {
       var worlds = data.worlds || [];
       var prev = select.value;
-      select.innerHTML = '<option value="">Selecciona un mundo…</option>' + worlds.map(function(w) {
-        return '<option value="' + escHtml(w.name) + '">' + escHtml(w.name) + (w.active ? ' (activo)' : '') + '</option>';
+      select.innerHTML = '<option value="">' + t('Selecciona un mundo…') + '</option>' + worlds.map(function(w) {
+        return '<option value="' + escHtml(w.name) + '">' + escHtml(w.name) + (w.active ? ' (' + t('activo') + ')' : '') + '</option>';
       }).join('');
       var keepPrev = worlds.some(function(w) { return w.name === prev; });
       if (keepPrev) {
@@ -393,12 +393,12 @@ function loadWorldFilesTab() {
       if (select.value) {
         loadWorldFiles(select.value);
       } else {
-        document.getElementById('wf-tree').innerHTML = '<p class="empty-msg pad-m">No hay mundos detectados</p>';
+        document.getElementById('wf-tree').innerHTML = '<p class="empty-msg pad-m">' + t('No hay mundos detectados') + '</p>';
         document.getElementById('wf-tree-count').style.display = 'none';
       }
     })
     .catch(function() {
-      document.getElementById('wf-tree').innerHTML = '<p class="empty-msg pad-m text-red">Error al cargar mundos</p>';
+      document.getElementById('wf-tree').innerHTML = '<p class="empty-msg pad-m text-red">' + t('Error al cargar mundos') + '</p>';
     });
 }
 
@@ -419,7 +419,7 @@ function loadWorldFiles(worldName) {
       renderWfTree();
     })
     .catch(function() {
-      document.getElementById('wf-tree').innerHTML = '<p class="empty-msg pad-m text-red">Error al cargar archivos</p>';
+      document.getElementById('wf-tree').innerHTML = '<p class="empty-msg pad-m text-red">' + t('Error al cargar archivos') + '</p>';
     });
 }
 
@@ -474,12 +474,12 @@ function renderWfTree() {
     'archivo', 'archivos', hasFilter);
   count.style.display = '';
   if (!filteredWfKeys.length) {
-    tree.innerHTML = '<p class="empty-msg pad-m">Sin resultados</p>';
+    tree.innerHTML = '<p class="empty-msg pad-m">' + t('Sin resultados') + '</p>';
     return;
   }
   var html = '';
   filteredWfKeys.forEach(function(key) {
-    var label = key === '__root__' ? 'Raíz del mundo' : key;
+    var label = key === '__root__' ? t('Raíz del mundo') : key;
     var allFiles = worldFiles[key];
     var files = wfGetFilteredFiles(allFiles, key, activeWfFilter);
     var openClass = hasFilter ? ' open' : '';

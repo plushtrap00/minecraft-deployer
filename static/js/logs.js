@@ -20,7 +20,7 @@ function loadLogList() {
     .then(function(data) { renderLogFileList(data.logs, data.crashes); })
     .catch(function() {
       document.getElementById('log-file-list').innerHTML =
-        '<p class="empty-msg error-msg">No se pudo cargar la lista de logs. Vuelve a abrir la pestaña para reintentarlo.</p>';
+        '<p class="empty-msg error-msg">' + t('No se pudo cargar la lista de logs. Vuelve a abrir la pestaña para reintentarlo.') + '</p>';
     });
 }
 
@@ -29,14 +29,14 @@ function loadLogList() {
 // real igual disponible como tooltip (title) para quien lo necesite tal cual.
 function logDisplayLabel(name) {
   if (name === 'latest.log') {
-    return 'Log actual';
+    return t('Log actual');
   }
   if (name === 'debug.log') {
-    return 'Debug actual';
+    return t('Debug actual');
   }
   var m = /^debug-(\d+)\.log\.gz$/.exec(name);
   if (m) {
-    return 'Debug rotado ' + m[1];
+    return t('Debug rotado {n}', { n: m[1] });
   }
   return name;
 }
@@ -62,7 +62,7 @@ function renderLogFileList(logs, crashes) {
   var logList = document.getElementById('log-file-list');
   var crashList = document.getElementById('crash-file-list');
   if (!logs || !logs.length) {
-    logList.innerHTML = '<p class="empty-msg">Sin logs</p>';
+    logList.innerHTML = '<p class="empty-msg">' + t('Sin logs') + '</p>';
   } else {
     logList.innerHTML = '';
     logs.forEach(function(file) {
@@ -77,7 +77,7 @@ function renderLogFileList(logs, crashes) {
     });
   }
   if (!crashes || !crashes.length) {
-    crashList.innerHTML = emptyArt('sapling', 'Ni un crash', 'Disfrútalo mientras dure.', null, true);
+    crashList.innerHTML = emptyArt('sapling', t('Ni un crash'), t('Disfrútalo mientras dure.'), null, true);
   } else {
     crashList.innerHTML = '';
     crashes.forEach(function(file) {
@@ -123,7 +123,7 @@ function loadLogFile(filename) {
       renderCrashInfo(data.crash_info);
     })
     .catch(function() {
-      viewer.innerHTML = '<span class="text-red">Error al cargar archivo</span>';
+      viewer.innerHTML = '<span class="text-red">' + t('Error al cargar archivo') + '</span>';
     });
 }
 
@@ -149,7 +149,7 @@ function renderCrashInfo(crashInfo) {
         + escHtml(name) + '</code>';
     }).join('');
   } else {
-    modsEl.innerHTML = '<span class="text-muted">No se pudo identificar un mod concreto</span>';
+    modsEl.innerHTML = '<span class="text-muted">' + t('No se pudo identificar un mod concreto') + '</span>';
   }
 
   var causedByDetails = document.getElementById('crash-caused-by-details');
@@ -234,8 +234,8 @@ function renderLogPage() {
     }
     html += '<div class="log-line ' + cls + '"><span class="log-line-num">' + item.num + '</span><span class="log-line-text">' + escaped + '</span></div>';
   });
-  viewer.innerHTML = html || '<span class="text-muted">Sin resultados</span>';
-  document.getElementById('log-match-count').textContent = filtered.length + ' / ' + logViewState.totalLines + ' líneas';
+  viewer.innerHTML = html || '<span class="text-muted">' + t('Sin resultados') + '</span>';
+  document.getElementById('log-match-count').textContent = t('{shown} / {total} líneas', { shown: filtered.length, total: logViewState.totalLines });
 
   renderModModalPagination('log-pagination', logViewState.page, totalPages, function(p) {
     logViewState.page = p;

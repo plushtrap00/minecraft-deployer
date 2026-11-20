@@ -2,8 +2,8 @@
 
 // -- Posibles mods duplicados ---------------------------------------------------
 var DUPLICATE_CONFIDENCE_LABEL = {
-  high: { cls: 'dup-high', text: 'Mismo ID interno' },
-  medium: { cls: 'dup-medium', text: 'Nombre muy parecido' }
+  high: { cls: 'dup-high', text: t('Mismo ID interno') },
+  medium: { cls: 'dup-medium', text: t('Nombre muy parecido') }
 };
 
 document.getElementById('mod-duplicates-btn').addEventListener('click', openDuplicatesModal);
@@ -12,7 +12,7 @@ function openDuplicatesModal() {
   if (!currentModpack) {
     return;
   }
-  document.getElementById('mod-duplicates-modal-body').innerHTML = '<p class="empty-msg">Buscando posibles duplicados…</p>';
+  document.getElementById('mod-duplicates-modal-body').innerHTML = '<p class="empty-msg">' + t('Buscando posibles duplicados…') + '</p>';
   document.getElementById('mod-duplicates-modal').classList.add('show');
 
   apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/duplicates')
@@ -21,14 +21,14 @@ function openDuplicatesModal() {
       renderDuplicatesModal(data.groups || []);
     })
     .catch(function(error) {
-      document.getElementById('mod-duplicates-modal-body').innerHTML = modErrorHtml('No se pudo conectar con el panel: ' + error.message);
+      document.getElementById('mod-duplicates-modal-body').innerHTML = modErrorHtml(t('No se pudo conectar con el panel: {error}', { error: error.message }));
     });
 }
 
 function renderDuplicatesModal(groups) {
   var body = document.getElementById('mod-duplicates-modal-body');
   if (!groups.length) {
-    body.innerHTML = emptyArt('sapling', 'Sin duplicados', 'No hay dos mods que parezcan el mismo. Todo en orden.');
+    body.innerHTML = emptyArt('sapling', t('Sin duplicados'), t('No hay dos mods que parezcan el mismo. Todo en orden.'));
     return;
   }
   body.innerHTML = groups.map(function(group) {
@@ -37,11 +37,11 @@ function renderDuplicatesModal(groups) {
       return '<div class="mod-modal-item">'
         + '<div class="mod-info"><div class="mod-display">' + escHtml(mod.display_name) + '</div>'
         + '<div class="mod-modal-detail">' + escHtml(mod.filename) + (mod.mod_version ? ' · v' + escHtml(mod.mod_version) : '') + '</div></div>'
-        + '<button type="button" class="btn-danger mod-delete btn-xs shrink-0 btn-solid" title="Borrar mod" data-filename="' + escHtml(mod.filename) + '" aria-label="Borrar mod">' + icon('trash-2') + '</button>'
+        + '<button type="button" class="btn-danger mod-delete btn-xs shrink-0 btn-solid" title="' + t('Borrar mod') + '" data-filename="' + escHtml(mod.filename) + '" aria-label="' + t('Borrar mod') + '">' + icon('trash-2') + '</button>'
         + '</div>';
     }).join('');
     return '<div class="dup-group">'
-      + '<div class="dup-group-head">' + '<span class="dup-dot ' + conf.cls + '"></span><b>' + escHtml(conf.text) + '</b> — ' + escHtml(group.reason) + '</div>'
+      + '<div class="dup-group-head">' + '<span class="dup-dot ' + conf.cls + '"></span><b>' + escHtml(conf.text) + '</b> — ' + escHtml(t(group.reason)) + '</div>'
       + modsHtml
       + '</div>';
   }).join('');
@@ -73,7 +73,7 @@ function openClientOnlyModal() {
   if (!currentModpack) {
     return;
   }
-  document.getElementById('mod-client-only-modal-body').innerHTML = '<p class="empty-msg">Analizando metadata de los mods…</p>';
+  document.getElementById('mod-client-only-modal-body').innerHTML = '<p class="empty-msg">' + t('Analizando metadata de los mods…') + '</p>';
   document.getElementById('mod-client-only-modal').classList.add('show');
 
   apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/client-only')
@@ -83,17 +83,17 @@ function openClientOnlyModal() {
       renderClientOnlyModal(data);
     })
     .catch(function(error) {
-      document.getElementById('mod-client-only-modal-body').innerHTML = modErrorHtml('No se pudo conectar con el panel: ' + error.message);
+      document.getElementById('mod-client-only-modal-body').innerHTML = modErrorHtml(t('No se pudo conectar con el panel: {error}', { error: error.message }));
     });
 }
 
 function renderClientOnlyGroup(items) {
   return '<div class="mods-table-wrap mb-s">' + items.map(function(mod) {
     var disabledClass = mod.enabled ? '' : ' is-disabled';
-    var confidenceText = mod.confidence === 'high' ? ' · confianza alta' : (mod.confidence === 'medium' ? ' · confianza media' : '');
-    var disabledNote = mod.enabled ? '' : ' · <span class="text-yellow">desactivado</span>';
-    var reasonLine = mod.reason ? '<div class="mod-modal-detail">' + escHtml(mod.reason) + confidenceText + '</div>' : '';
-    var toggleTitle = mod.enabled ? 'Deshabilitar mod' : 'Habilitar mod';
+    var confidenceText = mod.confidence === 'high' ? t(' · confianza alta') : (mod.confidence === 'medium' ? t(' · confianza media') : '');
+    var disabledNote = mod.enabled ? '' : ' · <span class="text-yellow">' + t('desactivado') + '</span>';
+    var reasonLine = mod.reason ? '<div class="mod-modal-detail">' + escHtml(t(mod.reason)) + confidenceText + '</div>' : '';
+    var toggleTitle = mod.enabled ? t('Deshabilitar mod') : t('Habilitar mod');
     var toggleIcon = mod.enabled ? icon('pause') : icon('play');
     return '<div class="mod-modal-item' + disabledClass + '">'
       + '<div class="mod-info"><div class="mod-display">' + escHtml(mod.display_name) + '</div>'
@@ -101,7 +101,7 @@ function renderClientOnlyGroup(items) {
       + reasonLine
       + '</div>'
       + '<button type="button" class="btn-secondary client-only-toggle btn-xs shrink-0" title="' + toggleTitle + '" data-filename="' + escHtml(mod.filename) + '">' + toggleIcon + '</button>'
-      + '<button type="button" class="btn-danger client-only-delete btn-xs shrink-0 btn-solid" title="Borrar mod" data-filename="' + escHtml(mod.filename) + '" aria-label="Borrar mod">' + icon('trash-2') + '</button>'
+      + '<button type="button" class="btn-danger client-only-delete btn-xs shrink-0 btn-solid" title="' + t('Borrar mod') + '" data-filename="' + escHtml(mod.filename) + '" aria-label="' + t('Borrar mod') + '">' + icon('trash-2') + '</button>'
       + '</div>';
   }).join('') + '</div>';
 }
@@ -112,19 +112,19 @@ function renderClientOnlyModal(data) {
   var unknown = data.unknown || [];
   var server = data.server || [];
 
-  var html = '<div class="list-subhead">Solo cliente (' + clientOnly.length + ')</div>';
+  var html = '<div class="list-subhead">' + t('Solo cliente') + ' (' + clientOnly.length + ')</div>';
   html += clientOnly.length
     ? renderClientOnlyGroup(clientOnly)
-    : emptyArt('sapling', 'Nada que sobre', 'No hay ningún mod que sea solo para el cliente.');
+    : emptyArt('sapling', t('Nada que sobre'), t('No hay ningún mod que sea solo para el cliente.'));
 
   if (unknown.length) {
-    html += '<div class="list-subhead mt-l">Categoría desconocida (' + unknown.length + ')</div>'
-      + '<p class="hint mb-s">Este mod no declara de forma clara si hace falta en el servidor — revísalo a mano si no estás seguro.</p>'
+    html += '<div class="list-subhead mt-l">' + t('Categoría desconocida') + ' (' + unknown.length + ')</div>'
+      + '<p class="hint mb-s">' + t('Este mod no declara de forma clara si hace falta en el servidor — revísalo a mano si no estás seguro.') + '</p>'
       + renderClientOnlyGroup(unknown);
   }
 
   html += '<div class="list-footnote">'
-    + server.length + ' mod(s) detectado(s) como necesarios en el servidor (no se listan aquí).</div>';
+    + t('{n} mod(s) detectado(s) como necesarios en el servidor (no se listan aquí).', { n: server.length }) + '</div>';
 
   body.innerHTML = html;
 }
@@ -154,19 +154,19 @@ function clientOnlyToggleMod(filename) {
     })
     .then(function(result) {
       if (result.ok && result.data.success) {
-        showToast(result.data.enabled ? 'Mod habilitado' : 'Mod deshabilitado', 'success');
+        showToast(result.data.enabled ? t('Mod habilitado') : t('Mod deshabilitado'), 'success');
         updateModStateLocally(filename, result.data.filename, result.data.enabled);
       } else {
-        showToast(result.data.detail || 'Error al cambiar el estado del mod', 'error');
+        showToast(result.data.detail || t('Error al cambiar el estado del mod'), 'error');
       }
     })
-    .catch(function() { showToast('No se pudo conectar con el panel. Comprueba la conexión y vuelve a intentarlo.', 'error'); });
+    .catch(function() { showToast(t('No se pudo conectar con el panel. Comprueba la conexión y vuelve a intentarlo.'), 'error'); });
 }
 
 function clientOnlyDeleteMod(filename) {
   showConfirm(
-    'Borrar "' + filename + '"',
-    'Esta acción no se puede deshacer.',
+    t('Borrar «{name}»', { name: filename }),
+    t('Esta acción no se puede deshacer.'),
     function() {
       apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/' + encodeURIComponent(filename), {
         method: 'DELETE'
@@ -174,14 +174,14 @@ function clientOnlyDeleteMod(filename) {
         .then(function(response) { return response.json(); })
         .then(function(data) {
           if (data.success) {
-            showToast('Mod borrado', 'success');
+            showToast(t('Mod borrado'), 'success');
             unlockAchievement('tidy');
             removeModLocally(filename);
           } else {
-            showToast(data.detail || 'Error al borrar', 'error');
+            showToast(data.detail || t('Error al borrar'), 'error');
           }
         })
-        .catch(function() { showToast('No se pudo conectar con el panel. Comprueba la conexión y vuelve a intentarlo.', 'error'); });
+        .catch(function() { showToast(t('No se pudo conectar con el panel. Comprueba la conexión y vuelve a intentarlo.'), 'error'); });
     }
   );
 }

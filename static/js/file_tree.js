@@ -15,7 +15,7 @@ function loadModConfigs() {
     })
     .catch(function() {
       document.getElementById('mod-tree').innerHTML =
-        '<p class="empty-msg error-msg pad-m">No se pudieron cargar los archivos de config. Vuelve a abrir la pestaña para reintentarlo.</p>';
+        '<p class="empty-msg error-msg pad-m">' + t('No se pudieron cargar los archivos de config. Vuelve a abrir la pestaña para reintentarlo.') + '</p>';
     });
 }
 
@@ -95,8 +95,8 @@ function getFilteredFiles(files, groupKey, filter) {
 
 // Texto del pie del árbol: el total, o «X de Y» si hay un filtro puesto.
 function treeCountText(shown, total, singular, plural, hasFilter) {
-  var noun = total === 1 ? singular : plural;
-  return hasFilter ? shown + ' de ' + total + ' ' + noun : total + ' ' + noun;
+  var noun = total === 1 ? t(singular) : t(plural);
+  return hasFilter ? t('{shown} de {total} {noun}', { shown: shown, total: total, noun: noun }) : total + ' ' + noun;
 }
 
 // Cuenta los archivos de los grupos dados (solo los que pasan el filtro, si hay).
@@ -129,14 +129,14 @@ function renderTree(which) {
   }
   count.style.display = '';
   if (!keys.length) {
-    tree.innerHTML = '<p class="empty-msg pad-m">Sin resultados</p>';
+    tree.innerHTML = '<p class="empty-msg pad-m">' + t('Sin resultados') + '</p>';
     return;
   }
   var html = '';
   keys.forEach(function(key) {
     var label;
     if (key === '__root__') {
-      label = isKjs ? 'Raíz de kubejs' : 'Raíz de config';
+      label = isKjs ? t('Raíz de kubejs') : t('Raíz de config');
     } else {
       label = key;
     }

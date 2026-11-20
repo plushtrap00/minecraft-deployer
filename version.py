@@ -6,6 +6,9 @@ documentación de la API. Cada commit sube la versión (2.A.B, cada cifra de 0
 a 9: después de 2.0.9 va 2.1.0) y se etiqueta con `git tag v<versión>`.
 
 Historial resumido:
+- 2.2.4 (2026-11-20): en inglés ya sale también todo lo de gestionar
+  modpacks: mods, búsqueda e instalación, dependencias, mundos, logs, KubeJS,
+  RAM, modloader y el editor de archivos.
 - 2.2.3 (2026-11-20): en inglés ya salen también los mensajes que aparecen
   al usar el panel: avisos, confirmaciones, estados del servidor, Sistema,
   Jugadores, Copias, Automatización, Usuarios y Configuración. Las fechas,
@@ -88,4 +91,4 @@ Historial resumido:
   otros usuarios.
 - 1.x: todo lo anterior (sin numerar).
 """
-APP_VERSION = "2.2.3"
+APP_VERSION = "2.2.4"

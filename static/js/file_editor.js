@@ -77,7 +77,7 @@ function parseConfigText(text) {
 function renderConfigForm(sections) {
   var el = document.getElementById('cfg-form-content');
   if (!sections || !sections.length) {
-    el.innerHTML = '<p class="empty-msg">No se pudieron detectar campos en este archivo.</p>';
+    el.innerHTML = '<p class="empty-msg">' + t('No se pudieron detectar campos en este archivo.') + '</p>';
     return;
   }
   var html = '';
@@ -120,7 +120,7 @@ function renderConfigForm(sections) {
       if (field.defVal || field.range) {
         html += '<div class="cfg-field-meta">';
         if (field.defVal) {
-          html += 'Por defecto: <span>' + escHtml(field.defVal) + '</span> ';
+          html += t('Por defecto:') + ' <span>' + escHtml(field.defVal) + '</span> ';
         }
         if (field.range) {
           html += '&nbsp;·&nbsp; Rango: <span>' + escHtml(field.range) + '</span>';
@@ -234,7 +234,7 @@ function openFile(path, type) {
   });
   var pathPrefix = type === 'kjs' ? 'kubejs/' : (type === 'wf' ? selectedWfWorld + '/' : 'config/');
   document.getElementById('modal-path').textContent = pathPrefix + path;
-  document.getElementById('config-editor').value = 'Cargando…';
+  document.getElementById('config-editor').value = t('Cargando…');
   cfgParsed = null;
   cfgRawText = '';
   editorBaseline = null;
@@ -254,7 +254,7 @@ function openFile(path, type) {
     document.getElementById('cfg-btn-raw').classList.add('active');
     hint.textContent = '';
   } else {
-    hint.textContent = 'Mostrando formulario generado del archivo';
+    hint.textContent = t('Mostrando formulario generado del archivo');
     setCfgMode('form');
   }
   document.getElementById('editor-modal').classList.add('show');
@@ -278,7 +278,7 @@ function openFile(path, type) {
       syncLines();
     })
     .catch(function() {
-      document.getElementById('config-editor').value = '# Error al cargar';
+      document.getElementById('config-editor').value = t('# Error al cargar');
       syncLines();
     });
 }
@@ -300,7 +300,7 @@ function editorIsOpen() {
   return document.getElementById('editor-modal').classList.contains('show');
 }
 
-registerUnsaved('editor', 'el archivo abierto en el editor',
+registerUnsaved('editor', t('el archivo abierto en el editor'),
   function() { return editorIsOpen() && editorBaseline !== null && currentEditorText() !== editorBaseline; },
   function() { editorBaseline = null; });
 
@@ -350,13 +350,13 @@ document.getElementById('modal-save-btn').addEventListener('click', function() {
         if (data.success) {
           cfgRawText = textToSave;
           editorBaseline = currentEditorText();
-          showToast('Archivo guardado', 'success');
+          showToast(t('Archivo guardado'), 'success');
         flashDone(document.getElementById('modal-save-btn'));
         } else {
-          showToast(data.detail || 'No se pudo guardar el archivo', 'error');
+          showToast(data.detail || t('No se pudo guardar el archivo'), 'error');
         }
       })
-      .catch(function() { showToast('No se pudo guardar el archivo', 'error'); });
+      .catch(function() { showToast(t('No se pudo guardar el archivo'), 'error'); });
   });
 });
 
@@ -385,7 +385,7 @@ function syncLines() {
   }
   ln.textContent = nums;
   var lineNum = ta.value.substring(0, ta.selectionStart).split('\n').length;
-  document.getElementById('line-info').textContent = 'Línea ' + lineNum + ' de ' + lines.length;
+  document.getElementById('line-info').textContent = t('Línea {n} de {total}', { n: lineNum, total: lines.length });
 }
 
 ta.addEventListener('input', syncLines);

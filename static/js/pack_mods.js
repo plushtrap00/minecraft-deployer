@@ -6,15 +6,15 @@
 var packModsState = { items: [], filter: 'all', query: '', token: 0 };
 
 var PACK_MOD_STATUS = {
-  client_only: ['Solo cliente', 'El propio mod indica que no funciona en un servidor: no se instala.'],
-  not_in_server_pack: ['Solo cliente', 'El autor no lo incluye en su Server Pack: es un mod para los jugadores, el servidor no lo necesita.'],
-  known_bad: ['Rompe el servidor', 'Se sabe que hace caer un servidor dedicado: no se instala.'],
-  blocked: ['A mano', 'El autor no deja descargarlo desde otras aplicaciones: tendrás que subirlo tú después de instalar.'],
-  not_needed: ['No hace falta', 'No es un mod (resource pack, shader…): el servidor no lo usa.'],
-  unresolved: ['No encontrado', 'CurseForge ya no tiene este archivo.']
+  client_only: [t('Solo cliente'), t('El propio mod indica que no funciona en un servidor: no se instala.')],
+  not_in_server_pack: [t('Solo cliente'), t('El autor no lo incluye en su Server Pack: es un mod para los jugadores, el servidor no lo necesita.')],
+  known_bad: [t('Rompe el servidor'), t('Se sabe que hace caer un servidor dedicado: no se instala.')],
+  blocked: [t('A mano'), t('El autor no deja descargarlo desde otras aplicaciones: tendrás que subirlo tú después de instalar.')],
+  not_needed: [t('No hace falta'), t('No es un mod (resource pack, shader…): el servidor no lo usa.')],
+  unresolved: [t('No encontrado'), t('CurseForge ya no tiene este archivo.')]
 };
 
-var PACK_MOD_KINDS = { resourcepack: 'Resource pack', shader: 'Shader', datapack: 'Datapack', other: 'Otro' };
+var PACK_MOD_KINDS = { resourcepack: t('Resource pack'), shader: t('Shader'), datapack: t('Datapack'), other: t('Otro') };
 
 // state: 'hidden' | 'loading' | 'ready'. summary: {mods, install, total} o null.
 function setDlPackModsButton(state, summary) {
@@ -23,11 +23,11 @@ function setDlPackModsButton(state, summary) {
   btn.hidden = state === 'hidden';
   btn.disabled = state === 'loading';
   if (state === 'loading') {
-    label.textContent = 'Contando mods…';
+    label.textContent = t('Contando mods…');
   } else if (summary && summary.mods) {
-    label.textContent = summary.mods === 1 ? 'Ver el mod que trae' : 'Ver los ' + summary.mods.toLocaleString('es-ES') + ' mods que trae';
+    label.textContent = summary.mods === 1 ? t('Ver el mod que trae') : t('Ver los {n} mods que trae', { n: summary.mods.toLocaleString(APP_LOCALE) });
   } else {
-    label.textContent = 'Ver mods';
+    label.textContent = t('Ver mods');
   }
 }
 
@@ -48,14 +48,14 @@ function openPackModsModal() {
   }
   var option = versionSelect.options[versionSelect.selectedIndex];
   var versionLabel = option ? option.textContent.replace(/\s*\(.*$/, '') : '';
-  document.getElementById('pack-mods-title').textContent = (dlSelectedPack.title || 'Modpack') + (versionLabel ? ' · ' + versionLabel : '');
+  document.getElementById('pack-mods-title').textContent = (dlSelectedPack.title || t('Modpack')) + (versionLabel ? ' · ' + versionLabel : '');
   document.getElementById('pack-mods-summary').innerHTML = '';
   document.getElementById('pack-mods-filter').value = '';
   packModsState.items = [];
   packModsState.query = '';
   setPackModsFilter('all');
   var body = document.getElementById('pack-mods-body');
-  body.innerHTML = modSearchSpinnerHtml('Abriendo el modpack…');
+  body.innerHTML = modSearchSpinnerHtml(t('Abriendo el modpack…'));
   document.getElementById('pack-mods-modal').classList.add('show');
 
   var token = ++packModsState.token;
@@ -68,7 +68,7 @@ function openPackModsModal() {
         return;
       }
       if (!result.ok) {
-        body.innerHTML = modErrorHtml(result.data.detail || 'No se pudo leer el modpack');
+        body.innerHTML = modErrorHtml(result.data.detail || t('No se pudo leer el modpack'));
         return;
       }
       packModsState.items = result.data.mods || [];
@@ -78,7 +78,7 @@ function openPackModsModal() {
     })
     .catch(function(error) {
       if (token === packModsState.token) {
-        body.innerHTML = modErrorHtml('No se pudo conectar con el panel: ' + error.message);
+        body.innerHTML = modErrorHtml(t('No se pudo conectar con el panel: {error}', { error: error.message }));
       }
     });
 }
@@ -89,12 +89,16 @@ function renderPackModsSummary() {
   var installing = mods.filter(function(m) { return m.status === 'install'; }).length;
   var skipped = items.filter(packModSkipped).length;
   var extras = items.filter(function(m) { return m.kind !== 'mod' && m.status === 'install'; }).length;
-  var parts = ['<b>' + installing.toLocaleString('es-ES') + '</b> ' + (installing === 1 ? 'mod se instala' : 'mods se instalan') + ' en el servidor'];
+  var parts = [installing === 1
+    ? t('<b>1</b> mod se instala en el servidor')
+    : t('<b>{n}</b> mods se instalan en el servidor', { n: installing.toLocaleString(APP_LOCALE) })];
   if (extras) {
-    parts.push('<b>' + extras + '</b> ' + (extras === 1 ? 'archivo más' : 'archivos más') + ' (resource packs, shaders…)');
+    parts.push(extras === 1
+      ? t('<b>1</b> archivo más (resource packs, shaders…)')
+      : t('<b>{n}</b> archivos más (resource packs, shaders…)', { n: extras }));
   }
   if (skipped) {
-    parts.push('<b>' + skipped + '</b> no se ' + (skipped === 1 ? 'instala' : 'instalan'));
+    parts.push(skipped === 1 ? t('<b>1</b> no se instala') : t('<b>{n}</b> no se instalan', { n: skipped }));
   }
   document.getElementById('pack-mods-summary').innerHTML = parts.join(' · ');
 
@@ -113,14 +117,14 @@ function packModRowHtml(item) {
       : '<span class="mod-search-icon mod-search-icon-empty">' + icon(item.kind === 'mod' ? 'puzzle' : 'package') + '</span>')
     + '</span>';
   var name = isWebUrl(item.page_url)
-    ? '<a href="' + escHtml(item.page_url) + '" target="_blank" rel="noopener" title="Ver la página del mod">' + escHtml(item.name) + '</a>'
+    ? '<a href="' + escHtml(item.page_url) + '" target="_blank" rel="noopener" title="' + t('Ver la página del mod') + '">' + escHtml(item.name) + '</a>'
     : escHtml(item.name);
   var tags = '';
   if (PACK_MOD_KINDS[item.kind]) {
     tags += '<span class="search-chip">' + PACK_MOD_KINDS[item.kind] + '</span>';
   }
   if (item.embedded) {
-    tags += '<span class="search-chip" title="Viene dentro del propio modpack, no se descarga aparte">Incluido en el pack</span>';
+    tags += '<span class="search-chip" title="' + t('Viene dentro del propio modpack, no se descarga aparte') + '">' + t('Incluido en el pack') + '</span>';
   }
   var status = PACK_MOD_STATUS[item.status];
   if (status) {
@@ -155,14 +159,14 @@ function renderPackMods() {
   });
   var notice = '';
   if (packModsState.serverPack === 'exact') {
-    notice = '<div class="mb-s">' + noticeHtml('info', 'Esta versión trae «Server Files» oficiales, así que se instala ese paquete tal cual: esta es su lista de mods.') + '</div>';
+    notice = '<div class="mb-s">' + noticeHtml('info', t('Esta versión trae «Server Files» oficiales, así que se instala ese paquete tal cual: esta es su lista de mods.')) + '</div>';
   } else if (packModsState.serverPack === 'approx') {
-    notice = '<div class="mb-s">' + noticeHtml('info', 'Esta versión trae «Server Files» oficiales y se instalará ese paquete, pero no se ha podido leer su contenido: esta lista es la del modpack completo y el servidor puede llevar algunos mods menos (los de cliente).') + '</div>';
+    notice = '<div class="mb-s">' + noticeHtml('info', t('Esta versión trae «Server Files» oficiales y se instalará ese paquete, pero no se ha podido leer su contenido: esta lista es la del modpack completo y el servidor puede llevar algunos mods menos (los de cliente).')) + '</div>';
   }
   if (!visible.length) {
     body.innerHTML = notice + (packModsState.items.length
-      ? emptyArt('spyglass', 'Nada por aquí', query ? 'Ningún mod coincide con «' + query + '».' : 'No hay nada en este grupo.')
-      : emptyArt('spyglass', 'Modpack vacío', 'Esta versión no trae mods.'));
+      ? emptyArt('spyglass', t('Nada por aquí'), query ? t('Ningún mod coincide con «{query}».', { query: query }) : t('No hay nada en este grupo.'))
+      : emptyArt('spyglass', t('Modpack vacío'), t('Esta versión no trae mods.')));
     return;
   }
   body.innerHTML = notice + '<div class="pack-mod-list">' + visible.map(packModRowHtml).join('') + '</div>';

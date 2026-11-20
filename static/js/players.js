@@ -41,7 +41,7 @@ function loadOnlinePlayers() {
     .then(function(data) {
       var players = data.players_online || [];
       card.hidden = false;
-      document.getElementById('players-online-server').textContent = 'en ' + document.getElementById('status-modpack').textContent;
+      document.getElementById('players-online-server').textContent = t('en {server}', { server: document.getElementById('status-modpack').textContent });
       var grid = document.getElementById('players-online');
       if (!players.length) {
         grid.innerHTML = emptyArt('sapling', t('No hay nadie jugando'), t('Cuando alguien entre al servidor aparecerá aquí.'), null, true);

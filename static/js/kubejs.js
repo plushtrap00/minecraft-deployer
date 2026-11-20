@@ -25,13 +25,13 @@ document.getElementById('kjs-confirm-new').addEventListener('click', function() 
   if (subfolderSel === '__custom__') {
     subfolder = document.getElementById('kjs-custom-folder').value.trim().replace(/\\/g, '/');
     if (!subfolder) {
-      flagField(document.getElementById('kjs-custom-folder'), 'Escribe una ruta de carpeta');
+      flagField(document.getElementById('kjs-custom-folder'), t('Escribe una ruta de carpeta'));
       return;
     }
   }
   var filename = document.getElementById('kjs-new-filename').value.trim();
   if (!filename) {
-    flagField(document.getElementById('kjs-new-filename'), 'Escribe un nombre de archivo');
+    flagField(document.getElementById('kjs-new-filename'), t('Escribe un nombre de archivo'));
     return;
   }
   if (!filename.includes('.')) {
@@ -47,14 +47,14 @@ document.getElementById('kjs-confirm-new').addEventListener('click', function() 
     })
       .then(function(r) {
         if (!r.ok) {
-          return r.json().then(function(err) { throw new Error(err.detail || 'Error al crear'); });
+          return r.json().then(function(err) { throw new Error(err.detail || t('Error al crear')); });
         }
         return r.json();
       })
       .then(function(data) {
         document.getElementById('kjs-new-file-form').style.display = 'none';
         document.getElementById('kjs-new-filename').value = '';
-        showToast('Archivo creado', 'success');
+        showToast(t('Archivo creado'), 'success');
         apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/kubejs')
           .then(function(r) { return r.json(); })
           .then(function(kdata) {
@@ -80,7 +80,7 @@ document.getElementById('modal-kjs-delete-btn').addEventListener('click', functi
   }
   var path = selectedConfigPath.slice(4);
   var filename = path.split('/').pop();
-  showConfirm('Borrar "' + filename + '"', 'Esta acción no se puede deshacer.', function() {
+  showConfirm(t('Borrar «{name}»', { name: filename }), t('Esta acción no se puede deshacer.'), function() {
     busyWhile(document.getElementById('modal-kjs-delete-btn'), function() {
       return apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/kubejs-file?path=' + encodeURIComponent(path), {
         method: 'DELETE'
@@ -90,14 +90,14 @@ document.getElementById('modal-kjs-delete-btn').addEventListener('click', functi
         })
         .then(function(result) {
           if (result.ok && result.data.success) {
-            showToast('Archivo borrado', 'success');
+            showToast(t('Archivo borrado'), 'success');
             closeModal(true);
             loadKubejs();
           } else {
-            showToast(result.data.detail || 'Error al borrar', 'error');
+            showToast(result.data.detail || t('Error al borrar'), 'error');
           }
         })
-        .catch(function() { showToast('No se pudo conectar con el panel. Comprueba la conexión y vuelve a intentarlo.', 'error'); });
+        .catch(function() { showToast(t('No se pudo conectar con el panel. Comprueba la conexión y vuelve a intentarlo.'), 'error'); });
     });
   });
 });
@@ -149,13 +149,13 @@ document.getElementById('kjs-move-confirm').addEventListener('click', function()
   if (subfolderSel === '__custom__') {
     subfolder = document.getElementById('kjs-move-custom-folder').value.trim().replace(/\\/g, '/');
     if (!subfolder) {
-      flagField(document.getElementById('kjs-move-custom-folder'), 'Escribe una ruta de carpeta');
+      flagField(document.getElementById('kjs-move-custom-folder'), t('Escribe una ruta de carpeta'));
       return;
     }
   }
   var filename = document.getElementById('kjs-move-filename').value.trim();
   if (!filename) {
-    flagField(document.getElementById('kjs-move-filename'), 'Escribe un nombre de archivo');
+    flagField(document.getElementById('kjs-move-filename'), t('Escribe un nombre de archivo'));
     return;
   }
   var toPath = subfolder === '__root__' ? filename : subfolder.replace(/^\/+|\/+$/g, '') + '/' + filename;
@@ -170,12 +170,12 @@ document.getElementById('kjs-move-confirm').addEventListener('click', function()
     })
       .then(function(r) {
         if (!r.ok) {
-          return r.json().then(function(err) { throw new Error(err.detail || 'Error al mover'); });
+          return r.json().then(function(err) { throw new Error(err.detail || t('Error al mover')); });
         }
         return r.json();
       })
       .then(function() {
-        showToast('Archivo movido', 'success');
+        showToast(t('Archivo movido'), 'success');
         document.getElementById('kjs-move-form').style.display = 'none';
         closeModal();
         loadKubejs();
