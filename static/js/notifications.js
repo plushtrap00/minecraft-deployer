@@ -10,7 +10,7 @@ function loadNotifications() {
   }
   apiJson('/api/admin/notifications').then(function(result) {
     if (!result.ok) {
-      events.innerHTML = noticeHtml('error', 'No se pudieron leer los avisos.');
+      events.innerHTML = noticeHtml('error', t('No se pudieron leer los avisos.'));
       return;
     }
     notifyLoaded = true;
@@ -23,7 +23,7 @@ function loadNotifications() {
     var enabled = data.events || [];
     events.innerHTML = Object.keys(data.available_events).map(function(key) {
       return '<label class="notify-event"><input type="checkbox" value="' + escHtml(key) + '"'
-        + (enabled.indexOf(key) !== -1 ? ' checked' : '') + '> ' + escHtml(data.available_events[key]) + '</label>';
+        + (enabled.indexOf(key) !== -1 ? ' checked' : '') + '> ' + escHtml(t(data.available_events[key])) + '</label>';
     }).join('');
   });
 }
@@ -72,20 +72,20 @@ document.getElementById('notify-detect-btn').addEventListener('click', function(
   var token = tokenInput.value.trim();
   // Vacío vale si ya hay uno guardado (y no se está quitando): lo usa el servidor.
   if (!token && !(tokenInput.dataset.secretSet === '1' && tokenInput.dataset.clear !== '1')) {
-    showToast('Pega primero el token del bot', 'error');
+    showToast(t('Pega primero el token del bot'), 'error');
     return;
   }
   btn.disabled = true;
-  hint.textContent = 'Buscando el último mensaje que le escribiste al bot…';
+  hint.textContent = t('Buscando el último mensaje que le escribiste al bot…');
   postNotify('/api/admin/notifications/detect-chat', { telegram_token: token }).then(function(result) {
     btn.disabled = false;
     if (!result.ok) {
       hint.textContent = '';
-      showToast(result.data.detail || 'No se pudo detectar el chat', 'error');
+      showToast(result.data.detail || t('No se pudo detectar el chat'), 'error');
       return;
     }
     document.getElementById('notify-telegram-chat').value = result.data.chat_id;
-    hint.textContent = 'Encontrado: ' + (result.data.name || result.data.chat_id) + '. Guarda para empezar a recibir avisos.';
+    hint.textContent = t('Encontrado: {name}. Guarda para empezar a recibir avisos.', { name: result.data.name || result.data.chat_id });
   });
 });
 
@@ -95,7 +95,7 @@ document.getElementById('notify-test-btn').addEventListener('click', function() 
   postNotify('/api/admin/notifications/test', notifyFormValues()).then(function(result) {
     btn.disabled = false;
     if (!result.ok) {
-      showToast(result.data.detail || 'No se pudo enviar la prueba', 'error');
+      showToast(result.data.detail || t('No se pudo enviar la prueba'), 'error');
       return;
     }
     var names = { telegram: 'Telegram', discord: 'Discord' };
@@ -103,7 +103,7 @@ document.getElementById('notify-test-btn').addEventListener('click', function() 
       return result.data.results[channel] !== 'ok';
     });
     if (!failed.length) {
-      showToast('Prueba enviada. Mira tu ' + Object.keys(result.data.results).map(function(c) { return names[c]; }).join(' y tu ') + '.', 'success');
+      showToast(t('Prueba enviada. Mira tu {where}.', { where: Object.keys(result.data.results).map(function(c) { return names[c]; }).join(t(' y tu ')) }), 'success');
       unlockAchievement('messenger');
     } else {
       showToast(failed.map(function(c) { return names[c] + ': ' + result.data.results[c]; }).join('. '), 'error');
@@ -116,11 +116,11 @@ document.getElementById('notify-save-btn').addEventListener('click', function() 
   busyWhile(btn, function() {
     return postNotify('/api/admin/notifications', notifyFormValues()).then(function(result) {
       if (result.ok) {
-        showToast('Avisos guardados', 'success');
+        showToast(t('Avisos guardados'), 'success');
         flashDone(btn);
         loadNotifications();
       } else {
-        showToast(result.data.detail || 'No se pudieron guardar los avisos', 'error');
+        showToast(result.data.detail || t('No se pudieron guardar los avisos'), 'error');
       }
     });
   });

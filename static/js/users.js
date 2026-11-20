@@ -5,18 +5,18 @@ function loadUsers() {
     .then(function(users) {
       var list = document.getElementById('users-list');
       if (!users.length) {
-        list.innerHTML = '<p class="empty-msg">No hay usuarios.</p>';
+        list.innerHTML = '<p class="empty-msg">' + t('No hay usuarios.') + '</p>';
         return;
       }
       list.innerHTML = users.map(function(u) {
         var isAdmin = u.role === 'admin';
         var badge = isAdmin
           ? '<span class="role-badge role-admin">Admin</span>'
-          : '<span class="role-badge role-user">Usuario</span>';
+          : '<span class="role-badge role-user">' + t('Usuario') + '</span>';
         var actions = isAdmin ? '' :
           '<div class="pe-actions">'
-          + '<button class="btn-ghost user-password-btn btn-xs" data-user="' + escHtml(u.username) + '">' + icon('lock') + 'Cambiar contraseña</button>'
-          + '<button class="btn-danger user-delete-btn btn-xs" data-user="' + escHtml(u.username) + '">' + icon('trash-2') + 'Eliminar</button></div>';
+          + '<button class="btn-ghost user-password-btn btn-xs" data-user="' + escHtml(u.username) + '">' + icon('lock') + t('Cambiar contraseña') + '</button>'
+          + '<button class="btn-danger user-delete-btn btn-xs" data-user="' + escHtml(u.username) + '">' + icon('trash-2') + t('Eliminar') + '</button></div>';
         return '<div class="player-entry">'
           + '<span class="pe-name">' + escHtml(u.username) + '</span>'
           + badge + actions
@@ -24,16 +24,16 @@ function loadUsers() {
       }).join('');
     })
     .catch(function() {
-      document.getElementById('users-list').innerHTML = '<p class="empty-msg">Error cargando usuarios.</p>';
+      document.getElementById('users-list').innerHTML = '<p class="empty-msg">' + t('Error cargando usuarios.') + '</p>';
     });
 }
 
 function deleteUser(username, button) {
   showConfirm(
-    'Eliminar a ' + username,
-    'Esta cuenta ya no podrá entrar al panel. Esta acción no se puede deshacer.',
+    t('Eliminar a {user}', { user: username }),
+    t('Esta cuenta ya no podrá entrar al panel. Esta acción no se puede deshacer.'),
     function() { doDeleteUser(username, button); },
-    { confirmLabel: 'Eliminar usuario' }
+    { confirmLabel: t('Eliminar usuario') }
   );
 }
 
@@ -45,13 +45,13 @@ function doDeleteUser(username, button) {
       })
       .then(function(res) {
         if (res.ok) {
-          showToast('Usuario eliminado', 'success');
+          showToast(t('Usuario eliminado'), 'success');
           loadUsers();
         } else {
-          showToast(res.d.detail || 'No se pudo eliminar el usuario', 'error');
+          showToast(res.d.detail || t('No se pudo eliminar el usuario'), 'error');
         }
       })
-      .catch(function() { showToast('No se pudo conectar con el panel', 'error'); });
+      .catch(function() { showToast(t('No se pudo conectar con el panel'), 'error'); });
   });
 }
 
@@ -72,17 +72,17 @@ var USERNAME_RE = /^[a-zA-Z0-9_-]+$/;
 var PRINTABLE_RE = /^[\x20-\x7E]+$/;
 
 function validateNewUsername(val) {
-  if (!val) return 'El nombre de usuario es obligatorio';
-  if (val.length > 16) return 'Máximo 16 caracteres';
-  if (!USERNAME_RE.test(val)) return 'Solo se permiten letras, números, guion bajo (_) y guion (-)';
+  if (!val) return t('El nombre de usuario es obligatorio');
+  if (val.length > 16) return t('Máximo 16 caracteres');
+  if (!USERNAME_RE.test(val)) return t('Solo se permiten letras, números, guion bajo (_) y guion (-)');
   return '';
 }
 
 function validateNewPassword(val) {
-  if (!val) return 'La contraseña es obligatoria';
-  if (val.length < 8) return 'Mínimo 8 caracteres';
-  if (val.length > 72) return 'Máximo 72 caracteres';
-  if (!PRINTABLE_RE.test(val)) return 'Solo se permiten caracteres estándar (sin emojis ni símbolos raros)';
+  if (!val) return t('La contraseña es obligatoria');
+  if (val.length < 8) return t('Mínimo 8 caracteres');
+  if (val.length > 72) return t('Máximo 72 caracteres');
+  if (!PRINTABLE_RE.test(val)) return t('Solo se permiten caracteres estándar (sin emojis ni símbolos raros)');
   return '';
 }
 
@@ -131,7 +131,7 @@ document.getElementById('add-user-btn').addEventListener('click', function() {
     })
     .then(function(res) {
       if (res.ok) {
-        showToast('Usuario "' + username + '" creado', 'success');
+        showToast(t('Usuario «{user}» creado', { user: username }), 'success');
         var nameInp = document.getElementById('new-user-name');
         var passInp = document.getElementById('new-user-pass');
         nameInp.value = '';
@@ -143,12 +143,12 @@ document.getElementById('add-user-btn').addEventListener('click', function() {
         document.getElementById('add-user-btn').disabled = true;
         loadUsers();
       } else {
-        showToast(res.d.detail || 'Error al crear usuario', 'error');
+        showToast(res.d.detail || t('Error al crear usuario'), 'error');
         document.getElementById('add-user-btn').disabled = false;
       }
     })
     .catch(function() {
-      showToast('No se pudo conectar con el panel. Comprueba la conexión y vuelve a intentarlo.', 'error');
+      showToast(t('No se pudo conectar con el panel. Comprueba la conexión y vuelve a intentarlo.'), 'error');
       document.getElementById('add-user-btn').disabled = false;
     });
 });

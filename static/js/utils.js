@@ -36,7 +36,7 @@ function setFill(el, percent) {
 // CurseForge, token de Telegram, webhook de Discord): solo si están puestos.
 // El campo queda vacío; dejarlo así al guardar conserva el que hay, y el
 // botón [data-clear-secret] marca que se quite.
-var SECRET_SET_PLACEHOLDER = 'Guardado (escribe otro para cambiarlo)';
+var SECRET_SET_PLACEHOLDER = t('Guardado (escribe otro para cambiarlo)');
 
 function setSecretField(inputId, isSet) {
   var input = document.getElementById(inputId);
@@ -50,7 +50,7 @@ function setSecretField(inputId, isSet) {
   var button = document.querySelector('[data-clear-secret="' + inputId + '"]');
   if (button) {
     button.hidden = !isSet;
-    button.textContent = 'Quitar';
+    button.textContent = t('Quitar');
   }
 }
 
@@ -72,12 +72,12 @@ document.addEventListener('click', function(event) {
   if (input.dataset.clear !== '1') {
     input.dataset.clear = '1';
     input.value = '';
-    input.placeholder = 'Se quitará al guardar';
-    button.textContent = 'No quitar';
+    input.placeholder = t('Se quitará al guardar');
+    button.textContent = t('No quitar');
   } else {
     delete input.dataset.clear;
     input.placeholder = SECRET_SET_PLACEHOLDER;
-    button.textContent = 'Quitar';
+    button.textContent = t('Quitar');
   }
 });
 
@@ -88,7 +88,7 @@ function icon(name) {
 // Bloque de carga con la forma aproximada de una lista (ver .skeleton-rows en
 // base.css), en lugar de un "Cargando…" suelto.
 function loadingHtml() {
-  return '<div class="skeleton-rows" role="status" aria-label="Cargando"><div></div><div></div><div></div></div>';
+  return '<div class="skeleton-rows" role="status" aria-label="' + t('Cargando') + '"><div></div><div></div><div></div></div>';
 }
 
 // Botón ocupado mientras dura su petición: spinner en lugar del icono (o
@@ -215,7 +215,7 @@ function apiJson(url, opts) {
         .then(function(data) { return { ok: response.ok, status: response.status, data: data || {} }; });
     })
     .catch(function() {
-      return { ok: false, status: 0, data: { detail: 'No se pudo conectar con el panel. Comprueba la conexión y vuelve a intentarlo.' } };
+      return { ok: false, status: 0, data: { detail: t('No se pudo conectar con el panel. Comprueba la conexión y vuelve a intentarlo.') } };
     });
 }
 
@@ -229,26 +229,26 @@ function formatBytes(bytes) {
     unit += 1;
   }
   var digits = unit >= 2 && value < 10 ? 1 : 0;
-  return value.toLocaleString('es-ES', { maximumFractionDigits: digits }) + ' ' + units[unit];
+  return value.toLocaleString(APP_LOCALE, { maximumFractionDigits: digits }) + ' ' + units[unit];
 }
 
 // "hace 3 días", "ayer", "hace 2 h"... para fechas en segundos epoch.
 function formatRelativeDate(epochSeconds) {
   var sec = Math.max(0, Math.floor(Date.now() / 1000 - epochSeconds));
   if (sec < 3600) {
-    return sec < 120 ? 'ahora mismo' : 'hace ' + Math.floor(sec / 60) + ' min';
+    return sec < 120 ? t('ahora mismo') : t('hace {n} min', { n: Math.floor(sec / 60) });
   }
   if (sec < 86400) {
-    return 'hace ' + Math.floor(sec / 3600) + ' h';
+    return t('hace {n} h', { n: Math.floor(sec / 3600) });
   }
   var days = Math.floor(sec / 86400);
   if (days === 1) {
-    return 'ayer';
+    return t('ayer');
   }
   if (days < 30) {
-    return 'hace ' + days + ' días';
+    return t('hace {n} días', { n: days });
   }
-  return new Date(epochSeconds * 1000).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+  return new Date(epochSeconds * 1000).toLocaleDateString(APP_LOCALE, { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 // Los diálogos y modales reciben su icono como emoji desde muchos sitios
@@ -374,8 +374,8 @@ function checkUploadSize(files) {
     return true;
   }
   var limitText = limitMb >= 1024 ? (limitMb / 1024) + ' GB' : limitMb + ' MB';
-  showAlert('«' + tooBig[0].name + '» ocupa ' + formatBytes(tooBig[0].size) + ' y el límite de subida es de '
-    + limitText + '. Un administrador puede cambiarlo en Configuración → Constantes → Subidas.', '⚠️');
+  showAlert(t('«{name}» ocupa {size} y el límite de subida es de {limit}. Un administrador puede cambiarlo en Configuración → Constantes → Subidas.',
+    { name: tooBig[0].name, size: formatBytes(tooBig[0].size), limit: limitText }), '⚠️');
   return false;
 }
 
@@ -384,10 +384,10 @@ function checkUploadSize(files) {
 function showAlert(msg, icon) {
   var overlay = document.getElementById('dialog-overlay');
   document.getElementById('dialog-icon').innerHTML = emojiIcon(icon || 'ℹ️');
-  document.getElementById('dialog-title').textContent = 'Aviso';
+  document.getElementById('dialog-title').textContent = t('Aviso');
   document.getElementById('dialog-msg').textContent = msg;
   var btns = document.getElementById('dialog-buttons');
-  btns.innerHTML = '<button id="dialog-ok">Aceptar</button>';
+  btns.innerHTML = '<button id="dialog-ok">' + t('Aceptar') + '</button>';
   document.getElementById('dialog-ok').addEventListener('click', function() {
     overlay.classList.remove('show');
   });
@@ -414,8 +414,8 @@ function showConfirm(title, msg, onConfirm, options) {
   document.getElementById('dialog-msg').textContent = msg;
   var btns = document.getElementById('dialog-buttons');
   var tone = options.tone || 'red';
-  btns.innerHTML = '<button class="btn-secondary" id="dialog-cancel">' + escHtml(options.cancelLabel || 'Cancelar') + '</button>'
-    + '<button id="dialog-ok" class="btn-tone-' + tone + '">' + escHtml(options.confirmLabel || 'Confirmar') + '</button>';
+  btns.innerHTML = '<button class="btn-secondary" id="dialog-cancel">' + escHtml(options.cancelLabel || t('Cancelar')) + '</button>'
+    + '<button id="dialog-ok" class="btn-tone-' + tone + '">' + escHtml(options.confirmLabel || t('Confirmar')) + '</button>';
   document.getElementById('dialog-cancel').addEventListener('click', function() {
     overlay.classList.remove('show');
     if (options.onCancel) {
@@ -450,8 +450,8 @@ document.getElementById('dialog-overlay').addEventListener('click', function(eve
 // las funciones de mostrar/ocultar, para que cualquier archivo pueda usarlas
 // sin duplicar el overlay ni su poll.
 function showRestartOverlay(title, sub) {
-  document.getElementById('restart-overlay-title').textContent = title || 'La app se está reiniciando…';
-  document.getElementById('restart-overlay-sub').textContent = sub || 'Esto puede tardar unos segundos. No cierres esta pestaña.';
+  document.getElementById('restart-overlay-title').textContent = title || t('La app se está reiniciando…');
+  document.getElementById('restart-overlay-sub').textContent = sub || t('Esto puede tardar unos segundos. No cierres esta pestaña.');
   document.getElementById('restart-overlay').classList.add('show');
 }
 
@@ -736,10 +736,10 @@ function confirmLeave(proceed, keys, onCancel) {
     proceed();
     return;
   }
-  var names = dirty.map(function(source) { return source.label; }).join(' y ');
+  var names = joinList(dirty.map(function(source) { return t(source.label); }));
   showConfirm(
-    'Hay cambios sin guardar',
-    'Tienes cambios sin guardar en ' + names + '. Si sigues, se perderán.',
+    t('Hay cambios sin guardar'),
+    t('Tienes cambios sin guardar en {names}. Si sigues, se perderán.', { names: names }),
     function() {
       dirty.forEach(function(source) {
         if (source.discard) {
@@ -748,7 +748,7 @@ function confirmLeave(proceed, keys, onCancel) {
       });
       proceed();
     },
-    { confirmLabel: 'Descartar cambios', cancelLabel: 'Seguir editando', onCancel: onCancel }
+    { confirmLabel: t('Descartar cambios'), cancelLabel: t('Seguir editando'), onCancel: onCancel }
   );
 }
 

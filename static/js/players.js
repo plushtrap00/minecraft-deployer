@@ -2,10 +2,10 @@
 // Cada lista es una cuadrícula de fichas con la cabeza del jugador (ver
 // headHtml en pixel_art.js).
 var PLAYER_EMPTY = {
-  op: ['sign', 'Nadie tiene op todavía', 'Añade a quien deba poder usar los comandos de administrador.'],
-  wl: ['sign', 'La whitelist está vacía', 'Si la activas en server.properties, solo podrán entrar los jugadores que estén aquí.'],
-  player: ['shield', 'Ningún jugador baneado', 'Todo el mundo se porta bien. De momento.'],
-  ip: ['shield', 'Ninguna IP baneada', 'Banear una IP impide entrar desde esa conexión, con cualquier cuenta.']
+  op: ['sign', t('Nadie tiene op todavía'), t('Añade a quien deba poder usar los comandos de administrador.')],
+  wl: ['sign', t('La whitelist está vacía'), t('Si la activas en server.properties, solo podrán entrar los jugadores que estén aquí.')],
+  player: ['shield', t('Ningún jugador baneado'), t('Todo el mundo se porta bien. De momento.')],
+  ip: ['shield', t('Ninguna IP baneada'), t('Banear una IP impide entrar desde esa conexión, con cualquier cuenta.')]
 };
 
 function playerEmptyHtml(type) {
@@ -19,13 +19,13 @@ function loadPlayers() {
     .then(function(response) { return response.json(); })
     .then(function(data) {
       renderPlayerList('ops-list', data.ops, 'op', function(player) {
-        return '<span class="pe-meta">Nivel ' + player.level + '</span>';
+        return '<span class="pe-meta">' + escHtml(t('Nivel {n}', { n: player.level })) + '</span>';
       });
       renderPlayerList('whitelist-list', data.whitelist, 'wl', null);
       renderBanList('banned-list', data.banned_players, 'player');
       renderBanList('banned-ips-list', data.banned_ips, 'ip');
     })
-    .catch(function() { showToast('No se pudo cargar la lista de jugadores', 'error'); });
+    .catch(function() { showToast(t('No se pudo cargar la lista de jugadores'), 'error'); });
   loadOnlinePlayers();
 }
 
@@ -44,13 +44,13 @@ function loadOnlinePlayers() {
       document.getElementById('players-online-server').textContent = 'en ' + document.getElementById('status-modpack').textContent;
       var grid = document.getElementById('players-online');
       if (!players.length) {
-        grid.innerHTML = emptyArt('sapling', 'No hay nadie jugando', 'Cuando alguien entre al servidor aparecerá aquí.', null, true);
+        grid.innerHTML = emptyArt('sapling', t('No hay nadie jugando'), t('Cuando alguien entre al servidor aparecerá aquí.'), null, true);
         return;
       }
       grid.innerHTML = players.map(function(name) {
         return '<div class="player-tile online">' + headHtml(name, null, 'lg')
           + '<div class="player-tile-info"><div class="pe-name">' + escHtml(name) + '</div>'
-          + '<div class="pe-meta"><span class="online-dot"></span>Jugando</div></div></div>';
+          + '<div class="pe-meta"><span class="online-dot"></span>' + t('Jugando') + '</div></div></div>';
       }).join('');
     })
     .catch(function() { card.hidden = true; });
@@ -62,7 +62,7 @@ function renderPlayerList(containerId, players, type, extraFn) {
     el.innerHTML = playerEmptyHtml(type);
     return;
   }
-  var removeLabel = type === 'op' ? 'Quitar op' : 'Quitar';
+  var removeLabel = type === 'op' ? t('Quitar op') : t('Quitar');
   el.innerHTML = '<div class="player-grid">' + players.map(function(player) {
     var name = player.name || player.uuid || '?';
     return '<div class="player-tile' + freshClass(type, name) + '">' + headHtml(player.name, player.uuid, 'lg')
@@ -90,7 +90,7 @@ function renderBanList(containerId, bans, type) {
       + (ban.reason ? '<div class="pe-meta" title="' + escHtml(ban.reason) + '">' + escHtml(ban.reason) + '</div>' : '')
       + '</div>'
       + '<button class="btn-ghost btn-xs player-unban-btn" data-type="' + type + '" data-name="' + escHtml(name) + '"'
-      + ' aria-label="' + escHtml('Desbanear: ' + name) + '">Desbanear</button>'
+      + ' aria-label="' + escHtml(t('Desbanear: {name}', { name: name })) + '">' + t('Desbanear') + '</button>'
       + '</div>';
   }).join('') + '</div>';
 }
@@ -133,11 +133,11 @@ function apiCall(method, url, body, successMsg) {
         loadPlayers();
         return true;
       }
-      showToast(result.data.detail || 'No se pudo guardar el cambio', 'error');
+      showToast(result.data.detail || t('No se pudo guardar el cambio'), 'error');
       return false;
     })
     .catch(function(error) {
-      showToast('No se pudo conectar con el panel: ' + error.message, 'error');
+      showToast(t('No se pudo conectar con el panel: {error}', { error: error.message }), 'error');
       return false;
     });
 }
@@ -146,7 +146,7 @@ function apiCall(method, url, body, successMsg) {
 document.getElementById('btn-add-op').addEventListener('click', function() {
   var name = document.getElementById('op-name-input').value.trim();
   if (!name) {
-    flagField(document.getElementById('op-name-input'), 'Escribe un nombre');
+    flagField(document.getElementById('op-name-input'), t('Escribe un nombre'));
     return;
   }
   markFresh('op', name);
@@ -154,7 +154,7 @@ document.getElementById('btn-add-op').addEventListener('click', function() {
   form.append('name', name);
   form.append('level', '4');
   busyWhile(document.getElementById('btn-add-op'), function() {
-    return apiCall('POST', '/api/players/op', form, 'Op añadido: ' + name)
+    return apiCall('POST', '/api/players/op', form, t('Op añadido: {name}', { name: name }))
       .then(function(ok) {
         document.getElementById('op-name-input').value = '';
         if (ok) {
@@ -172,15 +172,15 @@ document.getElementById('op-name-input').addEventListener('keydown', function(ev
 
 function removeOp(name, button) {
   showConfirm(
-    'Quitar op a ' + name,
-    'Se eliminará como operador en todos los servidores.',
+    t('Quitar op a {name}', { name: name }),
+    t('Se eliminará como operador en todos los servidores.'),
     function() { doRemoveOp(name, button); }
   );
 }
 
 function doRemoveOp(name, button) {
   busyWhile(button, function() {
-    return apiCall('DELETE', '/api/players/op/' + encodeURIComponent(name), null, 'Op eliminado: ' + name);
+    return apiCall('DELETE', '/api/players/op/' + encodeURIComponent(name), null, t('Op eliminado: {name}', { name: name }));
   });
 }
 
@@ -188,14 +188,14 @@ function doRemoveOp(name, button) {
 document.getElementById('btn-add-wl').addEventListener('click', function() {
   var name = document.getElementById('wl-name-input').value.trim();
   if (!name) {
-    flagField(document.getElementById('wl-name-input'), 'Escribe un nombre');
+    flagField(document.getElementById('wl-name-input'), t('Escribe un nombre'));
     return;
   }
   markFresh('wl', name);
   var form = new FormData();
   form.append('name', name);
   busyWhile(document.getElementById('btn-add-wl'), function() {
-    return apiCall('POST', '/api/players/whitelist', form, 'Añadido a la whitelist: ' + name)
+    return apiCall('POST', '/api/players/whitelist', form, t('Añadido a la whitelist: {name}', { name: name }))
       .then(function() { document.getElementById('wl-name-input').value = ''; });
   });
 });
@@ -208,15 +208,15 @@ document.getElementById('wl-name-input').addEventListener('keydown', function(ev
 
 function removeWhitelist(name, button) {
   showConfirm(
-    'Eliminar de whitelist',
-    'Se eliminará a ' + name + ' de la whitelist global.',
+    t('Eliminar de whitelist'),
+    t('Se eliminará a {name} de la whitelist global.', { name: name }),
     function() { doRemoveWhitelist(name, button); }
   );
 }
 
 function doRemoveWhitelist(name, button) {
   busyWhile(button, function() {
-    return apiCall('DELETE', '/api/players/whitelist/' + encodeURIComponent(name), null, 'Quitado de la whitelist: ' + name);
+    return apiCall('DELETE', '/api/players/whitelist/' + encodeURIComponent(name), null, t('Quitado de la whitelist: {name}', { name: name }));
   });
 }
 
@@ -224,7 +224,7 @@ function doRemoveWhitelist(name, button) {
 document.getElementById('btn-ban-player').addEventListener('click', function() {
   var name = document.getElementById('ban-name-input').value.trim();
   if (!name) {
-    flagField(document.getElementById('ban-name-input'), 'Escribe un nombre');
+    flagField(document.getElementById('ban-name-input'), t('Escribe un nombre'));
     return;
   }
   markFresh('player', name);
@@ -245,8 +245,8 @@ document.getElementById('btn-ban-player').addEventListener('click', function() {
 
 function unbanPlayer(name, button) {
   showConfirm(
-    'Desbanear a ' + name,
-    'Se desbaneará en todos los servidores.',
+    t('Desbanear a {name}', { name: name }),
+    t('Se desbaneará en todos los servidores.'),
     function() { doUnbanPlayer(name, button); }
   );
 }
@@ -265,7 +265,7 @@ function doUnbanPlayer(name, button) {
 document.getElementById('btn-ban-ip').addEventListener('click', function() {
   var ip = document.getElementById('ban-ip-input').value.trim();
   if (!ip) {
-    flagField(document.getElementById('ban-ip-input'), 'Escribe una IP');
+    flagField(document.getElementById('ban-ip-input'), t('Escribe una IP'));
     return;
   }
   markFresh('ip', ip);
@@ -274,7 +274,7 @@ document.getElementById('btn-ban-ip').addEventListener('click', function() {
   form.append('ip', ip);
   form.append('reason', reason);
   busyWhile(document.getElementById('btn-ban-ip'), function() {
-    return apiCall('POST', '/api/players/ban-ip', form, 'IP baneada: ' + ip).then(function(ok) {
+    return apiCall('POST', '/api/players/ban-ip', form, t('IP baneada: {ip}', { ip: ip })).then(function(ok) {
       if (ok) {
         unlockAchievement('iron-fist');
       }
@@ -286,15 +286,15 @@ document.getElementById('btn-ban-ip').addEventListener('click', function() {
 
 function unbanIp(ip, button) {
   showConfirm(
-    'Desbanear IP ' + ip,
-    'Se desbaneará en todos los servidores.',
+    t('Desbanear IP {ip}', { ip: ip }),
+    t('Se desbaneará en todos los servidores.'),
     function() { doUnbanIp(ip, button); }
   );
 }
 
 function doUnbanIp(ip, button) {
   busyWhile(button, function() {
-    return apiCall('DELETE', '/api/players/ban-ip/' + encodeURIComponent(ip), null, 'IP desbaneada: ' + ip).then(function(ok) {
+    return apiCall('DELETE', '/api/players/ban-ip/' + encodeURIComponent(ip), null, t('IP desbaneada: {ip}', { ip: ip })).then(function(ok) {
       if (ok) {
         unlockAchievement('mercy');
       }
@@ -311,10 +311,10 @@ document.getElementById('btn-sync-all').addEventListener('click', function() {
         if (data.warning) {
           showToast(data.warning, '');
         } else {
-          showToast('Sincronizado con todos los servidores', 'success');
+          showToast(t('Sincronizado con todos los servidores'), 'success');
         }
       })
-      .catch(function() { showToast('No se pudo sincronizar con los servidores', 'error'); });
+      .catch(function() { showToast(t('No se pudo sincronizar con los servidores'), 'error'); });
   });
 });
 

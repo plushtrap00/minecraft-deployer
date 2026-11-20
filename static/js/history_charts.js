@@ -4,14 +4,14 @@
 // ratón (o el dedo) se ve el valor de ese momento.
 var PERF_CHARTS = [
   { key: 'tps', title: 'TPS', domain: function() { return [0, 20]; }, ticks: [0, 10, 20],
-    format: function(v) { return v.toLocaleString('es-ES', { maximumFractionDigits: 1 }); } },
-  { key: 'players', title: 'Jugadores', integer: true,
+    format: function(v) { return v.toLocaleString(APP_LOCALE, { maximumFractionDigits: 1 }); } },
+  { key: 'players', title: t('Jugadores'), integer: true,
     domain: function(max) { return [0, Math.max(2, Math.ceil(max))]; },
     format: function(v) { return String(Math.round(v)); } },
   { key: 'ram', title: 'RAM', unit: 'GB',
     domain: function(max) { return [0, Math.max(1, Math.ceil(max / 1024))]; },
     value: function(mb) { return mb / 1024; },
-    format: function(v) { return v.toLocaleString('es-ES', { maximumFractionDigits: 1 }) + ' GB'; } }
+    format: function(v) { return v.toLocaleString(APP_LOCALE, { maximumFractionDigits: 1 }) + ' GB'; } }
 ];
 var PERF_HEIGHT = 132;
 var PERF_PAD = { top: 10, right: 8, bottom: 22, left: 30 };
@@ -56,7 +56,7 @@ function fetchHistory() {
       return;
     }
     if (!result.ok) {
-      document.getElementById('perf-charts').innerHTML = noticeHtml('error', escHtml(result.data.detail || 'No se pudo leer el historial.'));
+      document.getElementById('perf-charts').innerHTML = noticeHtml('error', escHtml(result.data.detail || t('No se pudo leer el historial.')));
       return;
     }
     perfSamples = result.data.samples;
@@ -67,8 +67,8 @@ function fetchHistory() {
 function renderHistoryCharts() {
   var holder = document.getElementById('perf-charts');
   if (!perfSamples || !perfSamples.length) {
-    holder.innerHTML = emptyArt('spyglass', 'Aún no hay historial',
-      'Mientras el servidor está encendido se apunta una muestra por minuto. Vuelve dentro de un rato y verás aquí cómo ha ido.', '', true);
+    holder.innerHTML = emptyArt('spyglass', t('Aún no hay historial'),
+      t('Mientras el servidor está encendido se apunta una muestra por minuto. Vuelve dentro de un rato y verás aquí cómo ha ido.'), '', true);
     holder.classList.add('is-empty');
     return;
   }
@@ -86,8 +86,8 @@ function renderHistoryCharts() {
 
 function perfTimeLabel(epoch, withDay) {
   var date = new Date(epoch * 1000);
-  var time = date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-  return withDay ? date.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' }) + ', ' + time : time;
+  var time = date.toLocaleTimeString(APP_LOCALE, { hour: '2-digit', minute: '2-digit' });
+  return withDay ? date.toLocaleDateString(APP_LOCALE, { weekday: 'short', day: 'numeric' }) + ', ' + time : time;
 }
 
 function drawPerfChart(figure, chart) {
@@ -101,7 +101,7 @@ function drawPerfChart(figure, chart) {
     .map(function(s) { return { t: s.t, v: chart.value ? chart.value(s[chart.key]) : s[chart.key] }; });
   var summary = figure.querySelector('.perf-summary');
   if (!points.length) {
-    summary.textContent = 'sin datos';
+    summary.textContent = t('sin datos');
     svg.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
     svg.innerHTML = '';
     return;
@@ -110,8 +110,8 @@ function drawPerfChart(figure, chart) {
   var domain = chart.domain(chart.key === 'ram' ? max * 1024 : max);
   var avg = points.reduce(function(sum, p) { return sum + p.v; }, 0) / points.length;
   summary.textContent = chart.key === 'players'
-    ? 'máximo ' + chart.format(max)
-    : 'media ' + chart.format(avg);
+    ? t('máximo {value}', { value: chart.format(max) })
+    : t('media {value}', { value: chart.format(avg) });
 
   var innerW = width - PERF_PAD.left - PERF_PAD.right;
   var innerH = height - PERF_PAD.top - PERF_PAD.bottom;
@@ -127,7 +127,7 @@ function drawPerfChart(figure, chart) {
     var ty = y(tick).toFixed(1);
     parts.push('<line class="perf-grid" x1="' + PERF_PAD.left + '" x2="' + (width - PERF_PAD.right) + '" y1="' + ty + '" y2="' + ty + '"/>');
     parts.push('<text class="perf-axis" x="' + (PERF_PAD.left - 6) + '" y="' + ty + '" dy="0.32em" text-anchor="end">'
-      + (chart.key === 'ram' ? tick.toLocaleString('es-ES') : tick) + '</text>');
+      + (chart.key === 'ram' ? tick.toLocaleString(APP_LOCALE) : tick) + '</text>');
   });
   // Marcas de tiempo: cada 6 h en 24 h, cada día en 7 días.
   var step = perfHours <= 24 ? 6 * 3600 : 86400;
@@ -138,7 +138,7 @@ function drawPerfChart(figure, chart) {
     first = midnight.getTime() / 1000;
   }
   for (var tick = first; tick < now; tick += step) {
-    var label = perfHours <= 24 ? perfTimeLabel(tick) : new Date(tick * 1000).toLocaleDateString('es-ES', { weekday: 'short' });
+    var label = perfHours <= 24 ? perfTimeLabel(tick) : new Date(tick * 1000).toLocaleDateString(APP_LOCALE, { weekday: 'short' });
     parts.push('<text class="perf-axis" x="' + x(tick).toFixed(1) + '" y="' + (height - 6) + '" text-anchor="middle">' + escHtml(label) + '</text>');
   }
 
@@ -168,7 +168,7 @@ function drawPerfChart(figure, chart) {
   parts.push('<rect class="perf-hit" x="' + PERF_PAD.left + '" y="0" width="' + innerW + '" height="' + height + '"/>');
 
   svg.setAttribute('viewBox', '0 0 ' + width + ' ' + height);
-  svg.setAttribute('aria-label', chart.title + ': ' + summary.textContent + ' en ' + (perfHours <= 24 ? 'las últimas 24 horas' : 'los últimos 7 días'));
+  svg.setAttribute('aria-label', chart.title + ': ' + summary.textContent + ' ' + (perfHours <= 24 ? t('en las últimas 24 horas') : t('en los últimos 7 días')));
   svg.innerHTML = parts.join('');
 
   var cross = svg.querySelector('.perf-cross');

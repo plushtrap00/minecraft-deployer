@@ -8,10 +8,10 @@ var passwordTarget = null; // null = la propia; si no, el nombre del usuario
 function openPasswordModal(targetUser) {
   passwordTarget = targetUser || null;
   var own = passwordTarget === null;
-  document.getElementById('password-title').textContent = own ? 'Cambiar contraseña' : 'Contraseña de ' + passwordTarget;
+  document.getElementById('password-title').textContent = own ? t('Cambiar contraseña') : t('Contraseña de {user}', { user: passwordTarget });
   document.getElementById('password-intro').textContent = own
-    ? 'Para cambiarla hace falta la que usas ahora.'
-    : 'Pon una contraseña nueva para «' + passwordTarget + '» y pásasela.';
+    ? t('Para cambiarla hace falta la que usas ahora.')
+    : t('Pon una contraseña nueva para «{user}» y pásasela.', { user: passwordTarget });
   // style.display y no el atributo hidden: .prop-field fija su propio display.
   document.getElementById('password-current-field').style.display = own ? '' : 'none';
   document.getElementById('password-username').value = own ? (currentUser || '') : passwordTarget;
@@ -37,17 +37,17 @@ function passwordFormError() {
   var next = document.getElementById('password-new').value;
   var repeat = document.getElementById('password-repeat').value;
   if (own && !current) {
-    return 'Escribe tu contraseña actual';
+    return t('Escribe tu contraseña actual');
   }
   var error = validateNewPassword(next);
   if (error) {
     return error;
   }
   if (next !== repeat) {
-    return 'Las dos contraseñas nuevas no coinciden';
+    return t('Las dos contraseñas nuevas no coinciden');
   }
   if (own && next === current) {
-    return 'La contraseña nueva es igual que la actual';
+    return t('La contraseña nueva es igual que la actual');
   }
   return '';
 }
@@ -79,7 +79,7 @@ document.getElementById('password-form').addEventListener('submit', function(eve
     : { password: next };
   var submit = document.getElementById('password-submit');
   submit.disabled = true;
-  submit.textContent = 'Guardando…';
+  submit.textContent = t('Guardando…');
   apiJson(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -88,10 +88,10 @@ document.getElementById('password-form').addEventListener('submit', function(eve
     submit.disabled = false;
     submit.textContent = 'Guardar';
     if (!result.ok) {
-      errorEl.textContent = result.data.detail || 'No se pudo cambiar la contraseña';
+      errorEl.textContent = result.data.detail || t('No se pudo cambiar la contraseña');
       return;
     }
     passwordModal.classList.remove('show');
-    showToast(own ? 'Contraseña cambiada' : 'Contraseña de «' + passwordTarget + '» cambiada', 'success');
+    showToast(own ? t('Contraseña cambiada') : t('Contraseña de «{user}» cambiada', { user: passwordTarget }), 'success');
   });
 });

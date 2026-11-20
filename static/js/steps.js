@@ -21,8 +21,8 @@ var INSTALL_STEP_FLOWS = [
     section: 'deploy-import-section',
     button: 'deploy-btn',
     steps: [
-      { label: 'el archivo', done: function() { return !!selectedFile; } },
-      { label: 'el nombre del servidor', done: function() { return !!stepValue('folder-name'); } },
+      { label: t('el archivo'), done: function() { return !!selectedFile; } },
+      { label: t('el nombre del servidor'), done: function() { return !!stepValue('folder-name'); } },
       // Opcional: solo se marca como hecho si se activó y tiene valores.
       { optional: true, done: function() {
         return document.getElementById('ram-toggle').classList.contains('on') && ramStepDone('ram');
@@ -33,25 +33,25 @@ var INSTALL_STEP_FLOWS = [
     section: 'deploy-create-section',
     button: 'create-server-btn',
     steps: [
-      { label: 'el nombre', done: function() { return !!stepValue('create-name'); } },
-      { label: 'la versión', done: function() {
+      { label: t('el nombre'), done: function() { return !!stepValue('create-name'); } },
+      { label: t('la versión'), done: function() {
         if (!stepValue('create-mc-version')) {
           return false;
         }
         return stepValue('create-loader') === 'vanilla' || !!stepValue('create-loader-version');
       } },
-      { label: 'la RAM', done: function() { return ramStepDone('create-ram'); } },
+      { label: t('la RAM'), done: function() { return ramStepDone('create-ram'); } },
     ],
   },
   {
     section: 'deploy-download-section',
     button: 'dl-install-btn',
     steps: [
-      { label: 'el modpack', done: function() { return !!dlSelectedPack; } },
-      { label: 'la versión y el nombre', done: function() {
+      { label: t('el modpack'), done: function() { return !!dlSelectedPack; } },
+      { label: t('la versión y el nombre'), done: function() {
         return !!stepValue('dl-version-select') && !!dlServerName();
       } },
-      { label: 'la RAM', done: function() { return ramStepDone('dl-ram'); } },
+      { label: t('la RAM'), done: function() { return ramStepDone('dl-ram'); } },
     ],
   },
 ];
@@ -72,19 +72,12 @@ function refreshInstallSteps(flow) {
   var button = document.getElementById(flow.button);
   button.classList.toggle('is-blocked', missing.length > 0);
   var hint = section.querySelector('[data-missing-for="' + flow.button + '"]');
-  var hintText = missing.length ? 'Falta ' + joinWithY(missing) + '.' : '';
+  var hintText = missing.length ? t('Falta {lo}.', { lo: joinList(missing) }) : '';
   // Solo si cambia: reescribir el texto siempre dispararía otra vez el
   // MutationObserver de abajo y se quedaría en bucle.
   if (hint && hint.textContent !== hintText) {
     hint.textContent = hintText;
   }
-}
-
-function joinWithY(items) {
-  if (items.length < 2) {
-    return items.join('');
-  }
-  return items.slice(0, -1).join(', ') + ' y ' + items[items.length - 1];
 }
 
 function refreshAllInstallSteps() {

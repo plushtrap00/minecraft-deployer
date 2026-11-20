@@ -31,7 +31,7 @@ function setHeroState(state, statusText, name) {
   hero.dataset.state = state;
   document.documentElement.dataset.server = state;
   document.getElementById('status-text').textContent = statusText;
-  document.getElementById('status-modpack').textContent = name || 'Ningún servidor en marcha';
+  document.getElementById('status-modpack').textContent = name || t('Ningún servidor en marcha');
   // Con el proceso en marcha se puede parar aunque aún esté cargando.
   var stoppable = serverRunning && state !== 'stopped';
   document.getElementById('clean-stop-btn').style.display = stoppable ? '' : 'none';
@@ -67,11 +67,11 @@ function renderHeroIcon(name) {
 var startupTracking = false;
 var startupPercent = 0;
 var STARTUP_PHASES = [
-  { re: /ModLauncher running|Launching target|Loading Minecraft .* with Fabric|Loading \d+ mods|Found \d+ mods|Loading mods/i, text: 'Cargando mods…', pct: 12 },
-  { re: /Starting minecraft server version|Starting Minecraft server/i, text: 'Arrancando Minecraft…', pct: 42 },
-  { re: /Loading properties/i, text: 'Leyendo la configuración…', pct: 46 },
-  { re: /Preparing level/i, text: 'Preparando el mundo…', pct: 58 },
-  { re: /Preparing start region/i, text: 'Preparando el spawn…', pct: 62 }
+  { re: /ModLauncher running|Launching target|Loading Minecraft .* with Fabric|Loading \d+ mods|Found \d+ mods|Loading mods/i, text: t('Cargando mods…'), pct: 12 },
+  { re: /Starting minecraft server version|Starting Minecraft server/i, text: t('Arrancando Minecraft…'), pct: 42 },
+  { re: /Loading properties/i, text: t('Leyendo la configuración…'), pct: 46 },
+  { re: /Preparing level/i, text: t('Preparando el mundo…'), pct: 58 },
+  { re: /Preparing start region/i, text: t('Preparando el spawn…'), pct: 62 }
 ];
 var SPAWN_PROGRESS_RE = /Preparing spawn area:\s*(\d+)\s*%/i;
 var DONE_LINE_RE = /\]: Done \(\d/;
@@ -89,7 +89,7 @@ function setStartupProgress(percent, text) {
 function beginStartupTracking() {
   startupTracking = true;
   startupPercent = 0;
-  setStartupProgress(4, 'Lanzando Java…');
+  setStartupProgress(4, t('Lanzando Java…'));
 }
 
 function trackStartupLine(line) {
@@ -103,7 +103,7 @@ function trackStartupLine(line) {
   var spawn = line.match(SPAWN_PROGRESS_RE);
   if (spawn) {
     var spawnPct = parseInt(spawn[1], 10);
-    setStartupProgress(62 + spawnPct * .36, 'Preparando el spawn ' + spawnPct + ' %');
+    setStartupProgress(62 + spawnPct * .36, t('Preparando el spawn {pct} %', { pct: spawnPct }));
     return;
   }
   for (var i = 0; i < STARTUP_PHASES.length; i++) {
@@ -131,14 +131,14 @@ function markServerReady(celebrateIt) {
   }
   var name = document.getElementById('status-modpack').textContent;
   var finish = function() {
-    setHeroState('running', 'Listo para jugar', name);
+    setHeroState('running', t('Listo para jugar'), name);
     renderHeroMeta(name);
   };
   if (!celebrateIt || !wasTracking) {
     finish();
     return;
   }
-  setStartupProgress(100, '¡Listo!');
+  setStartupProgress(100, t('¡Listo!'));
   setTimeout(function() {
     finish();
     celebrate(document.getElementById('server-hero-icon').firstChild || document.getElementById('status-modpack'));
@@ -165,7 +165,7 @@ function renderHeroMeta(modpack) {
     parts.push('<span>' + loaderTag(info.modloader) + (info.mc_version ? ' Minecraft ' + escHtml(info.mc_version) : '') + '</span>');
   }
   if (uptimeBase) {
-    parts.push('<span id="hero-uptime">' + icon('clock') + 'Encendido hace ' + formatUptime(currentUptime()) + '</span>');
+    parts.push('<span id="hero-uptime">' + icon('clock') + escHtml(t('Encendido hace {time}', { time: formatUptime(currentUptime()) })) + '</span>');
   }
   if (mcDomain && netPublic) {
     parts.push('<span>' + icon('globe') + escHtml(mcDomain) + '</span>');
@@ -175,7 +175,7 @@ function renderHeroMeta(modpack) {
 
 function formatUptime(seconds) {
   if (seconds < 60) {
-    return 'menos de un minuto';
+    return t('menos de un minuto');
   }
   var minutes = Math.floor(seconds / 60);
   var hours = Math.floor(minutes / 60);
@@ -208,9 +208,9 @@ function applyServerState(running, modpack, ready) {
     var heroState = document.getElementById('server-hero').dataset.state;
     if (ready) {
       startupTracking = false;
-      setHeroState('running', 'Listo para jugar', modpack);
+      setHeroState('running', t('Listo para jugar'), modpack);
     } else if (!startupTracking || heroState !== 'starting') {
-      setHeroState('starting', 'Arrancando…', modpack);
+      setHeroState('starting', t('Arrancando…'), modpack);
       beginStartupTracking();
     }
     document.getElementById('console-modpack').textContent = modpack || '';
@@ -227,7 +227,7 @@ function applyServerState(running, modpack, ready) {
     startMetricsPolling();
   } else {
     startupTracking = false;
-    setHeroState('stopped', 'Parado', null);
+    setHeroState('stopped', t('Parado'), null);
     if (sseSource) {
       sseSource.close();
       sseSource = null;
@@ -269,9 +269,9 @@ function loadServerPickList() {
   refreshServerPackInfo()
     .then(function(packs) {
       if (!packs.length) {
-        list.innerHTML = emptyArt('chest', 'Todavía no hay servidores',
-          'Instala un modpack o crea un servidor vanilla y aparecerá aquí, listo para arrancar.',
-          '<button class="btn-go" id="pick-empty-install">' + icon('package-plus') + 'Instalar un modpack</button>');
+        list.innerHTML = emptyArt('chest', t('Todavía no hay servidores'),
+          t('Instala un modpack o crea un servidor vanilla y aparecerá aquí, listo para arrancar.'),
+          '<button class="btn-go" id="pick-empty-install">' + icon('package-plus') + t('Instalar un modpack') + '</button>');
         document.getElementById('pick-empty-install').addEventListener('click', function() {
           document.getElementById('tab-deploy').click();
         });
@@ -283,7 +283,7 @@ function loadServerPickList() {
       });
     })
     .catch(function() {
-      list.innerHTML = '<p class="empty-msg error-msg">No se pudo cargar la lista de servidores. Recarga la página para reintentarlo.</p>';
+      list.innerHTML = '<p class="empty-msg error-msg">' + t('No se pudo cargar la lista de servidores. Recarga la página para reintentarlo.') + '</p>';
     });
 }
 
@@ -295,24 +295,24 @@ function serverCard(pack) {
   if (pack.modloader) {
     card.dataset.loader = pack.modloader.toLowerCase();
   }
-  var facts = ['<span>' + icon('clock') + (pack.last_played ? 'Arrancado ' + formatRelativeDate(pack.last_played) : 'Sin estrenar') + '</span>'];
+  var facts = ['<span>' + icon('clock') + escHtml(pack.last_played ? t('Arrancado {when}', { when: formatRelativeDate(pack.last_played) }) : t('Sin estrenar')) + '</span>'];
   if (pack.mods_count) {
     facts.push('<span>' + icon('puzzle') + pack.mods_count + (pack.mods_count === 1 ? ' mod' : ' mods') + '</span>');
   }
   if (!pack.start_script) {
-    facts.push('<span class="server-card-warn">' + icon('triangle-alert') + 'No tiene script de arranque</span>');
+    facts.push('<span class="server-card-warn">' + icon('triangle-alert') + t('No tiene script de arranque') + '</span>');
   }
   if (pack.pending_mods && pack.pending_mods.length) {
     facts.push('<span class="server-card-pending" title="' + escHtml(pack.pending_mods.join(', ')) + '">' + icon('timer')
-      + pack.pending_mods.length + (pack.pending_mods.length === 1 ? ' mod pendiente' : ' mods pendientes') + '</span>');
+      + (pack.pending_mods.length === 1 ? t('1 mod pendiente') : t('{n} mods pendientes', { n: pack.pending_mods.length })) + '</span>');
   }
   card.innerHTML = '<div class="server-card-head">' + packIconHtml(pack)
     + '<div class="server-card-title"><h3 class="server-card-name">' + escHtml(pack.name) + '</h3>'
     + '<div class="server-card-sub">' + loaderTag(pack.modloader)
     + (pack.mc_version ? '<span>Minecraft ' + escHtml(pack.mc_version) + '</span>' : '') + '</div></div></div>'
     + '<div class="server-card-facts">' + facts.join('') + '</div>'
-    + '<button class="btn-go"' + (pack.start_script ? '' : ' disabled') + ' aria-label="Iniciar ' + escHtml(pack.name) + '">'
-    + icon('play') + 'Iniciar</button>';
+    + '<button class="btn-go"' + (pack.start_script ? '' : ' disabled') + ' aria-label="' + escHtml(t('Iniciar {name}', { name: pack.name })) + '">'
+    + icon('play') + t('Iniciar') + '</button>';
   if (pack.start_script) {
     card.querySelector('button').addEventListener('click', function() { startServer(pack.name); });
   }
@@ -333,16 +333,16 @@ function applyNetToggleUI(isPublic) {
   track.setAttribute('aria-checked', isPublic ? 'true' : 'false');
   if (isPublic) {
     track.classList.add('on');
-    label.textContent = 'Abierto a internet';
+    label.textContent = t('Abierto a internet');
     if (mcDomain) {
-      desc.textContent = 'Se puede entrar desde fuera de casa en ' + mcDomain + ':' + (netPorts[0] || 25565);
+      desc.textContent = t('Se puede entrar desde fuera de casa en {address}', { address: mcDomain + ':' + (netPorts[0] || 25565) });
     } else {
-      desc.textContent = 'Se puede entrar desde fuera de casa';
+      desc.textContent = t('Se puede entrar desde fuera de casa');
     }
   } else {
     track.classList.remove('on');
-    label.textContent = 'Solo red local';
-    desc.textContent = 'Solo se puede entrar desde tu red de casa' + (netSubnet ? ' (' + netSubnet + ')' : '');
+    label.textContent = t('Solo red local');
+    desc.textContent = t('Solo se puede entrar desde tu red de casa') + (netSubnet ? ' (' + netSubnet + ')' : '');
   }
 }
 
@@ -360,8 +360,8 @@ function loadFirewallStatus() {
         track.classList.add('disabled');
         track.style.pointerEvents = 'none';
         track.setAttribute('aria-disabled', 'true');
-        label.textContent = 'Acceso desde fuera: no disponible aquí';
-        desc.textContent = 'En Docker, el acceso público o solo LAN se controla desde el mapeo de puertos de docker-compose.yml.';
+        label.textContent = t('Acceso desde fuera: no disponible aquí');
+        desc.textContent = t('En Docker, el acceso público o solo LAN se controla desde el mapeo de puertos de docker-compose.yml.');
         return;
       }
       netSubnet = data.subnet || '';
@@ -400,18 +400,18 @@ function toggleNetMode() {
         netPorts = result.data.ports || netPorts;
         applyNetToggleUI(netPublic);
         if (netPublic) {
-          showToast('Servidor abierto a internet', 'success');
+          showToast(t('Servidor abierto a internet'), 'success');
         } else {
-          showToast('Servidor limitado a la red local', 'success');
+          showToast(t('Servidor limitado a la red local'), 'success');
         }
       } else {
-        showToast('No se pudo cambiar el firewall: ' + (result.data.detail || 'error desconocido'), 'error');
+        showToast(t('No se pudo cambiar el firewall: {error}', { error: result.data.detail || t('error desconocido') }), 'error');
       }
     })
     .catch(function(error) {
       track.style.opacity = '';
       track.style.pointerEvents = '';
-      showToast('No se pudo conectar con el panel: ' + error.message, 'error');
+      showToast(t('No se pudo conectar con el panel: {error}', { error: error.message }), 'error');
     });
 }
 
@@ -433,7 +433,7 @@ document.getElementById('net-toggle-track').addEventListener('keydown', function
 // mods pendientes…" solo aparece cuando hacía falta — el caso normal (sin
 // nada pendiente) arranca sin ningún paso extra.
 function startServer(modpack) {
-  setHeroState('starting', 'Preparando…', modpack);
+  setHeroState('starting', t('Preparando…'), modpack);
   document.getElementById('server-picker').style.display = 'none';
 
   apiFetch('/api/modpacks/' + encodeURIComponent(modpack) + '/pending-mods')
@@ -454,7 +454,7 @@ function startServer(modpack) {
 }
 
 function recheckPendingModsThenStart(modpack) {
-  document.getElementById('status-text').textContent = 'Comprobando mods pendientes…';
+  document.getElementById('status-text').textContent = t('Comprobando mods pendientes…');
 
   var streamUrl = '/api/modpacks/' + encodeURIComponent(modpack) + '/pending-mods/stream';
   var checkSource = new EventSource(streamUrl);
@@ -469,8 +469,7 @@ function recheckPendingModsThenStart(modpack) {
     if (pendingMods && pendingMods.length) {
       offerForceStart(
         modpack,
-        'Faltan estos mods porque su descarga automática falló: ' + pendingMods.join(', ')
-          + '. Puedes instalarlos a mano en Gestión de modpacks → Mods.'
+        t('Faltan estos mods porque su descarga automática falló: {mods}. Puedes instalarlos a mano en Modpacks → Mods.', { mods: pendingMods.join(', ') })
       );
       return;
     }
@@ -486,7 +485,7 @@ function recheckPendingModsThenStart(modpack) {
     }
     if (data.type === 'progress') {
       document.getElementById('status-text').textContent =
-        'Comprobando mods pendientes… (' + data.index + ' de ' + data.total + ')';
+        t('Comprobando mods pendientes… ({index} de {total})', { index: data.index, total: data.total });
     } else if (data.type === 'done') {
       finishCheck(data.pending_mods);
     }
@@ -507,15 +506,15 @@ function recheckPendingModsThenStart(modpack) {
 function offerForceStart(modpack, message) {
   applyServerState(false, null);
   showConfirm(
-    'Mods pendientes de instalar',
-    message + ' ¿Quieres iniciar el servidor de todas formas?',
+    t('Mods pendientes de instalar'),
+    message + ' ' + t('¿Quieres iniciar el servidor de todas formas?'),
     function() { _launchServer(modpack, true); },
-    { icon: '⏳', confirmLabel: 'Iniciar de todas formas', cancelLabel: 'Cancelar', tone: 'yellow' }
+    { icon: '⏳', confirmLabel: t('Iniciar de todas formas'), cancelLabel: t('Cancelar'), tone: 'yellow' }
   );
 }
 
 function _launchServer(modpack, force) {
-  setHeroState('starting', 'Arrancando…', modpack);
+  setHeroState('starting', t('Arrancando…'), modpack);
 
   var form = new FormData();
   form.append('modpack', modpack);
@@ -537,7 +536,7 @@ function _launchServer(modpack, force) {
         if (result.data.pending_mods && result.data.pending_mods.length) {
           offerForceStart(modpack, result.data.detail);
         } else {
-          showToast(result.data.detail || 'No se pudo iniciar el servidor', 'error');
+          showToast(result.data.detail || t('No se pudo iniciar el servidor'), 'error');
         }
       }
     })
@@ -552,30 +551,30 @@ function _launchServer(modpack, force) {
 // botón secundario para cuando el servidor no responde.
 document.getElementById('clean-stop-btn').addEventListener('click', function() {
   var players = window._lastPlayersOnline || 0;
-  var msg = 'Se guardará el mundo y se cerrará el servidor.';
+  var msg = t('Se guardará el mundo y se cerrará el servidor.');
   if (players > 0) {
-    msg += ' Ahora mismo hay ' + players + (players === 1 ? ' jugador conectado.' : ' jugadores conectados.');
+    msg += ' ' + (players === 1 ? t('Ahora mismo hay 1 jugador conectado.') : t('Ahora mismo hay {n} jugadores conectados.', { n: players }));
   }
-  showConfirm('¿Detener el servidor?', msg, function() {
+  showConfirm(t('¿Detener el servidor?'), msg, function() {
     sendServerCommand('stop').then(function(ok) {
       if (ok) {
         startupTracking = false;
-        setHeroState('starting', 'Deteniendo…', document.getElementById('status-modpack').textContent);
+        setHeroState('starting', t('Deteniendo…'), document.getElementById('status-modpack').textContent);
       }
     });
-  }, { icon: '⏹', confirmLabel: 'Detener' });
+  }, { icon: '⏹', confirmLabel: t('Detener') });
 });
 
 document.getElementById('stop-btn').addEventListener('click', function() {
   showConfirm(
-    '¿Forzar la parada?',
-    'Mata el proceso como Ctrl+C, sin esperar a que se guarde el mundo. Úsalo solo si «Detener» no responde.',
+    t('¿Forzar la parada?'),
+    t('Mata el proceso como Ctrl+C, sin esperar a que se guarde el mundo. Úsalo solo si «Detener» no responde.'),
     function() {
       busyWhile(document.getElementById('stop-btn'), function() {
         return apiFetch('/api/server/stop', { method: 'POST' }).catch(function() {});
       });
     },
-    { confirmLabel: 'Forzar parada' }
+    { confirmLabel: t('Forzar parada') }
   );
 });
 

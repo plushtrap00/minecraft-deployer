@@ -89,14 +89,14 @@ function resetMetrics() {
 function rateMetric(kind, value) {
   if (kind === 'tps') {
     if (value >= 19) {
-      return ['good', 'fluido'];
+      return ['good', t('fluido')];
     }
-    return value >= 15 ? ['warn', 'algo de lag'] : ['bad', 'mucho lag'];
+    return value >= 15 ? ['warn', t('algo de lag')] : ['bad', t('mucho lag')];
   }
   if (value <= 50) {
-    return ['good', 'con margen'];
+    return ['good', t('con margen')];
   }
-  return value <= 100 ? ['warn', 'justo'] : ['bad', 'sobrecargado'];
+  return value <= 100 ? ['warn', t('justo')] : ['bad', t('sobrecargado')];
 }
 
 function renderMetric(kind, value) {
@@ -144,7 +144,7 @@ function renderSpark(svg, values, range) {
 function updateMetricsUI(data) {
   var players = data.players_online || [];
   window._lastPlayersOnline = players.length;
-  animateNumber(document.getElementById('mv-players'), players.length, 0, ' <small>de ' + (data.players_max || '?') + '</small>');
+  animateNumber(document.getElementById('mv-players'), players.length, 0, ' <small>' + t('de {max}', { max: data.players_max || '?' }) + '</small>');
   document.getElementById('metrics-players-list').innerHTML = players.map(function(playerName) {
     return '<span class="player-chip">' + headHtml(playerName, null, 'sm') + escHtml(playerName) + '</span>';
   }).join('');
@@ -173,7 +173,7 @@ function updateMetricsUI(data) {
   var ramBar = document.getElementById('mb-ram');
   if (data.ram_used_mb && data.ram_max_mb) {
     var pct = Math.min(100, (data.ram_used_mb / data.ram_max_mb) * 100);
-    animateNumber(ramEl, data.ram_used_mb / 1024, 1, ' <small>de ' + (data.ram_max_mb / 1024).toFixed(1) + ' GB</small>');
+    animateNumber(ramEl, data.ram_used_mb / 1024, 1, ' <small>' + t('de {max}', { max: (data.ram_max_mb / 1024).toFixed(1) + ' GB' }) + '</small>');
     setFill(ramBar, pct);
     ramBar.classList.toggle('high', pct >= 90);
   } else {
@@ -189,7 +189,7 @@ function updateMetricsUI(data) {
 
   var rconWarning = document.getElementById('rcon-warning');
   if (data.rcon_status && data.rcon_status !== 'ok') {
-    rconWarning.textContent = 'No se pueden leer TPS y MSPT (RCON: ' + data.rcon_status + ').';
+    rconWarning.textContent = t('No se pueden leer TPS y MSPT (RCON: {status}).', { status: data.rcon_status });
     rconWarning.style.display = 'block';
   } else {
     rconWarning.style.display = 'none';
@@ -205,7 +205,7 @@ function _startRelativeTicker() {
   window._relativeTickerTimer = setInterval(function() {
     var uptimeEl = document.getElementById('hero-uptime');
     if (uptimeEl && uptimeBase) {
-      uptimeEl.innerHTML = icon('clock') + 'Encendido hace ' + formatUptime(currentUptime());
+      uptimeEl.innerHTML = icon('clock') + escHtml(t('Encendido hace {time}', { time: formatUptime(currentUptime()) }));
     }
     var el = document.getElementById('metrics-updated');
     if (!el || !window._metricsLastFetch) {
@@ -214,15 +214,15 @@ function _startRelativeTicker() {
     var sec = Math.floor((Date.now() - window._metricsLastFetch) / 1000);
     var timeText;
     if (sec < 5) {
-      timeText = 'ahora mismo';
+      timeText = t('ahora mismo');
     } else if (sec < 60) {
-      timeText = 'hace ' + sec + ' s';
+      timeText = t('hace {n} s', { n: sec });
     } else if (sec < 3600) {
-      timeText = 'hace ' + Math.floor(sec / 60) + ' min';
+      timeText = t('hace {n} min', { n: Math.floor(sec / 60) });
     } else {
-      timeText = 'hace ' + Math.floor(sec / 3600) + ' h';
+      timeText = t('hace {n} h', { n: Math.floor(sec / 3600) });
     }
-    el.textContent = 'Actualizado ' + timeText;
+    el.textContent = t('Actualizado {when}', { when: timeText });
   }, 1000);
 }
 

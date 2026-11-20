@@ -96,17 +96,17 @@ function doLogin() {
   var btn = document.getElementById('login-btn');
   var errorEl = document.getElementById('login-error');
   if (!username) {
-    errorEl.textContent = 'Escribe tu usuario.';
+    errorEl.textContent = t('Escribe tu usuario.');
     document.getElementById('login-user').focus();
     return;
   }
   if (!password) {
-    errorEl.textContent = 'Escribe tu contraseña.';
+    errorEl.textContent = t('Escribe tu contraseña.');
     document.getElementById('login-pass').focus();
     return;
   }
   btn.disabled = true;
-  btn.textContent = 'Entrando…';
+  btn.textContent = t('Entrando…');
   errorEl.textContent = '';
   var form = new FormData();
   form.append('username', username);
@@ -119,17 +119,17 @@ function doLogin() {
     })
     .then(function(result) {
       btn.disabled = false;
-      btn.textContent = 'Entrar';
+      btn.textContent = t('Entrar');
       if (!result.ok) {
-        errorEl.textContent = result.data.detail || 'Usuario o contraseña incorrectos.';
+        errorEl.textContent = result.data.detail || t('Usuario o contraseña incorrectos.');
         return;
       }
       onLoginSuccess(result.data.role, result.data.user);
     })
     .catch(function(error) {
       btn.disabled = false;
-      btn.textContent = 'Entrar';
-      errorEl.textContent = 'No se pudo conectar con el panel. Comprueba que el equipo sigue encendido. (' + error.message + ')';
+      btn.textContent = t('Entrar');
+      errorEl.textContent = t('No se pudo conectar con el panel. Comprueba que el equipo sigue encendido. ({error})', { error: error.message });
     });
 }
 

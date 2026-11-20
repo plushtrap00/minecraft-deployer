@@ -6,6 +6,11 @@ documentación de la API. Cada commit sube la versión (2.A.B, cada cifra de 0
 a 9: después de 2.0.9 va 2.1.0) y se etiqueta con `git tag v<versión>`.
 
 Historial resumido:
+- 2.2.3 (2026-11-20): en inglés ya salen también los mensajes que aparecen
+  al usar el panel: avisos, confirmaciones, estados del servidor, Sistema,
+  Jugadores, Copias, Automatización, Usuarios y Configuración. Las fechas,
+  los días de la semana y los números siguen el idioma elegido. Lo de
+  gestionar modpacks llegará en la siguiente versión.
 - 2.2.2 (2026-11-20): todo el texto fijo del panel ya sale en inglés si lo
   eliges: páginas, pestañas, formularios, ventanas y la Ayuda. Los mensajes
   que aparecen al usar el panel (avisos, estados, listas) llegarán en la
@@ -83,4 +88,4 @@ Historial resumido:
   otros usuarios.
 - 1.x: todo lo anterior (sin numerar).
 """
-APP_VERSION = "2.2.2"
+APP_VERSION = "2.2.3"

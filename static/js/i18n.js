@@ -23,6 +23,18 @@ function currentLang() {
   return metaContent('app-lang', 'es');
 }
 
+// Fechas y números: en inglés, formato británico (hora de 24 h, día antes
+// que el mes), que es el que menos choca viniendo del español.
+var APP_LOCALE = currentLang() === 'en' ? 'en-GB' : 'es-ES';
+
+// «a, b y c» / «a, b and c»
+function joinList(items) {
+  if (items.length < 2) {
+    return items.join('');
+  }
+  return items.slice(0, -1).join(', ') + t(' y ') + items[items.length - 1];
+}
+
 function t(text, params) {
   var dict = window.I18N_DICT || {};
   var key = String(text).replace(/\s+/g, ' ').trim();

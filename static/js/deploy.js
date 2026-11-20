@@ -8,7 +8,7 @@ function loadDeployPageData() {
     .then(function(response) { return response.json(); })
     .then(function(data) {
       if (data.error) {
-        document.getElementById('disk-text').textContent = 'No disponible';
+        document.getElementById('disk-text').textContent = t('No disponible');
         return;
       }
       var fillBar = document.getElementById('disk-fill');
@@ -16,10 +16,10 @@ function loadDeployPageData() {
       fillBar.classList.toggle('danger', data.percent_used > 90);
       fillBar.classList.toggle('warn', data.percent_used > 70 && data.percent_used <= 90);
       document.getElementById('disk-text').textContent =
-        data.free_gb + ' GB libres de ' + data.total_gb + ' GB (' + data.percent_used + '% usado)';
+        t('{free} GB libres de {total} GB ({pct}% usado)', { free: data.free_gb, total: data.total_gb, pct: data.percent_used });
     })
     .catch(function() {
-      document.getElementById('disk-text').textContent = 'No disponible';
+      document.getElementById('disk-text').textContent = t('No disponible');
     });
 
   apiFetch('/api/system-info')
@@ -27,7 +27,7 @@ function loadDeployPageData() {
     .then(function(data) {
       maxAllowedGb = data.ram_max_allowed_gb;
       document.getElementById('ram-info').textContent = data.ram_total_gb
-        ? 'RAM: ' + data.ram_total_gb + ' GB (máx. recomendado: ' + data.ram_max_allowed_gb + ' GB)'
+        ? t('RAM: {total} GB (máx. recomendado: {max} GB)', { total: data.ram_total_gb, max: data.ram_max_allowed_gb })
         : '';
       RAM_FIELD_PREFIXES.forEach(checkRamFields);
     })
@@ -56,15 +56,15 @@ function ramFieldsError(prefix) {
   var minGb = ramFieldGb(prefix, 'min');
   var maxGb = ramFieldGb(prefix, 'max');
   if (minGb <= 0 || maxGb <= 0) {
-    return 'Indica la RAM mínima y la máxima';
+    return t('Indica la RAM mínima y la máxima');
   }
   var rawMin = document.getElementById(prefix + 'ram-min-val').value;
   var rawMax = document.getElementById(prefix + 'ram-max-val').value;
   if (!/^\d+$/.test(rawMin) || !/^\d+$/.test(rawMax)) {
-    return 'La RAM va en números enteros (para 1,5 GB pon 1536 MB)';
+    return t('La RAM va en números enteros (para 1,5 GB pon 1536 MB)');
   }
   if (minGb > maxGb) {
-    return 'La RAM mínima no puede ser mayor que la máxima';
+    return t('La RAM mínima no puede ser mayor que la máxima');
   }
   return '';
 }
@@ -76,7 +76,7 @@ function checkRamFields(prefix) {
     msgs.push(error);
   }
   if (maxAllowedGb && ramFieldGb(prefix, 'max') > maxAllowedGb) {
-    msgs.push('La RAM máxima supera el 80% del sistema (' + maxAllowedGb + ' GB recomendado)');
+    msgs.push(t('La RAM máxima supera el 80% del sistema ({max} GB recomendado)', { max: maxAllowedGb }));
   }
   var warningEl = document.getElementById(prefix + 'ram-warn');
   warningEl.textContent = msgs.join(' · ');
@@ -168,12 +168,12 @@ function fmtSize(bytes) {
 // -- Deploy -------------------------------------------------------------------
 document.getElementById('deploy-btn').addEventListener('click', function() {
   if (!selectedFile) {
-    flagField(document.getElementById('drop-zone'), 'Elige primero el archivo del modpack.');
+    flagField(document.getElementById('drop-zone'), t('Elige primero el archivo del modpack.'));
     return;
   }
   var folderName = document.getElementById('folder-name').value.trim();
   if (!folderName) {
-    flagField(document.getElementById('folder-name'), 'Escribe un nombre para el servidor.');
+    flagField(document.getElementById('folder-name'), t('Escribe un nombre para el servidor.'));
     return;
   }
   if (ramEnabled && ramFieldsError('')) {
@@ -197,7 +197,7 @@ document.getElementById('deploy-btn').addEventListener('click', function() {
       if (progress < 40) {
         status.textContent = 'Subiendo ' + selectedFile.name + '…';
       } else {
-        status.textContent = 'Descomprimiendo…';
+        status.textContent = t('Descomprimiendo…');
       }
     }
   }, 300);
@@ -221,30 +221,30 @@ document.getElementById('deploy-btn').addEventListener('click', function() {
       setFill(fill, 100);
       if (result.ok && result.data.success) {
         fill.classList.add('done');
-        status.textContent = 'Completado';
+        status.textContent = t('Completado');
         var extractedCount = result.data.files_extracted === -1 ? '—' : result.data.files_extracted;
         var items = [
-          ['Archivo', result.data.filename],
-          ['Tamaño', result.data.size_mb + ' MB'],
-          ['Formato', result.data.format],
-          ['Archivos', extractedCount],
-          ['Destino', result.data.destination]
+          [t('Archivo'), result.data.filename],
+          [t('Tamaño'), result.data.size_mb + ' MB'],
+          [t('Formato'), result.data.format],
+          [t('Archivos'), extractedCount],
+          [t('Destino'), result.data.destination]
         ];
         if (result.data.jvm_configured) {
           items.push(['RAM', result.data.jvm_configured]);
         }
-        showResult('success', '¡Listo!', 'Modpack instalado correctamente', items);
+        showResult('success', t('¡Listo!'), t('Modpack instalado correctamente'), items);
         celebrate(document.getElementById('progress-fill'));
         unlockAchievement('first-install');
       } else {
         fill.classList.add('error');
-        status.textContent = 'Error';
-        showResult('error', 'Error', result.data.detail || 'Error desconocido', []);
+        status.textContent = t('Error');
+        showResult('error', t('Error'), result.data.detail || t('Error desconocido'), []);
       }
     })
     .catch(function(error) {
-      status.textContent = 'Error';
-      showResult('error', 'No se pudo conectar con el panel', error.message, []);
+      status.textContent = t('Error');
+      showResult('error', t('No se pudo conectar con el panel'), error.message, []);
     })
     .finally(function() {
       clearInterval(timer);

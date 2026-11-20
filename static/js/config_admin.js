@@ -29,7 +29,7 @@ function loadAdminConfig() {
   apiFetch('/api/admin/env')
     .then(function(response) { return response.json(); })
     .then(populateEnvForm)
-    .catch(function() { showToast('No se pudo leer el .env', 'error'); });
+    .catch(function() { showToast(t('No se pudo leer el .env'), 'error'); });
 
   document.getElementById('config-constants-form').innerHTML = loadingHtml();
   apiFetch('/api/admin/constants')
@@ -37,7 +37,7 @@ function loadAdminConfig() {
     .then(renderConstantsForm)
     .catch(function() {
       document.getElementById('config-constants-form').innerHTML =
-        '<p class="empty-msg text-red">Error al cargar</p>';
+        '<p class="empty-msg text-red">' + t('Error al cargar') + '</p>';
     });
 }
 
@@ -70,7 +70,7 @@ function populateEnvForm(data) {
     input.disabled = !!data.in_docker;
     hint.style.display = data.in_docker ? '' : 'none';
     hint.textContent = data.in_docker
-      ? 'En Docker esto se controla desde docker-compose.yml, no desde aquí.'
+      ? t('En Docker esto se controla desde docker-compose.yml, no desde aquí.')
       : '';
   });
 }
@@ -105,13 +105,13 @@ function renderConstantsForm(data) {
       return;
     }
     html += '<details class="help-section"' + (index === 0 ? ' open' : '') + '>'
-      + '<summary>' + escHtml(category) + '</summary>'
+      + '<summary>' + escHtml(t(category)) + '</summary>'
       + '<div class="help-section-body"><div class="props-grid">';
     items.forEach(function(item) {
       html += '<div class="prop-field">'
         + '<label class="prop-label">' + escHtml(item.key) + '</label>'
         + '<input type="number" class="w-full cfg-constant-input" data-key="' + escHtml(item.key) + '" value="' + escHtml(String(item.entry.value)) + '">'
-        + '<div class="field-hint">' + escHtml(item.entry.description) + '</div>'
+        + '<div class="field-hint">' + escHtml(t(item.entry.description)) + '</div>'
         + '</div>';
     });
     html += '</div></div></details>';
@@ -145,7 +145,7 @@ document.getElementById('cfg-save-env-btn').addEventListener('click', function()
   var btn = this;
   var newPassword = document.getElementById('cfg-env-new-password').value;
   if (newPassword && newPassword.length < 8) {
-    showToast('La nueva contraseña debe tener al menos 8 caracteres', 'error');
+    showToast(t('La nueva contraseña debe tener al menos 8 caracteres'), 'error');
     return;
   }
 
@@ -178,17 +178,17 @@ document.getElementById('cfg-save-env-btn').addEventListener('click', function()
           .then(function(response) { return response.json(); })
           .then(populateEnvForm);
         if (result.data.changed) {
-          offerAppRestart('.env guardado.');
+          offerAppRestart(t('.env guardado.'));
         } else {
-          showToast('No había cambios que guardar.', 'success');
+          showToast(t('No había cambios que guardar.'), 'success');
         }
       } else {
-        showToast(result.data.detail || 'Error al guardar', 'error');
+        showToast(result.data.detail || t('Error al guardar'), 'error');
       }
     })
     .catch(function() {
       btn.disabled = false;
-      showToast('No se pudo conectar con el panel. Comprueba la conexión y vuelve a intentarlo.', 'error');
+      showToast(t('No se pudo conectar con el panel. Comprueba la conexión y vuelve a intentarlo.'), 'error');
     });
 });
 
@@ -212,17 +212,17 @@ document.getElementById('cfg-save-constants-btn').addEventListener('click', func
       btn.disabled = false;
       if (result.ok) {
         if (result.data.changed) {
-          offerAppRestart('Constantes guardadas.');
+          offerAppRestart(t('Constantes guardadas.'));
         } else {
-          showToast('No había cambios que guardar.', 'success');
+          showToast(t('No había cambios que guardar.'), 'success');
         }
       } else {
-        showToast(result.data.detail || 'Error al guardar', 'error');
+        showToast(result.data.detail || t('Error al guardar'), 'error');
       }
     })
     .catch(function() {
       btn.disabled = false;
-      showToast('No se pudo conectar con el panel. Comprueba la conexión y vuelve a intentarlo.', 'error');
+      showToast(t('No se pudo conectar con el panel. Comprueba la conexión y vuelve a intentarlo.'), 'error');
     });
 });
 
@@ -235,12 +235,12 @@ document.getElementById('cfg-save-constants-btn').addEventListener('click', func
 function offerAppRestart(savedMessage) {
   showConfirm(
     savedMessage,
-    'Los cambios no se aplican hasta reiniciar la app. ¿Reiniciarla ahora? (no reinicia si hay un servidor de Minecraft corriendo o una operación en curso)',
+    t('Los cambios no se aplican hasta reiniciar la app. ¿Reiniciarla ahora? (no reinicia si hay un servidor de Minecraft corriendo o una operación en curso)'),
     doAppRestart,
     {
       icon: '🔄',
-      confirmLabel: 'Reiniciar ahora',
-      cancelLabel: 'Más tarde',
+      confirmLabel: t('Reiniciar ahora'),
+      cancelLabel: t('Más tarde'),
       tone: 'accent',
       onCancel: function() { loadAutoUpdateStatus(); },
     }
@@ -263,10 +263,10 @@ function doAppRestart(btn) {
     })
     .then(function(result) {
       if (result.ok) {
-        showToast('Reiniciando la app…', 'success');
-        beginRestartWatch('Aplicando los cambios de configuración…', 'Esto puede tardar unos segundos. No cierres esta pestaña.');
+        showToast(t('Reiniciando la app…'), 'success');
+        beginRestartWatch(t('Aplicando los cambios de configuración…'), t('Esto puede tardar unos segundos. No cierres esta pestaña.'));
       } else {
-        showToast(result.data.detail || 'No se pudo reiniciar', 'error');
+        showToast(result.data.detail || t('No se pudo reiniciar'), 'error');
         if (btn) {
           btn.disabled = false;
         }
@@ -275,7 +275,7 @@ function doAppRestart(btn) {
     .catch(function() {
       // La conexión cortándose aquí es justo la señal esperada de que la app
       // ya está reiniciando -- no se trata como un error real.
-      showToast('Reiniciando la app…', 'success');
-      beginRestartWatch('Aplicando los cambios de configuración…', 'Esto puede tardar unos segundos. No cierres esta pestaña.');
+      showToast(t('Reiniciando la app…'), 'success');
+      beginRestartWatch(t('Aplicando los cambios de configuración…'), t('Esto puede tardar unos segundos. No cierres esta pestaña.'));
     });
 }

@@ -1,8 +1,14 @@
 // -- Automatización: reinicio tras caída, copias automáticas y tareas ----------
 // Los ajustes se guardan en cuanto se cambian (no hay botón de guardar); las
 // tareas se crean y editan en el formulario de la tarjeta.
-var DAY_LETTERS = ['L', 'M', 'X', 'J', 'V', 'S', 'D'];
-var DAY_NAMES = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
+// Iniciales y nombres de los días (de lunes a domingo) en el idioma del panel.
+// El 5 de enero de 2026 es lunes.
+var DAY_LETTERS = [0, 1, 2, 3, 4, 5, 6].map(function(i) {
+  return new Date(2026, 0, 5 + i).toLocaleDateString(APP_LOCALE, { weekday: 'narrow' });
+});
+var DAY_NAMES = [0, 1, 2, 3, 4, 5, 6].map(function(i) {
+  return new Date(2026, 0, 5 + i).toLocaleDateString(APP_LOCALE, { weekday: 'long' });
+});
 var TASK_ICONS = { restart: 'refresh-cw', stop: 'square', start: 'play', command: 'terminal', backup: 'archive' };
 var automationData = null;
 var editingTaskId = null;
@@ -10,14 +16,14 @@ var editingTaskId = null;
 function loadAutomation() {
   apiJson('/api/automation').then(function(result) {
     if (!result.ok) {
-      document.getElementById('task-list').innerHTML = noticeHtml('error', escHtml(result.data.detail || 'No se pudo cargar la automatización.'));
+      document.getElementById('task-list').innerHTML = noticeHtml('error', escHtml(result.data.detail || t('No se pudo cargar la automatización.')));
       return;
     }
     automationData = result.data;
     renderAutomationSettings();
     renderTaskKinds();
     renderTasks();
-    document.getElementById('auto-server-time').textContent = 'Hora del servidor: ' + result.data.server_time;
+    document.getElementById('auto-server-time').textContent = t('Hora del servidor: {time}', { time: result.data.server_time });
   });
 }
 
@@ -54,14 +60,14 @@ function saveAutomationSettings() {
     body: JSON.stringify(body)
   }).then(function(result) {
     if (!result.ok) {
-      showToast(result.data.detail || 'No se pudo guardar', 'error');
+      showToast(result.data.detail || t('No se pudo guardar'), 'error');
       return;
     }
     automationData.auto_restart = result.data.auto_restart;
     automationData.backups = result.data.backups;
     // Los números fuera de rango vuelven a lo que de verdad se guardó.
     renderAutomationSettings();
-    showToast('Guardado', 'success');
+    showToast(t('Guardado'), 'success');
   });
 }
 
@@ -79,28 +85,31 @@ function saveAutomationSettings() {
 // -- Lista de tareas -------------------------------------------------------------
 function describeTaskTitle(task) {
   if (task.kind === 'command') {
-    return 'Comando ' + task.command;
+    return t('Comando {command}', { command: task.command });
   }
   if (task.kind === 'start') {
-    return 'Encender ' + task.modpack;
+    return t('Encender {name}', { name: task.modpack });
   }
-  return automationData.task_kinds[task.kind];
+  return t(automationData.task_kinds[task.kind]);
 }
 
 function describeDays(days) {
   var key = days.join(',');
   if (key === '0,1,2,3,4,5,6') {
-    return 'Todos los días';
+    return t('Todos los días');
   }
   if (key === '0,1,2,3,4') {
-    return 'De lunes a viernes';
+    return t('De lunes a viernes');
   }
   if (key === '5,6') {
-    return 'Los fines de semana';
+    return t('Los fines de semana');
   }
   var names = days.map(function(day) { return DAY_NAMES[day]; });
-  return names.length === 1 ? 'Los ' + names[0] + (/s$/.test(names[0]) ? '' : 's')
-    : names.slice(0, -1).join(', ') + ' y ' + names[names.length - 1];
+  if (names.length === 1) {
+    // «Los lunes», «Los sábados» / «Mondays»
+    return t('Los {days}', { days: names[0] + (/s$/.test(names[0]) ? '' : 's') });
+  }
+  return joinList(names);
 }
 
 function dayChipsHtml(days) {
@@ -117,16 +126,16 @@ function taskStatusHtml(task) {
   var when = formatRelativeDate(new Date(status.at).getTime() / 1000);
   return '<div class="task-status ' + (status.ok ? 'is-ok' : 'is-fail') + '">'
     + icon(status.ok ? 'circle-check' : 'circle-x')
-    + '<span>Última vez ' + escHtml(when) + ': ' + escHtml(status.message) + '</span></div>';
+    + '<span>' + escHtml(t('Última vez {when}: {message}', { when: when, message: t(status.message) })) + '</span></div>';
 }
 
 function renderTasks() {
   var list = document.getElementById('task-list');
   var tasks = automationData.tasks;
   if (!tasks.length) {
-    list.innerHTML = emptyArt('sign', 'Nada programado',
-      'Por ejemplo, reiniciar el servidor cada madrugada avisando antes a quien esté jugando.',
-      '<button class="btn-secondary" id="task-preset-btn">' + icon('refresh-cw') + 'Reinicio diario a las 05:00</button>', true);
+    list.innerHTML = emptyArt('sign', t('Nada programado'),
+      t('Por ejemplo, reiniciar el servidor cada madrugada avisando antes a quien esté jugando.'),
+      '<button class="btn-secondary" id="task-preset-btn">' + icon('refresh-cw') + t('Reinicio diario a las 05:00') + '</button>', true);
     document.getElementById('task-preset-btn').addEventListener('click', function() {
       openTaskForm({ kind: 'restart', time: '05:00', days: [0, 1, 2, 3, 4, 5, 6], warn_minutes: 5 });
     });
@@ -136,10 +145,10 @@ function renderTasks() {
   list.innerHTML = '<div class="task-list">' + sorted.map(function(task) {
     var meta = describeDays(task.days);
     if (task.warn_minutes) {
-      meta += ', avisando ' + task.warn_minutes + ' min antes';
+      meta += t(', avisando {n} min antes', { n: task.warn_minutes });
     }
     return '<div class="task-row' + (task.enabled ? '' : ' is-paused') + '" data-id="' + escHtml(task.id) + '">'
-      + '<div class="toggle-track task-toggle' + (task.enabled ? ' on' : '') + '" aria-label="Tarea activa"><div class="toggle-thumb"></div></div>'
+      + '<div class="toggle-track task-toggle' + (task.enabled ? ' on' : '') + '" aria-label="' + t('Tarea activa') + '"><div class="toggle-thumb"></div></div>'
       + '<div class="task-time">' + escHtml(task.time) + '</div>'
       + '<div class="task-main">'
       + '<div class="task-title">' + icon(TASK_ICONS[task.kind]) + '<span>' + escHtml(describeTaskTitle(task)) + '</span></div>'
@@ -147,9 +156,9 @@ function renderTasks() {
       + taskStatusHtml(task)
       + '</div>'
       + '<div class="task-actions">'
-      + '<button class="btn-ghost btn-xs" data-action="run" title="Ejecutar ahora para probarla">' + icon('play') + 'Probar</button>'
-      + '<button class="btn-ghost btn-xs" data-action="edit" aria-label="Editar" title="Editar">' + icon('pencil') + '</button>'
-      + '<button class="btn-ghost btn-xs" data-action="delete" aria-label="Borrar" title="Borrar">' + icon('trash-2') + '</button>'
+      + '<button class="btn-ghost btn-xs" data-action="run" title="' + t('Ejecutar ahora para probarla') + '">' + icon('play') + t('Probar') + '</button>'
+      + '<button class="btn-ghost btn-xs" data-action="edit" aria-label="' + t('Editar') + '" title="' + t('Editar') + '">' + icon('pencil') + '</button>'
+      + '<button class="btn-ghost btn-xs" data-action="delete" aria-label="' + t('Borrar') + '" title="' + t('Borrar') + '">' + icon('trash-2') + '</button>'
       + '</div></div>';
   }).join('') + '</div>';
 }
@@ -165,7 +174,7 @@ function saveTask(task, onDone) {
     body: JSON.stringify(task)
   }).then(function(result) {
     if (!result.ok) {
-      showToast(result.data.detail || 'No se pudo guardar la tarea', 'error');
+      showToast(result.data.detail || t('No se pudo guardar la tarea'), 'error');
       return false;
     }
     var index = automationData.tasks.map(function(t) { return t.id; }).indexOf(result.data.id);
@@ -194,7 +203,7 @@ document.getElementById('task-list').addEventListener('click', function(event) {
   if (event.target.closest('.task-toggle')) {
     var copy = Object.assign({}, task, { enabled: !task.enabled });
     saveTask(copy, function(saved) {
-      showToast(saved.enabled ? 'Tarea activada' : 'Tarea en pausa', 'success');
+      showToast(saved.enabled ? t('Tarea activada') : t('Tarea en pausa'), 'success');
     });
     return;
   }
@@ -206,25 +215,25 @@ document.getElementById('task-list').addEventListener('click', function(event) {
   if (action === 'edit') {
     openTaskForm(task);
   } else if (action === 'delete') {
-    showConfirm('¿Borrar la tarea?', describeTaskTitle(task) + ' a las ' + task.time + '.', function() {
+    showConfirm(t('¿Borrar la tarea?'), t('{task} a las {time}.', { task: describeTaskTitle(task), time: task.time }), function() {
       busyWhile(button, function() {
         return apiJson('/api/automation/tasks/' + encodeURIComponent(task.id), { method: 'DELETE' }).then(function(result) {
           if (!result.ok) {
-            showToast(result.data.detail || 'No se pudo borrar', 'error');
+            showToast(result.data.detail || t('No se pudo borrar'), 'error');
             return;
           }
           automationData.tasks = automationData.tasks.filter(function(t) { return t.id !== task.id; });
           renderTasks();
-          showToast('Tarea borrada', 'success');
+          showToast(t('Tarea borrada'), 'success');
         });
       });
-    }, { confirmLabel: 'Borrar' });
+    }, { confirmLabel: t('Borrar') });
   } else if (action === 'run') {
     var disruptive = task.kind === 'restart' || task.kind === 'stop';
     var run = function() {
       busyWhile(button, function() {
         return apiJson('/api/automation/tasks/' + encodeURIComponent(task.id) + '/run', { method: 'POST' }).then(function(result) {
-          showToast(result.ok ? result.data.message : (result.data.detail || 'No se pudo ejecutar'), result.ok ? 'success' : 'error');
+          showToast(result.ok ? t(result.data.message) : (result.data.detail || t('No se pudo ejecutar')), result.ok ? 'success' : 'error');
           // El resultado llega cuando termina: se vuelve a mirar en un rato.
           setTimeout(function() {
             if (currentPage === 'automation') {
@@ -236,9 +245,9 @@ document.getElementById('task-list').addEventListener('click', function(event) {
     };
     if (disruptive || task.kind === 'start') {
       var msg = task.warn_minutes
-        ? 'Se hará ahora mismo, sin esperar los ' + task.warn_minutes + ' minutos de aviso (los jugadores recibirán un aviso igualmente).'
-        : 'Se hará ahora mismo.';
-      showConfirm('¿Probar «' + describeTaskTitle(task) + '»?', msg, run, { confirmLabel: 'Ejecutar ahora', tone: 'accent', icon: 'play' });
+        ? t('Se hará ahora mismo, sin esperar los {n} minutos de aviso (los jugadores recibirán un aviso igualmente).', { n: task.warn_minutes })
+        : t('Se hará ahora mismo.');
+      showConfirm(t('¿Probar «{task}»?', { task: describeTaskTitle(task) }), msg, run, { confirmLabel: t('Ejecutar ahora'), tone: 'accent', icon: 'play' });
     } else {
       run();
     }
@@ -250,14 +259,14 @@ function renderTaskKinds() {
   var select = document.getElementById('task-kind');
   var kinds = automationData.task_kinds;
   select.innerHTML = Object.keys(kinds).map(function(key) {
-    return '<option value="' + escHtml(key) + '">' + escHtml(kinds[key]) + '</option>';
+    return '<option value="' + escHtml(key) + '">' + escHtml(t(kinds[key])) + '</option>';
   }).join('');
   var packs = document.getElementById('task-modpack');
   packs.innerHTML = automationData.modpacks.length
     ? automationData.modpacks.map(function(name) {
         return '<option value="' + escHtml(name) + '">' + escHtml(name) + '</option>';
       }).join('')
-    : '<option value="">No hay servidores instalados</option>';
+    : '<option value="">' + t('No hay servidores instalados') + '</option>';
 }
 
 (function buildDayPicker() {
@@ -286,7 +295,7 @@ function openTaskForm(task) {
   var form = document.getElementById('task-form');
   editingTaskId = task && task.id ? task.id : null;
   task = task || { kind: 'restart', time: '05:00', days: [0, 1, 2, 3, 4, 5, 6], warn_minutes: 5 };
-  document.getElementById('task-form-title').textContent = editingTaskId ? 'Editar tarea' : 'Nueva tarea';
+  document.getElementById('task-form-title').textContent = editingTaskId ? t('Editar tarea') : t('Nueva tarea');
   document.getElementById('task-kind').value = task.kind;
   document.getElementById('task-time').value = task.time;
   document.getElementById('task-warn').value = String(task.warn_minutes || 0);
@@ -331,7 +340,7 @@ document.getElementById('task-form').addEventListener('submit', function(event) 
   btn.disabled = true;
   saveTask(task, function() {
     closeTaskForm();
-    showToast(isNew ? 'Tarea programada' : 'Tarea guardada', 'success');
+    showToast(isNew ? t('Tarea programada') : t('Tarea guardada'), 'success');
     if (isNew) {
       unlockAchievement('clockwork');
     }

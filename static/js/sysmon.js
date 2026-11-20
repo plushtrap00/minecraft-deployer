@@ -3,8 +3,8 @@ var sysmonOpen = false;
 var sysmonSSE = null;
 
 document.getElementById('btn-logout').addEventListener('click', function() {
-  showConfirm('¿Cerrar sesión?', 'Tendrás que volver a entrar con tu usuario y contraseña.', endSession, {
-    icon: '⏻', confirmLabel: 'Cerrar sesión'
+  showConfirm(t('¿Cerrar sesión?'), t('Tendrás que volver a entrar con tu usuario y contraseña.'), endSession, {
+    icon: '⏻', confirmLabel: t('Cerrar sesión')
   });
 });
 
@@ -58,7 +58,7 @@ function startSysmonStream(resume) {
     }
     if (data.error || !data.cpu) {
       document.getElementById('sysmon-body').innerHTML =
-        '<p class="text-red text-sm">Error: ' + escHtml(data.error || 'Respuesta inesperada del servidor') + '</p>';
+        '<p class="text-red text-sm">' + escHtml(t('Error: {error}', { error: data.error || t('Respuesta inesperada del servidor') })) + '</p>';
       return;
     }
     lastSysmonStats = data;
@@ -113,7 +113,7 @@ function loadAutoUpdateStatus() {
         // solo refrescar el panel.
         autoUpdateRestarting = false;
         hideRestartOverlay();
-        showToast('Actualizado. Recargando la página…', 'success');
+        showToast(t('Actualizado. Recargando la página…'), 'success');
         setTimeout(function() { window.location.reload(); }, 800);
         return;
       }
@@ -154,7 +154,7 @@ function loadAutoUpdateStatus() {
           && Date.now() - autoUpdateRestartStartedAt > AUTO_UPDATE_RESTART_MAX_WAIT_MS) {
         autoUpdateRestarting = false;
         hideRestartOverlay();
-        showToast('La app está tardando en volver a responder. Recarga la página a mano en unos segundos.', 'error');
+        showToast(t('La app está tardando en volver a responder. Recarga la página a mano en unos segundos.'), 'error');
         if (lastSysmonStats) {
           renderSysmon(lastSysmonStats);
         }
@@ -216,12 +216,12 @@ function checkForUpdatesNow() {
         updateSysmonBadge();
         showToast(
           result.data.commits_behind > 0
-            ? 'Hay ' + result.data.commits_behind + ' commit(s) nuevos disponibles'
-            : 'Ya tienes la última versión',
+            ? t('Hay {n} commit(s) nuevos disponibles', { n: result.data.commits_behind })
+            : t('Ya tienes la última versión'),
           'success'
         );
       } else {
-        showToast(result.data.detail || 'No se pudo comprobar', 'error');
+        showToast(result.data.detail || t('No se pudo comprobar'), 'error');
       }
       if (lastSysmonStats) {
         renderSysmon(lastSysmonStats);
@@ -229,7 +229,7 @@ function checkForUpdatesNow() {
     })
     .catch(function() {
       autoUpdateChecking = false;
-      showToast('Error de red al comprobar actualizaciones', 'error');
+      showToast(t('Error de red al comprobar actualizaciones'), 'error');
       if (lastSysmonStats) {
         renderSysmon(lastSysmonStats);
       }
@@ -240,7 +240,7 @@ function applyAutoUpdate() {
   var btn = document.getElementById('auto-update-apply-btn');
   if (btn) {
     btn.disabled = true;
-    btn.textContent = 'Actualizando…';
+    btn.textContent = t('Actualizando…');
   }
   apiFetch('/api/auto-update/apply', { method: 'POST' })
     .then(function(response) {
@@ -248,21 +248,21 @@ function applyAutoUpdate() {
     })
     .then(function(result) {
       if (result.ok) {
-        showToast('Actualización aplicada. Reiniciando la app…', 'success');
-        beginRestartWatch('Aplicando la actualización…', 'Esto puede tardar unos segundos. No cierres esta pestaña.');
+        showToast(t('Actualización aplicada. Reiniciando la app…'), 'success');
+        beginRestartWatch(t('Aplicando la actualización…'), t('Esto puede tardar unos segundos. No cierres esta pestaña.'));
       } else {
-        showToast(result.data.detail || 'No se pudo actualizar', 'error');
+        showToast(result.data.detail || t('No se pudo actualizar'), 'error');
         if (btn) {
           btn.disabled = false;
-          btn.textContent = 'Actualizar ahora';
+          btn.textContent = t('Actualizar ahora');
         }
       }
     })
     .catch(function() {
       // La conexión cortándose aquí es justo la señal esperada de que la app
       // ya está reiniciando -- no se trata como un error real.
-      showToast('Actualización enviada. Reiniciando la app…', 'success');
-      beginRestartWatch('Aplicando la actualización…', 'Esto puede tardar unos segundos. No cierres esta pestaña.');
+      showToast(t('Actualización enviada. Reiniciando la app…'), 'success');
+      beginRestartWatch(t('Aplicando la actualización…'), t('Esto puede tardar unos segundos. No cierres esta pestaña.'));
     });
 }
 
@@ -322,10 +322,9 @@ function renderSysmon(stats) {
   html += '</div>';
 
   html += '<div class="sysmon-section">';
-  html += '<div class="sysmon-section-title">Temperatura</div>';
+  html += '<div class="sysmon-section-title">' + t('Temperatura') + '</div>';
   if (stats.cpu_temp === null && stats.gpu_temp === null) {
-    html += '<span class="sysmon-no-temps">Sin sensores detectados. '
-      + 'Instala: <code>sudo apt install lm-sensors && sudo sensors-detect --auto</code></span>';
+    html += '<span class="sysmon-no-temps">' + t('Sin sensores detectados. Instala: {command}', { command: '<code>sudo apt install lm-sensors && sudo sensors-detect --auto</code>' }) + '</span>';
   } else {
     if (stats.cpu_temp !== null) {
       html += sysBar('CPU', stats.cpu_temp, stats.cpu_temp.toFixed(1) + '°C');
@@ -362,17 +361,17 @@ function renderRestartPendingSection() {
     return '';
   }
   var blockedReason = status.server_running
-    ? 'hay un servidor de Minecraft en marcha'
+    ? t('hay un servidor de Minecraft en marcha')
     : (status.busy ? status.busy_reasons.join(', ') : null);
 
   var html = '<div class="sysmon-section">';
-  html += '<div class="sysmon-section-title">Reinicio pendiente</div>';
-  html += '<span class="sysmon-no-temps">Guardaste cambios de .env o de constantes que todavía no se aplicaron.</span>';
+  html += '<div class="sysmon-section-title">' + t('Reinicio pendiente') + '</div>';
+  html += '<span class="sysmon-no-temps">' + t('Guardaste cambios de .env o de constantes que todavía no se aplicaron.') + '</span>';
   html += '<div class="stack-start">';
   html += '<button type="button" class="btn-secondary btn-sm" id="sysmon-restart-btn"'
-    + (blockedReason ? ' disabled' : '') + '>Reiniciar ahora</button>';
+    + (blockedReason ? ' disabled' : '') + '>' + t('Reiniciar ahora') + '</button>';
   if (blockedReason) {
-    html += '<span class="sysmon-no-temps">Bloqueado: ' + escHtml(blockedReason) + '</span>';
+    html += '<span class="sysmon-no-temps">' + escHtml(t('Bloqueado: {reason}', { reason: blockedReason })) + '</span>';
   }
   html += '</div></div>';
   return html;
@@ -398,8 +397,8 @@ function updateChangesHtml(status) {
     return '';
   }
   var html = '<div class="update-changes">'
-    + '<div class="update-changes-title">Qué trae'
-    + (status.remote_version ? ' la ' + escHtml(status.remote_version) : '') + '</div>'
+    + '<div class="update-changes-title">'
+    + escHtml(status.remote_version ? t('Qué trae la {version}', { version: status.remote_version }) : t('Qué trae')) + '</div>'
     + '<ul class="update-changes-list">';
   changes.forEach(function(change) {
     var text = change.text.charAt(0).toUpperCase() + change.text.slice(1);
@@ -407,7 +406,7 @@ function updateChangesHtml(status) {
       + '<span class="update-change-text">' + escHtml(text) + '</span></li>';
   });
   if (others.length) {
-    html += '<li><span class="update-change-version">' + (changes.length ? 'Además' : 'Commits') + '</span>'
+    html += '<li><span class="update-change-version">' + (changes.length ? t('Además') : t('Commits')) + '</span>'
       + '<span class="update-change-text">' + others.map(escHtml).join('<br>') + '</span></li>';
   }
   html += '</ul></div>';
@@ -417,42 +416,42 @@ function updateChangesHtml(status) {
 function renderAutoUpdateSection() {
   var status = lastAutoUpdateStatus;
   var html = '<div class="sysmon-section">';
-  html += '<div class="sysmon-section-title">Actualizaciones de la app</div>';
+  html += '<div class="sysmon-section-title">' + t('Actualizaciones de la app') + '</div>';
 
   if (autoUpdateRestarting) {
-    html += '<span class="sysmon-no-temps">Actualización aplicada, esperando a que la app vuelva a responder…</span></div>';
+    html += '<span class="sysmon-no-temps">' + t('Actualización aplicada, esperando a que la app vuelva a responder…') + '</span></div>';
     return html;
   }
 
   if (!status) {
-    html += '<span class="sysmon-no-temps">Cargando…</span></div>';
+    html += '<span class="sysmon-no-temps">' + t('Cargando…') + '</span></div>';
     return html;
   }
 
-  html += autoUpdateRow('Versión', appVersion());
+  html += autoUpdateRow(t('Versión'), appVersion());
 
   if (!status.enabled) {
-    html += '<span class="sysmon-no-temps">Comprobación automática deshabilitada (AUTO_UPDATE_ENABLED=false en el .env) — puedes comprobar a mano igualmente.</span>';
+    html += '<span class="sysmon-no-temps">' + t('Comprobación automática deshabilitada (AUTO_UPDATE_ENABLED=false en el .env) — puedes comprobar a mano igualmente.') + '</span>';
   } else {
-    html += autoUpdateRow('Entorno', status.in_docker ? 'Docker' : 'Nativo (systemd)');
+    html += autoUpdateRow(t('Entorno'), status.in_docker ? 'Docker' : t('Nativo (systemd)'));
   }
 
   if (status.commits_behind > 0) {
-    html += autoUpdateRow('Estado', status.commits_behind + ' commit(s) nuevos disponibles', 'yellow');
+    html += autoUpdateRow(t('Estado'), t('{n} commit(s) nuevos disponibles', { n: status.commits_behind }), 'yellow');
     html += updateChangesHtml(status);
 
     var blockedReason = status.server_running
-      ? 'hay un servidor de Minecraft en marcha'
+      ? t('hay un servidor de Minecraft en marcha')
       : (status.busy ? status.busy_reasons.join(', ') : null);
 
     if (currentRole !== 'admin') {
-      html += '<span class="sysmon-no-temps">Un administrador puede aplicarla desde aquí.</span>';
+      html += '<span class="sysmon-no-temps">' + t('Un administrador puede aplicarla desde aquí.') + '</span>';
     } else {
       html += '<div class="stack-start">';
       html += '<button type="button" class="btn-secondary btn-sm" id="auto-update-apply-btn"'
-        + (blockedReason ? ' disabled' : '') + '>Actualizar ahora</button>';
+        + (blockedReason ? ' disabled' : '') + '>' + t('Actualizar ahora') + '</button>';
       if (blockedReason) {
-        html += '<span class="sysmon-no-temps">Bloqueado: ' + escHtml(blockedReason) + '</span>';
+        html += '<span class="sysmon-no-temps">' + escHtml(t('Bloqueado: {reason}', { reason: blockedReason })) + '</span>';
       }
       html += '</div>';
     }
@@ -460,7 +459,7 @@ function renderAutoUpdateSection() {
     // Solo "al día" si ya se comprobó de verdad alguna vez (automático o a
     // mano) — si nunca se comprobó, commits_behind sigue en su valor inicial
     // 0 y mostrar "al día" sería un falso positivo.
-    html += autoUpdateRow('Estado', 'Al día', 'green');
+    html += autoUpdateRow(t('Estado'), t('Al día'), 'green');
   }
 
   if (status.last_check) {
@@ -468,16 +467,16 @@ function renderAutoUpdateSection() {
     var timeStr = d.getHours().toString().padStart(2, '0') + ':'
       + d.getMinutes().toString().padStart(2, '0') + ':'
       + d.getSeconds().toString().padStart(2, '0');
-    html += autoUpdateRow('Último chequeo', timeStr);
+    html += autoUpdateRow(t('Último chequeo'), timeStr);
   }
 
   if (status.last_error) {
-    html += autoUpdateRow('Error', status.last_error, 'red');
+    html += autoUpdateRow(t('Error'), status.last_error, 'red');
   }
 
   html += '<div class="mt-s">'
     + '<button type="button" class="btn-secondary btn-xs" id="auto-update-check-btn"' + (autoUpdateChecking ? ' disabled' : '') + '>'
-    + (autoUpdateChecking ? 'Comprobando…' : 'Comprobar ahora') + '</button>'
+    + (autoUpdateChecking ? t('Comprobando…') : t('Comprobar ahora')) + '</button>'
     + '</div>';
 
   html += '</div>';

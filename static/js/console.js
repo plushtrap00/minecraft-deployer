@@ -15,8 +15,8 @@ function setConsoleView(chat) {
   document.getElementById('console-view-log').setAttribute('aria-selected', chat ? 'false' : 'true');
   document.getElementById('console-view-chat').setAttribute('aria-selected', chat ? 'true' : 'false');
   var input = document.getElementById('cmd-input');
-  input.placeholder = chat ? 'Escribe un mensaje para los jugadores…' : 'Escribe un comando: say Hola, list, whitelist add Alex…';
-  input.setAttribute('aria-label', chat ? 'Mensaje para los jugadores' : 'Comando para el servidor');
+  input.placeholder = chat ? t('Escribe un mensaje para los jugadores…') : t('Escribe un comando: say Hola, list, whitelist add Alex…');
+  input.setAttribute('aria-label', chat ? t('Mensaje para los jugadores') : t('Comando para el servidor'));
   document.querySelector('.cmd-prompt').innerHTML = chat ? icon('message-square') : '&gt;';
   var consoleEl = document.getElementById('console');
   consoleEl.scrollTop = consoleEl.scrollHeight;
@@ -87,12 +87,12 @@ function sendServerCommand(cmd) {
   return apiFetch('/api/server/command', { method: 'POST', body: form })
     .then(function(response) {
       if (!response.ok) {
-        showToast('El servidor no aceptó el comando', 'error');
+        showToast(t('El servidor no aceptó el comando'), 'error');
       }
       return response.ok;
     })
     .catch(function() {
-      showToast('No se pudo enviar el comando', 'error');
+      showToast(t('No se pudo enviar el comando'), 'error');
       return false;
     });
 }
