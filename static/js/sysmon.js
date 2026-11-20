@@ -297,7 +297,7 @@ function sysBar(label, pct, valLabel) {
   var cls = sysColor(pct);
   return '<div class="sysmon-bar-row">'
     + '<span class="sysmon-bar-label" title="' + escHtml(label) + '">' + escHtml(label) + '</span>'
-    + '<div class="sysmon-bar-wrap"><div class="sysmon-bar-fill ' + cls + '" style="width:' + Math.min(pct, 100) + '%"></div></div>'
+    + '<div class="sysmon-bar-wrap"><div class="sysmon-bar-fill ' + cls + '" style="--fill:' + (Math.max(0, Math.min(pct, 100)) / 100) + '"></div></div>'
     + '<span class="sysmon-bar-val">' + escHtml(valLabel) + '</span>'
     + '</div>';
 }

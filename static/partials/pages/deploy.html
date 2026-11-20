@@ -2,14 +2,14 @@
 <div class="page" id="page-deploy">
   <div class="disk-bar">
     <span class="disk-label">Espacio en disco</span>
-    <div class="bar-wrap"><div class="bar-fill" id="disk-fill" style="width:0%"></div></div>
+    <div class="bar-wrap"><div class="bar-fill" id="disk-fill"></div></div>
     <span class="disk-text" id="disk-text">Calculando…</span>
   </div>
 
   <div class="mgmt-tabs deploy-modes">
-    <button class="mgmt-tab active" id="deploy-mode-import"><svg class="icon"><use href="#i-upload"/></svg>Subir un modpack</button>
-    <button class="mgmt-tab" id="deploy-mode-create"><svg class="icon"><use href="#i-plus"/></svg>Crear desde cero</button>
-    <button class="mgmt-tab" id="deploy-mode-download"><svg class="icon"><use href="#i-download"/></svg>Buscar y descargar</button>
+    <button class="mgmt-tab active" id="deploy-mode-import"><svg class="icon" aria-hidden="true"><use href="#i-upload"/></svg>Subir un modpack</button>
+    <button class="mgmt-tab" id="deploy-mode-create"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Crear desde cero</button>
+    <button class="mgmt-tab" id="deploy-mode-download"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>Buscar y descargar</button>
   </div>
 
   <div id="deploy-import-section">
@@ -18,15 +18,15 @@
     <p class="hint step-lead">Los «server files» del modpack, tal como los descargas de CurseForge o Modrinth.</p>
     <div class="drop-zone" id="drop-zone">
       <input type="file" id="file-input" accept=".zip,.rar,.tar,.tar.gz,.tgz,.tar.bz2">
-      <svg class="icon dz-icon"><use href="#i-upload"/></svg>
+      <svg class="icon dz-icon" aria-hidden="true"><use href="#i-upload"/></svg>
       <div class="dz-text">Arrastra aquí el archivo o <span class="dz-link">elígelo en tu equipo</span></div>
       <div class="dz-hint">.zip, .rar, .tar, .tar.gz o .tar.bz2</div>
     </div>
     <div class="file-badge" id="file-badge">
-      <span class="fb-icon"><svg class="icon"><use href="#i-package"/></svg></span>
+      <span class="fb-icon"><svg class="icon" aria-hidden="true"><use href="#i-package"/></svg></span>
       <span class="fb-name" id="fb-name"></span>
       <span class="fb-size" id="fb-size"></span>
-      <button class="btn-clear" id="fb-clear" aria-label="Quitar archivo"><svg class="icon"><use href="#i-x"/></svg></button>
+      <button class="btn-clear" id="fb-clear" aria-label="Quitar archivo"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
     </div>
   </div>
 
@@ -61,7 +61,7 @@
       <p id="result-msg" class="result-msg"></p>
       <div class="result-grid" id="result-grid"></div>
     </div>
-    <div class="step-action"><span class="step-missing" data-missing-for="deploy-btn"></span><button class="deploy-btn btn-go" id="deploy-btn"><svg class="icon"><use href="#i-upload"/></svg>Instalar servidor</button></div>
+    <div class="step-action"><span class="step-missing" data-missing-for="deploy-btn"></span><button class="deploy-btn btn-go" id="deploy-btn"><svg class="icon" aria-hidden="true"><use href="#i-upload"/></svg>Instalar servidor</button></div>
   </div>
   </div>
   <!-- /deploy-import-section -->
@@ -106,7 +106,7 @@
     <div class="card step">
       <h2 class="step-title"><span class="step-num" aria-hidden="true">4</span>Crear</h2>
       <div id="create-progress-body"></div>
-      <div class="step-action"><span class="step-missing" data-missing-for="create-server-btn"></span><button class="deploy-btn btn-go" id="create-server-btn"><svg class="icon"><use href="#i-plus"/></svg>Crear servidor</button></div>
+      <div class="step-action"><span class="step-missing" data-missing-for="create-server-btn"></span><button class="deploy-btn btn-go" id="create-server-btn"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Crear servidor</button></div>
     </div>
   </div>
 
@@ -179,7 +179,7 @@
     <div class="card step" id="dl-install-card" style="display:none">
       <h2 class="step-title"><span class="step-num" aria-hidden="true">4</span>Instalar</h2>
       <div id="dl-progress-body"></div>
-      <div class="step-action"><span class="step-missing" data-missing-for="dl-install-btn"></span><button class="deploy-btn btn-go" id="dl-install-btn"><svg class="icon"><use href="#i-download"/></svg>Descargar e instalar</button></div>
+      <div class="step-action"><span class="step-missing" data-missing-for="dl-install-btn"></span><button class="deploy-btn btn-go" id="dl-install-btn"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>Descargar e instalar</button></div>
     </div>
   </div>
 </div>

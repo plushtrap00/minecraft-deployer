@@ -79,7 +79,7 @@ var DONE_LINE_RE = /\]: Done \(\d/;
 function setStartupProgress(percent, text) {
   startupPercent = Math.max(startupPercent, Math.min(100, percent));
   document.getElementById('startup-progress').hidden = false;
-  document.getElementById('startup-fill').style.width = startupPercent.toFixed(1) + '%';
+  setFill(document.getElementById('startup-fill'), startupPercent);
   document.getElementById('startup-bar').setAttribute('aria-valuenow', String(Math.round(startupPercent)));
   if (text) {
     document.getElementById('startup-phase').textContent = text;

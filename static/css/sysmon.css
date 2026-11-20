@@ -109,7 +109,7 @@
 .sysmon-bar-fill {
   height: 100%;
   border-radius: var(--radius-tag);
-  transition: width .4s;
+  transition: transform .4s;
 }
 
 .sysmon-bar-fill.ok {

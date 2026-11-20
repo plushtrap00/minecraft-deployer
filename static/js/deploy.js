@@ -12,7 +12,7 @@ function loadDeployPageData() {
         return;
       }
       var fillBar = document.getElementById('disk-fill');
-      fillBar.style.width = data.percent_used + '%';
+      setFill(fillBar, data.percent_used);
       fillBar.classList.toggle('danger', data.percent_used > 90);
       fillBar.classList.toggle('warn', data.percent_used > 70 && data.percent_used <= 90);
       document.getElementById('disk-text').textContent =
@@ -193,7 +193,7 @@ document.getElementById('deploy-btn').addEventListener('click', function() {
   var timer = setInterval(function() {
     if (progress < 85) {
       progress += Math.random() * 8;
-      fill.style.width = Math.min(progress, 85) + '%';
+      setFill(fill, Math.min(progress, 85));
       if (progress < 40) {
         status.textContent = 'Subiendo ' + selectedFile.name + '...';
       } else {
@@ -218,7 +218,7 @@ document.getElementById('deploy-btn').addEventListener('click', function() {
       });
     })
     .then(function(result) {
-      fill.style.width = '100%';
+      setFill(fill, 100);
       if (result.ok && result.data.success) {
         fill.classList.add('done');
         status.textContent = 'Completado';
@@ -267,7 +267,7 @@ function showResult(type, title, msg, items) {
 function resetDeploy() {
   document.getElementById('progress-section').classList.remove('show');
   var fillBar = document.getElementById('progress-fill');
-  fillBar.style.width = '0%';
+  setFill(fillBar, 0);
   fillBar.className = 'progress-fill';
   document.getElementById('result-box').className = 'result-box';
 }

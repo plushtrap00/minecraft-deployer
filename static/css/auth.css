@@ -16,7 +16,7 @@
    a pantalla completa, con la tarjeta encima. */
 .login-card {
   position: relative;
-  width: min(380px, calc(100vw - 32px));
+  width: min(380px, calc(100% - 32px));
   display: flex;
   flex-direction: column;
   gap: 16px;

@@ -3,7 +3,7 @@
   <div class="card">
     <div class="mods-header">
       <span id="modpack-version-badge" style="display:none"></span>
-      <button type="button" class="btn-secondary btn-sm" id="modloader-change-btn"><svg class="icon"><use href="#i-refresh-cw"/></svg>Cambiar versión del modloader</button>
+      <button type="button" class="btn-secondary btn-sm" id="modloader-change-btn"><svg class="icon" aria-hidden="true"><use href="#i-refresh-cw"/></svg>Cambiar versión del modloader</button>
       <div class="flex-1"></div>
       <span id="mods-count" class="mods-count"></span>
     </div>
@@ -14,14 +14,14 @@
     <!-- Upload zone -->
     <div class="mod-upload-zone" id="mod-upload-zone">
       <input type="file" id="mod-file-input" accept=".jar,.zip">
-      <svg class="icon muz-icon"><use href="#i-upload"/></svg>
+      <svg class="icon muz-icon" aria-hidden="true"><use href="#i-upload"/></svg>
       <div class="muz-text">Arrastra un <strong>.jar</strong> o un <strong>.zip</strong> con varios mods aquí, o <span class="muz-link">haz clic</span> para elegir archivo</div>
       <div class="muz-hint">Se verificará compatibilidad con la versión del servidor</div>
     </div>
     <input type="file" id="mod-folder-input" webkitdirectory directory multiple style="display:none">
     <div class="button-row">
-      <button type="button" class="btn-secondary btn-sm" id="mod-folder-btn"><svg class="icon"><use href="#i-folder-up"/></svg>Subir carpeta de mods</button>
-      <button type="button" class="btn-secondary btn-sm" id="mod-search-btn"><svg class="icon"><use href="#i-search"/></svg>Buscar mods online</button>
+      <button type="button" class="btn-secondary btn-sm" id="mod-folder-btn"><svg class="icon" aria-hidden="true"><use href="#i-folder-up"/></svg>Subir carpeta de mods</button>
+      <button type="button" class="btn-secondary btn-sm" id="mod-search-btn"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>Buscar mods online</button>
     </div>
 
     <div class="filter-row">
@@ -34,11 +34,11 @@
       <div class="mods-menu" id="mods-menu">
         <button type="button" class="btn-secondary btn-sm" id="mods-menu-btn" aria-haspopup="true" aria-expanded="false">Más opciones <svg class="icon" aria-hidden="true"><use href="#i-chevron-down"/></svg></button>
         <div class="mods-menu-dropdown" id="mods-menu-dropdown">
-          <button type="button" class="mods-menu-item" id="mod-duplicates-btn"><svg class="icon"><use href="#i-triangle-alert"/></svg>Ver posibles duplicados</button>
-          <button type="button" class="mods-menu-item" id="mod-client-only-btn"><svg class="icon"><use href="#i-monitor"/></svg>Mods solo de cliente</button>
-          <button type="button" class="mods-menu-item" id="mod-deps-btn"><svg class="icon"><use href="#i-link"/></svg>Instalar dependencias que faltan</button>
-          <button type="button" class="mods-menu-item" id="mod-delete-disabled-btn"><svg class="icon"><use href="#i-trash-2"/></svg>Borrar deshabilitados</button>
-          <button type="button" class="mods-menu-item" id="mod-download-btn"><svg class="icon"><use href="#i-download"/></svg>Descargar mods (.zip)</button>
+          <button type="button" class="mods-menu-item" id="mod-duplicates-btn"><svg class="icon" aria-hidden="true"><use href="#i-triangle-alert"/></svg>Ver posibles duplicados</button>
+          <button type="button" class="mods-menu-item" id="mod-client-only-btn"><svg class="icon" aria-hidden="true"><use href="#i-monitor"/></svg>Mods solo de cliente</button>
+          <button type="button" class="mods-menu-item" id="mod-deps-btn"><svg class="icon" aria-hidden="true"><use href="#i-link"/></svg>Instalar dependencias que faltan</button>
+          <button type="button" class="mods-menu-item" id="mod-delete-disabled-btn"><svg class="icon" aria-hidden="true"><use href="#i-trash-2"/></svg>Borrar deshabilitados</button>
+          <button type="button" class="mods-menu-item" id="mod-download-btn"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>Descargar mods (.zip)</button>
         </div>
       </div>
     </div>

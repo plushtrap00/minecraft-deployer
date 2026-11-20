@@ -354,10 +354,9 @@
 }
 
 .metric-bar-fill {
-  width: 0;
   height: 100%;
   background-color: var(--go);
-  transition: width .6s ease;
+  transition: transform .6s ease;
 }
 
 .metric-bar-fill.high {
@@ -683,11 +682,11 @@
   height: 18px;
   border-radius: calc(var(--radius) - 3px); /* exterior - hueco de 3px */
   background: #fff;
-  transition: left .2s;
+  transition: transform .2s;
 }
 
 .net-toggle-track.on .net-toggle-thumb {
-  left: 23px;
+  transform: translateX(20px);
 }
 
 .net-toggle-label {

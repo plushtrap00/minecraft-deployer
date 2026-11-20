@@ -6,6 +6,11 @@ documentación de la API. Cada commit sube la versión (2.A.B, cada cifra de 0
 a 9: después de 2.0.9 va 2.1.0) y se etiqueta con `git tag v<versión>`.
 
 Historial resumido:
+- 2.1.7 (2026-11-20): animaciones más fluidas (barras de progreso,
+  interruptores y el sol/luna de la escena se mueven con transform, no con
+  width/left), iconos ocultos a los lectores de pantalla, los botones se
+  hunden 1px al pulsarlos y nada se sale por los lados (overflow-x: clip,
+  sin 100vw).
 - 2.1.6 (2026-11-14): respuestas animadas: el campo que falta tiembla y se
   marca (sin diálogo modal), lo recién añadido destella en su lista y los
   botones de guardar confirman con «Guardado».
@@ -56,4 +61,4 @@ Historial resumido:
   otros usuarios.
 - 1.x: todo lo anterior (sin numerar).
 """
-APP_VERSION = "2.1.6"
+APP_VERSION = "2.1.7"

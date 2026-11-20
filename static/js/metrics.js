@@ -72,7 +72,7 @@ function resetMetrics() {
     document.getElementById(id).textContent = '';
   });
   document.getElementById('metrics-players-list').innerHTML = '';
-  document.getElementById('mb-ram').style.width = '0';
+  setFill(document.getElementById('mb-ram'), 0);
   document.getElementById('spark-tps').innerHTML = '';
   document.getElementById('spark-mspt').innerHTML = '';
   window._metricsLastFetch = null;
@@ -174,12 +174,12 @@ function updateMetricsUI(data) {
   if (data.ram_used_mb && data.ram_max_mb) {
     var pct = Math.min(100, (data.ram_used_mb / data.ram_max_mb) * 100);
     animateNumber(ramEl, data.ram_used_mb / 1024, 1, ' <small>de ' + (data.ram_max_mb / 1024).toFixed(1) + ' GB</small>');
-    ramBar.style.width = pct.toFixed(0) + '%';
+    setFill(ramBar, pct);
     ramBar.classList.toggle('high', pct >= 90);
   } else {
     ramEl.textContent = '—';
     delete ramEl.dataset.num;
-    ramBar.style.width = '0';
+    setFill(ramBar, 0);
   }
 
   if (data.uptime_seconds !== null && data.uptime_seconds !== undefined) {

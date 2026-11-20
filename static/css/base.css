@@ -79,6 +79,14 @@
   padding: 0;
 }
 
+/* Nada se sale por los lados de la página. clip (no hidden) no crea un
+   contenedor de scroll, así que la barra de navegación sticky sigue
+   funcionando. */
+html,
+body {
+  overflow-x: clip;
+}
+
 body {
   background: var(--bg);
   color: var(--text);
@@ -516,6 +524,13 @@ button:hover {
   background: var(--accent-hover);
 }
 
+/* Al pulsar, el botón baja 1px: respuesta inmediata al clic. Con la
+   propiedad translate (no transform) para no pisar los botones que ya se
+   colocan con transform. Los .btn-go tienen su propio hundido (scene.css). */
+button:active:not(:disabled):not(.is-busy):not(.btn-go) {
+  translate: 0 1px;
+}
+
 button:disabled,
 button:disabled:hover {
   background: var(--surface-raised);
@@ -762,15 +777,16 @@ a.btn-ghost {
   position: absolute;
   top: 3px;
   left: 3px;
-  transition: left .2s;
+  transition: transform .2s;
 }
 
 .toggle-track.on {
   background: var(--accent);
 }
 
+/* Se desplaza con transform (no con left) para no recalcular el layout. */
 .toggle-track.on .toggle-thumb {
-  left: 20px;
+  transform: translateX(17px);
 }
 
 .info-box {
@@ -1169,7 +1185,7 @@ code {
   flex-direction: column;
   align-items: flex-end;
   gap: 8px;
-  max-width: min(420px, calc(100vw - 32px));
+  max-width: min(420px, calc(100% - 32px));
   pointer-events: none;
 }
 

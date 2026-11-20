@@ -23,6 +23,14 @@ function escRegex(str) {
 
 // Icono del sprite SVG de index.html (Lucide). Devuelve HTML para meterlo en
 // cadenas de innerHTML; hereda el color y el tamaño del texto que lo rodea.
+// Rellena una barra de progreso (.bar-fill, .progress-fill, .metric-bar-fill,
+// .xp-fill...) al porcentaje dado, de 0 a 100. scene.css la dibuja a todo lo
+// ancho y la encoge con scaleX(--fill), que se anima sin recalcular layout.
+function setFill(el, percent) {
+  var pct = Math.max(0, Math.min(100, Number(percent) || 0));
+  el.style.setProperty('--fill', String(pct / 100));
+}
+
 function icon(name) {
   return '<svg class="icon" aria-hidden="true"><use href="#i-' + name + '"/></svg>';
 }
