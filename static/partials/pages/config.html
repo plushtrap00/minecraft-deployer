@@ -26,7 +26,7 @@
         <div class="prop-field">
           <label class="prop-label">JWT_SECRET <span class="label-note label-note-warn">(reinicia todas las sesiones)</span></label>
           <div class="pass-wrapper">
-            <input type="password" id="cfg-env-JWT_SECRET" class="w-full" autocomplete="off" spellcheck="false">
+            <input type="password" id="cfg-env-JWT_SECRET" class="w-full" autocomplete="new-password" spellcheck="false">
             <button type="button" id="cfg-jwt-vis" class="btn-pass-toggle" title="Mostrar u ocultar el secreto" aria-label="Mostrar u ocultar el secreto"><svg class="icon" aria-hidden="true"><use href="#i-eye"/></svg></button>
           </div>
         </div>
@@ -47,9 +47,10 @@
         <div class="prop-field">
           <label class="prop-label">API key de CurseForge</label>
           <div class="pass-wrapper">
-            <input type="password" id="cfg-env-CURSEFORGE_API_KEY" class="w-full" autocomplete="off" spellcheck="false">
+            <input type="password" id="cfg-env-CURSEFORGE_API_KEY" class="w-full" autocomplete="new-password" spellcheck="false">
             <button type="button" id="cfg-cf-vis" class="btn-pass-toggle" title="Mostrar u ocultar la API key" aria-label="Mostrar u ocultar la API key"><svg class="icon" aria-hidden="true"><use href="#i-eye"/></svg></button>
           </div>
+          <button type="button" class="btn-ghost btn-xs secret-clear" data-clear-secret="cfg-env-CURSEFORGE_API_KEY" data-field="CURSEFORGE_API_KEY" hidden>Quitar</button>
         </div>
         <div class="prop-field">
           <label class="prop-label">Auto-actualización habilitada</label>
@@ -90,9 +91,10 @@
           <div class="prop-field">
             <label class="prop-label">Token del bot</label>
             <div class="pass-wrapper">
-              <input type="password" id="notify-telegram-token" class="w-full" placeholder="123456789:ABC-DEF…" autocomplete="off" spellcheck="false">
+              <input type="password" id="notify-telegram-token" class="w-full" placeholder="123456789:ABC-DEF…" autocomplete="new-password" spellcheck="false">
               <button type="button" id="notify-token-vis" class="btn-pass-toggle" title="Mostrar u ocultar el token" aria-label="Mostrar u ocultar el token"><svg class="icon" aria-hidden="true"><use href="#i-eye"/></svg></button>
             </div>
+            <button type="button" class="btn-ghost btn-xs secret-clear" data-clear-secret="notify-telegram-token" data-field="telegram_token" hidden>Quitar</button>
           </div>
           <div class="prop-field">
             <label class="prop-label">Chat ID</label>
@@ -110,6 +112,7 @@
           <div class="prop-field">
             <label class="prop-label">URL del webhook</label>
             <input type="text" id="notify-discord-url" class="w-full" placeholder="https://discord.com/api/webhooks/…" autocomplete="off" spellcheck="false">
+            <button type="button" class="btn-ghost btn-xs secret-clear" data-clear-secret="notify-discord-url" data-field="discord_webhook" hidden>Quitar</button>
           </div>
         </section>
       </div>

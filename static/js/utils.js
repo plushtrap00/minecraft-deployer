@@ -31,6 +31,56 @@ function setFill(el, percent) {
   el.style.setProperty('--fill', String(pct / 100));
 }
 
+// -- Campos secretos (solo escritura) -----------------------------------------
+// El servidor nunca manda los secretos guardados (JWT_SECRET, API key de
+// CurseForge, token de Telegram, webhook de Discord): solo si están puestos.
+// El campo queda vacío; dejarlo así al guardar conserva el que hay, y el
+// botón [data-clear-secret] marca que se quite.
+var SECRET_SET_PLACEHOLDER = 'Guardado (escribe otro para cambiarlo)';
+
+function setSecretField(inputId, isSet) {
+  var input = document.getElementById(inputId);
+  if (input.dataset.emptyPlaceholder === undefined) {
+    input.dataset.emptyPlaceholder = input.placeholder || '';
+  }
+  input.value = '';
+  delete input.dataset.clear;
+  input.dataset.secretSet = isSet ? '1' : '';
+  input.placeholder = isSet ? SECRET_SET_PLACEHOLDER : input.dataset.emptyPlaceholder;
+  var button = document.querySelector('[data-clear-secret="' + inputId + '"]');
+  if (button) {
+    button.hidden = !isSet;
+    button.textContent = 'Quitar';
+  }
+}
+
+// Los campos (data-field del botón) marcados para quitar dentro de un
+// contenedor: van en el "clear" de la petición de guardar.
+function secretsToClear(container) {
+  return Array.prototype.filter.call(
+    container.querySelectorAll('[data-clear-secret]'),
+    function(button) { return document.getElementById(button.dataset.clearSecret).dataset.clear === '1'; }
+  ).map(function(button) { return button.dataset.field; });
+}
+
+document.addEventListener('click', function(event) {
+  var button = event.target.closest && event.target.closest('[data-clear-secret]');
+  if (!button) {
+    return;
+  }
+  var input = document.getElementById(button.dataset.clearSecret);
+  if (input.dataset.clear !== '1') {
+    input.dataset.clear = '1';
+    input.value = '';
+    input.placeholder = 'Se quitará al guardar';
+    button.textContent = 'No quitar';
+  } else {
+    delete input.dataset.clear;
+    input.placeholder = SECRET_SET_PLACEHOLDER;
+    button.textContent = 'Quitar';
+  }
+});
+
 function icon(name) {
   return '<svg class="icon" aria-hidden="true"><use href="#i-' + name + '"/></svg>';
 }

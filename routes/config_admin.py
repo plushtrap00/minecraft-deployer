@@ -8,8 +8,13 @@ frontend ofrece reiniciar la app en el momento, reusando el mecanismo ya
 existente de services/auto_update.py (mismo aviso de seguridad: no reinicia
 si hay un servidor de Minecraft corriendo o una operación en curso).
 
+Los secretos (JWT_SECRET, la API key de CurseForge, el token de Telegram y el
+webhook de Discord) son de solo escritura: los GET nunca los devuelven, solo
+dicen si están puestos (`secrets_set`). Al guardar, un secreto vacío deja el
+que había; para borrarlo hay que pedirlo en `clear`.
+
 Rutas:
-- GET  /api/admin/env        → variables de .env conocidas (sin hashes de contraseña)
+- GET  /api/admin/env        → variables de .env conocidas (sin hashes ni secretos)
 - POST /api/admin/env        → guarda cambios; una nueva contraseña (opcional) se hashea aquí
 - GET  /api/admin/constants  → valores + descripciones de .APP_CONSTANTS
 - POST /api/admin/constants  → guarda cambios
@@ -44,12 +49,21 @@ _ENV_EDITABLE_KEYS = [
     "CURSEFORGE_API_KEY", "AUTO_UPDATE_ENABLED", "AUTO_UPDATE_INTERVAL_SECONDS",
 ]
 
+# Secretos del formulario: nunca salen hacia el navegador (ver docstring). La
+# API key se puede quitar (deja de usarse CurseForge); JWT_SECRET no, porque
+# sin él no se pueden firmar sesiones.
+_ENV_SECRET_KEYS = {"JWT_SECRET", "CURSEFORGE_API_KEY"}
+_ENV_CLEARABLE_SECRETS = {"CURSEFORGE_API_KEY"}
+
 
 @router.get("/env")
 def get_env(request: Request):
     _require_admin(request)
     values = dotenv_values(_ENV_PATH) if _ENV_PATH.exists() else {}
-    result = {key: values.get(key, "") for key in _ENV_EDITABLE_KEYS}
+    result: dict = {
+        key: values.get(key, "") for key in _ENV_EDITABLE_KEYS if key not in _ENV_SECRET_KEYS
+    }
+    result["secrets_set"] = {key: bool(values.get(key)) for key in sorted(_ENV_SECRET_KEYS)}
     # WEB_PORT/SERVERS_PATH en Docker los controla docker-compose.yml (mapeo de
     # puertos y volumen/carpeta), no este .env — el frontend usa esto para
     # avisar en vez de dejar que el usuario cambie un campo sin efecto real (y
@@ -62,11 +76,33 @@ def get_env(request: Request):
 class EnvUpdateBody(BaseModel):
     values: dict
     new_password: str = ""
+    clear: list = []
+
+
+def _env_changes(body: EnvUpdateBody) -> dict:
+    """
+    Lo que hay que escribir en el .env: las claves editables que llegan, salvo
+    los secretos vacíos (vacío = «deja el que hay», porque el formulario nunca
+    los recibe), más los secretos que se piden quitar en `clear` (a "").
+    """
+    changes = {}
+    for key, value in body.values.items():
+        if key not in _ENV_EDITABLE_KEYS:
+            continue
+        value = str(value)
+        if key in _ENV_SECRET_KEYS and not value:
+            continue
+        changes[key] = value
+    for key in body.clear:
+        if key in _ENV_CLEARABLE_SECRETS and not changes.get(key):
+            changes[key] = ""
+    return changes
 
 
 @router.post("/env")
 async def update_env(request: Request, body: EnvUpdateBody):
     _require_admin(request)
+    changes = _env_changes(body)
 
     # Solo se ofrece reiniciar (y solo se toca el disco) si algo cambió de
     # verdad — comparado contra lo que ya hay en .env, no contra lo último
@@ -75,17 +111,15 @@ async def update_env(request: Request, body: EnvUpdateBody):
     # nada previo con qué compararla.
     current = dotenv_values(_ENV_PATH) if _ENV_PATH.exists() else {}
     changed = bool(body.new_password) or any(
-        str(current.get(key, "")) != str(value)
-        for key, value in body.values.items()
-        if key in _ENV_EDITABLE_KEYS
+        str(current.get(key) or "") != value for key, value in changes.items()
     )
     if not changed:
         return JSONResponse({"success": True, "changed": False})
 
     # Sin comillas en el .env, un salto de línea en un valor colaría otra
     # variable (p. ej. APP_PASSWORD_HASH) en la línea siguiente.
-    for key, value in body.values.items():
-        if key in _ENV_EDITABLE_KEYS and any(ch in str(value) for ch in "\r\n\x00"):
+    for key, value in changes.items():
+        if any(ch in value for ch in "\r\n\x00"):
             raise HTTPException(status_code=400, detail=f"{key} no puede contener saltos de línea")
 
     try:
@@ -97,10 +131,8 @@ async def update_env(request: Request, body: EnvUpdateBody):
             except ValueError as e:
                 raise HTTPException(status_code=400, detail=str(e))
 
-        for key, value in body.values.items():
-            if key not in _ENV_EDITABLE_KEYS:
-                continue
-            await asyncio.to_thread(set_key, str(_ENV_PATH), key, str(value), quote_mode="never")
+        for key, value in changes.items():
+            await asyncio.to_thread(set_key, str(_ENV_PATH), key, value, quote_mode="never")
     except HTTPException:
         raise
     except OSError as e:
@@ -161,10 +193,18 @@ async def restart_app(request: Request):
 # ── Avisos por Telegram / Discord ─────────────────────────────────────────────
 # Van en el .env (el token del bot y el webhook son secretos), pero
 # services/notify.py los lee en cada envío: no hace falta reiniciar la app.
+# El token del bot y el webhook son de solo escritura, como los secretos del
+# formulario del .env: el GET solo dice si están puestos.
+_NOTIFY_SECRET_FIELDS = ("telegram_token", "discord_webhook")
+
+
 @router.get("/notifications")
 def get_notifications(request: Request):
     _require_admin(request)
-    settings = notify.load_settings()
+    settings: dict = notify.load_settings()
+    settings["secrets_set"] = {field: bool(settings[field]) for field in _NOTIFY_SECRET_FIELDS}
+    for field in _NOTIFY_SECRET_FIELDS:
+        settings[field] = ""
     return JSONResponse({**settings, "available_events": notify.EVENTS})
 
 
@@ -173,15 +213,22 @@ class NotificationsBody(BaseModel):
     telegram_chat_id: str = ""
     discord_webhook: str = ""
     events: list = []
+    # Secretos que hay que borrar (telegram_token / discord_webhook); los que
+    # llegan vacíos sin estar aquí se quedan como estaban.
+    clear: list = []
 
 
 def _clean_notifications(body: NotificationsBody) -> dict:
-    values = {
+    stored = notify.load_settings()
+    values: dict = {
         "telegram_token": body.telegram_token.strip(),
         "telegram_chat_id": body.telegram_chat_id.strip(),
         "discord_webhook": body.discord_webhook.strip(),
     }
-    for key, value in values.items():
+    for field in _NOTIFY_SECRET_FIELDS:
+        if not values[field] and field not in body.clear:
+            values[field] = stored[field]
+    for value in values.values():
         if any(ch in value for ch in "\r\n\x00 "):
             raise HTTPException(status_code=400, detail="Los datos de los avisos no pueden llevar espacios ni saltos de línea")
     if values["discord_webhook"] and not notify.valid_discord_webhook(values["discord_webhook"]):
@@ -225,14 +272,16 @@ async def test_notifications(request: Request, body: NotificationsBody):
 
 
 class DetectChatBody(BaseModel):
-    telegram_token: str
+    # Vacío = el token ya guardado (el panel no lo tiene: es de solo escritura).
+    telegram_token: str = ""
 
 
 @router.post("/notifications/detect-chat")
 async def detect_chat(request: Request, body: DetectChatBody):
     _require_admin(request)
+    token = body.telegram_token.strip() or notify.load_settings()["telegram_token"]
     try:
-        chat = await asyncio.to_thread(notify.detect_telegram_chat, body.telegram_token.strip())
+        chat = await asyncio.to_thread(notify.detect_telegram_chat, token)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     return JSONResponse(chat)

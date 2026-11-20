@@ -42,9 +42,15 @@ function loadAdminConfig() {
 }
 
 function populateEnvForm(data) {
+  var secretsSet = data.secrets_set || {};
   CFG_ENV_TEXT_KEYS.forEach(function(key) {
     var el = document.getElementById('cfg-env-' + key);
-    if (el) {
+    if (!el) {
+      return;
+    }
+    if (key in secretsSet) {
+      setSecretField(el.id, secretsSet[key]);
+    } else {
       el.value = data[key] || '';
     }
   });
@@ -153,7 +159,11 @@ document.getElementById('cfg-save-env-btn').addEventListener('click', function()
   apiFetch('/api/admin/env', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ values: values, new_password: newPassword })
+    body: JSON.stringify({
+      values: values,
+      new_password: newPassword,
+      clear: secretsToClear(document.getElementById('config-env-form'))
+    })
   })
     .then(function(response) {
       return response.json().then(function(data) { return { ok: response.ok, data: data }; });
@@ -162,6 +172,11 @@ document.getElementById('cfg-save-env-btn').addEventListener('click', function()
       btn.disabled = false;
       if (result.ok) {
         document.getElementById('cfg-env-new-password').value = '';
+        // Vuelve a pedir el estado: los secretos recién escritos o quitados
+        // pasan a «Guardado» o a vacío (el valor no se queda en la página).
+        apiFetch('/api/admin/env')
+          .then(function(response) { return response.json(); })
+          .then(populateEnvForm);
         if (result.data.changed) {
           offerAppRestart('.env guardado.');
         } else {

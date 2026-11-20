@@ -15,9 +15,10 @@ function loadNotifications() {
     }
     notifyLoaded = true;
     var data = result.data;
-    document.getElementById('notify-telegram-token').value = data.telegram_token || '';
+    var secretsSet = data.secrets_set || {};
+    setSecretField('notify-telegram-token', !!secretsSet.telegram_token);
+    setSecretField('notify-discord-url', !!secretsSet.discord_webhook);
     document.getElementById('notify-telegram-chat').value = data.telegram_chat_id || '';
-    document.getElementById('notify-discord-url').value = data.discord_webhook || '';
     document.getElementById('notify-detect-hint').textContent = '';
     var enabled = data.events || [];
     events.innerHTML = Object.keys(data.available_events).map(function(key) {
@@ -32,6 +33,7 @@ function notifyFormValues() {
     telegram_token: document.getElementById('notify-telegram-token').value.trim(),
     telegram_chat_id: document.getElementById('notify-telegram-chat').value.trim(),
     discord_webhook: document.getElementById('notify-discord-url').value.trim(),
+    clear: secretsToClear(document.getElementById('cfg-content-notify')),
     events: Array.prototype.map.call(
       document.querySelectorAll('#notify-events input:checked'),
       function(box) { return box.value; }
@@ -47,6 +49,16 @@ function postNotify(url, body) {
   });
 }
 
+// Quitar el token deja Telegram sin configurar: el chat ID solo no sirve (y
+// el servidor rechaza guardar uno sin el otro), así que se vacía también.
+document.querySelector('[data-clear-secret="notify-telegram-token"]').addEventListener('click', function() {
+  // Este clic llega antes que el de utils.js, que es el que lo marca: aquí
+  // aún no está marcado si se va a quitar.
+  if (document.getElementById('notify-telegram-token').dataset.clear !== '1') {
+    document.getElementById('notify-telegram-chat').value = '';
+  }
+});
+
 document.getElementById('notify-token-vis').addEventListener('click', function() {
   var input = document.getElementById('notify-telegram-token');
   input.type = input.type === 'password' ? 'text' : 'password';
@@ -56,8 +68,10 @@ document.getElementById('notify-token-vis').addEventListener('click', function()
 document.getElementById('notify-detect-btn').addEventListener('click', function() {
   var btn = this;
   var hint = document.getElementById('notify-detect-hint');
-  var token = document.getElementById('notify-telegram-token').value.trim();
-  if (!token) {
+  var tokenInput = document.getElementById('notify-telegram-token');
+  var token = tokenInput.value.trim();
+  // Vacío vale si ya hay uno guardado (y no se está quitando): lo usa el servidor.
+  if (!token && !(tokenInput.dataset.secretSet === '1' && tokenInput.dataset.clear !== '1')) {
     showToast('Pega primero el token del bot', 'error');
     return;
   }
@@ -104,6 +118,7 @@ document.getElementById('notify-save-btn').addEventListener('click', function() 
       if (result.ok) {
         showToast('Avisos guardados', 'success');
         flashDone(btn);
+        loadNotifications();
       } else {
         showToast(result.data.detail || 'No se pudieron guardar los avisos', 'error');
       }

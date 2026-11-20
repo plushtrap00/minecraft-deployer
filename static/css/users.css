@@ -45,6 +45,12 @@
   background: none;
 }
 
+/* «Quitar» bajo un secreto guardado (setSecretField en utils.js). */
+.secret-clear {
+  margin-top: 4px;
+  align-self: flex-start;
+}
+
 .add-user-btn {
   align-self: flex-start;
 }

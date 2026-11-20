@@ -6,6 +6,10 @@ documentación de la API. Cada commit sube la versión (2.A.B, cada cifra de 0
 a 9: después de 2.0.9 va 2.1.0) y se etiqueta con `git tag v<versión>`.
 
 Historial resumido:
+- 2.2.0 (2026-11-20): los secretos ya no salen nunca hacia el navegador.
+  JWT_SECRET, la API key de CurseForge, el token de Telegram y el webhook de
+  Discord aparecen como «Guardado»: dejarlos vacíos conserva el que hay,
+  escribir uno nuevo lo cambia y el botón «Quitar» lo borra.
 - 2.1.9 (2026-11-20): el panel se ve bien en el móvil: Logs pone la lista
   encima del visor, el buscador de Mods ocupa su propia fila, la barra de
   disco de Instalar ya no desaparece, el título de Jugadores no se estruja y
@@ -71,4 +75,4 @@ Historial resumido:
   otros usuarios.
 - 1.x: todo lo anterior (sin numerar).
 """
-APP_VERSION = "2.1.9"
+APP_VERSION = "2.2.0"
