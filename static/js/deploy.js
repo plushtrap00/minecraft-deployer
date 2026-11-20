@@ -156,12 +156,12 @@ function fmtSize(bytes) {
     return bytes + ' B';
   }
   if (bytes < 1048576) {
-    return (bytes / 1024).toFixed(1) + ' KB';
+    return fmtNum(bytes / 1024, 1) + ' KB';
   }
   if (bytes < 1073741824) {
-    return (bytes / 1048576).toFixed(1) + ' MB';
+    return fmtNum(bytes / 1048576, 1) + ' MB';
   }
-  return (bytes / 1073741824).toFixed(2) + ' GB';
+  return fmtNum(bytes / 1073741824, 2) + ' GB';
 }
 
 

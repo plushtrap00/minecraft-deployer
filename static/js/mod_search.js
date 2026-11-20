@@ -115,10 +115,10 @@ function applyModSearchImage(imgEl, url) {
 function formatDownloads(n) {
   n = n || 0;
   if (n >= 1000000) {
-    return (n / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+    return fmtNum(n / 1000000, 1, true) + 'M';
   }
   if (n >= 1000) {
-    return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+    return fmtNum(n / 1000, 1, true) + 'k';
   }
   return String(n);
 }

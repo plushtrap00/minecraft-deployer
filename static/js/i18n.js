@@ -27,6 +27,15 @@ function currentLang() {
 // que el mes), que es el que menos choca viniendo del español.
 var APP_LOCALE = currentLang() === 'en' ? 'en-GB' : 'es-ES';
 
+// Número con los decimales que se pidan y el separador del idioma (1,5 / 1.5).
+// Con trimZeros los decimales son «como mucho»: 2 en vez de 2,0.
+function fmtNum(value, decimals, trimZeros) {
+  return Number(value).toLocaleString(APP_LOCALE, {
+    minimumFractionDigits: trimZeros ? 0 : decimals,
+    maximumFractionDigits: decimals
+  });
+}
+
 // «a, b y c» / «a, b and c»
 function joinList(items) {
   if (items.length < 2) {

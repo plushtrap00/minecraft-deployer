@@ -144,7 +144,7 @@ function animateNumber(el, value, decimals, suffixHtml) {
   el.dataset.num = String(to);
   var suffix = suffixHtml || '';
   if (isNaN(from) || from === to || prefersReducedMotion() || document.hidden) {
-    el.innerHTML = tabularDigits(to.toFixed(decimals)) + suffix;
+    el.innerHTML = tabularDigits(fmtNum(to, decimals)) + suffix;
     return;
   }
   var started = performance.now();
@@ -155,7 +155,7 @@ function animateNumber(el, value, decimals, suffixHtml) {
     }
     var progress = Math.min(1, (now - started) / duration);
     var eased = 1 - Math.pow(1 - progress, 3);
-    el.innerHTML = tabularDigits((from + (to - from) * eased).toFixed(decimals)) + suffix;
+    el.innerHTML = tabularDigits(fmtNum(from + (to - from) * eased, decimals)) + suffix;
     if (progress < 1) {
       requestAnimationFrame(frame);
     }
@@ -209,6 +209,6 @@ var SPLASHES = [
 (function pickSplash() {
   var el = document.getElementById('login-splash');
   if (el) {
-    el.textContent = SPLASHES[Math.floor(Math.random() * SPLASHES.length)];
+    el.textContent = t(SPLASHES[Math.floor(Math.random() * SPLASHES.length)]);
   }
 })();

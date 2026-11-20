@@ -158,3 +158,70 @@ class NotifyLanguageTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# ── Repaso estricto ───────────────────────────────────────────────────────────
+import ast
+import re
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+
+
+def _sample(node):
+    """El texto de un literal o f-string, con datos de ejemplo en los huecos."""
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return node.value
+    if isinstance(node, ast.JoinedStr):
+        parts = []
+        for value in node.values:
+            if isinstance(value, ast.Constant):
+                parts.append(str(value.value))
+            else:
+                parts.append("Xq7")
+        return "".join(parts)
+    return None
+
+
+def backend_messages():
+    """(archivo:línea, texto) de cada detail= de HTTPException y cada notify(...)."""
+    found = []
+    for path in list((ROOT / "routes").glob("*.py")) + list((ROOT / "services").glob("*.py")) + [ROOT / "main.py"]:
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            name = node.func.attr if isinstance(node.func, ast.Attribute) else getattr(node.func, "id", "")
+            texts = []
+            if name == "HTTPException":
+                texts = [kw.value for kw in node.keywords if kw.arg == "detail"]
+            elif name == "notify" and len(node.args) == 2:
+                texts = [node.args[1]]
+            elif name in ("ValueError", "RuntimeError", "PendingModsError") and node.args:
+                # Los servicios lanzan esto y las rutas lo devuelven con detail=str(e).
+                texts = [node.args[0]]
+            for text_node in texts:
+                sample = _sample(text_node)
+                if sample and re.search(r"[a-záéíóúñ]{3,}", sample):
+                    found.append((f"{path.name}:{node.lineno}", sample))
+    return found
+
+
+class StrictTests(unittest.TestCase):
+    def test_every_backend_message_translated(self):
+        missing = [f"{where}: {text}" for where, text in backend_messages()
+                   if i18n.translate_message(" ".join(text.split()), "en") == " ".join(text.split())]
+        self.assertEqual(missing, [], "Mensajes del backend sin traducción en en.json")
+        self.assertGreater(len(backend_messages()), 100)
+
+    def test_achievements_and_splashes_translated(self):
+        table = i18n.load("en")
+        texts = []
+        source = (ROOT / "static" / "js" / "achievements.js").read_text(encoding="utf-8")
+        texts += re.findall(r"(?:name|hint): '([^']*)'", source)
+        splash = (ROOT / "static" / "js" / "appearance.js").read_text(encoding="utf-8")
+        block = splash[splash.index("var SPLASHES"):splash.index("];", splash.index("var SPLASHES"))]
+        texts += re.findall(r"'([^']*)'", block)
+        self.assertGreater(len(texts), 60)
+        missing = [text for text in texts if i18n.normalize(text) not in table]
+        self.assertEqual(missing, [])

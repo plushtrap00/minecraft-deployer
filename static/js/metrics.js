@@ -173,7 +173,7 @@ function updateMetricsUI(data) {
   var ramBar = document.getElementById('mb-ram');
   if (data.ram_used_mb && data.ram_max_mb) {
     var pct = Math.min(100, (data.ram_used_mb / data.ram_max_mb) * 100);
-    animateNumber(ramEl, data.ram_used_mb / 1024, 1, ' <small>' + t('de {max}', { max: (data.ram_max_mb / 1024).toFixed(1) + ' GB' }) + '</small>');
+    animateNumber(ramEl, data.ram_used_mb / 1024, 1, ' <small>' + t('de {max}', { max: fmtNum(data.ram_max_mb / 1024, 1) + ' GB' }) + '</small>');
     setFill(ramBar, pct);
     ramBar.classList.toggle('high', pct >= 90);
   } else {

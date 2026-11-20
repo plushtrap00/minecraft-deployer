@@ -56,8 +56,8 @@ function unlockAchievement(id) {
   var toastEl = document.createElement('div');
   toastEl.className = 'toast achievement';
   toastEl.innerHTML = '<span class="achievement-icon">' + achievementIconHtml(achievement, true) + '</span>'
-    + '<span><span class="achievement-kicker">¡Logro conseguido!</span>'
-    + '<span class="achievement-name">' + escHtml(achievement.name) + '</span></span>';
+    + '<span><span class="achievement-kicker">' + t('¡Logro conseguido!') + '</span>'
+    + '<span class="achievement-name">' + escHtml(t(achievement.name)) + '</span></span>';
   stack.appendChild(toastEl);
   requestAnimationFrame(function() { toastEl.classList.add('show'); });
   playSound('levelup');
@@ -137,17 +137,17 @@ document.addEventListener('keydown', function(event) {
 
 function renderAchievementList() {
   var got = ACHIEVEMENTS.filter(function(item) { return hasAchievement(item.id); }).length;
-  document.getElementById('achievement-count').textContent = got + ' de ' + ACHIEVEMENTS.length;
+  document.getElementById('achievement-count').textContent = t('{got} de {total}', { got: got, total: ACHIEVEMENTS.length });
   document.getElementById('achievement-list').innerHTML = ACHIEVEMENTS.map(function(item) {
     var unlocked = hasAchievement(item.id);
     var hidden = item.secret && !unlocked;
     var when = Number(readPref('ach-' + item.id, ''));
-    var hint = !unlocked ? (hidden ? 'Logro secreto' : item.hint)
-      : (when ? 'Conseguido el ' + new Date(when).toLocaleDateString(APP_LOCALE) : 'Conseguido');
+    var hint = !unlocked ? (hidden ? t('Logro secreto') : t(item.hint))
+      : (when ? t('Conseguido el {date}', { date: new Date(when).toLocaleDateString(APP_LOCALE) }) : t('Conseguido'));
     return '<li class="achievement-row' + (unlocked ? ' unlocked' : '') + (hidden ? ' secret' : '') + '"'
-      + (unlocked ? ' title="' + escHtml(item.hint) + '"' : '') + '>'
+      + (unlocked ? ' title="' + escHtml(t(item.hint)) + '"' : '') + '>'
       + '<span class="achievement-icon">' + achievementIconHtml(item, unlocked) + '</span>'
-      + '<span><span class="achievement-name">' + escHtml(hidden ? '???' : item.name) + '</span>'
+      + '<span><span class="achievement-name">' + escHtml(hidden ? '???' : t(item.name)) + '</span>'
       + '<span class="achievement-hint">' + escHtml(hint) + '</span></span></li>';
   }).join('');
 }

@@ -313,12 +313,12 @@ function renderSysmon(stats) {
 
   html += '<div class="sysmon-section">';
   html += '<div class="sysmon-section-title">CPU</div>';
-  html += sysBar('CPU', stats.cpu.total_percent, stats.cpu.total_percent.toFixed(0) + '%');
+  html += sysBar('CPU', stats.cpu.total_percent, fmtNum(stats.cpu.total_percent, 0) + '%');
   html += '</div>';
 
   html += '<div class="sysmon-section">';
   html += '<div class="sysmon-section-title">RAM</div>';
-  html += sysBar('RAM', stats.ram.percent, stats.ram.used_gb.toFixed(1) + ' / ' + stats.ram.total_gb.toFixed(1) + ' GB');
+  html += sysBar('RAM', stats.ram.percent, fmtNum(stats.ram.used_gb, 1) + ' / ' + fmtNum(stats.ram.total_gb, 1) + ' GB');
   html += '</div>';
 
   html += '<div class="sysmon-section">';
@@ -327,10 +327,10 @@ function renderSysmon(stats) {
     html += '<span class="sysmon-no-temps">' + t('Sin sensores detectados. Instala: {command}', { command: '<code>sudo apt install lm-sensors && sudo sensors-detect --auto</code>' }) + '</span>';
   } else {
     if (stats.cpu_temp !== null) {
-      html += sysBar('CPU', stats.cpu_temp, stats.cpu_temp.toFixed(1) + '°C');
+      html += sysBar('CPU', stats.cpu_temp, fmtNum(stats.cpu_temp, 1) + ' °C');
     }
     if (stats.gpu_temp !== null) {
-      html += sysBar('GPU', stats.gpu_temp, stats.gpu_temp.toFixed(1) + '°C');
+      html += sysBar('GPU', stats.gpu_temp, fmtNum(stats.gpu_temp, 1) + ' °C');
     }
   }
   html += '</div>';
