@@ -6,6 +6,9 @@ documentación de la API. Cada commit sube la versión (2.A.B, cada cifra de 0
 a 9: después de 2.0.9 va 2.1.0) y se etiqueta con `git tag v<versión>`.
 
 Historial resumido:
+- 2.2.6 (2026-11-20): los errores y mensajes del servidor salen en el idioma
+  de cada cuenta, también el progreso de las instalaciones. En Configuración →
+  Avisos se elige el idioma de los mensajes de Telegram y Discord.
 - 2.2.5 (2026-11-20): cada cuenta tiene su propio idioma. Se aplica al
   entrar, desde cualquier dispositivo, y al cerrar sesión la pantalla de
   entrada vuelve al idioma por defecto.
@@ -94,4 +97,4 @@ Historial resumido:
   otros usuarios.
 - 1.x: todo lo anterior (sin numerar).
 """
-APP_VERSION = "2.2.5"
+APP_VERSION = "2.2.6"

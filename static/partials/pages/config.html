@@ -128,6 +128,15 @@
       <div class="block-label mt-l">Avisarme cuando…</div>
       <div class="notify-events" id="notify-events"></div>
 
+      <div class="notify-lang mt-l">
+        <label class="block-label" for="notify-language">Idioma de los mensajes</label>
+        <select id="notify-language">
+          <option value="es">Español (España)</option>
+          <option value="en">English</option>
+        </select>
+        <div class="field-hint">Para todos los avisos de Telegram y Discord, sea cual sea el idioma de cada cuenta.</div>
+      </div>
+
       <div class="notify-actions">
         <button type="button" class="btn-secondary" id="notify-test-btn"><svg class="icon" aria-hidden="true"><use href="#i-send"/></svg>Enviar prueba</button>
         <button type="button" class="add-user-btn" id="notify-save-btn">Guardar avisos</button>

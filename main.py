@@ -12,6 +12,9 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.gzip import GZipMiddleware
+
+from services import i18n
+from services.i18n_middleware import MessageTranslationMiddleware
 from dotenv import load_dotenv
 
 _ENV_PATH = Path(__file__).parent / ".env"
@@ -99,7 +102,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
         token = token_from_request(request)
         user_info = verify_token(token) if token else None
         if not user_info:
-            return JSONResponse({"detail": "No autorizado"}, status_code=401)
+            return JSONResponse({"detail": i18n.translate_message("No autorizado", i18n.request_lang(request))},
+                                status_code=401)
 
         request.state.user = user_info["sub"]
         request.state.role = user_info["role"]
@@ -111,8 +115,9 @@ class AuthMiddleware(BaseHTTPMiddleware):
         content_length = request.headers.get("content-length", "")
         if content_length.isdigit() and int(content_length) > max_upload_bytes() + 1024 * 1024:
             return JSONResponse(
-                {"detail": f"El archivo supera el límite de subida de {MAX_UPLOAD_MB} MB "
-                           "(se puede cambiar en Configuración → Constantes → Subidas)"},
+                {"detail": i18n.translate_message(
+                    f"El archivo supera el límite de subida de {MAX_UPLOAD_MB} MB "
+                    "(se puede cambiar en Configuración → Constantes → Subidas)", i18n.request_lang(request))},
                 status_code=413,
             )
 
@@ -139,6 +144,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Minecraft Server Deployer", version=APP_VERSION, lifespan=lifespan)
+# Orden: Auth (fuera) → gzip → traducción de mensajes (dentro, sin comprimir).
+app.add_middleware(MessageTranslationMiddleware)
 app.add_middleware(GZipMiddleware, minimum_size=500)
 app.add_middleware(AuthMiddleware)
 # Las fuentes de static/fonts/: sin esto algunos sistemas las sirven como

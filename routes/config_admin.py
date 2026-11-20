@@ -222,6 +222,7 @@ class NotificationsBody(BaseModel):
     telegram_chat_id: str = ""
     discord_webhook: str = ""
     events: list = []
+    language: str = ""
     # Secretos que hay que borrar (telegram_token / discord_webhook); los que
     # llegan vacíos sin estar aquí se quedan como estaban.
     clear: list = []
@@ -245,6 +246,7 @@ def _clean_notifications(body: NotificationsBody) -> dict:
     if bool(values["telegram_token"]) != bool(values["telegram_chat_id"]):
         raise HTTPException(status_code=400, detail="Para Telegram hacen falta el token del bot y el chat ID")
     values["events"] = [e for e in body.events if e in notify.EVENTS]
+    values["language"] = i18n.pick_lang(body.language) or stored["language"]
     return values
 
 
@@ -258,6 +260,7 @@ async def save_notifications(request: Request, body: NotificationsBody):
         "DISCORD_WEBHOOK_URL": values["discord_webhook"],
         # Vacío significaría «los de siempre»: si se desmarca todo, se guarda «none».
         "NOTIFY_EVENTS": ",".join(values["events"]) or "none",
+        "NOTIFY_LANGUAGE": values["language"],
     }
     try:
         for key, value in pairs.items():

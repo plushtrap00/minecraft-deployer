@@ -16,7 +16,7 @@ from datetime import datetime, timedelta
 
 from fastapi import HTTPException
 
-from services import automation, backups, history, server_control
+from services import automation, backups, history, i18n, server_control
 from services import process as proc_module
 from services.metrics import mc_metrics
 from services.notify import notify
@@ -71,7 +71,8 @@ def due_phases(task: dict, now: datetime) -> list:
 def _warn_text(task: dict, minutes: int) -> str:
     action = "se reiniciará" if task["kind"] == "restart" else "se va a parar"
     unit = "minuto" if minutes == 1 else "minutos"
-    return f"El servidor {action} en {minutes} {unit}."
+    # Va al chat del juego: en el idioma por defecto del panel.
+    return i18n.translate_message(f"El servidor {action} en {minutes} {unit}.", i18n.default_lang())
 
 
 def run_task(task: dict) -> str:

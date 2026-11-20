@@ -77,3 +77,10 @@
     grid-template-columns: 1fr;
   }
 }
+
+.notify-lang {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 360px;
+}

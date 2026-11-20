@@ -22,6 +22,8 @@ from pathlib import Path
 
 from dotenv import dotenv_values
 
+from services import i18n
+
 _ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
 
 # Claves del .env y sucesos que se pueden avisar (con su texto para el panel).
@@ -62,6 +64,9 @@ def load_settings() -> dict:
         "telegram_chat_id": get("TELEGRAM_CHAT_ID"),
         "discord_webhook": get("DISCORD_WEBHOOK_URL"),
         "events": [e.strip() for e in events],
+        # Idioma de los mensajes: el que elija el admin en Avisos; si no, el
+        # idioma por defecto del panel.
+        "language": i18n.pick_lang(get("NOTIFY_LANGUAGE")) or i18n.default_lang(),
     }
 
 
@@ -117,6 +122,7 @@ def send_discord(webhook: str, text: str) -> None:
 
 def send_now(settings: dict, text: str) -> dict:
     """Envía ya (sin cola) a los canales configurados. Devuelve {canal: 'ok' | error}."""
+    text = i18n.translate_message(text, settings.get("language") or i18n.default_lang())
     results = {}
     if settings.get("telegram_token") or settings.get("telegram_chat_id"):
         try:

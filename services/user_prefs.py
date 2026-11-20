@@ -15,12 +15,25 @@ PREFS_FILE = DEFAULT_SERVERS_PATH / ".global" / "user_prefs.json"
 _lock = threading.Lock()
 
 
+_cache: tuple = (None, None, {})
+
+
 def _load() -> dict:
+    """Se lee en cada petición a /api/ (para el idioma): con caché por mtime."""
+    global _cache
+    try:
+        mtime = PREFS_FILE.stat().st_mtime_ns
+    except OSError:
+        return {}
+    if _cache[0] == PREFS_FILE and _cache[1] == mtime:
+        return dict(_cache[2])
     try:
         data = json.loads(PREFS_FILE.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return {}
-    return data if isinstance(data, dict) else {}
+    data = data if isinstance(data, dict) else {}
+    _cache = (PREFS_FILE, mtime, data)
+    return dict(data)
 
 
 def _write(data: dict) -> None:

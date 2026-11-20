@@ -19,6 +19,7 @@ function loadNotifications() {
     setSecretField('notify-telegram-token', !!secretsSet.telegram_token);
     setSecretField('notify-discord-url', !!secretsSet.discord_webhook);
     document.getElementById('notify-telegram-chat').value = data.telegram_chat_id || '';
+    document.getElementById('notify-language').value = data.language || 'es';
     document.getElementById('notify-detect-hint').textContent = '';
     var enabled = data.events || [];
     events.innerHTML = Object.keys(data.available_events).map(function(key) {
@@ -33,6 +34,7 @@ function notifyFormValues() {
     telegram_token: document.getElementById('notify-telegram-token').value.trim(),
     telegram_chat_id: document.getElementById('notify-telegram-chat').value.trim(),
     discord_webhook: document.getElementById('notify-discord-url').value.trim(),
+    language: document.getElementById('notify-language').value,
     clear: secretsToClear(document.getElementById('cfg-content-notify')),
     events: Array.prototype.map.call(
       document.querySelectorAll('#notify-events input:checked'),

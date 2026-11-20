@@ -85,6 +85,97 @@ def _pick(value) -> str | None:
     return value if value in LANGS else None
 
 
+pick_lang = _pick
+
+
+# ── Mensajes del backend ──────────────────────────────────────────────────────
+# Los errores y avisos se escriben en español en el código, a menudo con datos
+# dentro (f"{name} ya es op"). En en.json van como plantillas con huecos
+# ("{name} ya es op": "{name} is already an op"): si un mensaje no está tal
+# cual, se busca la plantilla que encaje, y lo que ocupa cada hueco se
+# traduce a su vez (puede ser otro mensaje: "No se pudo X: {error}").
+
+_templates_cache: dict = {}
+_MAX_DEPTH = 4
+
+
+def _templates(lang: str) -> list:
+    table = load(lang)
+    cached = _templates_cache.get(lang)
+    if cached and cached[0] is table:
+        return cached[1]
+    compiled = []
+    for key, value in table.items():
+        if "{" not in key or not _PARAM_RE.search(key):
+            continue
+        literal = _PARAM_RE.sub("", key)
+        if len(_LETTER_RE.findall(literal)) < 4:
+            continue  # casi todo huecos («Los {days}»): encajaría con demasiadas cosas
+        names: list = []
+        pattern = ""
+        pos = 0
+        for match in _PARAM_RE.finditer(key):
+            pattern += re.escape(key[pos:match.start()]).replace(r"\ ", r"\s+")
+            name = match.group(1)
+            group = f"g{len(names)}"
+            names.append(name)
+            pattern += f"(?P<{group}>.+?)"
+            pos = match.end()
+        pattern += re.escape(key[pos:]).replace(r"\ ", r"\s+")
+        compiled.append((len(literal), re.compile(pattern + r"\Z", re.S), names, value))
+    # Primero las plantillas con más texto fijo: son las más concretas.
+    compiled.sort(key=lambda item: -item[0])
+    _templates_cache[lang] = (table, compiled)
+    return compiled
+
+
+def translate_message(text, lang: str, _depth: int = 0):
+    """Un mensaje del backend en el idioma pedido (igual si no se conoce)."""
+    if not isinstance(text, str) or not text or lang not in LANGS or lang == DEFAULT_LANG:
+        return text
+    table = load(lang)
+    key = normalize(text)
+    if key in table:
+        return table[key]
+    if _depth >= _MAX_DEPTH or not _LETTER_RE.search(key):
+        return text
+    for _, pattern, names, value in _templates(lang):
+        match = pattern.match(key)
+        if not match:
+            continue
+        params = {}
+        for index, name in enumerate(names):
+            params.setdefault(name, translate_message(match.group(f"g{index}"), lang, _depth + 1))
+        return _PARAM_RE.sub(lambda m: str(params.get(m.group(1), m.group(0))), value)
+    # Dentro de un hueco puede ir una lista («subiendo mod a 'X', clonando Y»):
+    # se traduce cada elemento.
+    if _depth > 0 and ", " in key:
+        parts = key.split(", ")
+        translated = [translate_message(part, lang, _depth + 1) for part in parts]
+        if translated != parts:
+            return ", ".join(translated)
+    return text
+
+
+# Campos de las respuestas JSON y de los eventos SSE que llevan texto para
+# la persona (mensajes, errores, motivos). Los datos (nombres, rutas,
+# contenidos de archivos) no se tocan.
+MESSAGE_FIELDS = frozenset({"detail", "message", "reason", "reason_label", "error", "last_error", "results"})
+
+
+def translate_payload(data, lang: str, _in_field: bool = False):
+    """Traduce los campos de MESSAGE_FIELDS dentro de un JSON (dicts y listas anidados)."""
+    if lang == DEFAULT_LANG:
+        return data
+    if isinstance(data, dict):
+        return {k: translate_payload(v, lang, _in_field or k in MESSAGE_FIELDS) for k, v in data.items()}
+    if isinstance(data, list):
+        return [translate_payload(item, lang, _in_field) for item in data]
+    if _in_field and isinstance(data, str):
+        return translate_message(data, lang)
+    return data
+
+
 def browser_lang(accept_language: str) -> str | None:
     """El primero de los idiomas del navegador que el panel tiene."""
     weighted = []
