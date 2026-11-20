@@ -39,13 +39,13 @@
   "End": "End",
   "Sonidos al pulsar botones y al conseguir logros": "Sounds when pressing buttons and unlocking achievements",
   "Logros": "Achievements",
-  "El idioma, el tema, los sonidos y los logros se guardan en este navegador.": "Language, theme, sounds and achievements are saved in this browser.",
+  "El idioma se guarda en tu cuenta; el tema, los sonidos y los logros, en este navegador.": "Your language is saved in your account; theme, sounds and achievements in this browser.",
   "La app se está reiniciando…": "The app is restarting…",
   "Esto puede tardar unos segundos. No cierres esta pestaña.": "This may take a few seconds. Don't close this tab.",
 
   "// Configuración → idioma por defecto": "",
   "Idioma por defecto": "Default language",
-  "Para quien no ha elegido otro en Apariencia.": "For anyone who hasn't picked another one in Appearance.",
+  "Para la pantalla de entrada y las cuentas que no han elegido otro en Apariencia.": "For the sign-in screen and accounts that haven't chosen another one in Appearance.",
 
   "// comunes": "",
   "Cancelar": "Cancel",

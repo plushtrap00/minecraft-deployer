@@ -54,5 +54,13 @@ function setLanguage(lang) {
     return;
   }
   document.cookie = 'mcd-lang=' + encodeURIComponent(lang) + '; path=/; max-age=31536000; SameSite=Lax';
+  // Con sesión iniciada se guarda en la cuenta, para que salga igual en
+  // cualquier dispositivo; sin sesión basta con la cookie.
+  if (typeof currentUser === 'string' && currentUser) {
+    fetch('/api/auth/language', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lang: lang })
+    }).finally(function() { location.reload(); });
+    return;
+  }
   location.reload();
 }

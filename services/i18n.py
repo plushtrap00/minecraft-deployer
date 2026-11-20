@@ -106,7 +106,27 @@ def default_lang() -> str:
     return _pick(os.environ.get("APP_LANGUAGE")) or DEFAULT_LANG
 
 
-def request_lang(request) -> str:
+def _session_user(request) -> str | None:
+    user = getattr(getattr(request, "state", None), "user", None)
+    if user:
+        return user
+    try:
+        from routes.auth import token_from_request, verify_token  # import tardío: evita el ciclo
+        info = verify_token(token_from_request(request))
+    except Exception:  # noqa: BLE001 — sin sesión válida, se sigue con la cookie
+        return None
+    return info.get("sub") if info else None
+
+
+def request_lang(request, use_account: bool = True) -> str:
+    """Idioma de la cuenta con sesión > cookie > APP_LANGUAGE > navegador > es."""
+    if use_account:
+        user = _session_user(request)
+        if user:
+            from services import user_prefs
+            saved = _pick(user_prefs.get_lang(user))
+            if saved:
+                return saved
     return (
         _pick(request.cookies.get(COOKIE_NAME))
         or _pick(os.environ.get("APP_LANGUAGE"))

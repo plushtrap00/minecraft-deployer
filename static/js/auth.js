@@ -66,7 +66,17 @@ function logout() {
 }
 
 function endSession() {
-  fetch('/api/auth/logout', { method: 'POST' }).finally(logout);
+  fetch('/api/auth/logout', { method: 'POST' })
+    .then(function(response) { return response.json(); })
+    .then(function(data) {
+      // La pantalla de entrada vuelve al idioma por defecto.
+      if (data.lang && data.lang !== currentLang()) {
+        location.reload();
+        return;
+      }
+      logout();
+    })
+    .catch(logout);
 }
 
 function onLoginSuccess(role, user) {
@@ -122,6 +132,11 @@ function doLogin() {
       btn.textContent = t('Entrar');
       if (!result.ok) {
         errorEl.textContent = result.data.detail || t('Usuario o contraseña incorrectos.');
+        return;
+      }
+      // Cada cuenta tiene su idioma: si no es el de la pantalla, se recarga en el suyo.
+      if (result.data.lang && result.data.lang !== currentLang()) {
+        location.reload();
         return;
       }
       onLoginSuccess(result.data.role, result.data.user);

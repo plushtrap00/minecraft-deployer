@@ -22,6 +22,7 @@ import json
 import math
 import time
 from pathlib import Path
+from types import SimpleNamespace
 
 from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import JSONResponse
@@ -29,6 +30,7 @@ from pydantic import BaseModel
 from dotenv import load_dotenv
 import os
 
+from services import i18n, user_prefs
 from services.users import authenticate, password_fingerprint, role_of, set_password, verify_password
 from app_constants import (
     JWT_TOKEN_EXPIRE_HOURS, LOGIN_MAX_FAILED_ATTEMPTS,
@@ -209,8 +211,38 @@ def login(request: Request, username: str = Form(...), password: str = Form(...)
 
     for key, _ in keys:
         _clear_failed_attempts(key)
-    response = JSONResponse({"role": role, "user": username, "expires_in_hours": TOKEN_EXPIRE_HOURS})
+    # Idioma de la cuenta; si aún no tiene, se queda con el que tenía la
+    # pantalla de entrada (lo que estaba viendo al escribir su contraseña).
+    lang = user_prefs.get_lang(username)
+    if lang not in i18n.LANGS:
+        lang = i18n.request_lang(request, use_account=False)
+        user_prefs.set_lang(username, lang)
+    response = JSONResponse({"role": role, "user": username, "lang": lang,
+                             "expires_in_hours": TOKEN_EXPIRE_HOURS})
     _set_session_cookie(response, username)
+    _set_lang_cookie(response, lang)
+    return response
+
+
+def _set_lang_cookie(response: JSONResponse, lang: str) -> None:
+    response.set_cookie(i18n.COOKIE_NAME, lang, max_age=365 * 24 * 3600, samesite="lax", path="/")
+
+
+class LanguageBody(BaseModel):
+    lang: str
+
+
+@router.post("/language")
+def set_own_language(request: Request, body: LanguageBody):
+    """Guarda el idioma del panel en la cuenta de quien tiene la sesión."""
+    username = getattr(request.state, "user", None)
+    if not username:
+        raise HTTPException(status_code=401, detail="No autorizado")
+    if body.lang not in i18n.LANGS:
+        raise HTTPException(status_code=400, detail="Idioma no disponible")
+    user_prefs.set_lang(username, body.lang)
+    response = JSONResponse({"success": True, "lang": body.lang})
+    _set_lang_cookie(response, body.lang)
     return response
 
 
@@ -259,9 +291,13 @@ def change_own_password(request: Request, body: ChangePasswordBody):
 
 
 @router.post("/logout")
-def logout():
-    response = JSONResponse({"success": True})
+def logout(request: Request):
+    # La pantalla de entrada vuelve al idioma por defecto: el de esta cuenta
+    # no tiene por qué ser el de quien entre después en este navegador.
+    lang = i18n.request_lang(SimpleNamespace(cookies={}, headers=request.headers), use_account=False)
+    response = JSONResponse({"success": True, "lang": lang})
     response.delete_cookie(SESSION_COOKIE, path="/")
+    response.delete_cookie(i18n.COOKIE_NAME, path="/")
     return response
 
 

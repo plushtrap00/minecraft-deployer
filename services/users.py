@@ -154,4 +154,6 @@ def delete_user(username: str) -> bool:
     if len(new_users) == len(users):
         return False
     _save(new_users)
+    from services import user_prefs
+    user_prefs.forget(username)
     return True
