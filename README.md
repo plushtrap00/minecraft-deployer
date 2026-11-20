@@ -1,10 +1,14 @@
 # Minecraft Server Deployer
 
+**Español** · [English](README.en.md)
+
 Panel web (FastAPI + JavaScript sin frameworks) para crear y gestionar servidores de Minecraft modded: instalar modpacks completos desde Modrinth/CurseForge, buscar y actualizar mods, gestionar jugadores (ops/whitelist/bans), mundos, consola en vivo con chat, métricas e historial, firewall, copias de seguridad, reinicio automático si el servidor se cae, tareas programadas y avisos por Telegram o Discord. Pensado para autoalojarse en tu propio servidor o VPS Linux.
+
+El panel está en **español de España y en inglés**: cada cuenta elige el suyo (ver [Idiomas](#idiomas)).
 
 Y como gestionar un servidor de Minecraft no tiene por qué ser aburrido: cuatro temas con su propio fondo pixelado, una escena que pasa de noche a día cuando el servidor arranca, cabezas de los jugadores, celebraciones y más de treinta logros por desbloquear (algunos secretos).
 
-**Versión actual: 2.0.0** (se ve en **Sistema → Actualizaciones de la app**). Novedades de la 2.0 en [Versiones](#versiones).
+**Versión actual: 3.0.0** (se ve en **Sistema → Actualizaciones de la app**). Novedades en [Versiones](#versiones).
 
 ## Requisitos
 
@@ -26,6 +30,7 @@ bash install.sh
 
 El instalador te va preguntando:
 
+- **Idioma** (español o inglés): el del propio instalador y el idioma por defecto del panel.
 - **Modo de instalación** → elige `2) Nativo`.
 - Carpeta donde instalar la app.
 - Usuario y contraseña para entrar al panel.
@@ -59,7 +64,7 @@ git clone https://github.com/plushtrap00/minecraft-deployer
 cd minecraft-deployer
 ```
 
-Genera la configuración con el asistente interactivo `setup.py`: te pregunta usuario y contraseña de administrador, puertos, versión de Java, dónde guardar los modpacks (volumen Docker o una carpeta del host) y demás opciones, y genera tanto `.env` como un `docker-compose.yml` ya ajustado a tus respuestas (no hace falta editarlo a mano).
+Genera la configuración con el asistente interactivo `setup.py`: te pregunta el idioma (español o inglés, también el idioma por defecto del panel), usuario y contraseña de administrador, puertos, versión de Java, dónde guardar los modpacks (volumen Docker o una carpeta del host) y demás opciones, y genera tanto `.env` como un `docker-compose.yml` ya ajustado a tus respuestas (no hace falta editarlo a mano).
 
 Si no tienes Python instalado en el host, hazlo dentro de un contenedor temporal para no instalar nada fuera de Docker:
 
@@ -125,7 +130,15 @@ No hace falta vaciar la caché del navegador: cada archivo del panel lleva su pr
 - **Sesión**: el inicio de sesión se guarda en una cookie del navegador (HttpOnly). Al cambiar la contraseña de una cuenta o borrarla, sus sesiones abiertas dejan de valer.
 - **Contraseñas**: cada usuario cambia la suya con el botón del candado de la barra superior. El administrador puede poner una nueva a cualquier otro usuario desde **Usuarios** (por si la olvida).
 - **Límites de subida**: por defecto, 8 GB por archivo y 32 GB descomprimido. Se cambian en **Configuración → Constantes → Subidas**.
-- **Apariencia**: botón **Apariencia** de la barra superior. Ahí se elige el tema (Amatista, Superficie, Nether o End), se activan los sonidos (apagados por defecto) y se ve la lista de logros. Todo esto se guarda en cada navegador, no en el servidor: si entras desde otro equipo, empiezas de cero.
+- **Apariencia**: botón **Apariencia** de la barra superior. Ahí se elige el idioma, el tema (Amatista, Superficie, Nether o End), se activan los sonidos (apagados por defecto) y se ve la lista de logros. El idioma se guarda en tu cuenta; el tema, los sonidos y los logros, en cada navegador (si entras desde otro equipo, empiezan de cero).
+
+## Idiomas
+
+El panel está en español de España y en inglés, entero: páginas, mensajes, errores del servidor, la Ayuda y los logros.
+
+- **Cada cuenta tiene su idioma**: se elige en **Apariencia** y se aplica al entrar, desde cualquier dispositivo. Una cuenta que aún no ha elegido se queda con el de la pantalla de entrada.
+- **Idioma por defecto** (`APP_LANGUAGE` en el `.env`): el de la pantalla de entrada y el de las cuentas que no han elegido. Lo pregunta el instalador y se cambia en **Configuración → Variables de entorno**.
+- **Avisos de Telegram y Discord**: el administrador elige su idioma en **Configuración → Avisos** (`NOTIFY_LANGUAGE`), sea cual sea el de cada cuenta. Los avisos de reinicio que ven los jugadores en el chat del juego van en el idioma por defecto.
 
 ## Copias, automatización y avisos
 
@@ -143,9 +156,21 @@ Cada instalación usa **su propio bot**, así que los avisos solo le llegan a qu
 2. Abre tu bot nuevo y escríbele cualquier cosa (por ejemplo `/start`).
 3. Pega el token en **Configuración → Avisos** y pulsa **Detectar**: el panel encuentra tu chat solo. Guarda y usa **Enviar prueba**.
 
-El instalador (`install.sh` / `setup.py`) también lo pregunta, y se puede dejar en blanco. Para Discord basta la URL de un webhook del canal (ajustes del canal → Integraciones → Webhooks). Todo se guarda en el `.env` (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `DISCORD_WEBHOOK_URL`, `NOTIFY_EVENTS`), pero se aplica al momento, sin reiniciar el panel.
+El instalador (`install.sh` / `setup.py`) también lo pregunta, y se puede dejar en blanco. Para Discord basta la URL de un webhook del canal (ajustes del canal → Integraciones → Webhooks). El idioma de los mensajes se elige en esa misma pestaña. Todo se guarda en el `.env` (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, `DISCORD_WEBHOOK_URL`, `NOTIFY_EVENTS`, `NOTIFY_LANGUAGE`), pero se aplica al momento, sin reiniciar el panel.
 
 ## Versiones
+
+### 3.0.0 (noviembre de 2026)
+
+El panel, en inglés:
+
+- **Todo traducido**: páginas, diálogos, mensajes, fechas y números, errores y progreso del servidor, la Ayuda, los logros y las frases de la pantalla de entrada. El español sigue siendo el original.
+- **Cada cuenta con su idioma**, guardado en la cuenta y no en el navegador.
+- **Idioma de los avisos** de Telegram y Discord, a elección del administrador.
+- **Instaladores bilingües**: `install.sh` y `setup.py` preguntan primero el idioma y lo dejan como idioma por defecto del panel.
+- Los números con decimales usan la coma en español (1,5 GB).
+
+Entre la 2.0 y la 3.0 llegaron también las copias de seguridad, la automatización (reinicio tras caídas, copias y tareas programadas), los avisos por Telegram y Discord, las estadísticas de jugadores, las gráficas de rendimiento y el chat de la consola. El historial completo está en el propio panel (**Sistema → Actualizaciones de la app**).
 
 ### 2.0.0 (noviembre de 2026)
 
@@ -187,5 +212,6 @@ Cubren la validación de rutas y nombres, la extracción segura de archivos, las
 - `static/partials/` contiene un HTML por página (`pages/`), por pestaña de Modpacks (`manage/`), por grupo de modales (`modals/`) y los bloques compartidos (por ejemplo `ram-fields.html`, que acepta parámetros). `services/frontend.py` los une al servir `/`, así que el navegador sigue recibiendo una sola página.
 - `static/js/` tiene un archivo por sección o pestaña (`server_props.js`, `jvm_ram.js`, `file_editor.js`, `kubejs.js`...), todos en el ámbito global y cargados en el orden de `index.html`.
 - Los colores viven como tokens en `static/css/base.css`; `themes.css` define los temas (Amatista, Superficie, Nether y End) cambiando esos tokens y el fondo de página de cada uno (`--bg-pattern`, texturas pixeladas en SVG, y `--bg-extra`, un degradado encima), y `scene.css` la escena pixelada de la cabecera de Servidor y del login, las barras segmentadas y las celebraciones. Las barras de scroll también salen de los tokens (al final de `base.css`), y `search.css` viste los dos buscadores de Modrinth/CurseForge: tarjetas con el icono en una casilla de inventario, el halo del color del icono y el brillo de encantamiento en el modpack elegido. `static/js/appearance.js` guarda el tema en el navegador, `sounds.js` los sonidos (apagados por defecto), `achievements.js` los logros y `pixel_art.js` dibuja los logos, las cabezas de repuesto y los estados vacíos. Un logro nuevo es una entrada en `ACHIEVEMENTS` (en `achievements.js`) (con `secret: true` si debe salir como «???» hasta conseguirlo), su icono pixelado de 10x10 en `achievement_icons.js` (un test comprueba que no falte) y una llamada a `unlockAchievement('id')` donde ocurra. Los sonidos están en `SOUNDS`, y lo que suena al pulsar algo depende de lo que hace (`soundForControl`): cambiar de sección, iniciar, borrar, cerrar, encender o apagar, elegir tema... Un botón puede elegir el suyo con `data-sound`.
+- **Traducciones**: todo el texto se escribe en español y `static/i18n/en.json` es un mapa de frases enteras («frase en español» → «English phrase»), con huecos `{nombre}` para los datos. El HTML se traduce al servirlo (`services/i18n.py`), el JavaScript usa `t('Frase', {dato})` (`static/js/i18n.js`) y los mensajes del backend se traducen en `services/i18n_middleware.py` (campos `detail`, `message`, `reason`… de las respuestas JSON y de los eventos SSE; las frases con datos funcionan como plantillas). Los tests fallan si una frase nueva del HTML, un `t('…')`, un logro o un mensaje del backend se queda sin traducción.
 - Al servir `/`, cada `/static/...` recibe `?v=` con la fecha de modificación de ese archivo, y esas respuestas se marcan como inmutables: el navegador las guarda indefinidamente y solo descarga las que cambian.
 - Las cabezas de los jugadores se piden a mc-heads.net a través de `/api/players/head/{nombre}` y se guardan unos días en `.global/heads/`. El logo de un modpack es su `server-icon.png` o, si se instaló desde Modrinth o CurseForge, el de la tienda (`.mcdeployer/icon.*` dentro de su carpeta). Sin internet, el panel dibuja una cara o un bloque con los colores del nombre.

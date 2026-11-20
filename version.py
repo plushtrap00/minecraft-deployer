@@ -6,6 +6,10 @@ documentación de la API. Cada commit sube la versión (2.A.B, cada cifra de 0
 a 9: después de 2.0.9 va 2.1.0) y se etiqueta con `git tag v<versión>`.
 
 Historial resumido:
+- 3.0.0 (2026-11-20): traducciones terminadas: el panel entero en inglés, cada
+  cuenta con su idioma y el de los avisos a elección del administrador. Los
+  instaladores (install.sh y setup.py) preguntan primero el idioma, y el README
+  tiene su versión en inglés.
 - 2.2.7 (2026-11-20): los logros y las frases de la pantalla de entrada también
   en inglés, y los números con decimales usan la coma en español (1,5 GB).
 - 2.2.6 (2026-11-20): los errores y mensajes del servidor salen en el idioma
@@ -99,4 +103,4 @@ Historial resumido:
   otros usuarios.
 - 1.x: todo lo anterior (sin numerar).
 """
-APP_VERSION = "2.2.7"
+APP_VERSION = "3.0.0"
