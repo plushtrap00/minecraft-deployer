@@ -49,8 +49,14 @@ function cancelFetchesMatching(prefix) {
 
 function applyRoleUI() {
   var isAdmin = currentRole === 'admin';
+  var isLimited = currentRole === 'limited';
   document.getElementById('tab-users').style.display = isAdmin ? 'inline-flex' : 'none';
   document.getElementById('tab-config').style.display = isAdmin ? 'inline-flex' : 'none';
+  // Cuenta limitada (services/permissions.py): ni instalar ni automatizar, y
+  // la consola solo se lee. El servidor corta igualmente todo lo demás.
+  document.getElementById('tab-deploy').style.display = isLimited ? 'none' : '';
+  document.getElementById('tab-automation').style.display = isLimited ? 'none' : '';
+  document.body.classList.toggle('account-limited', isLimited);
 }
 
 // Vuelve a la pantalla de login. La llama apiFetch al recibir un 401 (la

@@ -6,6 +6,12 @@ documentación de la API. Cada commit sube la versión (2.A.B, cada cifra de 0
 a 9: después de 2.0.9 va 2.1.0) y se etiqueta con `git tag v<versión>`.
 
 Historial resumido:
+- 3.1.2 (2026-11-23): cuentas limitadas: lo ven todo, pero solo pueden
+  encender, parar y reiniciar el servidor y gestionar la lista blanca (sin
+  mods, mundos, copias, consola, descargas ni contraseña de RCON). Se eligen
+  al crear la cuenta o desde la lista de Usuarios, y el cambio vale al
+  momento. Arreglado: las cuentas que no son de administrador ya no reciben un
+  error al ver el estado del firewall.
 - 3.1.1 (2026-11-23): los reinicios y paradas programados pueden hacerse solo
   si no hay nadie conectado (si hay gente, esperan a que se vaya, hasta el
   máximo que elijas), y el servidor se puede apagar solo cuando lleva un rato
@@ -157,4 +163,4 @@ Historial resumido:
   otros usuarios.
 - 1.x: todo lo anterior (sin numerar).
 """
-APP_VERSION = "3.1.1"
+APP_VERSION = "3.1.2"

@@ -44,10 +44,14 @@ def _save(users: list[dict]) -> None:
     atomic_write_text(_USERS_PATH, json.dumps(users, indent=2), private=True)
 
 
+def _stored_role(user: dict) -> str:
+    return "limited" if user.get("role") == "limited" else "user"
+
+
 def list_users() -> list[dict]:
     result = [{"username": _admin_username(), "role": "admin"}]
     for u in _load():
-        result.append({"username": u["username"], "role": "user"})
+        result.append({"username": u["username"], "role": _stored_role(u)})
     return result
 
 
@@ -92,19 +96,40 @@ def password_fingerprint(username: str) -> str | None:
 
 
 def role_of(username: str) -> str:
-    return "admin" if username == _admin_username() else "user"
+    """admin, user (todo menos cuentas y configuración) o limited (ver services/permissions.py)."""
+    if username == _admin_username():
+        return "admin"
+    user = next((u for u in _load() if u["username"] == username), None)
+    return _stored_role(user) if user else "user"
 
 
-def create_user(username: str, password: str) -> dict:
+def set_role(username: str, role: str) -> None:
+    """Cambia el rol de una cuenta. Vale al momento: el rol se mira en cada petición."""
+    if role not in ("user", "limited"):
+        raise ValueError("Rol no válido")
+    if username == _admin_username():
+        raise ValueError("El administrador no puede cambiar de rol")
+    users = _load()
+    for u in users:
+        if u["username"] == username:
+            u["role"] = role
+            _save(users)
+            return
+    raise KeyError(username)
+
+
+def create_user(username: str, password: str, role: str = "user") -> dict:
+    if role not in ("user", "limited"):
+        raise ValueError("Rol no válido")
     if username == _admin_username():
         raise ValueError("Nombre de usuario ya en uso")
     users = _load()
     if any(u["username"] == username for u in users):
         raise ValueError("Nombre de usuario ya en uso")
     pw_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
-    users.append({"username": username, "password_hash": pw_hash, "role": "user"})
+    users.append({"username": username, "password_hash": pw_hash, "role": role})
     _save(users)
-    return {"username": username, "role": "user"}
+    return {"username": username, "role": role}
 
 
 _PRINTABLE_RE = re.compile(r'^[\x20-\x7E]+$')

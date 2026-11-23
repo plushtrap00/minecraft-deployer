@@ -144,8 +144,10 @@ def firewall_status(request: Request):
     Modo actual, o mode="unavailable" si ufw/sudo no existen en este entorno
     (p. ej. dentro de un contenedor Docker, donde además no tendría efecto
     real sobre el host aunque estuviera instalado).
+
+    Lo puede ver cualquier cuenta (el interruptor sale en la página Servidor);
+    cambiarlo (/api/firewall/set) sigue siendo solo del administrador.
     """
-    require_admin(request)
     subnet = lan_subnet()
     ports = minecraft_ports()
     try:

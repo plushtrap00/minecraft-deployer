@@ -54,7 +54,7 @@ from routes.automation import router as automation_router
 from routes.backups import router as backups_router
 from services.lifecycle import shutdown_event
 from services.process import notify_app_shutdown
-from services import activity, auto_update, scheduler
+from services import activity, auto_update, permissions, scheduler
 from services.startup_cleanup import run_startup_cleanup
 from services.secure_files import harden_secret_files
 from services.uploads import max_upload_bytes
@@ -118,6 +118,11 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
         request.state.user = user_info["sub"]
         request.state.role = user_info["role"]
+
+        if not permissions.allowed(request.state.role, request.method, path):
+            return JSONResponse({"detail": i18n.translate_message(permissions.LIMITED_DENIED_MESSAGE,
+                                                                  i18n.request_lang(request))},
+                                status_code=403)
 
         # Starlette guarda el cuerpo de una subida en un temporal ANTES de que
         # llegue al endpoint: si el navegador ya avisa de que se pasa del

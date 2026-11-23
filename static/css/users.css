@@ -180,3 +180,27 @@
     margin-left: 54px;
   }
 }
+
+/* Cuenta limitada: la consola se lee pero no se escribe. */
+.cmd-row-limited {
+  display: none;
+  padding: 8px 12px;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+
+body.account-limited .cmd-row {
+  display: none;
+}
+
+body.account-limited .cmd-row-limited {
+  display: block;
+}
+
+.role-limited {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(var(--muted-rgb), .15);
+  color: var(--muted);
+}

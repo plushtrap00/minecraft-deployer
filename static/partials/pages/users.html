@@ -26,6 +26,14 @@
         <div id="new-user-pass-err" class="field-error"></div>
         <div class="field-hint">Solo caracteres estándar (sin emojis) · mín. 8 caracteres</div>
       </div>
+      <div>
+        <label class="field-label" for="new-user-role">Qué puede hacer</label>
+        <select id="new-user-role" class="w-full">
+          <option value="user">Todo, menos cuentas y configuración</option>
+          <option value="limited">Limitada: mirar, encender, parar y lista blanca</option>
+        </select>
+        <div class="field-hint">Una cuenta limitada lo ve todo, pero no puede tocar mods, mundos, copias ni la consola. Se puede cambiar luego.</div>
+      </div>
       <button id="add-user-btn" class="add-user-btn" disabled>Crear usuario</button>
     </div>
   </div>

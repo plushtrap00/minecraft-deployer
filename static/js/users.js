@@ -10,14 +10,19 @@ function loadUsers() {
       }
       list.innerHTML = users.map(function(u) {
         var isAdmin = u.role === 'admin';
+        var isLimited = u.role === 'limited';
         var badge = isAdmin
           ? '<span class="role-badge role-admin">Admin</span>'
-          : '<span class="role-badge role-user">' + t('Usuario') + '</span>';
+          : isLimited
+            ? '<span class="role-badge role-limited" title="' + escHtml(t('Lo ve todo, pero solo puede encender, parar y reiniciar el servidor y gestionar la lista blanca')) + '">' + icon('eye') + t('Limitada') + '</span>'
+            : '<span class="role-badge role-user">' + t('Usuario') + '</span>';
         var tfa = u.two_factor
           ? '<span class="role-badge role-tfa" title="' + escHtml(t('Verificación en dos pasos activada')) + '">' + icon('shield') + '2FA</span>'
           : '';
         var actions = isAdmin ? '' :
           '<div class="pe-actions">'
+          + '<button class="btn-ghost user-role-btn btn-xs" data-user="' + escHtml(u.username) + '" data-role="' + (isLimited ? 'user' : 'limited') + '">'
+          + (isLimited ? icon('user-cog') + t('Dar acceso completo') : icon('eye') + t('Dejar limitada')) + '</button>'
           + (u.two_factor ? '<button class="btn-ghost user-tfa-btn btn-xs" data-user="' + escHtml(u.username) + '">' + icon('shield') + t('Quitar 2FA') + '</button>' : '')
           + '<button class="btn-ghost user-password-btn btn-xs" data-user="' + escHtml(u.username) + '">' + icon('lock') + t('Cambiar contraseña') + '</button>'
           + '<button class="btn-danger user-delete-btn btn-xs" data-user="' + escHtml(u.username) + '">' + icon('trash-2') + t('Eliminar') + '</button></div>';
@@ -132,7 +137,7 @@ document.getElementById('add-user-btn').addEventListener('click', function() {
   apiFetch('/api/users', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: username, password: password })
+    body: JSON.stringify({ username: username, password: password, role: document.getElementById('new-user-role').value })
   })
     .then(function(r) {
       return r.json().then(function(d) { return { ok: r.ok, d: d }; });
@@ -173,3 +178,29 @@ function removeUserTwoFactor(username, button) {
       });
     }, { confirmLabel: t('Quitar') });
 }
+
+// Cambiar el rol de una cuenta: vale al momento, sin que tenga que volver a entrar.
+document.getElementById('users-list').addEventListener('click', function(event) {
+  var button = event.target.closest('.user-role-btn');
+  if (!button) {
+    return;
+  }
+  var username = button.dataset.user;
+  var role = button.dataset.role;
+  button.disabled = true;
+  apiJson('/api/users/' + encodeURIComponent(username) + '/role', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ role: role })
+  }).then(function(result) {
+    button.disabled = false;
+    if (!result.ok) {
+      showToast(result.data.detail || t('No se pudo guardar'), 'error');
+      return;
+    }
+    showToast(role === 'limited'
+      ? t('«{user}» ahora tiene una cuenta limitada', { user: username })
+      : t('«{user}» ahora tiene acceso completo', { user: username }), 'success');
+    loadUsers();
+  });
+});

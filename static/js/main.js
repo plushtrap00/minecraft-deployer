@@ -16,6 +16,7 @@ var DEPLOY_MODE_SLUGS = {
   'deploy-mode-import': 'subir', 'deploy-mode-create': 'crear', 'deploy-mode-download': 'descargar'
 };
 var ADMIN_PAGES = ['users', 'config'];
+var LIMITED_HIDDEN_PAGES = ['deploy', 'automation'];
 
 var currentPage = 'server';
 var appliedHash = null;
@@ -36,6 +37,9 @@ function parseRoute(hash) {
   var parts = (hash || '').replace(/^#\/?/, '').split('/').map(safeDecode);
   var page = keyForSlug(PAGE_SLUGS, parts[0]) || 'server';
   if (ADMIN_PAGES.indexOf(page) !== -1 && currentRole !== 'admin') {
+    page = 'server';
+  }
+  if (LIMITED_HIDDEN_PAGES.indexOf(page) !== -1 && currentRole === 'limited') {
     page = 'server';
   }
   var route = { page: page };

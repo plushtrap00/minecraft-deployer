@@ -14,7 +14,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from services import two_factor
-from services.users import list_users, create_user, delete_user, set_password, validate_password
+from services.users import list_users, create_user, delete_user, set_password, set_role, validate_password
 from routes.auth import require_admin as _require_admin
 
 _USERNAME_RE = re.compile(r'^[a-zA-Z0-9_-]{1,16}$')
@@ -25,6 +25,7 @@ router = APIRouter(prefix="/api/users", tags=["users"])
 class CreateUserBody(BaseModel):
     username: str
     password: str
+    role: str = "user"
 
 
 @router.get("")
@@ -45,7 +46,7 @@ def add_user(request: Request, body: CreateUserBody):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     try:
-        user = create_user(username, body.password)
+        user = create_user(username, body.password, body.role)
         return JSONResponse(user, status_code=201)
     except ValueError as e:
         raise HTTPException(status_code=409, detail=str(e))
@@ -68,6 +69,24 @@ def reset_user_password(username: str, request: Request, body: ResetPasswordBody
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     return JSONResponse({"success": True})
+
+
+class RoleBody(BaseModel):
+    role: str
+
+
+@router.post("/{username}/role")
+def change_user_role(username: str, request: Request, body: RoleBody):
+    """Da a una cuenta acceso completo o la deja limitada (ver services/permissions.py)."""
+    _require_admin(request)
+    request.state.activity_action = "users.role_limited" if body.role == "limited" else "users.role_user"
+    try:
+        set_role(username, body.role)
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return JSONResponse({"success": True, "role": body.role})
 
 
 @router.delete("/{username}")

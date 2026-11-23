@@ -14,7 +14,7 @@ import shutil
 import asyncio
 import tempfile
 from pathlib import Path
-from fastapi import APIRouter, Depends, File, UploadFile, Form, HTTPException
+from fastapi import APIRouter, Depends, File, UploadFile, Form, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
@@ -24,7 +24,7 @@ from services.modpack import detect_modpack_version, save_server_property
 from services.players import write_player_files
 from services.busy import BusyGuard, is_busy, busy_reasons
 from services.server_create import validate_new_server_name
-from services import process as proc_module
+from services import permissions, process as proc_module
 
 from routes.deps import valid_modpack, modpack_path
 from services.uploads import save_upload
@@ -37,11 +37,14 @@ router = APIRouter(prefix="/api/modpacks", tags=["modpacks"], dependencies=[Depe
 # ── server.properties ──────────────────────────────────────────────────────────
 
 @router.get("/{modpack}/server-properties")
-def get_server_properties(modpack: str):
+def get_server_properties(request: Request, modpack: str):
     props_file = DEFAULT_SERVERS_PATH / modpack / "server.properties"
     if not props_file.exists():
         raise HTTPException(status_code=404, detail="server.properties no encontrado")
-    return JSONResponse({"content": props_file.read_text(encoding="utf-8")})
+    content = props_file.read_text(encoding="utf-8")
+    if getattr(request.state, "role", None) == "limited":
+        content = permissions.mask_secrets(content)
+    return JSONResponse({"content": content})
 
 
 @router.post("/{modpack}/server-properties")

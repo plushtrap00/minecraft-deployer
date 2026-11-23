@@ -99,6 +99,9 @@ ACTIONS = {
     "users.create": ("users", "Creó la cuenta {name}"),
     "users.delete": ("users", "Borró la cuenta {username}"),
     "users.password": ("users", "Cambió la contraseña de {username}"),
+    "users.role": ("users", "Cambió el rol de {username}"),
+    "users.role_limited": ("users", "Dejó la cuenta {username} como limitada"),
+    "users.role_user": ("users", "Dio acceso completo a {username}"),
     "users.2fa_remove": ("users", "Quitó la verificación en dos pasos a {username}"),
     # Panel
     "config.constants": ("config", "Cambió las constantes"),
@@ -171,6 +174,7 @@ ROUTES = [
     ("DELETE", "/api/users/{username}", "users.delete"),
     ("POST", "/api/users/{username}/password", "users.password"),
     ("DELETE", "/api/users/{username}/two-factor", "users.2fa_remove"),
+    ("POST", "/api/users/{username}/role", "users.role"),
     ("POST", "/api/admin/constants", "config.constants"),
     ("POST", "/api/admin/env", "config.env"),
     ("POST", "/api/admin/notifications", "config.notifications"),

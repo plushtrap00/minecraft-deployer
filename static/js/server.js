@@ -371,6 +371,13 @@ function loadFirewallStatus() {
       track.removeAttribute('aria-disabled');
       netPublic = (data.mode === 'public');
       applyNetToggleUI(netPublic);
+      if (currentRole !== 'admin') {
+        // Se ve cómo está, pero solo el administrador lo cambia.
+        track.classList.add('disabled');
+        track.style.pointerEvents = 'none';
+        track.setAttribute('aria-disabled', 'true');
+        desc.textContent += ' · ' + t('Solo el administrador puede cambiarlo');
+      }
     })
     .catch(function() {});
 }
