@@ -78,6 +78,11 @@ def analyze_crash(text: str, modpack: str) -> dict:
         # aplica find_possible_duplicate_mods(): con pocas letras, el riesgo
         # de que calcen por casualidad en cualquier parte del trace es alto.
         region_lower = region.lower()
+        # La huella quita los guiones bajos («toms_mobs» -> «tomsmobs»), pero
+        # muchos paquetes Java los conservan (com.example.toms_mobs): se busca
+        # también en la traza sin ellos. Solo los guiones bajos; quitar los
+        # puntos juntaría palabras y daría coincidencias falsas.
+        region_squashed = region_lower.replace("_", "")
         ranked = []
         for f in mods_dir.iterdir():
             if not (f.is_file() and f.suffix == ".jar"):
@@ -86,6 +91,8 @@ def analyze_crash(text: str, modpack: str) -> dict:
             if len(fp) < 4:
                 continue
             pos = region_lower.find(fp)
+            if pos == -1:
+                pos = region_squashed.find(fp)
             if pos != -1:
                 ranked.append((pos, f.name))
         ranked.sort()

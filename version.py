@@ -6,6 +6,11 @@ documentación de la API. Cada commit sube la versión (2.A.B, cada cifra de 0
 a 9: después de 2.0.9 va 2.1.0) y se etiqueta con `git tag v<versión>`.
 
 Historial resumido:
+- 3.1.5 (2026-11-23): más pruebas automáticas: lectura de mods (Fabric,
+  NeoForge, Quilt), versiones compatibles, duplicados, análisis de caídas,
+  lectura de la consola y que ninguna ruta del panel pueda salirse de la
+  carpeta del servidor. Arreglado: el análisis de una caída ahora también
+  señala los mods cuyo paquete Java lleva guiones bajos.
 - 3.1.4 (2026-11-23): por dentro: la instalación de modpacks se ha repartido
   en módulos más pequeños (Modrinth, CurseForge, piezas comunes y aviso de
   duplicados), sin cambios para ti. Textos: «añadir» en vez de «agregar».
@@ -170,4 +175,4 @@ Historial resumido:
   otros usuarios.
 - 1.x: todo lo anterior (sin numerar).
 """
-APP_VERSION = "3.1.4"
+APP_VERSION = "3.1.5"
