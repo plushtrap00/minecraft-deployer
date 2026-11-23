@@ -52,14 +52,14 @@ router = APIRouter(prefix="/api/modpacks", tags=["mods"], dependencies=[Depends(
 
 @router.get("/{modpack}/pending-mods")
 def get_pending_mods_route(modpack: str):
-    """Mods que quedaron sin descargar al instalar (ver services/modpack.get_pending_mods) — lectura rápida, sin abrir jars. Usado por el aviso de la pestaña Mods y como primer chequeo antes de iniciar el servidor."""
+    """Mods que quedaron sin descargar al instalar (ver services/modpack.get_pending_mods) — lectura rápida, sin abrir jars. Usado por el aviso de la pestaña Mods y como primera comprobación antes de iniciar el servidor."""
     return JSONResponse({"pending_mods": get_pending_mods(modpack)})
 
 
 @router.get("/{modpack}/pending-mods/stream")
 def get_pending_mods_stream(modpack: str):
     """
-    Re-chequeo completo con progreso (ver services/modpack.check_pending_mods_stream):
+    Comprobación completa con progreso (ver services/modpack.check_pending_mods_stream):
     abre cada mod instalado para comparar su mod_id/versión real contra lo
     pendiente, por si se resolvió por una vía que el panel no ve directamente
     (copiado a mano por SFTP). El botón "Iniciar servidor" solo llama a esto
@@ -240,7 +240,7 @@ async def upload_mod(modpack: str, file: UploadFile = File(...)):
             raise HTTPException(status_code=409, detail=result["detail"] + f" en {result['existing_filename']}.")
         if result["status"] == "needs_confirmation":
             # Versión más antigua que la instalada: no se rechaza directamente, se
-            # arma un lote de un solo mod para que el usuario decida (mismo flujo
+            # monta un lote de un solo mod para que el usuario decida (mismo flujo
             # de confirmación que la subida masiva).
             batch_id = secrets.token_hex(8)
             batch_dir = BATCH_ROOT / batch_id
@@ -386,7 +386,7 @@ def stream_mods_bulk(modpack: str, job_id: str):
         busy_guard = BusyGuard(f"subiendo {total} mod(s) a '{modpack}'")
         busy_guard.__enter__()
         try:
-            # Se arma una sola vez el índice mod_id -> (Path, meta) de lo ya
+            # Se monta una sola vez el índice mod_id -> (Path, meta) de lo ya
             # instalado; si no, process_mod_jar tendría que releer y reparsear
             # todos los mods instalados en CADA iteración (O(N×M)).
             mod_index = await asyncio.to_thread(build_mod_id_index, mods_dir)

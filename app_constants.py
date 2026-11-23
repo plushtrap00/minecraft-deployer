@@ -16,7 +16,7 @@ generarlo explícitamente).
 
 Editable desde el panel de administración. Como el resto de módulos leen
 estos valores una sola vez al importarse, un cambio guardado desde ahí no
-toma efecto hasta reiniciar la app.
+surte efecto hasta reiniciar la app.
 """
 import json
 from pathlib import Path
@@ -81,7 +81,7 @@ DESCRIPTIONS = {
     "MAX_LOG_LINES": "Líneas de consola que se guardan en memoria para el visor de logs en vivo.",
     "LOG_CRASH_RETENTION_COUNT": "Cuántos logs rotados y crash reports se conservan por modpack antes de borrar los más viejos.",
     "GRACEFUL_STOP_TIMEOUT_SECONDS": "Segundos que se espera un apagado limpio (save-all + stop) antes de forzar el cierre del servidor.",
-    "AUTO_UPDATE_CHECK_INITIAL_DELAY_SECONDS": "Segundos de espera tras arrancar antes del primer chequeo de auto-actualización.",
+    "AUTO_UPDATE_CHECK_INITIAL_DELAY_SECONDS": "Segundos de espera tras arrancar antes de la primera comprobación de auto-actualización.",
     "AUTO_UPDATE_GIT_TIMEOUT_SECONDS": "Segundos máximos para cada operación de git (fetch/pull) de la auto-actualización.",
     "HTTP_TIMEOUT_SECONDS": "Segundos de espera para las peticiones a las APIs de Modrinth/CurseForge/Mojang.",
     "MOD_DOWNLOAD_TIMEOUT_SECONDS": "Segundos de espera al descargar el archivo de un mod o modpack.",

@@ -203,7 +203,7 @@ def stop_server(timeout: float = GRACEFUL_STOP_TIMEOUT_SECONDS) -> bool:
                 proc.stdin.write(b"stop\n")
                 proc.stdin.flush()
             except Exception:
-                pass  # si falla escribir a stdin, el kill de grupo de abajo se encarga igual
+                pass  # si falla escribir a stdin, el kill de grupo de abajo se encarga de todas formas
 
         # Algunos .sh de arranque tienen su propio bucle que relanza java si no
         # reconocen cómo se les pidió parar: se espera al proceso java real y,

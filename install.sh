@@ -251,7 +251,7 @@ fi
 
 # .APP_CONSTANTS (ajustes no sensibles) no está en git (el panel de admin lo
 # modifica en cada instalación) — se autogenera con valores por defecto al
-# importar app_constants.py, pero se fuerza acá para que exista desde el
+# importar app_constants.py, pero se fuerza aquí para que exista desde el
 # primer arranque en vez de depender de un efecto colateral del import.
 if [[ ! -f ".APP_CONSTANTS" ]]; then
     "$VENV_PYTHON" -c "import app_constants" 2>/dev/null || true
@@ -323,7 +323,7 @@ if [[ "$ALREADY_INSTALLED" == "false" ]] || [[ ! -f ".env" ]]; then
     echo "  $(L "La app puede revisar sola cada tanto si hay una versión nueva en GitHub" "The app can check GitHub for a new version every so often")"
     echo "  $(L "y actualizarse + reiniciarse sola — pero SOLO cuando no haya ningún" "and update + restart itself — but ONLY when no Minecraft server is")"
     echo "  $(L "servidor de Minecraft corriendo ni ninguna subida/instalación en curso;" "running and no upload/installation is in progress;")"
-    echo "  $(L "si hay algo de eso, pospone la actualización al siguiente chequeo." "if there is, it puts the update off until the next check.")"
+    echo "  $(L "si hay algo de eso, pospone la actualización a la siguiente comprobación." "if there is, it puts the update off until the next check.")"
     echo ""
     prompt "  $(L "¿Habilitar auto-actualización? [s/N]: " "Enable auto-update? [y/N]: ")"
     read -r AUTO_UPDATE_ANSWER

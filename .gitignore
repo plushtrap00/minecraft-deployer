@@ -11,3 +11,6 @@ uploads_temp/
 *.tar.gz
 *.rar
 *.tar.bz2
+
+# Ajustes locales de Claude Code (no son parte de la app)
+.claude/

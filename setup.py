@@ -222,7 +222,7 @@ def configure_auto_update(default_enabled: bool = False, default_interval: int =
             "  and update + restart itself — but ONLY when no Minecraft server is"))
     print(L("  servidor de Minecraft corriendo ni ninguna subida/instalación en curso;",
             "  running and no upload/installation is in progress;"))
-    print(L("  si hay algo de eso, pospone la actualización al siguiente chequeo.\n",
+    print(L("  si hay algo de eso, pospone la actualización a la siguiente comprobación.\n",
             "  if there is, it puts the update off until the next check.\n"))
     actual = L("sí", "yes") if default_enabled else "no"
     answer = input(L(f"  ¿Habilitar auto-actualización? [s/N] (actual: {actual}): ",

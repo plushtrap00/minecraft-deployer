@@ -46,8 +46,8 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 TOKEN_EXPIRE_HOURS = JWT_TOKEN_EXPIRE_HOURS
 
 # ── Bloqueo temporal tras intentos fallidos de login ───────────────────────────
-# En memoria (se resetea si el proceso reinicia, igual que el resto del estado
-# de esta app); alcanza para frenar fuerza bruta contra un panel de homelab
+# En memoria (se pone a cero si el proceso se reinicia, como el resto del estado
+# de esta app); basta para frenar fuerza bruta contra un panel de homelab
 # sin sumar una dependencia nueva solo para esto.
 _MAX_FAILED_ATTEMPTS = LOGIN_MAX_FAILED_ATTEMPTS
 _ATTEMPT_WINDOW_SECONDS = LOGIN_ATTEMPT_WINDOW_SECONDS   # ventana en la que cuentan los fallos

@@ -26,7 +26,7 @@ function loadLogList() {
 
 // "latest.log"/"debug.log" (sesión actual) y "debug-N.log.gz" (rotados) no
 // dicen nada por sí solos en la lista — una etiqueta legible, con el nombre
-// real igual disponible como tooltip (title) para quien lo necesite tal cual.
+// real sigue disponible como tooltip (title) para quien lo necesite tal cual.
 function logDisplayLabel(name) {
   if (name === 'latest.log') {
     return t('Log actual');

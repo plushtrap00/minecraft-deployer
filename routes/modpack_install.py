@@ -122,7 +122,7 @@ async def check_existing(source: str, project_id: str, version_id: str):
     except ModpackDownloadBlocked as e:
         # A diferencia de un mod suelto bloqueado (que solo se salta), esto
         # bloquea el PROPIO archivo del modpack: instalar desde esta app
-        # fallaría igual, así que se marca "blocked" para que el frontend
+        # fallaría de todas formas, así que se marca "blocked" para que el frontend
         # impida el botón de instalar en vez de solo avisar.
         return JSONResponse({"matches": [], "checked": False, "blocked": True, "reason": str(e)})
     except RuntimeError as e:

@@ -28,7 +28,7 @@ function setModUploadModalBody(html) {
 // el innerHTML en cada actualización recreaba el div del spinner cada vez,
 // reiniciando su animación CSS antes de completar una vuelta (se veía
 // tildado/reiniciándose todo el rato). Si el spinner ya está en el DOM, solo
-// se cambia el texto; si no, recién ahí se arma el HTML completo.
+// se cambia el texto; si no, solo entonces se monta el HTML completo.
 function setModUploadProgressText(text) {
   var textEl = document.getElementById('mod-upload-progress-text');
   if (textEl) {

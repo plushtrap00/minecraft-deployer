@@ -423,11 +423,11 @@ document.getElementById('net-toggle-track').addEventListener('keydown', function
   }
 });
 
-// Antes de arrancar se hace un chequeo rápido (GET /pending-mods, solo lee un
+// Antes de arrancar se hace una comprobación rápida (GET /pending-mods, solo lee un
 // JSON) de si queda algo pendiente. Si no hay nada, se arranca directo sin
 // más — pero si SÍ hay algo, puede que ya se haya resuelto por una vía que la
 // app no ve sola (un mod copiado a mano por SFTP en vez de subido desde el
-// panel), así que se dispara un re-chequeo completo con progreso (SSE: abre
+// panel), así que se dispara una comprobación completa con progreso (SSE: abre
 // cada mod instalado para comparar su mod_id/versión real) antes de decidir
 // si de verdad hay que bloquear el arranque. Por eso la ruedita de "Comprobando
 // mods pendientes…" solo aparece cuando hacía falta — el caso normal (sin
@@ -446,8 +446,8 @@ function startServer(modpack) {
       }
     })
     .catch(function() {
-      // Si el chequeo rápido falla por lo que sea, no se deja bloqueado el
-      // arranque: se intenta igual, apoyándose en el chequeo síncrono que
+      // Si la comprobación rápida falla por lo que sea, no se deja bloqueado el
+      // arranque: se intenta de todas formas, apoyándose en la comprobación síncrona que
       // hace /api/server/start de todas formas.
       _launchServer(modpack);
     });
@@ -491,8 +491,8 @@ function recheckPendingModsThenStart(modpack) {
     }
   };
   checkSource.onerror = function() {
-    // No se deja bloqueado el arranque por un stream caído: se sigue igual,
-    // apoyándose en el chequeo síncrono que hace /api/server/start de todas formas.
+    // No se deja bloqueado el arranque por un stream caído: se sigue adelante,
+    // apoyándose en la comprobación síncrona que hace /api/server/start de todas formas.
     finishCheck([]);
   };
 }
@@ -501,7 +501,7 @@ function recheckPendingModsThenStart(modpack) {
 // cada intento de arranque hasta que se instalen de verdad), pero no todo
 // mod pendiente hace falta para jugar — puede ser opcional, o el admin ya
 // sabe que no lo necesita. "Iniciar de todas formas" manda force=1 a
-// /api/server/start, que se salta ESE chequeo puntual sin dejar de avisar
+// /api/server/start, que se salta ESA comprobación puntual sin dejar de avisar
 // la próxima vez.
 function offerForceStart(modpack, message) {
   applyServerState(false, null);

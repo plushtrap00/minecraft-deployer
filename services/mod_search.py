@@ -136,7 +136,7 @@ def search_modrinth(
         facets.append([f"categories:{loader}"])
     if categories:
         # Un solo grupo con varias categorías = OR ("adventure" o "magic"),
-        # igual que al tildar varias casillas en la web de Modrinth.
+        # igual que al marcar varias casillas en la web de Modrinth.
         facets.append([f"categories:{c}" for c in categories])
     params = {"limit": str(limit), "offset": str(offset), "facets": json.dumps(facets)}
     # Sin query, Modrinth devuelve resultados ordenados por popularidad (modo
@@ -339,7 +339,7 @@ def get_curseforge_categories() -> list:
     categoría trae parentCategoryId. Las de primer nivel tienen
     parentCategoryId == classId (6, la propia clase "mods"); las
     subcategorías tienen parentCategoryId == id de su categoría padre.
-    Aquí se arma el árbol de 2 niveles a partir de esa lista.
+    Aquí se monta el árbol de 2 niveles a partir de esa lista.
     """
     now = time.time()
     if _curseforge_categories_cache["data"] and now - _curseforge_categories_cache["ts"] < _CATEGORIES_CACHE_TTL:

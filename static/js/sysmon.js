@@ -467,7 +467,7 @@ function renderAutoUpdateSection() {
     var timeStr = d.getHours().toString().padStart(2, '0') + ':'
       + d.getMinutes().toString().padStart(2, '0') + ':'
       + d.getSeconds().toString().padStart(2, '0');
-    html += autoUpdateRow(t('Último chequeo'), timeStr);
+    html += autoUpdateRow(t('Última comprobación'), timeStr);
   }
 
   if (status.last_error) {

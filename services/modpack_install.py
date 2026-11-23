@@ -919,8 +919,8 @@ async def install_curseforge_modpack_stream(mod_id, file_id, server_name: str, r
             extracted_count = await asyncio.to_thread(_extract_server_pack)
             yield {"type": "log", "message": f"Server Pack extraído ({extracted_count} archivo(s)) — ya incluye sus propios mods y overrides."}
 
-            # El Server Pack lo arma el autor del modpack, no esta app — puede
-            # incluir igual algún mod como sodium/iris que ya sabemos que
+            # El Server Pack lo monta el autor del modpack, no esta app — puede
+            # incluir aun así algún mod como sodium/iris que ya sabemos que
             # revienta un servidor dedicado (pasa sobre todo con mods que
             # declaran side="BOTH" de forma incorrecta, ver
             # _KNOWN_CLIENT_ONLY_MOD_IDS en services/mod_checks.py).
@@ -1036,7 +1036,7 @@ def _installed_mod_fingerprints(server_name: str) -> set:
     """
     Huellas "sin versión" (ver _dedup_fingerprint) de los mods ya instalados en
     un servidor, incluidos los .disabled — que un mod esté deshabilitado no
-    significa que el modpack no sea ese, así que cuenta igual para esta
+    significa que el modpack no sea ese, así que cuenta de todas formas para esta
     comparación.
     """
     mods_dir = DEFAULT_SERVERS_PATH / server_name / "mods"

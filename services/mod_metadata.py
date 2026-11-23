@@ -249,13 +249,13 @@ def compare_mod_versions(v1: str, v2: str) -> int:
 
 def build_mod_id_index(mods_dir: Path) -> dict:
     """
-    Escanea mods_dir UNA sola vez y arma un índice mod_id -> (Path, meta).
+    Escanea mods_dir UNA sola vez y monta un índice mod_id -> (Path, meta).
 
     Sin esto, procesar un lote de N mods contra M ya instalados llamaba a
     find_installed_mod_by_id() N veces, y cada llamada volvía a leer y
     parsear los M jars instalados desde cero (O(N×M): con 300+ mods en ambos
-    lados eso son decenas de miles de aperturas de zip). Con el índice armado
-    una vez, cada búsqueda es O(1) y el costo total baja a O(N+M).
+    lados eso son decenas de miles de aperturas de zip). Con el índice montado
+    una vez, cada búsqueda es O(1) y el coste total baja a O(N+M).
     """
     index = {}
     for f in mods_dir.iterdir():
@@ -332,7 +332,7 @@ def mc_version_compatible(server_mc: str, mod_versions: list, bare_as_minimum: b
     interpreta por defecto como prefijo/wildcard (equivale a "21.1.228.x"),
     que tiene sentido para versiones de Minecraft ("1.21" ~ "1.21.x"). Para
     versiones de LOADER (neoforge/forge/...) esa misma forma casi siempre
-    significa "mínimo requerido", así que el chequeo de compatibilidad de
+    significa "mínimo requerido", así que la comprobación de compatibilidad de
     modloader pasa bare_as_minimum=True para tratarla como ">=" en vez de
     exigir que el prefijo calce literalmente.
     """

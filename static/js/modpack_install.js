@@ -278,7 +278,7 @@ function renderDlResults(results) {
 // Nombre distinto a propósito: manage.js ya tiene un selectModpack() global
 // (abre el panel de gestión de un modpack instalado) — todos los <script> de
 // esta app comparten el mismo scope global (sin módulos), así que un nombre
-// igual pisaba en silencio esa función al cargar este archivo después,
+// aun así machacaba en silencio esa función al cargar este archivo después,
 // rompiendo el acceso a "Gestión de modpacks" por completo.
 function selectModpackToInstall(pack) {
   dlSelectedPack = pack;

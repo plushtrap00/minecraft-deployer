@@ -619,7 +619,7 @@
   "{n} commit(s) nuevos disponibles": "{n} new commit(s) available",
   "Un administrador puede aplicarla desde aquí.": "An administrator can apply it from here.",
   "Al día": "Up to date",
-  "Último chequeo": "Last check",
+  "Última comprobación": "Last check",
   "Error": "Error",
   "Comprobar ahora": "Check now",
 
@@ -744,7 +744,7 @@
   "Líneas de consola que se guardan en memoria para el visor de logs en vivo.": "Console lines kept in memory for the live log viewer.",
   "Cuántos logs rotados y crash reports se conservan por modpack antes de borrar los más viejos.": "How many rotated logs and crash reports are kept per modpack before the oldest ones are deleted.",
   "Segundos que se espera un apagado limpio (save-all + stop) antes de forzar el cierre del servidor.": "Seconds to wait for a clean shutdown (save-all + stop) before forcing the server to close.",
-  "Segundos de espera tras arrancar antes del primer chequeo de auto-actualización.": "Seconds to wait after startup before the first auto-update check.",
+  "Segundos de espera tras arrancar antes de la primera comprobación de auto-actualización.": "Seconds to wait after startup before the first auto-update check.",
   "Segundos máximos para cada operación de git (fetch/pull) de la auto-actualización.": "Maximum seconds for each git operation (fetch/pull) during auto-update.",
   "Segundos de espera para las peticiones a las APIs de Modrinth/CurseForge/Mojang.": "Timeout in seconds for requests to the Modrinth/CurseForge/Mojang APIs.",
   "Segundos de espera al descargar el archivo de un mod o modpack.": "Timeout in seconds when downloading a mod or modpack file.",

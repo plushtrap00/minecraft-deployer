@@ -16,20 +16,20 @@ from services.mod_metadata import compare_mod_versions, read_mod_metadata
 # Cuando el autor de un modpack de CurseForge bloquea la descarga por terceros
 # para un mod concreto, la API no da ninguna URL con la que resolverlo (ver
 # skipped_no_url en services/modpack_install.py) — el resto del modpack se
-# instala igual, pero ese mod se queda fuera. Estos nombres se guardan aquí para
+# instala de todas formas, pero ese mod se queda fuera. Estos nombres se guardan aquí para
 # que server_start() (routes/server.py) se niegue a arrancar ese modpack
 # mientras sigan sin estar de verdad en mods/, en vez de dejar arrancar un
 # servidor a medias sin que nadie se dé cuenta hasta que un jugador lo note.
 #
 # Dos formas de comprobar, para dos situaciones distintas:
 # - get_pending_mods() es una simple lectura de JSON (sin abrir ningún jar) —
-#   la usan el listado de modpacks y (como primer chequeo) el arranque del
+#   la usan el listado de modpacks y (como primera comprobación) el arranque del
 #   servidor, así que tiene que ser instantánea.
 # - check_pending_mods_stream() SÍ abre cada mod instalado para comparar su
 #   mod_id/versión real, así que puede tardar unos segundos en modpacks
 #   grandes — solo se dispara desde el frontend justo antes de arrancar el
 #   servidor, y SOLO si get_pending_mods() ya dijo que queda algo pendiente
-#   (si no hay nada pendiente, no tiene sentido pagar ese costo). Cubre el
+#   (si no hay nada pendiente, no tiene sentido pagar ese coste). Cubre el
 #   caso de un mod copiado a mano por SFTP en vez de subido desde el panel
 #   (resolve_pending_mods(), más abajo, solo se entera de las subidas que
 #   pasan por la propia app).
@@ -53,7 +53,7 @@ def get_pending_mods(modpack: str) -> list:
     jar) cualquier entrada que calce con _KNOWN_CLIENT_ONLY_FINGERPRINTS —
     esto pasa cuando el propio mod bloqueado para terceros ES uno de esos
     conocidos (services/modpack_install.py ya evita que ENTREN nuevos así,
-    pero un mods-pendientes.json de antes de ese chequeo puede seguir
+    pero un mods-pendientes.json de antes de esa comprobación puede seguir
     teniendo uno): no tiene sentido pedir instalar a mano algo que ya se sabe
     que no hace falta en el servidor.
     """
@@ -179,12 +179,12 @@ def _scan_installed_mod_candidates(mods_dir: Path):
 
 def check_pending_mods_stream(modpack: str):
     """
-    Re-chequeo completo con progreso: abre cada mod instalado para comparar
+    Comprobación completa con progreso: abre cada mod instalado para comparar
     con lo pendiente, por si algo se resolvió por una vía que resolve_pending_mods()
     no ve (copiado a mano por SFTP en vez de subido desde el panel). Solo
     tiene sentido llamarlo cuando get_pending_mods() ya dijo que queda algo
-    pendiente — el frontend (botón "Iniciar servidor") se encarga de ese
-    chequeo rápido antes de disparar este, para no pagar el costo de abrir
+    pendiente — el frontend (botón "Iniciar servidor") se encarga de esa
+    comprobación rápida antes de disparar esta, para no pagar el coste de abrir
     jars cuando no hace falta.
     """
     names = get_pending_mods(modpack)

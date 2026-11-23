@@ -56,12 +56,12 @@ function modSearchResultsCacheKey(source, query, categories, offset) {
   return source + '|' + query + '|' + categories.slice().sort().join(',') + '|' + offset;
 }
 
-// -- Caché real de íconos (bytes, no solo la URL) -------------------------------
-// Modrinth/CurseForge sirven los íconos con "Cache-Control: s-maxage=..." (para
+// -- Caché real de iconos (bytes, no solo la URL) -------------------------------
+// Modrinth/CurseForge sirven los iconos con "Cache-Control: s-maxage=..." (para
 // CDNs compartidos) pero SIN "max-age"/"public", así que el navegador no tiene
 // garantía de guardarlos en su propio caché: cada vez que se recreaban los
 // <img> al volver a una página ya vista, se volvían a descargar por completo
-// (de ahí los MB repetidos en la pestaña Network). Aquí se descarga el ícono
+// (de ahí los MB repetidos en la pestaña Network). Aquí se descarga el icono
 // UNA sola vez con fetch()+blob y se reusa un object URL en cualquier render
 // posterior, sin volver a tocar la red pase lo que pase con esos headers.
 var modSearchImageCache = new Map(); // url original -> object URL
@@ -240,7 +240,7 @@ function modSearchBackButtonHtml() {
 // usuario ve el resultado real marcado "Instalado" (mark_installed compara
 // por mod_id, no por nombre de archivo, así que es fiable) y puede elegir
 // cualquier versión, más nueva o más vieja: install_searched_mod() reusa
-// process_mod_jar(), el mismo chequeo de versión anterior que ya dispara el
+// process_mod_jar(), la misma comprobación de versión anterior que ya dispara el
 // modal de confirmación al subir un mod a mano.
 function openModSearchModal(prefillQuery) {
   if (!currentModpack) {

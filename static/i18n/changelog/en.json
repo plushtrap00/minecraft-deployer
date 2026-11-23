@@ -1,6 +1,7 @@
 {
   "//": "Historial de versiones en inglés: una entrada por cada «- X.Y.Z (fecha): texto» del docstring de version.py, que es el original en español. Otro idioma = otro archivo <idioma>.json en esta carpeta. Ver services/auto_update.py.",
 
+  "3.0.4": "Spanish review: removed the remaining Latin American expressions from texts, comments, installers and docs (e.g. «Último chequeo» is now «Última comprobación»).",
   "3.0.3": "achievements belong to your account, not your browser: they're the same on every device you log in from. Any you already had in a browser are uploaded to your account the first time you log in with it.",
   "3.0.2": "what's new in each version (System → Updates) is shown in each account's language. The translations go in one file per language, static/i18n/changelog/<language>.json.",
   "3.0.1": "the descriptions in Settings → Constants and their validation error are now in English too.",

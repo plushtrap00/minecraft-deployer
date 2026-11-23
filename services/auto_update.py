@@ -83,7 +83,7 @@ def _log(message: str) -> None:
 
 def running_in_docker() -> bool:
     """
-    /.dockerenv es el chequeo estándar (Docker lo crea en todo contenedor);
+    /.dockerenv es la comprobación estándar (Docker lo crea en todo contenedor);
     /proc/1/cgroup como respaldo para runtimes que no lo generan (p.ej. algunas
     versiones de Podman) pero sí dejan rastro de containerd/kubepods ahí.
     """
@@ -276,7 +276,7 @@ def check_now() -> dict:
     segundo plano), SIEMPRE vuelve a preguntarle a GitHub aunque ya se supiera
     de una actualización pendiente, porque aquí es el usuario quien lo pide
     explícitamente. Funciona aunque AUTO_UPDATE_ENABLED esté en false: revisar
-    a mano es una acción independiente de que el chequeo automático esté
+    a mano es una acción independiente de que la comprobación automática esté
     activado.
     """
     try:
@@ -291,7 +291,7 @@ def check_now() -> dict:
 
 def apply_update() -> None:
     """
-    Dispara el pull + reinicio a pedido (botón "Actualizar" del panel).
+    Dispara el pull + reinicio bajo demanda (botón "Actualizar" del panel).
     Lanza RuntimeError con un mensaje legible si no es seguro hacerlo ahora
     mismo. No reinicia la app ella misma: eso lo hace schedule_restart(),
     llamado aparte por el route handler DESPUÉS de mandar la respuesta HTTP,
@@ -325,7 +325,7 @@ def restart_now() -> None:
 def schedule_restart(delay_seconds: float = 1.0) -> None:
     in_docker = running_in_docker()
     _log(f"reiniciando en {delay_seconds}s ({'contenedor' if in_docker else 'servicio systemd'})...")
-    # Salir con código != 0 alcanza para los dos casos: systemd (Restart=on-
+    # Salir con código != 0 basta para los dos casos: systemd (Restart=on-
     # failure) y Docker (restart: unless-stopped, que reinicia sin importar el
     # código de salida) lo relanzan solos.
     threading.Timer(delay_seconds, lambda: os._exit(1)).start()

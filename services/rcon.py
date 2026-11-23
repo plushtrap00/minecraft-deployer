@@ -7,7 +7,7 @@ viaja solo por este socket, así que no llena la consola en vivo cada vez que
 se refrescan las métricas.
 
 RconConnection mantiene un único socket autenticado reutilizado entre comandos
-(en vez de abrir/cerrar uno por comando), porque Minecraft loguea una línea por
+(en vez de abrir/cerrar uno por comando), porque Minecraft escribe en el log una línea por
 cada conexión/desconexión RCON en su consola/log ("Thread RCON Client ... started"
 / "shutting down") y con una conexión persistente eso pasa una sola vez por
 sesión de servidor en vez de en cada refresco de métricas.
