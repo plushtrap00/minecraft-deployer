@@ -6,6 +6,12 @@ documentación de la API. Cada commit sube la versión (2.A.B, cada cifra de 0
 a 9: después de 2.0.9 va 2.1.0) y se etiqueta con `git tag v<versión>`.
 
 Historial resumido:
+- 3.0.9 (2026-11-23): botón «Actualizar modpack» al gestionar un servidor: lo
+  pasa a otra versión de su modpack de Modrinth o CurseForge haciendo antes
+  una copia completa, sin tocar el mundo, server.properties ni las listas de
+  jugadores, y conservando los mods que añadiste tú. Sigue en el servidor
+  aunque se cierre el navegador. Los servidores instalados antes se vinculan a
+  su modpack buscándolo una vez. Nuevo logro: Nueva temporada.
 - 3.0.8 (2026-11-23): botón «Buscar actualizaciones» en la pestaña Mods:
   reconoce cada mod por su hash en Modrinth (y en CurseForge si hay clave de
   API), enseña los que tienen una versión más nueva para tu versión de
@@ -140,4 +146,4 @@ Historial resumido:
   otros usuarios.
 - 1.x: todo lo anterior (sin numerar).
 """
-APP_VERSION = "3.0.8"
+APP_VERSION = "3.0.9"

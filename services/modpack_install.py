@@ -44,6 +44,7 @@ from services.mod_search import (
     modrinth_result_extras, curseforge_result_extras,
 )
 from services.modloader import _http_get, _installer_url, LOADER_DISPLAY_NAMES
+from services.modpack_update import record_source
 from services.server_create import validate_new_server_name, _write_run_script, _bootstrap_common_files, _vanilla_server_jar_url
 from services.utils import configure_jvm_ram, get_modpacks
 from services.visuals import save_pack_icon
@@ -473,6 +474,8 @@ async def install_modrinth_modpack_stream(project_id: str, version_id: str, serv
 
         await asyncio.to_thread(_bootstrap_common_files, server_dir, mc_version, loader_key, loader_version)
         await asyncio.to_thread(_store_modpack_logo, server_dir, "modrinth", project_id)
+        await asyncio.to_thread(record_source, server_dir, "modrinth", project_id, version_id,
+                                index.get("versionId"), mc_version, loader_key, index.get("name"))
         yield {"type": "done", "success": True, "name": server_name}
 
     except Exception as e:
@@ -1023,6 +1026,8 @@ async def install_curseforge_modpack_stream(mod_id, file_id, server_name: str, r
 
         await asyncio.to_thread(_bootstrap_common_files, server_dir, mc_version, loader_key, loader_version)
         await asyncio.to_thread(_store_modpack_logo, server_dir, "curseforge", mod_id)
+        await asyncio.to_thread(record_source, server_dir, "curseforge", mod_id, file_id,
+                                version.get("version_number"), mc_version, loader_key, manifest.get("name"))
         yield {"type": "done", "success": True, "name": server_name, "skipped": skipped_no_url}
 
     except Exception as e:

@@ -437,6 +437,22 @@ var ACHIEVEMENT_ICONS = {
     ],
     palette: { o: '#3a3f4a', w: '#6a7488', W: '#9aa6bc', G: '#ffd24a', g: '#b8860b' }
   },
+  // Caja de regalo
+  'new-season': {
+    rows: [
+      '...y..y...',
+      '....yy....',
+      'pppppppppp',
+      'pppppyyppp',
+      'pppppyyppp',
+      '.PPPPyyPP.',
+      '.PPPPyyPP.',
+      '.PPPPyyPP.',
+      '.PPPPyyPP.',
+      '.PPPPPPPP.'
+    ],
+    palette: { p: '#b388ff', P: '#7c4dff', y: '#ffd24a' }
+  },
   // Llave inglesa
   'tune-up': {
     rows: [

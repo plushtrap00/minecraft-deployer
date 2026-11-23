@@ -42,10 +42,14 @@ from services.busy import BusyGuard
 from services.modpack import parse_server_properties, save_server_property
 
 BACKUPS_DIR = DEFAULT_SERVERS_PATH / ".global" / "backups"
-REASONS = {"manual": "Manual", "auto": "Automática", "task": "Tarea programada", "safety": "Antes de restaurar"}
+REASONS = {"manual": "Manual", "auto": "Automática", "task": "Tarea programada", "safety": "Antes de restaurar",
+           "packupdate": "Antes de actualizar el modpack"}
 KINDS = {"world": "Mundo", "full": "Completa"}
 _NAME_RE = re.compile(r"^(?P<world>[^/\\]+?)__(?P<stamp>\d{8}-\d{6})__(?P<reason>[a-z]+)(?:__(?P<full>full))?\.zip$")
 _SKIP_FILES = {"session.lock"}
+# Archivos ocultos que sí van en una copia completa: de qué modpack y versión
+# es el servidor (services/modpack_update.py), para que al restaurar cuadre.
+FULL_DOTFILES = {".pack_source.json"}
 # Lo que no entra en una copia completa (nombres de primer nivel del servidor).
 FULL_SKIP = {"libraries", "logs", "crash-reports", "debug", "backups", "versions", "cache", ".cache",
              ".fabric", ".mixin.out", "__pycache__"}
@@ -83,7 +87,7 @@ def full_entries(server_dir: Path) -> list:
     entries = []
     for path in sorted(server_dir.iterdir()):
         name = path.name
-        if name in FULL_SKIP or name.startswith(".") or name.endswith(_FULL_SKIP_SUFFIXES) or name in _SKIP_FILES:
+        if name in FULL_SKIP or (name.startswith(".") and name not in FULL_DOTFILES) or name.endswith(_FULL_SKIP_SUFFIXES) or name in _SKIP_FILES:
             continue
         entries.append(name)
     return entries
@@ -448,7 +452,7 @@ def _zip_top_entries(zf: zipfile.ZipFile) -> tuple:
 
 def _check_entry_names(names: set) -> None:
     for name in names:
-        if name in ("..", ".") or name.startswith(".") or "\\" in name or ":" in name:
+        if name in ("..", ".") or (name.startswith(".") and name not in FULL_DOTFILES) or "\\" in name or ":" in name:
             raise HTTPException(status_code=400, detail="La copia no tiene el formato esperado")
 
 

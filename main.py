@@ -43,6 +43,7 @@ from routes.create_server import router as create_server_router
 from routes.modpack_install import router as modpack_install_router
 from routes.mod_search import router as mod_search_router
 from routes.mod_updates import router as mod_updates_router
+from routes.modpack_update import router as modpack_update_router
 from routes.players import router as players_router
 from routes.server import router as server_router
 from routes.auth import router as auth_router, verify_token, token_from_request
@@ -178,6 +179,7 @@ app.include_router(create_server_router)
 app.include_router(modpack_install_router)
 app.include_router(mod_search_router)
 app.include_router(mod_updates_router)
+app.include_router(modpack_update_router)
 app.include_router(upload_router)
 app.include_router(firewall_router)
 app.include_router(players_router)
