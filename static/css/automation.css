@@ -233,3 +233,29 @@ input.auto-num {
   gap: 8px;
   align-items: center;
 }
+
+.auto-col {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.task-only-empty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  grid-column: 1 / -1;
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+
+/* .prop-field lleva display: flex, que taparía el atributo hidden. */
+.task-form [hidden] {
+  display: none;
+}
+
+.task-only-empty input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+}

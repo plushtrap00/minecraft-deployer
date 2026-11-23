@@ -31,10 +31,16 @@ _task_status: dict = {}          # tarea -> {"at", "ok", "message"} de la últim
 _backup_running = threading.Event()
 _last_sample = 0.0
 _last_prune = 0.0
+_waiting_empty: dict = {}        # tarea -> {"task", "deadline"}: esperando a que no haya nadie
+_idle = {"modpack": None, "since": None}  # desde cuándo está vacío el servidor encendido
 
 
 def task_status() -> dict:
     return dict(_task_status)
+
+
+def _players_online() -> int:
+    return len(mc_metrics.get("players_online") or [])
 
 
 def describe_task(task: dict) -> str:
@@ -137,12 +143,55 @@ def _check_tasks(now: datetime) -> None:
             if minutes > 0:
                 if server_control.is_running():
                     server_control.say(_warn_text(task, minutes))
+            elif task.get("only_empty") and server_control.is_running() and _players_online():
+                _waiting_empty[task["id"]] = {"task": task, "deadline": time.time() + task["wait_minutes"] * 60}
+                _task_status[task["id"]] = {"at": now.isoformat(timespec="seconds"), "ok": True,
+                                            "message": "esperando a que no haya nadie conectado"}
             else:
                 run_task_in_background(task)
     # Las claves de hace más de un día ya no pueden repetirse.
     old = time.time() - 86400
     for key in [k for k, at in _done_keys.items() if at < old]:
         _done_keys.pop(key, None)
+
+
+def _check_waiting_empty() -> None:
+    """Tareas «solo si no hay nadie» que encontraron gente: se hacen en cuanto se vacía."""
+    for task_id, waiting in list(_waiting_empty.items()):
+        task = waiting["task"]
+        if not server_control.is_running():
+            _waiting_empty.pop(task_id, None)
+            _task_status[task_id] = {"at": datetime.now().isoformat(timespec="seconds"), "ok": True,
+                                     "message": "el servidor ya se había parado"}
+        elif not _players_online():
+            _waiting_empty.pop(task_id, None)
+            run_task_in_background(task)
+        elif time.time() > waiting["deadline"]:
+            _waiting_empty.pop(task_id, None)
+            _fail(task, f"no se ha hecho: siguió habiendo gente conectada durante {task['wait_minutes']} min")
+
+
+def _maybe_idle_stop() -> None:
+    """Apaga el servidor si lleva idle_stop.minutes sin nadie conectado."""
+    settings = automation.load()["idle_stop"]
+    modpack = server_control.running_modpack()
+    if not settings["enabled"] or not modpack or not proc_module.mc_ready:
+        _idle.update(modpack=None, since=None)
+        return
+    now = time.time()
+    if _players_online():
+        _idle.update(modpack=modpack, since=None)
+        return
+    if _idle["since"] is None or _idle["modpack"] != modpack:
+        _idle.update(modpack=modpack, since=now)
+        return
+    if now - _idle["since"] < settings["minutes"] * 60:
+        return
+    _idle.update(modpack=None, since=None)
+    minutes = settings["minutes"]
+    server_control.deployer_line(f"Nadie conectado desde hace {minutes} min: apagando el servidor.")
+    activity.record("server.idle_stop", params={"modpack": modpack, "minutes": minutes})
+    threading.Thread(target=server_control.stop_server, daemon=True, name="apagado-sin-jugadores").start()
 
 
 def _maybe_auto_backup() -> None:
@@ -199,6 +248,8 @@ def _maybe_sample() -> None:
 def _loop() -> None:
     steps = (
         ("tareas", lambda: _check_tasks(datetime.now())),
+        ("esperando a que se vacíe", _check_waiting_empty),
+        ("apagado sin jugadores", _maybe_idle_stop),
         ("copias", _maybe_auto_backup),
         ("historial", _maybe_sample),
     )

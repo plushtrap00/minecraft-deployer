@@ -38,6 +38,10 @@ function renderAutomationSettings() {
   document.getElementById('auto-backup-interval').value = backups.interval_hours;
   document.getElementById('auto-backup-keep').value = backups.keep;
   document.getElementById('auto-backup-full-toggle').classList.toggle('on', !!backups.full);
+  var idle = automationData.idle_stop || { enabled: false, minutes: 30 };
+  document.getElementById('auto-idle-toggle').classList.toggle('on', idle.enabled);
+  document.getElementById('auto-idle-minutes').value = idle.minutes;
+  document.getElementById('auto-idle-fields').classList.toggle('is-off', !idle.enabled);
   renderMirror();
   document.getElementById('auto-restart-fields').classList.toggle('is-off', !restart.enabled);
   document.getElementById('auto-backup-fields').classList.toggle('is-off', !backups.enabled);
@@ -55,6 +59,10 @@ function saveAutomationSettings() {
       interval_hours: parseInt(document.getElementById('auto-backup-interval').value, 10),
       keep: parseInt(document.getElementById('auto-backup-keep').value, 10),
       full: document.getElementById('auto-backup-full-toggle').classList.contains('on')
+    },
+    idle_stop: {
+      enabled: document.getElementById('auto-idle-toggle').classList.contains('on'),
+      minutes: parseInt(document.getElementById('auto-idle-minutes').value, 10)
     }
   };
   apiJson('/api/automation/settings', {
@@ -68,6 +76,7 @@ function saveAutomationSettings() {
     }
     automationData.auto_restart = result.data.auto_restart;
     automationData.backups = result.data.backups;
+    automationData.idle_stop = result.data.idle_stop;
     // Los números fuera de rango vuelven a lo que de verdad se guardó.
     renderAutomationSettings();
     showToast(t('Guardado'), 'success');
@@ -121,14 +130,14 @@ document.getElementById('auto-mirror-save').addEventListener('click', function()
   });
 });
 
-['auto-restart-toggle', 'auto-backup-toggle', 'auto-backup-full-toggle'].forEach(function(id) {
+['auto-restart-toggle', 'auto-backup-toggle', 'auto-backup-full-toggle', 'auto-idle-toggle'].forEach(function(id) {
   document.getElementById(id).addEventListener('click', function() {
     this.classList.toggle('on');
     saveAutomationSettings();
   });
 });
 
-['auto-restart-attempts', 'auto-restart-window', 'auto-backup-interval', 'auto-backup-keep'].forEach(function(id) {
+['auto-restart-attempts', 'auto-restart-window', 'auto-backup-interval', 'auto-backup-keep', 'auto-idle-minutes'].forEach(function(id) {
   document.getElementById(id).addEventListener('change', saveAutomationSettings);
 });
 
@@ -196,6 +205,9 @@ function renderTasks() {
     var meta = describeDays(task.days);
     if (task.warn_minutes) {
       meta += t(', avisando {n} min antes', { n: task.warn_minutes });
+    }
+    if (task.only_empty) {
+      meta += t(', solo si no hay nadie (espera hasta {time})', { time: formatWaitMinutes(task.wait_minutes) });
     }
     return '<div class="task-row' + (task.enabled ? '' : ' is-paused') + '" data-id="' + escHtml(task.id) + '">'
       + '<div class="toggle-track task-toggle' + (task.enabled ? ' on' : '') + '" aria-label="' + t('Tarea activa') + '"><div class="toggle-thumb"></div></div>'
@@ -332,14 +344,27 @@ document.getElementById('task-days').addEventListener('click', function(event) {
   }
 });
 
+function formatWaitMinutes(minutes) {
+  if (minutes < 60) {
+    return t('{n} min', { n: minutes });
+  }
+  return minutes === 60 ? t('1 hora') : t('{n} horas', { n: minutes / 60 });
+}
+
 function syncTaskFormFields() {
   var kind = document.getElementById('task-kind').value;
-  document.getElementById('task-warn-field').hidden = !(kind === 'restart' || kind === 'stop');
+  var disruptive = kind === 'restart' || kind === 'stop';
+  var onlyEmpty = disruptive && document.getElementById('task-only-empty').checked;
+  document.getElementById('task-only-empty-field').hidden = !disruptive;
+  document.getElementById('task-wait-field').hidden = !onlyEmpty;
+  // Esperando a que no haya nadie, no hay a quién avisar.
+  document.getElementById('task-warn-field').hidden = !disruptive || onlyEmpty;
   document.getElementById('task-modpack-field').hidden = kind !== 'start';
   document.getElementById('task-command-field').hidden = kind !== 'command';
 }
 
 document.getElementById('task-kind').addEventListener('change', syncTaskFormFields);
+document.getElementById('task-only-empty').addEventListener('change', syncTaskFormFields);
 
 function openTaskForm(task) {
   var form = document.getElementById('task-form');
@@ -349,6 +374,8 @@ function openTaskForm(task) {
   document.getElementById('task-kind').value = task.kind;
   document.getElementById('task-time').value = task.time;
   document.getElementById('task-warn').value = String(task.warn_minutes || 0);
+  document.getElementById('task-only-empty').checked = !!task.only_empty;
+  document.getElementById('task-wait').value = String(task.wait_minutes || 120);
   document.getElementById('task-command').value = task.command || '';
   if (task.modpack) {
     document.getElementById('task-modpack').value = task.modpack;
@@ -382,6 +409,8 @@ document.getElementById('task-form').addEventListener('submit', function(event) 
       return button.getAttribute('aria-pressed') === 'true';
     }).map(function(button) { return Number(button.dataset.day); }),
     warn_minutes: Number(document.getElementById('task-warn').value),
+    only_empty: document.getElementById('task-only-empty').checked,
+    wait_minutes: Number(document.getElementById('task-wait').value),
     command: document.getElementById('task-command').value,
     modpack: document.getElementById('task-modpack').value
   };

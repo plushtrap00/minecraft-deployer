@@ -71,7 +71,8 @@
         <ul>
           <li><b>Si el servidor se cae</b> — el panel lo vuelve a arrancar solo, con un límite de intentos para no entrar en bucle si algo va mal. Parar desde el panel o con <code>stop</code> no cuenta como caída.</li>
           <li><b>Copias automáticas</b> — cada cierto número de horas mientras el servidor está encendido, guardando solo las últimas.</li>
-          <li><b>Tareas programadas</b> — reiniciar, parar, encender un servidor, ejecutar un comando o hacer una copia a una hora y unos días concretos. Los reinicios y paradas pueden avisar antes a los jugadores. Con <b>Probar</b> la ejecutas al momento para ver que funciona.</li>
+          <li><b>Si no hay nadie jugando</b> — el panel puede apagar el servidor cuando lleve un rato vacío, para ahorrar memoria y electricidad. Se vuelve a encender desde el panel o con una tarea programada.</li>
+          <li><b>Tareas programadas</b> — reiniciar, parar, encender un servidor, ejecutar un comando o hacer una copia a una hora y unos días concretos. Los reinicios y paradas pueden avisar antes a los jugadores o hacerse <b>solo si no hay nadie conectado</b> (si hay gente, esperan a que se vaya, hasta el máximo que elijas). Con <b>Probar</b> la ejecutas al momento para ver que funciona.</li>
         </ul>
         <p>Todo funciona aunque no tengas el panel abierto.</p>
       </div>

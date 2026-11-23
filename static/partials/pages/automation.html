@@ -4,6 +4,7 @@
      funciona aunque no haya nadie con el panel abierto. -->
 <div class="page" id="page-automation">
   <div class="auto-grid">
+    <div class="auto-col">
     <div class="card">
       <div class="card-head">
         <h2><svg class="icon" aria-hidden="true"><use href="#i-rotate-ccw"/></svg>Si el servidor se cae</h2>
@@ -17,6 +18,21 @@
         <label class="auto-inline">en <input type="number" id="auto-restart-window" min="1" max="120" class="auto-num"> minutos</label>
       </div>
       <p class="field-hint">Si se cae más veces en ese tiempo, se queda parado: algo va mal y conviene mirar el log. Parar el servidor desde el panel o con <code>stop</code> no cuenta como caída.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2><svg class="icon" aria-hidden="true"><use href="#i-power"/></svg>Si no hay nadie jugando</h2>
+      </div>
+      <div class="toggle-row">
+        <div class="toggle-track" id="auto-idle-toggle" aria-labelledby="auto-idle-label"><div class="toggle-thumb"></div></div>
+        <span id="auto-idle-label">Apagar el servidor cuando se quede vacío</span>
+      </div>
+      <div class="auto-inline-fields" id="auto-idle-fields">
+        <label class="auto-inline">tras <input type="number" id="auto-idle-minutes" min="5" max="1440" class="auto-num"> minutos sin nadie conectado</label>
+      </div>
+      <p class="field-hint">Ahorra memoria y electricidad cuando nadie juega. Cuenta desde que el servidor termina de arrancar o desde que sale el último jugador; se vuelve a encender desde el panel o con una tarea programada.</p>
+    </div>
     </div>
 
     <div class="card">
@@ -78,6 +94,21 @@
             <option value="30">30 minutos antes</option>
           </select>
         </div>
+        <div class="prop-field" id="task-wait-field" hidden>
+          <label class="prop-label">Si hay gente, esperar como mucho</label>
+          <select id="task-wait" class="w-full">
+            <option value="30">30 minutos</option>
+            <option value="60">1 hora</option>
+            <option value="120">2 horas</option>
+            <option value="240">4 horas</option>
+            <option value="480">8 horas</option>
+            <option value="720">12 horas</option>
+          </select>
+        </div>
+        <label class="task-only-empty" id="task-only-empty-field">
+          <input type="checkbox" id="task-only-empty">
+          <span>Solo si no hay nadie conectado (si hay gente, espera a que se vaya)</span>
+        </label>
         <div class="prop-field" id="task-modpack-field" hidden>
           <label class="prop-label">Qué servidor</label>
           <select id="task-modpack" class="w-full"></select>

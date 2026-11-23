@@ -36,6 +36,7 @@ ACTIONS = {
     "server.restart": ("server", "Reinició {modpack}"),
     "server.command": ("server", "Mandó un comando a la consola"),
     "server.crash_restart": ("server", "Reinicio automático de {modpack} tras una caída"),
+    "server.idle_stop": ("server", "Apagó {modpack} tras {minutes} min sin nadie conectado"),
     # Jugadores
     "players.op": ("players", "Hizo operador a {name}"),
     "players.deop": ("players", "Quitó de operadores a {name}"),

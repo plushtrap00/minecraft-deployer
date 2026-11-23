@@ -271,6 +271,85 @@ class SchedulerTest(unittest.TestCase):
         self.assertEqual(run.call_count, 1)
 
 
+class OnlyWhenEmptyTest(unittest.TestCase):
+    """Tareas «solo si no hay nadie» y apagado cuando el servidor se queda vacío."""
+
+    def setUp(self):
+        self.players = []
+        for patcher in (
+            mock.patch.dict(scheduler.mc_metrics, {"players_online": self.players}),
+            mock.patch.dict(scheduler._waiting_empty, {}, clear=True),
+            mock.patch.dict(scheduler._task_status, {}, clear=True),
+            mock.patch.dict(scheduler._done_keys, {}, clear=True),
+            mock.patch.object(scheduler.server_control, "is_running", return_value=True),
+            mock.patch.object(scheduler.server_control, "running_modpack", return_value="pack"),
+            mock.patch.object(scheduler.server_control, "deployer_line"),
+            mock.patch.object(scheduler.proc_module, "mc_ready", True),
+            mock.patch.object(scheduler.activity, "record"),
+            mock.patch.object(scheduler, "notify"),
+        ):
+            patcher.start()
+            self.addCleanup(patcher.stop)
+        self.task = automation._clean_task({"id": "r", "kind": "restart", "time": "05:00", "days": [0],
+                                            "warn_minutes": 5, "only_empty": True, "wait_minutes": 60})
+
+    def test_task_validation(self):
+        self.assertEqual((self.task["warn_minutes"], self.task["wait_minutes"]), (0, 60))
+        command = automation._clean_task({"kind": "command", "time": "05:00", "days": [0], "command": "x", "only_empty": True})
+        self.assertFalse(command["only_empty"])
+
+    def run_at(self, when):
+        with mock.patch.object(scheduler.automation, "load", return_value={"tasks": [self.task]}):
+            scheduler._check_tasks(when)
+
+    def test_runs_at_once_when_empty(self):
+        with mock.patch.object(scheduler, "run_task_in_background") as run:
+            self.run_at(datetime(2026, 11, 9, 5, 0))
+        run.assert_called_once()
+
+    def test_waits_until_nobody_is_left(self):
+        self.players.append("Steve")
+        with mock.patch.object(scheduler, "run_task_in_background") as run:
+            self.run_at(datetime(2026, 11, 9, 5, 0))
+            run.assert_not_called()
+            self.assertIn("esperando", scheduler._task_status["r"]["message"])
+            scheduler._check_waiting_empty()
+            run.assert_not_called()
+            self.players.remove("Steve")
+            scheduler._check_waiting_empty()
+            run.assert_called_once()
+        self.assertEqual(scheduler._waiting_empty, {})
+
+    def test_gives_up_after_the_wait(self):
+        self.players.append("Alex")
+        with mock.patch.object(scheduler, "run_task_in_background") as run:
+            self.run_at(datetime(2026, 11, 9, 5, 0))
+            scheduler._waiting_empty["r"]["deadline"] = 0
+            scheduler._check_waiting_empty()
+        run.assert_not_called()
+        self.assertFalse(scheduler._task_status["r"]["ok"])
+
+    def test_idle_stop(self):
+        settings = {"idle_stop": {"enabled": True, "minutes": 30}}
+        clock = [1000.0]
+        with mock.patch.object(scheduler.automation, "load", return_value=settings),                 mock.patch.object(scheduler.time, "time", side_effect=lambda: clock[0]),                 mock.patch.object(scheduler.threading, "Thread") as thread,                 mock.patch.dict(scheduler._idle, {"modpack": None, "since": None}):
+            scheduler._maybe_idle_stop()          # empieza a contar
+            clock[0] += 20 * 60
+            self.players.append("Steve")          # entra alguien: se reinicia la cuenta
+            scheduler._maybe_idle_stop()
+            self.players.remove("Steve")
+            scheduler._maybe_idle_stop()
+            clock[0] += 29 * 60
+            scheduler._maybe_idle_stop()
+            thread.assert_not_called()
+            clock[0] += 2 * 60
+            scheduler._maybe_idle_stop()
+            thread.assert_called_once()
+            settings["idle_stop"]["enabled"] = False
+            scheduler._maybe_idle_stop()
+            self.assertIsNone(scheduler._idle["since"])
+
+
 class CrashRestartTest(unittest.TestCase):
     def setUp(self):
         server_control._crash_history.clear()

@@ -4,7 +4,7 @@ programadas (services/automation.py, services/scheduler.py).
 
 Rutas:
 - GET    /api/automation                 → ajustes, tareas, estado y hora del servidor
-- POST   /api/automation/settings        → guarda reinicio automático y copias automáticas
+- POST   /api/automation/settings        → guarda reinicio automático, copias automáticas y apagado sin jugadores
 - POST   /api/automation/tasks           → crea o actualiza una tarea
 - DELETE /api/automation/tasks/{id}      → borra una tarea
 - POST   /api/automation/tasks/{id}/run  → ejecuta una tarea ahora (para probarla)
@@ -60,11 +60,12 @@ async def set_backup_mirror(request: Request, body: MirrorBody):
 class SettingsBody(BaseModel):
     auto_restart: dict | None = None
     backups: dict | None = None
+    idle_stop: dict | None = None
 
 
 @router.post("/settings")
 def save_settings(body: SettingsBody):
-    return JSONResponse(automation.save_settings(body.auto_restart, body.backups))
+    return JSONResponse(automation.save_settings(body.auto_restart, body.backups, body.idle_stop))
 
 
 @router.post("/tasks")

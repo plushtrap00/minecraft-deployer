@@ -6,6 +6,11 @@ documentación de la API. Cada commit sube la versión (2.A.B, cada cifra de 0
 a 9: después de 2.0.9 va 2.1.0) y se etiqueta con `git tag v<versión>`.
 
 Historial resumido:
+- 3.1.1 (2026-11-23): los reinicios y paradas programados pueden hacerse solo
+  si no hay nadie conectado (si hay gente, esperan a que se vaya, hasta el
+  máximo que elijas), y el servidor se puede apagar solo cuando lleva un rato
+  vacío. Arreglado: el formulario de tareas enseñaba campos que no tocaban
+  (Comando, Qué servidor).
 - 3.1.0 (2026-11-23): registro de actividad en la página Usuarios (solo
   administrador): quién ha hecho qué y cuándo, con su IP (encender y parar,
   comandos de la consola, mods, copias, cambios de configuración, entradas al
@@ -152,4 +157,4 @@ Historial resumido:
   otros usuarios.
 - 1.x: todo lo anterior (sin numerar).
 """
-APP_VERSION = "3.1.0"
+APP_VERSION = "3.1.1"

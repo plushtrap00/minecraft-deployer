@@ -8,7 +8,9 @@ SERVERS_PATH/.global/automation.json:
   está encendido, y el destino secundario de todas las copias (mirror_dir,
   solo lo cambia un administrador: ver set_mirror_dir).
 - tasks: tareas programadas (reiniciar, parar, encender, comando o copia a una
-  hora y unos días de la semana).
+  hora y unos días de la semana). Reiniciar y parar pueden esperar a que no
+  quede nadie conectado (only_empty, como mucho wait_minutes).
+- idle_stop: apagar el servidor cuando lleve un rato sin nadie conectado.
 
 No van en el .env porque no son secretos ni de la instalación: se cambian
 desde el panel y se aplican al momento.
@@ -35,6 +37,7 @@ _TIME_RE = re.compile(r"^([01]\d|2[0-3]):([0-5]\d)$")
 DEFAULTS = {
     "auto_restart": {"enabled": True, "max_attempts": 3, "window_minutes": 10},
     "backups": {"enabled": False, "interval_hours": 6, "keep": 5, "full": False, "mirror_dir": ""},
+    "idle_stop": {"enabled": False, "minutes": 30},
     "tasks": [],
 }
 
@@ -67,9 +70,15 @@ def _clean_task(raw: dict) -> dict:
         "time": time_text,
         "days": days,
         "warn_minutes": _clamp_int(raw.get("warn_minutes", 0), 0, 30, 0) if kind in ("restart", "stop") else 0,
+        "only_empty": bool(raw.get("only_empty")) and kind in ("restart", "stop"),
+        "wait_minutes": 0,
         "command": "",
         "modpack": "",
     }
+    if task["only_empty"]:
+        # Si se espera a que no haya nadie, no hay a quién avisar.
+        task["warn_minutes"] = 0
+        task["wait_minutes"] = _clamp_int(raw.get("wait_minutes", 120), 5, 720, 120)
     if kind == "command":
         command = str(raw.get("command", "")).strip().lstrip("/")
         if not command or any(ch in command for ch in "\r\n\x00"):
@@ -87,6 +96,7 @@ def _normalize(data: dict) -> dict:
     data = data if isinstance(data, dict) else {}
     restart = {**DEFAULTS["auto_restart"], **(data.get("auto_restart") or {})}
     backups = {**DEFAULTS["backups"], **(data.get("backups") or {})}
+    idle = {**DEFAULTS["idle_stop"], **(data.get("idle_stop") or {})}
     tasks = []
     for raw in data.get("tasks") or []:
         try:
@@ -105,6 +115,10 @@ def _normalize(data: dict) -> dict:
             "keep": _clamp_int(backups["keep"], 1, 100, 5),
             "full": bool(backups["full"]),
             "mirror_dir": str(backups["mirror_dir"] or "").strip(),
+        },
+        "idle_stop": {
+            "enabled": bool(idle["enabled"]),
+            "minutes": _clamp_int(idle["minutes"], 5, 1440, 30),
         },
         "tasks": tasks,
     }
@@ -126,8 +140,11 @@ def _write(data: dict) -> None:
     tmp.replace(AUTOMATION_FILE)
 
 
-def save_settings(auto_restart: dict | None = None, backups: dict | None = None) -> dict:
+def save_settings(auto_restart: dict | None = None, backups: dict | None = None,
+                  idle_stop: dict | None = None) -> dict:
     current = load()
+    if idle_stop is not None:
+        current["idle_stop"] = {**current["idle_stop"], **idle_stop}
     if auto_restart is not None:
         current["auto_restart"] = {**current["auto_restart"], **auto_restart}
     if backups is not None:
