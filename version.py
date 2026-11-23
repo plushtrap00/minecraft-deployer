@@ -6,6 +6,10 @@ documentación de la API. Cada commit sube la versión (2.A.B, cada cifra de 0
 a 9: después de 2.0.9 va 2.1.0) y se etiqueta con `git tag v<versión>`.
 
 Historial resumido:
+- 3.1.3 (2026-11-23): «Cuándo se juega» en la página Jugadores: racha de días
+  seguidos con alguien jugando, resumen de los últimos 7 días y mapa de calor
+  por día y hora. Los lunes llega el resumen de la semana por Telegram o
+  Discord. Logro nuevo: «En racha».
 - 3.1.2 (2026-11-23): cuentas limitadas: lo ven todo, pero solo pueden
   encender, parar y reiniciar el servidor y gestionar la lista blanca (sin
   mods, mundos, copias, consola, descargas ni contraseña de RCON). Se eligen
@@ -163,4 +167,4 @@ Historial resumido:
   otros usuarios.
 - 1.x: todo lo anterior (sin numerar).
 """
-APP_VERSION = "3.1.2"
+APP_VERSION = "3.1.3"

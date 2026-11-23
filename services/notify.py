@@ -38,8 +38,9 @@ EVENTS = {
     "backup_done": "Una copia de seguridad termina",
     "install": "Termina la instalación de un modpack",
     "task": "Se ejecuta una tarea programada",
+    "weekly": "Resumen de la semana (los lunes)",
 }
-DEFAULT_EVENTS = ["ready", "stopped", "crash", "join", "backup_failed", "install"]
+DEFAULT_EVENTS = ["ready", "stopped", "crash", "join", "backup_failed", "install", "weekly"]
 
 _TIMEOUT = 10
 _queue: "queue.Queue" = queue.Queue(maxsize=200)

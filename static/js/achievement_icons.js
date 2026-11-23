@@ -454,6 +454,21 @@ var ACHIEVEMENT_ICONS = {
     palette: { p: '#b388ff', P: '#7c4dff', y: '#ffd24a' }
   },
   // Llave inglesa
+  'on-fire': {
+    rows: [
+      '....r.....',
+      '....rr....',
+      '...rrr..r.',
+      '..rrorr.r.',
+      '..roorrrr.',
+      '.rrooorrr.',
+      '.roooyoor.',
+      '.rooyyyor.',
+      '..ooyyyo..',
+      '...oooo...'
+    ],
+    palette: { r: '#e2492f', o: '#f59e42', y: '#ffd866' }
+  },
   'tune-up': {
     rows: [
       '......ss..',

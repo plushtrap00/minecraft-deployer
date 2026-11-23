@@ -128,6 +128,7 @@ No hace falta vaciar la caché del navegador: cada archivo del panel lleva su pr
 - **CurseForge**: si no añadiste la clave de API durante la instalación, puedes añadirla luego desde **Configuración** dentro de la propia app (solo administrador), sin tocar nada por consola.
 - **Tutorial dentro de la app**: pestaña **Ayuda**, con una explicación de cada sección del panel.
 - **Sesión**: el inicio de sesión se guarda en una cookie del navegador (HttpOnly). Al cambiar la contraseña de una cuenta o borrarla, sus sesiones abiertas dejan de valer.
+- **Cuándo se juega** (página **Jugadores**): racha de días seguidos con alguien jugando, resumen de los últimos 7 días y mapa de calor por día y hora. Las partidas se apuntan al entrar y salir los jugadores, en `SERVERS_PATH/.global/sessions.jsonl` (se guarda algo más de un año).
 - **Roles**: cada cuenta (menos el administrador) es completa —todo menos cuentas, firewall y configuración— o **limitada**: lo ve todo, pero solo puede encender, parar y reiniciar el servidor y gestionar la lista blanca. Las descargas y la contraseña de RCON tampoco le llegan. El rol se cambia en **Usuarios** y vale al momento.
 - **Contraseñas**: cada usuario cambia la suya con el botón del candado de la barra superior. El administrador puede poner una nueva a cualquier otro usuario desde **Usuarios** (por si la olvida).
 - **Verificación en dos pasos** (opcional, por cuenta): desde el mismo botón del candado. Pide un código de 6 cifras de una app (Google Authenticator, Aegis, 2FAS, Bitwarden...) además de la contraseña, y da 8 códigos de recuperación de un solo uso. Si alguien pierde el móvil y los códigos, el administrador se la quita desde **Usuarios**; la del administrador se quita con `python3 set_password.py`. Se guarda en `SERVERS_PATH/.global/two_factor.json` (permisos `600`).
@@ -154,7 +155,7 @@ El panel está en español de España y en inglés, entero: páginas, mensajes, 
 
 ### Avisos por Telegram y Discord
 
-Opcionales. El panel puede escribirte cuando el servidor está listo, se para, se cae, entra o sale alguien, falla una copia, termina una instalación o se ejecuta una tarea programada (eliges cuáles).
+Opcionales. El panel puede escribirte cuando el servidor está listo, se para, se cae, entra o sale alguien, falla una copia, termina una instalación o se ejecuta una tarea programada, y los lunes te manda el resumen de la semana: quién ha jugado, cuántas horas, caras nuevas y la racha de días seguidos (eliges cuáles).
 
 Cada instalación usa **su propio bot**, así que los avisos solo le llegan a quien lo configura:
 

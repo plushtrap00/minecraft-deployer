@@ -122,6 +122,7 @@ function showPage(name) {
   }
   if (name === 'players') {
     loadPlayers();
+    loadPlayActivity();
   }
   if (name === 'deploy') {
     loadDeployPageData();

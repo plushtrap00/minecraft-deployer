@@ -63,6 +63,23 @@
 
   </div>
 
+  <!-- Cuándo se juega: racha, resumen de la semana y mapa de calor (play_activity.js) -->
+  <div class="card" id="play-activity-card">
+    <div class="card-head">
+      <h2><svg class="icon" aria-hidden="true"><use href="#i-flame"/></svg>Cuándo se juega</h2>
+      <div class="play-filters ml-auto">
+        <select id="play-modpack" aria-label="Servidor"></select>
+        <select id="play-weeks" aria-label="Periodo">
+          <option value="4">4 semanas</option>
+          <option value="8" selected>8 semanas</option>
+          <option value="26">6 meses</option>
+          <option value="52">1 año</option>
+        </select>
+      </div>
+    </div>
+    <div id="play-activity"><div class="skeleton-rows" role="status" aria-label="Cargando"><div></div><div></div><div></div></div></div>
+  </div>
+
   <!-- Estadísticas que guarda el mundo de cada jugador (player_stats.js) -->
   <div class="card" id="player-stats-card">
     <div class="card-head">

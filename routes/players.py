@@ -13,10 +13,13 @@ Rutas:
 - POST   /api/players/ban-ip           → banear IP
 - DELETE /api/players/ban-ip/{ip}      → desbanear IP
 - POST   /api/players/sync             → sincronizar a todos los modpacks
+- GET    /api/players/activity         → cuándo se juega: mapa de calor, racha y resumen de la semana
 """
 import datetime
 from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import JSONResponse, Response
+
+from services import sessions
 
 from services.players import (
     ensure_global_dir, read_global_file, write_global_file,
@@ -244,3 +247,16 @@ def sync_all():
             "para no interrumpirlo. Usa los comandos de consola en su lugar."
         )
     return JSONResponse({"success": True, "results": results, "warning": warning})
+
+
+@router.get("/activity")
+def players_activity(weeks: int = 8, modpack: str = ""):
+    """Mapa de calor de las últimas `weeks` semanas, racha y resumen de 7 días."""
+    weeks = max(1, min(weeks, 52))
+    target = modpack or None
+    return JSONResponse({
+        "heatmap": sessions.heatmap(days=weeks * 7, modpack=target),
+        "streak": sessions.streak(modpack=target),
+        "week": sessions.week_summary(modpack=target),
+        "modpacks": sorted({record["m"] for record in sessions.all_sessions()}),
+    })

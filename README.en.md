@@ -128,6 +128,7 @@ There's no need to clear the browser cache: every panel file carries its own ver
 - **CurseForge**: if you didn't add the API key during the installation, you can add it later from **Settings** inside the app (administrator only), without touching the console.
 - **In-app tutorial**: the **Help** tab explains every section of the panel.
 - **Session**: the sign-in is kept in a browser cookie (HttpOnly). When an account's password is changed or the account is deleted, its open sessions stop working.
+- **When people play** (**Players** page): streak of days in a row with someone playing, a summary of the last 7 days and a heatmap by day and hour. Sessions are logged as players join and leave, in `SERVERS_PATH/.global/sessions.jsonl` (kept for a little over a year).
 - **Roles**: every account (except the administrator) is full —everything except accounts, firewall and settings— or **limited**: it can see everything, but can only start, stop and restart the server and manage the whitelist. Downloads and the RCON password are off-limits too. The role is changed in **Users** and applies straight away.
 - **Passwords**: each user changes their own with the padlock button in the top bar. The administrator can set a new one for any other user from **Users** (in case they forget it).
 - **Two-step verification** (optional, per account): from the same padlock button. It asks for a 6-digit code from an app (Google Authenticator, Aegis, 2FAS, Bitwarden...) besides the password, and gives 8 single-use recovery codes. If someone loses their phone and the codes, the administrator removes it from **Users**; the administrator's own is removed with `python3 set_password.py`. It's stored in `SERVERS_PATH/.global/two_factor.json` (permissions `600`).
@@ -154,7 +155,7 @@ The whole panel is available in Spanish (Spain) and English: pages, messages, se
 
 ### Telegram and Discord notifications
 
-Optional. The panel can message you when the server is ready, stops, crashes, someone joins or leaves, a backup fails, an installation finishes or a scheduled task runs (you choose which).
+Optional. The panel can message you when the server is ready, stops, crashes, someone joins or leaves, a backup fails, an installation finishes or a scheduled task runs, and on Mondays it sends you the weekly summary: who played, how many hours, new faces and the streak of days in a row (you choose which).
 
 Each installation uses **its own bot**, so notifications only reach whoever sets it up:
 

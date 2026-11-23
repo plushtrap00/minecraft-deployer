@@ -26,6 +26,7 @@ from services import process as proc_module
 from services.metrics import mc_metrics, read_proc_ram, _parse_metrics_line
 from services.modpack import ensure_rcon_enabled, detect_modpack_version, prune_old_logs_and_crashes
 from services.pending_mods import get_pending_mods
+from services import sessions
 from services.notify import notify
 from services.rcon import RconConnection, RconError
 from routes.deps import modpack_path
@@ -368,8 +369,10 @@ def on_line(modpack: str, line: str) -> None:
         return
     name, action = match.groups()
     if action == "joined":
+        sessions.joined(modpack, name)
         notify("join", f"👋 {name} ha entrado en {modpack}.")
     else:
+        sessions.left(modpack, name)
         notify("leave", f"🚪 {name} ha salido de {modpack}.")
 
 
@@ -377,6 +380,7 @@ def on_exit(modpack: str, crashed: bool, eula_accepted: bool, was_ready: bool, u
     """El proceso de Minecraft ha terminado (llamado desde el hilo lector)."""
     if not modpack:
         return
+    sessions.server_stopped(modpack)
     if eula_accepted:
         # Primer arranque: Minecraft se cierra tras crear eula.txt. Ya está
         # aceptada, así que se vuelve a arrancar sin contarlo como caída.

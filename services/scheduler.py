@@ -5,18 +5,21 @@ services/scheduler.py - Hilo en segundo plano que, cada pocos segundos:
   (services/history.py), aunque nadie tenga el panel abierto;
 - hace las copias automáticas del mundo cada N horas mientras está encendido;
 - ejecuta las tareas programadas (services/automation.py) a su hora, con
-  avisos previos a los jugadores para reinicios y paradas.
+  avisos previos a los jugadores para reinicios y paradas;
+- los lunes desde las 10:00 manda por Telegram/Discord el resumen de la
+  semana (services/sessions.py), una sola vez por semana.
 
 Las horas son las del sistema donde corre el panel (en Docker suele ser UTC
 si no se configura TZ): el panel muestra esa hora junto a las tareas.
 """
+import json
 import threading
 import time
 from datetime import datetime, timedelta
 
 from fastapi import HTTPException
 
-from services import activity, automation, backups, history, i18n, server_control
+from services import activity, automation, backups, history, i18n, notify as notify_module, server_control, sessions
 from services import process as proc_module
 from services.metrics import mc_metrics
 from services.notify import notify
@@ -194,6 +197,67 @@ def _maybe_idle_stop() -> None:
     threading.Thread(target=server_control.stop_server, daemon=True, name="apagado-sin-jugadores").start()
 
 
+WEEKLY_STATE_FILE = sessions.SESSIONS_FILE.parent / "weekly_summary.json"
+WEEKDAYS = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
+
+
+def _number(value: float, lang: str) -> str:
+    text = f"{value:g}" if isinstance(value, float) else str(value)
+    return text.replace(".", ",") if lang == "es" else text
+
+
+def weekly_message(now: float | None = None, lang: str = "es") -> str:
+    """El resumen de los últimos 7 días, ya en el idioma de los avisos."""
+    summary = sessions.week_summary(now=now)
+    streak = sessions.streak(now=now)
+    lines = [("📊 Resumen de la semana", {})]
+    if not summary["players"]:
+        lines.append(("Esta semana no ha jugado nadie. ¡El servidor os echa de menos!", {}))
+    else:
+        lines.append(("👥 Jugadores: {players} · Horas jugadas: {hours} · Partidas: {sessions}",
+                      {"players": summary["players"], "hours": _number(summary["hours"], lang),
+                       "sessions": summary["sessions"]}))
+        top = summary["top"][0]
+        lines.append(("🏆 Quien más ha jugado: {player} ({hours} h)",
+                      {"player": top["player"], "hours": _number(round(top["minutes"] / 60, 1), lang)}))
+        if summary["new_players"]:
+            lines.append(("🆕 Caras nuevas: {names}", {"names": ", ".join(summary["new_players"])}))
+        day = WEEKDAYS[summary["busiest_weekday"]]
+        lines.append(("📅 El día con más juego: {day}", {"day": i18n.translate_message(day, lang)}))
+    if streak["current"] >= 2:
+        lines.append(("🔥 Racha: {n} días seguidos con alguien jugando", {"n": streak["current"]}))
+    # Se traduce la plantilla y luego se rellenan los huecos: los nombres de
+    # los jugadores son datos y no se traducen (un jugador «Nuevo» sigue siéndolo).
+    result = []
+    for template, params in lines:
+        text = i18n.translate_message(template, lang)
+        for key, value in params.items():
+            text = text.replace("{" + key + "}", str(value))
+        result.append(text)
+    return "\n".join(result)
+
+
+def _maybe_weekly_summary(now: datetime | None = None) -> None:
+    now = now or datetime.now()
+    if now.weekday() != 0 or now.hour < 10:
+        return
+    year, week, _ = now.isocalendar()
+    key = f"{year}-W{week:02d}"
+    try:
+        state = json.loads(WEEKLY_STATE_FILE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        state = {}
+    if state.get("week") == key:
+        return
+    settings = notify_module.load_settings()
+    if "weekly" not in settings["events"] or not notify_module.is_configured(settings):
+        return
+    WEEKLY_STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
+    WEEKLY_STATE_FILE.write_text(json.dumps({"week": key}), encoding="utf-8")
+    lang = settings.get("language") or i18n.default_lang()
+    notify("weekly", weekly_message(now.timestamp(), lang))
+
+
 def _maybe_auto_backup() -> None:
     settings = automation.load()["backups"]
     modpack = server_control.running_modpack()
@@ -250,6 +314,7 @@ def _loop() -> None:
         ("tareas", lambda: _check_tasks(datetime.now())),
         ("esperando a que se vacíe", _check_waiting_empty),
         ("apagado sin jugadores", _maybe_idle_stop),
+        ("resumen semanal", _maybe_weekly_summary),
         ("copias", _maybe_auto_backup),
         ("historial", _maybe_sample),
     )
