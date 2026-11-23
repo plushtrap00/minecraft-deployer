@@ -14,7 +14,7 @@ Rutas:
 import re
 import shutil
 import asyncio
-from fastapi import APIRouter, Depends, Form, HTTPException
+from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from config import DEFAULT_SERVERS_PATH
@@ -48,7 +48,8 @@ def get_config_file(modpack: str, path: str):
 
 
 @router.post("/{modpack}/config-file")
-def save_config_file(modpack: str, path: str = Form(...), content: str = Form(...)):
+def save_config_file(request: Request, modpack: str, path: str = Form(...), content: str = Form(...)):
+    request.state.activity_detail = "config/" + path
     full_path = DEFAULT_SERVERS_PATH / modpack / "config" / path
     base = (DEFAULT_SERVERS_PATH / modpack / "config").resolve()
     try:

@@ -15,7 +15,7 @@ Rutas:
 - POST   /api/players/sync             → sincronizar a todos los modpacks
 """
 import datetime
-from fastapi import APIRouter, Form, HTTPException
+from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import JSONResponse, Response
 
 from services.players import (
@@ -76,7 +76,8 @@ def get_all_players():
 
 
 @router.post("/op")
-def add_op(name: str = Form(...), level: int = Form(4)):
+def add_op(request: Request, name: str = Form(...), level: int = Form(4)):
+    request.state.activity_params = {"name": name}
     try:
         name = validate_player_name(name)
     except ValueError as e:
@@ -109,7 +110,8 @@ def remove_op(name: str):
 
 
 @router.post("/whitelist")
-def add_whitelist(name: str = Form(...)):
+def add_whitelist(request: Request, name: str = Form(...)):
+    request.state.activity_params = {"name": name}
     try:
         name = validate_player_name(name)
     except ValueError as e:
@@ -142,7 +144,8 @@ def remove_whitelist(name: str):
 
 
 @router.post("/ban")
-def ban_player(name: str = Form(...), reason: str = Form("Banned by admin")):
+def ban_player(request: Request, name: str = Form(...), reason: str = Form("Banned by admin")):
+    request.state.activity_params = {"name": name}
     try:
         name = validate_player_name(name)
     except ValueError as e:
@@ -183,7 +186,8 @@ def unban_player(name: str):
 
 
 @router.post("/ban-ip")
-def ban_ip(ip: str = Form(...), reason: str = Form("Banned by admin")):
+def ban_ip(request: Request, ip: str = Form(...), reason: str = Form("Banned by admin")):
+    request.state.activity_params = {"ip": ip}
     try:
         ip = validate_ip(ip)
     except ValueError as e:

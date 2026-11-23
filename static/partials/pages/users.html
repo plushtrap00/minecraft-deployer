@@ -29,4 +29,31 @@
       <button id="add-user-btn" class="add-user-btn" disabled>Crear usuario</button>
     </div>
   </div>
+  <div class="card">
+    <div class="card-head">
+      <h2>Actividad</h2>
+      <button class="btn-ghost btn-sm" id="btn-refresh-activity"><svg class="icon" aria-hidden="true"><use href="#i-refresh-cw"/></svg> Actualizar</button>
+    </div>
+    <p class="field-hint mb-m">Quién ha hecho qué en el panel, y lo que ha hecho él solo (copias automáticas, reinicios tras una caída, tareas programadas). Se guardan las últimas 5000 acciones.</p>
+    <div class="filter-row">
+      <select id="activity-user" class="btn-secondary btn-sm" aria-label="Persona">
+        <option value="">Todas las personas</option>
+      </select>
+      <select id="activity-category" class="btn-secondary btn-sm" aria-label="Tipo">
+        <option value="">Todo</option>
+        <option value="server">Servidor</option>
+        <option value="players">Jugadores</option>
+        <option value="mods">Mods</option>
+        <option value="files">Archivos</option>
+        <option value="install">Instalaciones</option>
+        <option value="backups">Copias</option>
+        <option value="automation">Automatización</option>
+        <option value="users">Cuentas</option>
+        <option value="security">Seguridad</option>
+        <option value="config">Panel</option>
+      </select>
+    </div>
+    <div id="activity-list"></div>
+    <button class="btn-secondary btn-sm activity-more" id="activity-more" hidden>Cargar más</button>
+  </div>
 </div>

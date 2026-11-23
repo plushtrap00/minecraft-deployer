@@ -403,6 +403,8 @@ def on_exit(modpack: str, crashed: bool, eula_accepted: bool, was_ready: bool, u
         notify("crash", f"💥 {modpack} se ha caído {when}. Lo vuelvo a arrancar "
                         f"(intento {attempt} de {settings['max_attempts']}).")
         _restart_later(modpack, _RESTART_DELAY_SECONDS, f"Arrancando de nuevo tras la caída (intento {attempt}).")
+        from services import activity
+        activity.record("server.crash_restart", params={"modpack": modpack})
         return
 
     if settings["enabled"]:

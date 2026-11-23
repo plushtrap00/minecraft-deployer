@@ -37,6 +37,7 @@ def get_users(request: Request):
 def add_user(request: Request, body: CreateUserBody):
     _require_admin(request)
     username = body.username.strip()
+    request.state.activity_params = {"name": username}
     if not _USERNAME_RE.match(username):
         raise HTTPException(status_code=400, detail="Nombre de usuario inválido: solo letras, números, _ y - (máx. 16 caracteres)")
     try:

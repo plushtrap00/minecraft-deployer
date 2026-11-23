@@ -64,3 +64,119 @@
 
 .role-admin { background: rgba(var(--accent-rgb), .15); color: var(--accent); }
 .role-user { background: rgba(var(--green-rgb), .15); color: var(--green); }
+
+/* -- Registro de actividad (activity.js) --------------------------------------- */
+#activity-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.activity-empty {
+  padding: 18px 4px;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}
+
+.activity-day {
+  margin: 14px 0 6px;
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.activity-day:first-child {
+  margin-top: 4px;
+}
+
+.activity-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 7px 4px;
+  border-bottom: 1px solid var(--border);
+  font-size: var(--fs-sm);
+}
+
+.activity-time {
+  flex-shrink: 0;
+  width: 44px;
+  padding-top: 1px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+
+.activity-icon .icon {
+  width: 15px;
+  height: 15px;
+  margin-top: 2px;
+  color: var(--accent);
+}
+
+.activity-row.security .activity-icon .icon { color: var(--yellow); }
+.activity-row.failed .activity-icon .icon { color: var(--red); }
+.activity-row.backups .activity-icon .icon,
+.activity-row.automation .activity-icon .icon { color: var(--green); }
+
+.activity-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.activity-text b {
+  font-weight: 600;
+}
+
+.activity-detail {
+  margin-top: 2px;
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.activity-user {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 8px;
+  border-radius: 99px;
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  background: rgba(var(--accent-rgb), .12);
+  color: var(--accent);
+}
+
+.activity-user.system {
+  background: rgba(var(--green-rgb), .12);
+  color: var(--green);
+}
+
+.activity-user.unknown {
+  background: rgba(var(--red-rgb), .12);
+  color: var(--red);
+}
+
+.activity-user .icon {
+  width: 11px;
+  height: 11px;
+}
+
+.activity-more {
+  margin-top: 12px;
+}
+
+@media (max-width: 600px) {
+  .activity-row {
+    flex-wrap: wrap;
+  }
+  .activity-body {
+    flex-basis: calc(100% - 80px);
+  }
+  .activity-user {
+    margin-left: 54px;
+  }
+}

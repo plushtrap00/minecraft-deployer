@@ -44,6 +44,7 @@ from routes.modpack_install import router as modpack_install_router
 from routes.mod_search import router as mod_search_router
 from routes.mod_updates import router as mod_updates_router
 from routes.modpack_update import router as modpack_update_router
+from routes.activity import router as activity_router
 from routes.players import router as players_router
 from routes.server import router as server_router
 from routes.auth import router as auth_router, verify_token, token_from_request
@@ -53,7 +54,7 @@ from routes.automation import router as automation_router
 from routes.backups import router as backups_router
 from services.lifecycle import shutdown_event
 from services.process import notify_app_shutdown
-from services import auto_update, scheduler
+from services import activity, auto_update, scheduler
 from services.startup_cleanup import run_startup_cleanup
 from services.secure_files import harden_secret_files
 from services.uploads import max_upload_bytes
@@ -131,7 +132,12 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 status_code=413,
             )
 
-        return await call_next(request)
+        response = await call_next(request)
+        try:
+            activity.record_request(request, response.status_code)
+        except Exception:  # noqa: BLE001 - el registro nunca rompe la petición
+            pass
+        return response
 
 
 @asynccontextmanager
@@ -180,6 +186,7 @@ app.include_router(modpack_install_router)
 app.include_router(mod_search_router)
 app.include_router(mod_updates_router)
 app.include_router(modpack_update_router)
+app.include_router(activity_router)
 app.include_router(upload_router)
 app.include_router(firewall_router)
 app.include_router(players_router)

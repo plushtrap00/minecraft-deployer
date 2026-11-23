@@ -13,7 +13,7 @@ Rutas:
 - GET  /api/server/logs            → SSE stream de logs en tiempo real
 """
 import asyncio
-from fastapi import APIRouter, Form, HTTPException
+from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from services import process as proc_module
@@ -39,7 +39,8 @@ def server_status():
 
 
 @router.post("/start")
-def server_start(modpack: str = Form(...), force: str = Form("0")):
+def server_start(request: Request, modpack: str = Form(...), force: str = Form("0")):
+    request.state.activity_params = {"modpack": modpack}
     try:
         server_control.start_server(modpack, force=(force == "1"))
     except server_control.PendingModsError as e:
@@ -56,19 +57,22 @@ def server_start(modpack: str = Form(...), force: str = Form("0")):
 
 
 @router.post("/stop")
-async def server_stop():
+async def server_stop(request: Request):
+    request.state.activity_params = {"modpack": server_control.running_modpack()}
     graceful = await asyncio.to_thread(server_control.stop_server)
     return JSONResponse({"success": True, "graceful": graceful})
 
 
 @router.post("/restart")
-async def server_restart():
+async def server_restart(request: Request):
     modpack = await asyncio.to_thread(server_control.restart_server)
+    request.state.activity_params = {"modpack": modpack}
     return JSONResponse({"success": True, "modpack": modpack})
 
 
 @router.post("/command")
-def server_command(cmd: str = Form(...)):
+def server_command(request: Request, cmd: str = Form(...)):
+    request.state.activity_detail = cmd
     server_control.send_command(cmd)
     return JSONResponse({"success": True})
 

@@ -16,7 +16,7 @@ from datetime import datetime, timedelta
 
 from fastapi import HTTPException
 
-from services import automation, backups, history, i18n, server_control
+from services import activity, automation, backups, history, i18n, server_control
 from services import process as proc_module
 from services.metrics import mc_metrics
 from services.notify import notify
@@ -112,6 +112,7 @@ def run_task_in_background(task: dict) -> None:
             message = run_task(task)
             _task_status[task["id"]] = {"at": datetime.now().isoformat(timespec="seconds"), "ok": True, "message": message}
             notify("task", f"⏰ Tarea programada ({describe_task(task)}): {message}.")
+            activity.record("automation.task", detail=f"{describe_task(task)}: {message}")
         except server_control.PendingModsError as e:
             _fail(task, "faltan mods por instalar: " + ", ".join(e.pending))
         except HTTPException as e:
@@ -162,6 +163,7 @@ def _maybe_auto_backup() -> None:
         try:
             result = backups.create_backup(modpack, "auto", keep=settings["keep"], full=settings["full"])
             notify("backup_done", f"💾 Copia automática de {modpack} hecha ({result['size'] // 1048576} MB).")
+            activity.record("backups.auto", params={"modpack": modpack}, detail=result.get("name"))
         except Exception as e:
             detail = getattr(e, "detail", None) or str(e)
             server_control.deployer_line(f"La copia automática ha fallado: {detail}")

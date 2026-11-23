@@ -29,7 +29,7 @@ import zipfile
 import asyncio
 from pathlib import Path
 from typing import List
-from fastapi import APIRouter, Depends, File, UploadFile, HTTPException
+from fastapi import APIRouter, Depends, File, UploadFile, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 
@@ -495,7 +495,7 @@ def delete_mod(modpack: str, filename: str):
 
 
 @router.post("/{modpack}/mods/{filename}/toggle")
-def toggle_mod(modpack: str, filename: str):
+def toggle_mod(request: Request, modpack: str, filename: str):
     """
     Deshabilita/habilita un mod renombrando el .jar con/sin el sufijo
     ".disabled" — no es una convención propia de Forge/NeoForge/Fabric/Quilt,
@@ -517,6 +517,8 @@ def toggle_mod(modpack: str, filename: str):
     else:
         new_path = mods_dir / (filename + ".disabled")
         new_enabled = False
+    request.state.activity_action = "mods.enable" if new_enabled else "mods.disable"
+    request.state.activity_params = {"filename": filename.removesuffix(".disabled")}
 
     if new_path.exists():
         raise HTTPException(status_code=400, detail=f"Ya existe un archivo en {new_path.name}")

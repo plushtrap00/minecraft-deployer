@@ -7,7 +7,7 @@ Rutas:
 - POST /api/modpacks/{modpack}/mods/updates/apply → actualiza un mod {filename}
 - POST /api/modpacks/{modpack}/mods/updates/undo  → deshace un lote {batch}
 """
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
@@ -45,7 +45,8 @@ class ApplyBody(BaseModel):
 
 
 @router.post("/{modpack}/mods/updates/apply")
-def apply_mod_update(modpack: str, body: ApplyBody):
+def apply_mod_update(request: Request, modpack: str, body: ApplyBody):
+    request.state.activity_detail = body.filename
     try:
         return JSONResponse({"success": True, **mod_updates.apply_one(modpack, body.filename)})
     except ValueError as e:

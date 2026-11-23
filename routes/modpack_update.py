@@ -13,7 +13,7 @@ Rutas:
 import asyncio
 import json
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
 
@@ -60,9 +60,10 @@ def pack_update_running(modpack: str):
 
 
 @router.get("/{modpack}/pack-update/stream")
-async def pack_update_stream(modpack: str, version_id: str = "", attach: bool = False):
+async def pack_update_stream(request: Request, modpack: str, version_id: str = "", attach: bool = False):
     """Empieza la actualización (o, con attach, solo sigue la que ya está en marcha)."""
     job = modpack_update.running_update(modpack)
+    request.state.activity_skip = bool(job) or attach
     if not job and not attach:
         job = modpack_update.start_update(modpack, version_id)
 

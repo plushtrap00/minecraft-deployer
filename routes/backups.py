@@ -13,7 +13,7 @@ Rutas:
 """
 import asyncio
 
-from fastapi import APIRouter, Depends, Form, HTTPException
+from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse
 
 from services import backups
@@ -64,8 +64,9 @@ def delete_backup(modpack: str, name: str):
 
 
 @router.post("/{modpack}/clone")
-async def clone(modpack: str, new_name: str = Form(...), include_world: str = Form("0")):
+async def clone(request: Request, modpack: str, new_name: str = Form(...), include_world: str = Form("0")):
     modpack_path(modpack)
+    request.state.activity_detail = new_name
     result = await asyncio.to_thread(clone_modpack, modpack, new_name, include_world == "1")
     return JSONResponse({"success": True, **result})
 

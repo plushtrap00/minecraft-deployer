@@ -34,7 +34,7 @@ from dotenv import load_dotenv
 import os
 
 from config import DEFAULT_SERVERS_PATH
-from services import i18n, two_factor, user_prefs
+from services import activity, i18n, two_factor, user_prefs
 from services.secure_files import atomic_write_text
 from services.users import authenticate, password_fingerprint, role_of, set_password, verify_password
 from app_constants import (
@@ -247,6 +247,7 @@ def login(request: Request, username: str = Form(...), password: str = Form(...)
     if role is None:
         for key, _ in keys:
             _register_failed_attempt(key)
+        activity.record("auth.login_failed", params={"name": username.strip()[:60]}, ip=_client_ip(request))
         raise HTTPException(status_code=401, detail="Usuario o contraseña incorrectos")
 
     if two_factor.is_enabled(username):
@@ -263,6 +264,8 @@ _TICKET_SECONDS = 300
 def _login_response(request: Request, username: str, role: str, keys: list, extra: dict | None = None) -> JSONResponse:
     for key, _ in keys:
         _clear_failed_attempts(key)
+    activity.record("auth.login_recovery" if extra and "recovery_left" in extra else "auth.login",
+                    username, ip=_client_ip(request))
     # Idioma de la cuenta; si aún no tiene, se queda con el que tenía la
     # pantalla de entrada (lo que estaba viendo al escribir su contraseña).
     lang = user_prefs.get_lang(username)
@@ -294,6 +297,7 @@ def login_second_step(request: Request, ticket: str = Form(...), code: str = For
     if used is None:
         for key, _ in keys:
             _register_failed_attempt(key)
+        activity.record("auth.login_failed", params={"name": username}, detail="2FA", ip=_client_ip(request))
         raise HTTPException(status_code=401, detail="El código no es correcto")
     extra = {"recovery_left": two_factor.status(username)["recovery_left"]} if used == "recovery" else None
     return _login_response(request, username, info["role"], keys, extra)

@@ -6,6 +6,12 @@ documentación de la API. Cada commit sube la versión (2.A.B, cada cifra de 0
 a 9: después de 2.0.9 va 2.1.0) y se etiqueta con `git tag v<versión>`.
 
 Historial resumido:
+- 3.1.0 (2026-11-23): registro de actividad en la página Usuarios (solo
+  administrador): quién ha hecho qué y cuándo, con su IP (encender y parar,
+  comandos de la consola, mods, copias, cambios de configuración, entradas al
+  panel e intentos fallidos), y lo que el panel hace solo, como las copias
+  automáticas o los reinicios tras una caída. Se filtra por persona y por
+  tipo.
 - 3.0.9 (2026-11-23): botón «Actualizar modpack» al gestionar un servidor: lo
   pasa a otra versión de su modpack de Modrinth o CurseForge haciendo antes
   una copia completa, sin tocar el mundo, server.properties ni las listas de
@@ -146,4 +152,4 @@ Historial resumido:
   otros usuarios.
 - 1.x: todo lo anterior (sin numerar).
 """
-APP_VERSION = "3.0.9"
+APP_VERSION = "3.1.0"

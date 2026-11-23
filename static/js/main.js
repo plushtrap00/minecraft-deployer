@@ -124,6 +124,7 @@ function showPage(name) {
   }
   if (name === 'users') {
     loadUsers();
+    loadActivity(true);
   }
   if (name === 'config') {
     loadAdminConfig();
