@@ -4,7 +4,7 @@ de un modpack.
 
 Rutas:
 - GET    /api/modpacks/{modpack}/backups                  → lista de copias
-- POST   /api/modpacks/{modpack}/backups                  → hacer una copia ahora
+- POST   /api/modpacks/{modpack}/backups                  → hacer una copia ahora (kind=world|full)
 - GET    /api/modpacks/{modpack}/backups/{name}/download  → descargar una copia
 - POST   /api/modpacks/{modpack}/backups/{name}/restore   → restaurarla (servidor parado)
 - DELETE /api/modpacks/{modpack}/backups/{name}           → borrarla
@@ -13,7 +13,7 @@ Rutas:
 """
 import asyncio
 
-from fastapi import APIRouter, Depends, Form
+from fastapi import APIRouter, Depends, Form, HTTPException
 from fastapi.responses import FileResponse, JSONResponse
 
 from services import backups
@@ -31,13 +31,17 @@ def list_backups(modpack: str):
         "backups": backups.list_backups(modpack),
         "world": backups.active_world(server_dir),
         "has_world": bool(backups.world_folders(server_dir)),
+        "disk": backups.disk_info(),
+        "mirror": backups.mirror_status(),
     })
 
 
 @router.post("/{modpack}/backups")
-async def create_backup(modpack: str):
+async def create_backup(modpack: str, kind: str = Form("world")):
     modpack_path(modpack)
-    result = await asyncio.to_thread(backups.create_backup, modpack, "manual")
+    if kind not in backups.KINDS:
+        raise HTTPException(status_code=400, detail="Tipo de copia desconocido")
+    result = await asyncio.to_thread(backups.create_backup, modpack, "manual", None, kind == "full")
     return JSONResponse({"success": True, **result})
 
 

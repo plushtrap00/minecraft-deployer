@@ -37,6 +37,8 @@ function renderAutomationSettings() {
   document.getElementById('auto-backup-toggle').classList.toggle('on', backups.enabled);
   document.getElementById('auto-backup-interval').value = backups.interval_hours;
   document.getElementById('auto-backup-keep').value = backups.keep;
+  document.getElementById('auto-backup-full-toggle').classList.toggle('on', !!backups.full);
+  renderMirror();
   document.getElementById('auto-restart-fields').classList.toggle('is-off', !restart.enabled);
   document.getElementById('auto-backup-fields').classList.toggle('is-off', !backups.enabled);
 }
@@ -51,7 +53,8 @@ function saveAutomationSettings() {
     backups: {
       enabled: document.getElementById('auto-backup-toggle').classList.contains('on'),
       interval_hours: parseInt(document.getElementById('auto-backup-interval').value, 10),
-      keep: parseInt(document.getElementById('auto-backup-keep').value, 10)
+      keep: parseInt(document.getElementById('auto-backup-keep').value, 10),
+      full: document.getElementById('auto-backup-full-toggle').classList.contains('on')
     }
   };
   apiJson('/api/automation/settings', {
@@ -71,7 +74,54 @@ function saveAutomationSettings() {
   });
 }
 
-['auto-restart-toggle', 'auto-backup-toggle'].forEach(function(id) {
+// -- Destino secundario de las copias (solo lo cambia un administrador) -----------
+function renderMirror() {
+  var mirror = automationData.mirror || {};
+  var input = document.getElementById('auto-mirror-path');
+  var isAdmin = currentRole === 'admin';
+  if (document.activeElement !== input) {
+    input.value = automationData.backups.mirror_dir || '';
+  }
+  input.disabled = !isAdmin;
+  document.getElementById('auto-mirror-save').hidden = !isAdmin;
+  var html = '';
+  if (!isAdmin) {
+    html = '<p class="field-hint">' + escHtml(t('Solo un administrador puede cambiarlo.')) + '</p>';
+  }
+  if (mirror.configured) {
+    if (!mirror.available) {
+      html += noticeHtml('error', escHtml(t('El destino secundario ({path}) no está disponible: comprueba que el disco o la carpeta de red está montado.', { path: mirror.path })));
+    } else if (mirror.last_error) {
+      html += noticeHtml('error', escHtml(t('No se pudieron llevar las copias al destino secundario: {error}', { error: mirror.last_error })));
+    } else if (mirror.disk) {
+      html += noticeHtml('ok', escHtml(t('Funcionando: {free} libres en el destino secundario.', { free: formatBytes(mirror.disk.free) })));
+    }
+  }
+  document.getElementById('auto-mirror-status').innerHTML = html;
+}
+
+document.getElementById('auto-mirror-save').addEventListener('click', function() {
+  var button = this;
+  var path = document.getElementById('auto-mirror-path').value.trim();
+  busyWhile(button, function() {
+    return apiJson('/api/automation/backup-mirror', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ path: path })
+    }).then(function(result) {
+      if (!result.ok) {
+        showToast(result.data.detail || t('No se pudo guardar'), 'error');
+        return;
+      }
+      automationData.backups.mirror_dir = path;
+      automationData.mirror = result.data.mirror;
+      renderMirror();
+      showToast(path ? t('Destino secundario guardado: las copias que ya había se están llevando allí') : t('Destino secundario quitado'), 'success');
+    });
+  });
+});
+
+['auto-restart-toggle', 'auto-backup-toggle', 'auto-backup-full-toggle'].forEach(function(id) {
   document.getElementById(id).addEventListener('click', function() {
     this.classList.toggle('on');
     saveAutomationSettings();

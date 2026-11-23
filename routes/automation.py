@@ -8,14 +8,18 @@ Rutas:
 - POST   /api/automation/tasks           → crea o actualiza una tarea
 - DELETE /api/automation/tasks/{id}      → borra una tarea
 - POST   /api/automation/tasks/{id}/run  → ejecuta una tarea ahora (para probarla)
+- POST   /api/automation/backup-mirror   → destino secundario de las copias (solo admin)
 """
 from datetime import datetime
 
-from fastapi import APIRouter, HTTPException
+import asyncio
+
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from services import automation, scheduler
+from routes.auth import require_admin
+from services import automation, backups, scheduler
 from services.utils import get_modpacks
 
 router = APIRouter(prefix="/api/automation", tags=["automation"])
@@ -30,7 +34,27 @@ def get_automation():
         "task_kinds": automation.TASK_KINDS,
         "server_time": datetime.now().strftime("%H:%M"),
         "modpacks": get_modpacks(),
+        "mirror": backups.mirror_status(),
     })
+
+
+class MirrorBody(BaseModel):
+    path: str = ""
+
+
+@router.post("/backup-mirror")
+async def set_backup_mirror(request: Request, body: MirrorBody):
+    """Elige (o quita, con path vacío) la carpeta donde se duplican todas las copias."""
+    require_admin(request)
+    try:
+        value = await asyncio.to_thread(backups.validate_mirror_dir, body.path)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    automation.set_mirror_dir(value)
+    if value:
+        # Las copias que ya había se llevan también, en segundo plano.
+        backups.sync_mirror_in_background()
+    return JSONResponse({"success": True, "mirror": backups.mirror_status()})
 
 
 class SettingsBody(BaseModel):

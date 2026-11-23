@@ -437,6 +437,22 @@ var ACHIEVEMENT_ICONS = {
     ],
     palette: { o: '#3a3f4a', w: '#6a7488', W: '#9aa6bc', G: '#ffd24a', g: '#b8860b' }
   },
+  // Reloj de arena
+  'time-capsule': {
+    rows: [
+      '.oooooooo.',
+      '..wSSSSw..',
+      '..wSSSSw..',
+      '...wSSw...',
+      '....ww....',
+      '....ww....',
+      '...wS.w...',
+      '..w.SS.w..',
+      '..wSSSSw..',
+      '.oooooooo.'
+    ],
+    palette: { o: '#6b4a24', w: '#bfe3f0', S: '#e8c46a' }
+  },
   // Reloj
   'clockwork': {
     rows: [

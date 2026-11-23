@@ -142,7 +142,7 @@ El panel está en español de España y en inglés, entero: páginas, mensajes, 
 
 ## Copias, automatización y avisos
 
-- **Copias de seguridad**: en **Modpacks → Copias**. Se pueden hacer con el servidor encendido (el panel pausa el guardado mientras copia), descargar y restaurar (con el servidor parado; antes se guarda una copia del mundo actual). Se guardan en `SERVERS_PATH/.global/backups/<modpack>/`.
+- **Copias de seguridad**: en **Modpacks → Copias**, del mundo o completas (mods, configuración, scripts, listas de jugadores y mundo; sin `libraries/` ni logs, que se regeneran). Se pueden hacer con el servidor encendido (el panel pausa el guardado mientras copia), descargar y restaurar (con el servidor parado; antes se guarda una copia del estado actual). Se guardan en `SERVERS_PATH/.global/backups/<modpack>/`; si no caben en el disco no se empiezan, y el panel avisa cuando queda poco espacio. En **Automatización** se puede elegir un **destino secundario** (otro disco, un NAS o una carpeta de red montada; en Docker, montada como volumen) donde se duplica cada copia: si el disco principal falla, siguen saliendo en la lista y se restauran desde allí.
 - **Automatización**: sección **Automatización** del panel. Reinicio automático si el servidor se cae (con límite de intentos), copias automáticas cada N horas guardando las últimas, y tareas programadas (reiniciar, parar, encender, comando o copia) con aviso previo a los jugadores. Los ajustes van en `SERVERS_PATH/.global/automation.json` y funcionan aunque nadie tenga el panel abierto.
 - **Clonar** un modpack, **estadísticas** de jugadores (de los archivos del mundo), **gráficas de rendimiento** de 24 h / 7 días (`.global/history/`) y vista de **chat** en la consola.
 

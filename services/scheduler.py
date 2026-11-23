@@ -101,7 +101,7 @@ def run_task(task: dict) -> str:
         return f"comando enviado a {modpack}"
     if kind == "backup":
         settings = automation.load()["backups"]
-        result = backups.create_backup(modpack, "task", keep=settings["keep"])
+        result = backups.create_backup(modpack, "task", keep=settings["keep"], full=settings["full"])
         return f"copia {result['name']}"
     raise ValueError("Tipo de tarea desconocido")
 
@@ -160,7 +160,7 @@ def _maybe_auto_backup() -> None:
     def work():
         _backup_running.set()
         try:
-            result = backups.create_backup(modpack, "auto", keep=settings["keep"])
+            result = backups.create_backup(modpack, "auto", keep=settings["keep"], full=settings["full"])
             notify("backup_done", f"💾 Copia automática de {modpack} hecha ({result['size'] // 1048576} MB).")
         except Exception as e:
             detail = getattr(e, "detail", None) or str(e)

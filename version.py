@@ -6,6 +6,14 @@ documentación de la API. Cada commit sube la versión (2.A.B, cada cifra de 0
 a 9: después de 2.0.9 va 2.1.0) y se etiqueta con `git tag v<versión>`.
 
 Historial resumido:
+- 3.0.6 (2026-11-23): copias completas y destino secundario. En Modpacks →
+  Copias, además de la copia del mundo hay una «Copia completa» con mods,
+  configuración, scripts y listas de jugadores: al restaurarla, el servidor
+  queda tal como estaba (también se puede elegir para las automáticas). En
+  Automatización se puede elegir un destino secundario (otro disco, un NAS)
+  donde se duplica cada copia; si se pierde la del disco principal, se
+  restaura desde allí. Una copia que no cabe en el disco ya no se empieza, y
+  el panel avisa cuando queda poco espacio. Nuevo logro: Cápsula del tiempo.
 - 3.0.5 (2026-11-23): las actualizaciones de la app se deshacen solas si salen
   mal: antes de reiniciar se comprueba que la versión nueva carga (e instala
   sus librerías nuevas si las necesita), y si después no llega a arrancar o a
@@ -120,4 +128,4 @@ Historial resumido:
   otros usuarios.
 - 1.x: todo lo anterior (sin numerar).
 """
-APP_VERSION = "3.0.5"
+APP_VERSION = "3.0.6"

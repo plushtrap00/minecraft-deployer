@@ -280,8 +280,8 @@ def _check_new_version_loads() -> None:
     """Carga la versión nueva en otro proceso (sin arrancarla) para ver que no está rota."""
     result = subprocess.run(
         [sys.executable, "-c", "import main"],
-        cwd=_REPO_DIR, capture_output=True, text=True, timeout=_IMPORT_CHECK_TIMEOUT_SECONDS,
-        env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
+        cwd=_REPO_DIR, capture_output=True, encoding="utf-8", errors="replace", timeout=_IMPORT_CHECK_TIMEOUT_SECONDS,
+        env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1", "PYTHONIOENCODING": "utf-8"},
     )
     if result.returncode != 0:
         lines = [line for line in (result.stderr or result.stdout).strip().splitlines() if line.strip()]

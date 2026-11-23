@@ -25,13 +25,27 @@
       </div>
       <div class="toggle-row">
         <div class="toggle-track" id="auto-backup-toggle" aria-labelledby="auto-backup-label"><div class="toggle-thumb"></div></div>
-        <span id="auto-backup-label">Copiar el mundo mientras el servidor está encendido</span>
+        <span id="auto-backup-label">Hacer copias mientras el servidor está encendido</span>
       </div>
       <div class="auto-inline-fields" id="auto-backup-fields">
         <label class="auto-inline">Cada <input type="number" id="auto-backup-interval" min="1" max="168" class="auto-num"> horas</label>
         <label class="auto-inline">guardando las <input type="number" id="auto-backup-keep" min="1" max="100" class="auto-num"> últimas</label>
       </div>
-      <p class="field-hint">Se hacen sin parar el servidor. Las copias que haces a mano en Modpacks → Copias no se borran nunca solas.</p>
+      <div class="toggle-row mt-m">
+        <div class="toggle-track" id="auto-backup-full-toggle" aria-labelledby="auto-backup-full-label"><div class="toggle-thumb"></div></div>
+        <span id="auto-backup-full-label">Copia completa: también mods, configuración y scripts</span>
+      </div>
+      <p class="field-hint">Se hacen sin parar el servidor. Lo de la copia completa vale también para las tareas programadas de copia. Las copias que haces a mano en Modpacks → Copias no se borran nunca solas.</p>
+
+      <div class="auto-mirror">
+        <label class="prop-label" for="auto-mirror-path"><svg class="icon" aria-hidden="true"><use href="#i-hard-drive"/></svg>Destino secundario</label>
+        <div class="auto-mirror-row">
+          <input type="text" id="auto-mirror-path" class="w-full" placeholder="/mnt/nas/copias-minecraft" autocomplete="off" spellcheck="false">
+          <button type="button" class="btn-secondary btn-sm" id="auto-mirror-save">Guardar</button>
+        </div>
+        <p class="field-hint" id="auto-mirror-hint">Una carpeta en otro disco (un NAS, un disco USB, una carpeta de red montada) donde se duplica cada copia. Si el disco principal falla, las copias siguen allí y se pueden restaurar desde el panel. Déjalo vacío para no usarlo. En Docker, la carpeta tiene que estar montada como volumen.</p>
+        <div id="auto-mirror-status"></div>
+      </div>
     </div>
   </div>
 

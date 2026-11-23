@@ -224,7 +224,8 @@ class AutomationSettingsTest(unittest.TestCase):
     def test_defaults_and_clamping(self):
         self.assertTrue(automation.load()["auto_restart"]["enabled"])
         saved = automation.save_settings(backups={"enabled": True, "interval_hours": 999, "keep": 0})
-        self.assertEqual(saved["backups"], {"enabled": True, "interval_hours": 168, "keep": 1})
+        self.assertEqual(saved["backups"], {"enabled": True, "interval_hours": 168, "keep": 1,
+                                             "full": False, "mirror_dir": ""})
 
     def test_task_validation(self):
         task = automation.save_task({"kind": "restart", "time": "05:00", "days": [0, 6], "warn_minutes": 5})

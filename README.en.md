@@ -142,7 +142,7 @@ The whole panel is available in Spanish (Spain) and English: pages, messages, se
 
 ## Backups, automation and notifications
 
-- **Backups**: in **Modpacks → Backups**. They can be made with the server running (the panel pauses saving while it copies), downloaded and restored (with the server stopped; a backup of the current world is saved first). They're stored in `SERVERS_PATH/.global/backups/<modpack>/`.
+- **Backups**: in **Modpacks → Backups**, of the world or full (mods, config, scripts, player lists and the world; without `libraries/` or logs, which are regenerated). They can be made with the server running (the panel pauses saving while it copies), downloaded and restored (with the server stopped; a backup of the current state is saved first). They're stored in `SERVERS_PATH/.global/backups/<modpack>/`; a backup that won't fit on the disk isn't started, and the panel warns when space is running low. In **Automation** you can choose a **secondary destination** (another disk, a NAS or a mounted network folder; in Docker, mounted as a volume) where every backup is duplicated: if the main disk fails, they still show up in the list and are restored from there.
 - **Automation**: the **Automation** section of the panel. Automatic restart when the server crashes (with a limit on attempts), automatic backups every N hours keeping the latest ones, and scheduled tasks (restart, stop, start, command or backup) with an advance warning to players. Settings live in `SERVERS_PATH/.global/automation.json` and work even when nobody has the panel open.
 - **Clone** a modpack, player **statistics** (from the world files), 24 h / 7 day **performance charts** (`.global/history/`) and a **chat** view in the console.
 

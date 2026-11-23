@@ -214,3 +214,22 @@ input.auto-num {
     justify-content: flex-end;
   }
 }
+
+/* Destino secundario de las copias (automation.js). */
+.auto-mirror {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+.auto-mirror .prop-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.auto-mirror-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}

@@ -4,7 +4,9 @@ SERVERS_PATH/.global/automation.json:
 
 - auto_restart: volver a arrancar el servidor si se cae (con un límite de
   intentos para no entrar en bucle si cae nada más arrancar).
-- backups: copias automáticas del mundo mientras el servidor está encendido.
+- backups: copias automáticas del mundo (o completas) mientras el servidor
+  está encendido, y el destino secundario de todas las copias (mirror_dir,
+  solo lo cambia un administrador: ver set_mirror_dir).
 - tasks: tareas programadas (reiniciar, parar, encender, comando o copia a una
   hora y unos días de la semana).
 
@@ -26,13 +28,13 @@ TASK_KINDS = {
     "stop": "Parar el servidor",
     "start": "Encender un servidor",
     "command": "Ejecutar un comando",
-    "backup": "Hacer una copia del mundo",
+    "backup": "Hacer una copia de seguridad",
 }
 _TIME_RE = re.compile(r"^([01]\d|2[0-3]):([0-5]\d)$")
 
 DEFAULTS = {
     "auto_restart": {"enabled": True, "max_attempts": 3, "window_minutes": 10},
-    "backups": {"enabled": False, "interval_hours": 6, "keep": 5},
+    "backups": {"enabled": False, "interval_hours": 6, "keep": 5, "full": False, "mirror_dir": ""},
     "tasks": [],
 }
 
@@ -101,6 +103,8 @@ def _normalize(data: dict) -> dict:
             "enabled": bool(backups["enabled"]),
             "interval_hours": _clamp_int(backups["interval_hours"], 1, 168, 6),
             "keep": _clamp_int(backups["keep"], 1, 100, 5),
+            "full": bool(backups["full"]),
+            "mirror_dir": str(backups["mirror_dir"] or "").strip(),
         },
         "tasks": tasks,
     }
@@ -127,7 +131,19 @@ def save_settings(auto_restart: dict | None = None, backups: dict | None = None)
     if auto_restart is not None:
         current["auto_restart"] = {**current["auto_restart"], **auto_restart}
     if backups is not None:
+        # El destino secundario tiene su propia ruta, solo para administradores.
+        backups = {key: value for key, value in backups.items() if key != "mirror_dir"}
         current["backups"] = {**current["backups"], **backups}
+    data = _normalize(current)
+    with _lock:
+        _write(data)
+    return data
+
+
+def set_mirror_dir(value: str) -> dict:
+    """Guarda el destino secundario de las copias (ya validado por backups.validate_mirror_dir)."""
+    current = load()
+    current["backups"]["mirror_dir"] = value
     data = _normalize(current)
     with _lock:
         _write(data)
