@@ -2,9 +2,12 @@
 routes/auth.py - Autenticación con tokens JWT (HS256) en una cookie HttpOnly.
 
 Rutas:
-- POST /api/auth/login   → valida usuario+contraseña y deja la sesión en la cookie
-- POST /api/auth/logout  → borra la cookie
-- GET  /api/auth/verify  → comprueba si la sesión del cliente sigue siendo válida
+- POST /api/auth/login      → valida usuario+contraseña y deja la sesión en la cookie
+                              (o, con verificación en dos pasos, pide el código)
+- POST /api/auth/login/2fa  → segundo paso: el código de la app o uno de recuperación
+- POST /api/auth/logout     → borra la cookie
+- GET  /api/auth/verify     → comprueba si la sesión del cliente sigue siendo válida
+- GET/POST /api/auth/2fa... → activar, desactivar y ver la verificación en dos pasos propia
 
 La sesión viaja en una cookie HttpOnly (el JavaScript de la página no puede
 leerla) en vez de en localStorage y en ?token= dentro de las URLs, donde
@@ -30,7 +33,9 @@ from pydantic import BaseModel
 from dotenv import load_dotenv
 import os
 
-from services import i18n, user_prefs
+from config import DEFAULT_SERVERS_PATH
+from services import i18n, two_factor, user_prefs
+from services.secure_files import atomic_write_text
 from services.users import authenticate, password_fingerprint, role_of, set_password, verify_password
 from app_constants import (
     JWT_TOKEN_EXPIRE_HOURS, LOGIN_MAX_FAILED_ATTEMPTS,
@@ -46,9 +51,8 @@ router = APIRouter(prefix="/api/auth", tags=["auth"])
 TOKEN_EXPIRE_HOURS = JWT_TOKEN_EXPIRE_HOURS
 
 # ── Bloqueo temporal tras intentos fallidos de login ───────────────────────────
-# En memoria (se pone a cero si el proceso se reinicia, como el resto del estado
-# de esta app); basta para frenar fuerza bruta contra un panel de homelab
-# sin sumar una dependencia nueva solo para esto.
+# Se guarda en SERVERS_PATH/.global/login_attempts.json: reiniciar el panel
+# (o tumbarlo a propósito) no pone los contadores a cero.
 _MAX_FAILED_ATTEMPTS = LOGIN_MAX_FAILED_ATTEMPTS
 _ATTEMPT_WINDOW_SECONDS = LOGIN_ATTEMPT_WINDOW_SECONDS   # ventana en la que cuentan los fallos
 _LOCKOUT_SECONDS = LOGIN_LOCKOUT_SECONDS                 # cuánto dura el bloqueo al superar el máximo
@@ -57,8 +61,33 @@ _LOCKOUT_SECONDS = LOGIN_LOCKOUT_SECONDS                 # cuánto dura el bloqu
 # sola (20 por defecto, con cualquier usuario). Sin el segundo, desde una
 # misma IP se podía ir probando contraseñas con un nombre de usuario distinto
 # cada vez sin llegar nunca al bloqueo.
-_failed_attempts: dict[str, list[float]] = {}  # clave -> timestamps de fallos
 _MAX_TRACKED_KEYS = 5000
+ATTEMPTS_FILE = DEFAULT_SERVERS_PATH / ".global" / "login_attempts.json"
+
+
+def _load_failed_attempts() -> dict:
+    try:
+        data = json.loads(ATTEMPTS_FILE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(data, dict):
+        return {}
+    now = time.time()
+    return {
+        str(key): [float(t) for t in times if isinstance(t, (int, float)) and now - t < _ATTEMPT_WINDOW_SECONDS]
+        for key, times in data.items() if isinstance(times, list)
+    }
+
+
+def _save_failed_attempts() -> None:
+    try:
+        ATTEMPTS_FILE.parent.mkdir(parents=True, exist_ok=True)
+        atomic_write_text(ATTEMPTS_FILE, json.dumps(_failed_attempts), private=True)
+    except OSError:
+        pass  # sin disco se sigue protegiendo en memoria
+
+
+_failed_attempts: dict[str, list[float]] = {k: v for k, v in _load_failed_attempts().items() if v}
 
 
 def _client_ip(request: Request) -> str:
@@ -105,10 +134,12 @@ def _prune_failed_attempts() -> None:
 def _register_failed_attempt(key: str) -> None:
     _failed_attempts.setdefault(key, []).append(time.time())
     _prune_failed_attempts()
+    _save_failed_attempts()
 
 
 def _clear_failed_attempts(key: str) -> None:
-    _failed_attempts.pop(key, None)
+    if _failed_attempts.pop(key, None) is not None:
+        _save_failed_attempts()
 
 
 SESSION_COOKIE = "mc_session"
@@ -133,13 +164,19 @@ def _signature(signing_input: str) -> bytes:
     return hmac.new(get_jwt_secret().encode(), signing_input.encode("ascii"), hashlib.sha256).digest()
 
 
-def create_token(username: str) -> str:
+def create_token(username: str, use: str | None = None, seconds: float | None = None) -> str:
+    """
+    Token firmado. Sin `use` es el de la sesión; con use="2fa" es el ticket
+    de 5 minutos entre la contraseña y el código, que no vale como sesión.
+    """
     header = {"alg": "HS256", "typ": "JWT"}
     payload = {
         "sub": username,
-        "exp": int(time.time() + TOKEN_EXPIRE_HOURS * 3600),
+        "exp": int(time.time() + (seconds if seconds is not None else TOKEN_EXPIRE_HOURS * 3600)),
         "pwf": password_fingerprint(username),
     }
+    if use:
+        payload["use"] = use
     signing_input = (
         _b64url_encode(json.dumps(header, separators=(",", ":")).encode())
         + "."
@@ -148,7 +185,7 @@ def create_token(username: str) -> str:
     return signing_input + "." + _b64url_encode(_signature(signing_input))
 
 
-def verify_token(token: str) -> dict | None:
+def verify_token(token: str, use: str | None = None) -> dict | None:
     """
     Devuelve {"sub": username, "role": role} si el token es válido, si no None.
 
@@ -169,6 +206,9 @@ def verify_token(token: str) -> dict | None:
     except (ValueError, TypeError, AttributeError):
         return None
 
+    # Un ticket del segundo paso no sirve como sesión, ni al revés.
+    if payload.get("use") != use:
+        return None
     username = payload.get("sub")
     exp = payload.get("exp")
     if not isinstance(username, str) or not isinstance(exp, (int, float)) or exp < time.time():
@@ -209,6 +249,18 @@ def login(request: Request, username: str = Form(...), password: str = Form(...)
             _register_failed_attempt(key)
         raise HTTPException(status_code=401, detail="Usuario o contraseña incorrectos")
 
+    if two_factor.is_enabled(username):
+        # La contraseña vale, pero falta el código: no hay sesión todavía. Los
+        # fallos siguen contando hasta que se entra del todo.
+        ticket = create_token(username, use="2fa", seconds=_TICKET_SECONDS)
+        return JSONResponse({"two_factor": True, "ticket": ticket})
+    return _login_response(request, username, role, keys)
+
+
+_TICKET_SECONDS = 300
+
+
+def _login_response(request: Request, username: str, role: str, keys: list, extra: dict | None = None) -> JSONResponse:
     for key, _ in keys:
         _clear_failed_attempts(key)
     # Idioma de la cuenta; si aún no tiene, se queda con el que tenía la
@@ -218,10 +270,98 @@ def login(request: Request, username: str = Form(...), password: str = Form(...)
         lang = i18n.request_lang(request, use_account=False)
         user_prefs.set_lang(username, lang)
     response = JSONResponse({"role": role, "user": username, "lang": lang,
-                             "expires_in_hours": TOKEN_EXPIRE_HOURS})
+                             "expires_in_hours": TOKEN_EXPIRE_HOURS, **(extra or {})})
     _set_session_cookie(response, username)
     _set_lang_cookie(response, lang)
     return response
+
+
+@router.post("/login/2fa")
+def login_second_step(request: Request, ticket: str = Form(...), code: str = Form(...)):
+    """Segundo paso del login: el código de 6 cifras de la app o uno de recuperación."""
+    info = verify_token(ticket, use="2fa")
+    if not info:
+        raise HTTPException(status_code=401, detail="Se ha pasado el tiempo: vuelve a escribir la contraseña")
+    username = info["sub"]
+    keys = _login_attempt_keys(request, username)
+    locked_seconds = max((s for s in (_seconds_locked_out(k, m) for k, m in keys) if s is not None), default=None)
+    if locked_seconds is not None:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Demasiados intentos fallidos. Prueba de nuevo dentro de {locked_seconds} segundos.",
+        )
+    used = two_factor.verify(username, code)
+    if used is None:
+        for key, _ in keys:
+            _register_failed_attempt(key)
+        raise HTTPException(status_code=401, detail="El código no es correcto")
+    extra = {"recovery_left": two_factor.status(username)["recovery_left"]} if used == "recovery" else None
+    return _login_response(request, username, info["role"], keys, extra)
+
+
+# ── Verificación en dos pasos de la cuenta propia ─────────────────────────────
+
+class TwoFactorCodeBody(BaseModel):
+    code: str = ""
+    password: str = ""
+
+
+@router.get("/2fa")
+def get_own_two_factor(request: Request):
+    return two_factor.status(_session_user(request))
+
+
+@router.post("/2fa/setup")
+def start_own_two_factor(request: Request):
+    """Secreto nuevo y su QR; no se activa hasta confirmarlo con un código."""
+    from services import qr
+    username = _session_user(request)
+    try:
+        setup = two_factor.begin_setup(username)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {**setup, "qr_svg": qr.svg(setup["uri"])}
+
+
+@router.post("/2fa/enable")
+def enable_own_two_factor(request: Request, body: TwoFactorCodeBody):
+    username = _session_user(request)
+    try:
+        codes = two_factor.confirm_setup(username, body.code)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"success": True, "recovery_codes": codes}
+
+
+def _check_own_password(request: Request, username: str, password: str) -> None:
+    key = f"pw:{username}"
+    locked_seconds = _seconds_locked_out(key)
+    if locked_seconds is not None:
+        raise HTTPException(status_code=429, detail=f"Demasiados intentos. Prueba de nuevo dentro de {locked_seconds} segundos.")
+    if not verify_password(username, password):
+        _register_failed_attempt(key)
+        raise HTTPException(status_code=400, detail="La contraseña actual no es correcta")
+    _clear_failed_attempts(key)
+
+
+@router.post("/2fa/disable")
+def disable_own_two_factor(request: Request, body: TwoFactorCodeBody):
+    """Quitarla pide la contraseña: una sesión olvidada abierta no basta."""
+    username = _session_user(request)
+    _check_own_password(request, username, body.password)
+    two_factor.disable(username)
+    return {"success": True}
+
+
+@router.post("/2fa/recovery")
+def new_own_recovery_codes(request: Request, body: TwoFactorCodeBody):
+    username = _session_user(request)
+    _check_own_password(request, username, body.password)
+    try:
+        codes = two_factor.regenerate_recovery(username)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {"success": True, "recovery_codes": codes}
 
 
 def _set_lang_cookie(response: JSONResponse, lang: str) -> None:

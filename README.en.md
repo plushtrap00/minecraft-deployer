@@ -129,6 +129,8 @@ There's no need to clear the browser cache: every panel file carries its own ver
 - **In-app tutorial**: the **Help** tab explains every section of the panel.
 - **Session**: the sign-in is kept in a browser cookie (HttpOnly). When an account's password is changed or the account is deleted, its open sessions stop working.
 - **Passwords**: each user changes their own with the padlock button in the top bar. The administrator can set a new one for any other user from **Users** (in case they forget it).
+- **Two-step verification** (optional, per account): from the same padlock button. It asks for a 6-digit code from an app (Google Authenticator, Aegis, 2FAS, Bitwarden...) besides the password, and gives 8 single-use recovery codes. If someone loses their phone and the codes, the administrator removes it from **Users**; the administrator's own is removed with `python3 set_password.py`. It's stored in `SERVERS_PATH/.global/two_factor.json` (permissions `600`).
+- **Failed attempts**: after several in a row, the account is locked for a few minutes from that IP; the lock is saved to disk and survives a panel restart.
 - **Upload limits**: by default, 8 GB per file and 32 GB extracted. They're changed in **Settings → App constants → Uploads**.
 - **Appearance**: the **Appearance** button in the top bar. That's where you pick the language, the theme (Amethyst, Overworld, Nether or End), turn sounds on (off by default) and see the achievement list. Your language and achievements are saved in your account (the same wherever you log in from); theme and sounds in each browser.
 

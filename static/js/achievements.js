@@ -25,6 +25,7 @@ var ACHIEVEMENTS = [
   { id: 'messenger', name: 'Paloma mensajera', hint: 'Recibe un aviso de prueba por Telegram o Discord.' },
   { id: 'twins', name: 'Gemelos', hint: 'Clona un servidor.' },
   { id: 'time-capsule', name: 'Cápsula del tiempo', hint: 'Haz una copia completa de un servidor.' },
+  { id: 'two-keys', name: 'Doble cerradura', hint: 'Activa la verificación en dos pasos.' },
   { id: 'iron-fist', name: 'Mano dura', hint: 'Banea a alguien.', secret: true },
   { id: 'mercy', name: 'Segundas oportunidades', hint: 'Levanta un baneo.', secret: true },
   { id: 'konami', name: 'Vidas infinitas', hint: 'Arriba, arriba, abajo, abajo…', secret: true },

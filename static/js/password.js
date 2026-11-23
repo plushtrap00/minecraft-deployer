@@ -14,6 +14,10 @@ function openPasswordModal(targetUser) {
     : t('Pon una contraseña nueva para «{user}» y pásasela.', { user: passwordTarget });
   // style.display y no el atributo hidden: .prop-field fija su propio display.
   document.getElementById('password-current-field').style.display = own ? '' : 'none';
+  document.getElementById('password-tfa-row').style.display = own ? '' : 'none';
+  if (own) {
+    refreshTwoFactorStatus();
+  }
   document.getElementById('password-username').value = own ? (currentUser || '') : passwordTarget;
   ['password-current', 'password-new', 'password-repeat'].forEach(function(id) {
     document.getElementById(id).value = '';
@@ -94,4 +98,9 @@ document.getElementById('password-form').addEventListener('submit', function(eve
     passwordModal.classList.remove('show');
     showToast(own ? t('Contraseña cambiada') : t('Contraseña de «{user}» cambiada', { user: passwordTarget }), 'success');
   });
+});
+
+document.getElementById('password-tfa-btn').addEventListener('click', function() {
+  passwordModal.classList.remove('show');
+  openTwoFactorModal();
 });

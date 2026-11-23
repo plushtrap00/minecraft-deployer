@@ -437,6 +437,22 @@ var ACHIEVEMENT_ICONS = {
     ],
     palette: { o: '#3a3f4a', w: '#6a7488', W: '#9aa6bc', G: '#ffd24a', g: '#b8860b' }
   },
+  // Candado dorado
+  'two-keys': {
+    rows: [
+      '...oooo...',
+      '..o....o..',
+      '..o....o..',
+      '..o....o..',
+      '.GGGGGGGG.',
+      '.GyyyyyyG.',
+      '.GyykkyyG.',
+      '.GyykkyyG.',
+      '.GyyyyyyG.',
+      '.GGGGGGGG.'
+    ],
+    palette: { o: '#9aa6bc', G: '#b8860b', y: '#ffd24a', k: '#4a3410' }
+  },
   // Reloj de arena
   'time-capsule': {
     rows: [

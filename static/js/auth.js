@@ -101,6 +101,7 @@ function onLoginSuccess(role, user) {
   if (typeof loadAccountAchievements === 'function') {
     loadAccountAchievements();
   }
+  warnRecoveryCodesLeft();
   if (typeof applyInitialRoute === 'function') {
     applyInitialRoute();
   }
@@ -140,12 +141,102 @@ function doLogin() {
         errorEl.textContent = result.data.detail || t('Usuario o contraseña incorrectos.');
         return;
       }
-      // Cada cuenta tiene su idioma: si no es el de la pantalla, se recarga en el suyo.
-      if (result.data.lang && result.data.lang !== currentLang()) {
-        location.reload();
+      if (result.data.two_factor) {
+        showLoginSecondStep(result.data.ticket);
         return;
       }
-      onLoginSuccess(result.data.role, result.data.user);
+      finishLogin(result.data);
+    })
+    .catch(function(error) {
+      btn.disabled = false;
+      btn.textContent = t('Entrar');
+      errorEl.textContent = t('No se pudo conectar con el panel. Comprueba que el equipo sigue encendido. ({error})', { error: error.message });
+    });
+}
+
+// Lo común a entrar con contraseña y con el segundo paso.
+function finishLogin(data) {
+  if (typeof data.recovery_left === 'number') {
+    try {
+      sessionStorage.setItem('mcd-recovery-left', String(data.recovery_left));
+    } catch (err) {}
+  }
+  // Cada cuenta tiene su idioma: si no es el de la pantalla, se recarga en el suyo.
+  if (data.lang && data.lang !== currentLang()) {
+    location.reload();
+    return;
+  }
+  onLoginSuccess(data.role, data.user);
+}
+
+// Si se ha entrado con un código de recuperación, se avisa de cuántos quedan
+// (también tras recargar por el idioma, por eso pasa por sessionStorage).
+function warnRecoveryCodesLeft() {
+  var left = null;
+  try {
+    left = sessionStorage.getItem('mcd-recovery-left');
+    sessionStorage.removeItem('mcd-recovery-left');
+  } catch (err) {}
+  if (left === null) {
+    return;
+  }
+  showToast(Number(left) === 1
+    ? t('Has entrado con un código de recuperación. Te queda 1: crea unos nuevos en Cambiar contraseña → Verificación en dos pasos.')
+    : t('Has entrado con un código de recuperación. Te quedan {n}: si te quedan pocos, crea unos nuevos en Cambiar contraseña → Verificación en dos pasos.', { n: left }), 'warn');
+}
+
+// -- Segundo paso: código de la app o de recuperación ------------------------------
+var loginTicket = '';
+
+function showLoginSecondStep(ticket) {
+  loginTicket = ticket;
+  document.getElementById('login-form').hidden = true;
+  document.getElementById('login-2fa-form').hidden = false;
+  document.getElementById('login-code').value = '';
+  document.getElementById('login-2fa-error').textContent = '';
+  setTimeout(function() { document.getElementById('login-code').focus(); }, 0);
+}
+
+function backToLoginFirstStep() {
+  loginTicket = '';
+  document.getElementById('login-2fa-form').hidden = true;
+  document.getElementById('login-form').hidden = false;
+  document.getElementById('login-pass').value = '';
+  document.getElementById('login-pass').focus();
+}
+
+function doLoginSecondStep() {
+  var code = document.getElementById('login-code').value.trim();
+  var btn = document.getElementById('login-2fa-btn');
+  var errorEl = document.getElementById('login-2fa-error');
+  if (!code) {
+    errorEl.textContent = t('Escribe el código.');
+    return;
+  }
+  btn.disabled = true;
+  btn.textContent = t('Entrando…');
+  errorEl.textContent = '';
+  var form = new FormData();
+  form.append('ticket', loginTicket);
+  form.append('code', code);
+  fetch('/api/auth/login/2fa', { method: 'POST', body: form })
+    .then(function(response) {
+      return response.json().then(function(data) {
+        return { ok: response.ok, status: response.status, data: data };
+      });
+    })
+    .then(function(result) {
+      btn.disabled = false;
+      btn.textContent = t('Entrar');
+      if (!result.ok) {
+        errorEl.textContent = result.data.detail || t('El código no es correcto');
+        document.getElementById('login-code').select();
+        return;
+      }
+      document.getElementById('login-2fa-form').hidden = true;
+      document.getElementById('login-form').hidden = false;
+      loginTicket = '';
+      finishLogin(result.data);
     })
     .catch(function(error) {
       btn.disabled = false;
@@ -158,6 +249,12 @@ document.getElementById('login-form').addEventListener('submit', function(event)
   event.preventDefault();
   doLogin();
 });
+
+document.getElementById('login-2fa-form').addEventListener('submit', function(event) {
+  event.preventDefault();
+  doLoginSecondStep();
+});
+document.getElementById('login-2fa-back').addEventListener('click', backToLoginFirstStep);
 
 // Si ya hay una sesión abierta (la cookie sigue valiendo), entrar directamente.
 (function checkExistingSession() {

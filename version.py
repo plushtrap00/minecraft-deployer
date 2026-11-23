@@ -6,6 +6,12 @@ documentación de la API. Cada commit sube la versión (2.A.B, cada cifra de 0
 a 9: después de 2.0.9 va 2.1.0) y se etiqueta con `git tag v<versión>`.
 
 Historial resumido:
+- 3.0.7 (2026-11-23): verificación en dos pasos opcional para cada cuenta
+  (botón del candado → Configurar): al entrar se pide también un código de 6
+  cifras de una app del móvil, con 8 códigos de recuperación por si se pierde.
+  El administrador puede quitársela a otra cuenta desde Usuarios, y la suya
+  con set_password.py. Además, el bloqueo tras varios intentos fallidos ya no
+  se borra al reiniciar el panel. Nuevo logro: Doble cerradura.
 - 3.0.6 (2026-11-23): copias completas y destino secundario. En Modpacks →
   Copias, además de la copia del mundo hay una «Copia completa» con mods,
   configuración, scripts y listas de jugadores: al restaurarla, el servidor
@@ -128,4 +134,4 @@ Historial resumido:
   otros usuarios.
 - 1.x: todo lo anterior (sin numerar).
 """
-APP_VERSION = "3.0.6"
+APP_VERSION = "3.0.7"

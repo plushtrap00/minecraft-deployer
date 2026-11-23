@@ -76,6 +76,15 @@
     </details>
 
     <details class="help-section">
+      <summary>Tu cuenta: contraseña y verificación en dos pasos</summary>
+      <div class="help-section-body">
+        <p>El botón del candado de la barra superior cambia tu contraseña. Desde ahí también puedes activar la <b>verificación en dos pasos</b>: además de la contraseña, al entrar se pide un código de 6 cifras de una app del móvil (Google Authenticator, Aegis, 2FAS, Bitwarden...).</p>
+        <p>Al activarla recibes 8 <b>códigos de recuperación</b> de un solo uso: guárdalos, sirven para entrar si pierdes el móvil. Si también los pierdes, el administrador puede quitarte la verificación desde <b>Usuarios</b>; la del propio administrador se quita en el servidor con <code>python3 set_password.py</code>.</p>
+        <p>Después de varios intentos fallidos (de contraseña o de código), esa cuenta queda bloqueada unos minutos desde esa dirección, también aunque se reinicie el panel.</p>
+      </div>
+    </details>
+
+    <details class="help-section">
       <summary>Usuarios <span class="label-note">(solo administrador)</span></summary>
       <div class="help-section-body">
         <p>Crea cuentas adicionales para otras personas que quieras que puedan usar el panel. Solo el administrador puede crear o borrar usuarios, y no puede borrarse a sí mismo.</p>

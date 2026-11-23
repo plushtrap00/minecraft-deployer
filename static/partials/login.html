@@ -24,6 +24,17 @@
     <div class="login-error" id="login-error" role="alert"></div>
     <button type="submit" class="login-btn" id="login-btn">Entrar</button>
     </form>
+    <form id="login-2fa-form" novalidate hidden>
+      <p class="login-2fa-intro">Tu cuenta tiene la verificación en dos pasos activada.</p>
+      <div class="login-field">
+        <label for="login-code">Código de verificación</label>
+        <input type="text" id="login-code" name="one-time-code" autocomplete="one-time-code" inputmode="numeric" autocapitalize="none" spellcheck="false" maxlength="12">
+      </div>
+      <p class="login-2fa-hint">El de 6 cifras de tu app de códigos, o uno de tus códigos de recuperación.</p>
+      <div class="login-error" id="login-2fa-error" role="alert"></div>
+      <button type="submit" class="login-btn" id="login-2fa-btn">Entrar</button>
+      <button type="button" class="login-back" id="login-2fa-back">Volver</button>
+    </form>
     <button type="button" class="login-lang" id="login-lang"><svg class="icon" aria-hidden="true"><use href="#i-globe"/></svg><span id="login-lang-name"></span></button>
   </main>
 </div>

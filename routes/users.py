@@ -5,12 +5,15 @@ Rutas:
 - GET    /api/users           → lista todos los usuarios
 - POST   /api/users           → crea un usuario normal
 - DELETE /api/users/{username}→ elimina un usuario normal
+- DELETE /api/users/{username}/two-factor → quita la verificación en dos pasos
+  de otra cuenta (por si ha perdido el móvil y los códigos de recuperación)
 """
 import re
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+from services import two_factor
 from services.users import list_users, create_user, delete_user, set_password, validate_password
 from routes.auth import require_admin as _require_admin
 
@@ -27,7 +30,7 @@ class CreateUserBody(BaseModel):
 @router.get("")
 def get_users(request: Request):
     _require_admin(request)
-    return JSONResponse(list_users())
+    return JSONResponse([{**user, "two_factor": two_factor.is_enabled(user["username"])} for user in list_users()])
 
 
 @router.post("", status_code=201)
@@ -75,4 +78,14 @@ def remove_user(username: str, request: Request):
         raise HTTPException(status_code=400, detail=str(e))
     if not found:
         raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    return JSONResponse({"success": True})
+
+
+@router.delete("/{username}/two-factor")
+def remove_user_two_factor(username: str, request: Request):
+    _require_admin(request)
+    if username == request.state.user:
+        raise HTTPException(status_code=400, detail="Para la tuya usa «Cambiar contraseña» → Verificación en dos pasos")
+    if not two_factor.disable(username):
+        raise HTTPException(status_code=404, detail="Esa cuenta no tiene la verificación en dos pasos activada")
     return JSONResponse({"success": True})

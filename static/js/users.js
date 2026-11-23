@@ -13,13 +13,17 @@ function loadUsers() {
         var badge = isAdmin
           ? '<span class="role-badge role-admin">Admin</span>'
           : '<span class="role-badge role-user">' + t('Usuario') + '</span>';
+        var tfa = u.two_factor
+          ? '<span class="role-badge role-tfa" title="' + escHtml(t('Verificación en dos pasos activada')) + '">' + icon('shield') + '2FA</span>'
+          : '';
         var actions = isAdmin ? '' :
           '<div class="pe-actions">'
+          + (u.two_factor ? '<button class="btn-ghost user-tfa-btn btn-xs" data-user="' + escHtml(u.username) + '">' + icon('shield') + t('Quitar 2FA') + '</button>' : '')
           + '<button class="btn-ghost user-password-btn btn-xs" data-user="' + escHtml(u.username) + '">' + icon('lock') + t('Cambiar contraseña') + '</button>'
           + '<button class="btn-danger user-delete-btn btn-xs" data-user="' + escHtml(u.username) + '">' + icon('trash-2') + t('Eliminar') + '</button></div>';
         return '<div class="player-entry">'
           + '<span class="pe-name">' + escHtml(u.username) + '</span>'
-          + badge + actions
+          + badge + tfa + actions
           + '</div>';
       }).join('');
     })
@@ -64,6 +68,10 @@ document.getElementById('users-list').addEventListener('click', function(event) 
   var pwBtn = event.target.closest('.user-password-btn');
   if (pwBtn) {
     openPasswordModal(pwBtn.dataset.user);
+  }
+  var tfaBtn = event.target.closest('.user-tfa-btn');
+  if (tfaBtn) {
+    removeUserTwoFactor(tfaBtn.dataset.user, tfaBtn);
   }
 });
 
@@ -152,3 +160,16 @@ document.getElementById('add-user-btn').addEventListener('click', function() {
       document.getElementById('add-user-btn').disabled = false;
     });
 });
+
+// Por si alguien pierde el móvil y también sus códigos de recuperación.
+function removeUserTwoFactor(username, button) {
+  showConfirm(t('¿Quitar la verificación en dos pasos a {user}?', { user: username }),
+    t('Podrá entrar solo con su contraseña hasta que la vuelva a activar.'), function() {
+      busyWhile(button, function() {
+        return apiJson('/api/users/' + encodeURIComponent(username) + '/two-factor', { method: 'DELETE' }).then(function(result) {
+          showToast(result.ok ? t('Verificación en dos pasos quitada') : (result.data.detail || t('No se pudo quitar')), result.ok ? 'success' : 'error');
+          loadUsers();
+        });
+      });
+    }, { confirmLabel: t('Quitar') });
+}

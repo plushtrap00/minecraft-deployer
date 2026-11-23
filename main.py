@@ -60,7 +60,7 @@ from version import APP_VERSION
 
 # ── Middleware de autenticación ────────────────────────────────────────────────
 
-PUBLIC_PATHS = {"/", "/api/auth/login", "/api/auth/logout", "/api/auth/verify"}
+PUBLIC_PATHS = {"/", "/api/auth/login", "/api/auth/login/2fa", "/api/auth/logout", "/api/auth/verify"}
 
 # Cabeceras que el navegador aplica a todo: el panel no se puede meter en un
 # <iframe> de otra web (clickjacking), no adivina tipos de archivo y no manda

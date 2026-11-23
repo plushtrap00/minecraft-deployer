@@ -1216,3 +1216,8 @@ code {
   border-color: rgba(var(--red-rgb), .5);
   color: var(--red);
 }
+
+.toast.warn {
+  border-color: rgba(var(--yellow-rgb), .5);
+  color: var(--yellow);
+}

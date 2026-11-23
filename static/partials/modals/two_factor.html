@@ -1,0 +1,57 @@
+<!-- Verificación en dos pasos de la cuenta propia (two_factor.js). Se abre
+     desde «Cambiar contraseña». Cuatro vistas: desactivada, configurando (QR),
+     códigos de recuperación recién creados y activada. -->
+<div class="modal-overlay" id="tfa-modal" aria-labelledby="tfa-title">
+  <div class="modal modal-dialog">
+    <div class="modal-header">
+      <span class="modal-icon"><svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg></span>
+      <span class="dialog-title" id="tfa-title">Verificación en dos pasos</span>
+      <button class="modal-close" id="tfa-close" aria-label="Cerrar"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="dialog-body">
+      <div id="tfa-view-off" hidden>
+        <p class="clone-intro">Además de la contraseña, al entrar se te pedirá un código de 6 cifras que genera una app del móvil (Google Authenticator, Aegis, 2FAS, Bitwarden...). Aunque alguien averigüe tu contraseña, sin el móvil no puede entrar.</p>
+        <button type="button" class="btn-go" id="tfa-start">Activar</button>
+      </div>
+
+      <div id="tfa-view-setup" hidden>
+        <p class="clone-intro">1. Escanea este código con la app (o escribe la clave a mano).</p>
+        <div class="tfa-qr" id="tfa-qr"></div>
+        <div class="tfa-secret"><span>Clave:</span> <code id="tfa-secret"></code></div>
+        <p class="clone-intro">2. Escribe el código de 6 cifras que te muestra la app.</p>
+        <div class="prop-field">
+          <label class="prop-label" for="tfa-code">Código</label>
+          <input type="text" id="tfa-code" class="w-full tfa-code-input" inputmode="numeric" autocomplete="one-time-code" maxlength="7" spellcheck="false">
+        </div>
+        <div class="field-error" id="tfa-setup-error" role="alert"></div>
+      </div>
+
+      <div id="tfa-view-codes" hidden>
+        <p class="clone-intro"><b>Guarda estos códigos de recuperación</b> en un sitio seguro (un gestor de contraseñas o en papel). Si pierdes el móvil, cada uno sirve una vez para entrar en lugar del código de la app. No se volverán a mostrar.</p>
+        <ul class="tfa-codes" id="tfa-codes"></ul>
+        <div class="stack-start">
+          <button type="button" class="btn-secondary btn-sm" id="tfa-copy"><svg class="icon" aria-hidden="true"><use href="#i-copy"/></svg>Copiar</button>
+          <button type="button" class="btn-secondary btn-sm" id="tfa-download"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>Descargar</button>
+        </div>
+      </div>
+
+      <div id="tfa-view-on" hidden>
+        <div id="tfa-on-status"></div>
+        <div class="prop-field mt-m">
+          <label class="prop-label" for="tfa-password">Tu contraseña (para cambiar algo aquí)</label>
+          <input type="password" id="tfa-password" class="w-full" autocomplete="current-password">
+        </div>
+        <div class="field-error" id="tfa-on-error" role="alert"></div>
+        <div class="stack-start">
+          <button type="button" class="btn-secondary btn-sm" id="tfa-new-codes">Nuevos códigos de recuperación</button>
+          <button type="button" class="btn-danger btn-sm" id="tfa-disable">Desactivar</button>
+        </div>
+      </div>
+    </div>
+    <div class="dialog-footer">
+      <button type="button" class="btn-secondary" id="tfa-cancel">Cerrar</button>
+      <button type="button" class="btn-go" id="tfa-confirm" hidden>Activar</button>
+      <button type="button" class="btn-go" id="tfa-done" hidden>Ya los he guardado</button>
+    </div>
+  </div>
+</div>
