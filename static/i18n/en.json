@@ -1557,5 +1557,17 @@
   "¡Mods compatibles, casi siempre!": "Compatible mods, almost always!",
   "¡Recién salido del horno!": "Fresh out of the furnace!",
   "¡Más estable que un bloque de obsidiana!": "More stable than a block of obsidian!",
-  "¡Pon una antorcha!": "Place a torch!"
+  "¡Pon una antorcha!": "Place a torch!",
+  "La actualización a la {to} falló y se ha vuelto a la {from}: {error}.": "The update to {to} failed and the panel went back to {from}: {error}.",
+  "comprobando que la {version} arranca bien…": "checking that {version} starts properly…",
+  "No se puede actualizar: hay archivos de la app modificados a mano ({files}). Deshaz esos cambios o guárdalos aparte antes de actualizar.": "Can't update: some of the app's files were changed by hand ({files}). Undo those changes or save them somewhere else before updating.",
+  "La actualización necesita librerías nuevas y no se pudieron instalar; se ha vuelto a la versión anterior. Error: {error}": "The update needs new libraries and they couldn't be installed; the panel went back to the previous version. Error: {error}",
+  "La versión nueva no se puede cargar; se ha vuelto a la versión anterior. Error: {error}": "The new version can't be loaded; the panel went back to the previous version. Error: {error}",
+  "la versión {version} no ha conseguido arrancar ({n} intentos)": "version {version} couldn't start ({n} attempts)",
+  "la versión {version} arrancó pero no respondía": "version {version} started but wasn't responding",
+  "git status falló: {error}": "git status failed: {error}",
+  "git rev-parse falló: {error}": "git rev-parse failed: {error}",
+  "git reset falló: {error}": "git reset failed: {error}",
+  "pip salió con código {code}": "pip exited with code {code}",
+  "python salió con código {code}": "python exited with code {code}"
 }

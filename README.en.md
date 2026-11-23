@@ -116,7 +116,7 @@ Choose `1) Container` when asked. It does exactly the same as native mode (virtu
 
 There are three ways, depending on how you installed it:
 
-- **From the panel itself**: if you turned on auto-update, the panel checks GitHub for a new version every so often and shows it in **System**. It's applied with the **Update now** button, only when no Minecraft server is running and no other operation is in progress, and the panel restarts itself.
+- **From the panel itself**: if you turned on auto-update, the panel checks GitHub for a new version every so often and shows it in **System**. It's applied with the **Update now** button, only when no Minecraft server is running and no other operation is in progress, and the panel restarts itself. If the new version goes wrong (it doesn't load, start or respond), the panel goes back to the previous one on its own and says so right there; and if any of the app's files were changed by hand, it won't update so as not to overwrite them.
 - **Native Linux**: run `bash install.sh` again (it downloads the new code and restarts the service). If you'd rather `git pull` by hand, **restart the service afterwards** (`sudo systemctl restart minecraft-deployer`): until then the previous version, already loaded in memory, keeps running.
 - **Docker**: `git pull` and `docker compose up -d --build`.
 

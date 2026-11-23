@@ -4,6 +4,14 @@ main.py - Punto de entrada de Minecraft Server Deployer.
 Crea la app FastAPI, registra todos los routers, y en __main__
 ejecuta las tareas de limpieza antes de arrancar uvicorn.
 """
+# Lo primero de todo, antes de cargar nada más de la app: si la última
+# actualización no consigue arrancar, update_guard vuelve a la versión
+# anterior (ver update_guard.py).
+import update_guard
+
+if __name__ == "__main__":
+    update_guard.on_boot()
+
 import mimetypes
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -131,6 +139,7 @@ async def lifespan(app: FastAPI):
     if tightened:
         print(f"🔒 Permisos ajustados a 600 (solo el dueño puede leerlos): {', '.join(tightened)}")
     auto_update.start()
+    auto_update.start_health_check()
     scheduler.start()
     yield
     scheduler.stop()

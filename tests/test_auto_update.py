@@ -142,7 +142,7 @@ class FetchFromRealRepoTests(unittest.TestCase):
         with mock.patch.object(auto_update, "_REPO_DIR", self.clone), \
                 mock.patch.object(auto_update, "APP_VERSION", "2.1.5"), \
                 mock.patch.object(auto_update, "_server_running", return_value=False), \
-                mock.patch.object(auto_update, "is_busy", return_value=False):
+                mock.patch.object(auto_update, "is_busy", return_value=False),                 mock.patch.object(auto_update, "_check_new_version_loads"):
             status = auto_update.check_now()
             self.assertEqual(status["commits_behind"], 2)
             self.assertEqual(status["remote_version"], "2.1.6")

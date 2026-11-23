@@ -6,6 +6,8 @@ __pycache__/
 .APP_CONSTANTS
 docker-compose.yml
 users.json
+.update_state.json
+.update_state.tmp
 uploads_temp/
 *.zip
 *.tar.gz

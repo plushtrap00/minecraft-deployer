@@ -116,7 +116,7 @@ Elige `1) Contenedor` cuando te lo pregunte. Hace exactamente lo mismo que el mo
 
 Hay tres formas, según cómo lo tengas instalado:
 
-- **Desde el propio panel**: si activaste la auto-actualización, el panel comprueba cada cierto tiempo si hay una versión nueva en GitHub y lo avisa en **Sistema**. Se aplica con el botón **Actualizar ahora**, solo cuando no hay ningún servidor de Minecraft encendido ni otra operación en curso, y el panel se reinicia solo.
+- **Desde el propio panel**: si activaste la auto-actualización, el panel comprueba cada cierto tiempo si hay una versión nueva en GitHub y lo avisa en **Sistema**. Se aplica con el botón **Actualizar ahora**, solo cuando no hay ningún servidor de Minecraft encendido ni otra operación en curso, y el panel se reinicia solo. Si la versión nueva sale mal (no carga, no arranca o no responde), el panel vuelve solo a la anterior y lo avisa ahí mismo; y si hay archivos de la app cambiados a mano, no actualiza para no pisarlos.
 - **Linux nativo**: `bash install.sh` de nuevo (descarga lo nuevo y reinicia el servicio). Si prefieres hacer `git pull` a mano, **reinicia después el servicio** (`sudo systemctl restart minecraft-deployer`): hasta entonces sigue funcionando la versión anterior, que ya estaba cargada en memoria.
 - **Docker**: `git pull` y `docker compose up -d --build`.
 

@@ -20,6 +20,10 @@ static/i18n/changelog/<idioma>.json ({versión: texto}), y se leen también de
 origin/main; localize_status() da a cada cuenta las de su idioma. Los commits que no suben versión ni dejan entrada aparecen por
 su asunto, para que ninguno quede sin explicar.
 
+Antes de reiniciar se comprueba que la versión nueva carga (ver
+update_guard.py): si no, se vuelve sola a la anterior, y lo mismo si después
+del reinicio no llega a arrancar o a responder.
+
 El reinicio posterior sale con código de error controlado — funciona igual
 tanto si la app corre nativa bajo systemd (Restart=on-failure) como en Docker
 (restart: unless-stopped), sin necesitar llamar a systemctl/docker ni darle
@@ -32,12 +36,17 @@ import ast
 import json
 import os
 import re
+import sys
 import time
 import threading
 import subprocess
+import urllib.error
+import urllib.request
 from pathlib import Path
 
-from config import AUTO_UPDATE_ENABLED, AUTO_UPDATE_INTERVAL_SECONDS
+import update_guard
+
+from config import AUTO_UPDATE_ENABLED, AUTO_UPDATE_INTERVAL_SECONDS, WEB_PORT
 from app_constants import AUTO_UPDATE_CHECK_INITIAL_DELAY_SECONDS, AUTO_UPDATE_GIT_TIMEOUT_SECONDS
 from services import process as proc_module
 from services import i18n
@@ -232,9 +241,58 @@ def _store_check_result(behind: int) -> None:
 
 
 def _pull() -> None:
-    result = _git(["pull", "--quiet", "origin", "main"])
+    result = _git(["pull", "--quiet", "--ff-only", "origin", "main"])
     if result.returncode != 0:
         raise RuntimeError(f"git pull falló: {result.stderr.strip()}")
+
+
+# Tiempo máximo para instalar librerías nuevas y para probar a cargar la
+# versión nueva antes de reiniciar.
+_PIP_TIMEOUT_SECONDS = 900
+_IMPORT_CHECK_TIMEOUT_SECONDS = 180
+
+
+def _local_changes() -> list:
+    """Archivos de la app (versionados) cambiados a mano: el pull los pisaría o fallaría."""
+    result = _git(["status", "--porcelain", "--untracked-files=no"])
+    if result.returncode != 0:
+        raise RuntimeError(f"git status falló: {result.stderr.strip()}")
+    return [line[3:].strip() for line in result.stdout.splitlines() if line.strip()]
+
+
+def _requirements() -> bytes:
+    try:
+        return (_REPO_DIR / "requirements.txt").read_bytes()
+    except OSError:
+        return b""
+
+
+def _install_requirements() -> None:
+    result = subprocess.run(
+        [sys.executable, "-m", "pip", "install", "--quiet", "--disable-pip-version-check", "-r", "requirements.txt"],
+        cwd=_REPO_DIR, capture_output=True, text=True, timeout=_PIP_TIMEOUT_SECONDS,
+    )
+    if result.returncode != 0:
+        raise RuntimeError((result.stderr or result.stdout).strip()[-600:] or f"pip salió con código {result.returncode}")
+
+
+def _check_new_version_loads() -> None:
+    """Carga la versión nueva en otro proceso (sin arrancarla) para ver que no está rota."""
+    result = subprocess.run(
+        [sys.executable, "-c", "import main"],
+        cwd=_REPO_DIR, capture_output=True, text=True, timeout=_IMPORT_CHECK_TIMEOUT_SECONDS,
+        env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
+    )
+    if result.returncode != 0:
+        lines = [line for line in (result.stderr or result.stdout).strip().splitlines() if line.strip()]
+        raise RuntimeError(lines[-1] if lines else f"python salió con código {result.returncode}")
+
+
+def _version_on_disk() -> str:
+    try:
+        return parse_version_file((_REPO_DIR / "version.py").read_text(encoding="utf-8"))[0] or "?"
+    except OSError:
+        return "?"
 
 
 def _server_running() -> bool:
@@ -303,8 +361,46 @@ def apply_update() -> None:
     if is_busy():
         raise RuntimeError(f"No se puede actualizar: hay una operación en curso ({', '.join(busy_reasons())}).")
 
+    changed = _local_changes()
+    if changed:
+        raise RuntimeError(
+            f"No se puede actualizar: hay archivos de la app modificados a mano ({', '.join(changed[:5])}). "
+            "Deshaz esos cambios o guárdalos aparte antes de actualizar."
+        )
+
     _log("aplicando actualización pedida desde el panel...")
+    previous = update_guard.head(_REPO_DIR)
+    old_requirements = _requirements()
     _pull()
+    target = update_guard.head(_REPO_DIR)
+    if target == previous:
+        _store_check_result(0)
+        return
+
+    def undo(message: str) -> None:
+        update_guard.reset_to(previous, _REPO_DIR)
+        if _requirements() != new_requirements:
+            try:
+                _install_requirements()
+            except Exception as e:
+                _log(f"no se pudieron reinstalar las librerías de la versión anterior: {e}")
+        _log(message)
+        _status["last_error"] = message
+        raise RuntimeError(message)
+
+    new_requirements = _requirements()
+    if new_requirements != old_requirements:
+        _log("la versión nueva cambia requirements.txt: instalando librerías...")
+        try:
+            _install_requirements()
+        except Exception as e:
+            undo(f"La actualización necesita librerías nuevas y no se pudieron instalar; se ha vuelto a la versión anterior. Error: {e}")
+    try:
+        _check_new_version_loads()
+    except Exception as e:
+        undo(f"La versión nueva no se puede cargar; se ha vuelto a la versión anterior. Error: {e}")
+
+    update_guard.begin(previous, target, APP_VERSION, _version_on_disk(), _REPO_DIR)
     _store_check_result(0)
 
 
@@ -343,6 +439,48 @@ def start() -> None:
     threading.Thread(target=_loop, daemon=True).start()
 
 
+def start_health_check() -> None:
+    """
+    Tras arrancar una versión recién instalada, comprueba que el panel
+    responde de verdad (no basta con que el proceso viva). Si responde, se da
+    por buena; si no lo hace a tiempo, se vuelve a la anterior y se reinicia.
+    """
+    if update_guard.read_state(_REPO_DIR).get("status") != "verifying":
+        return
+
+    def run():
+        deadline = time.monotonic() + update_guard.HEALTH_TIMEOUT_SECONDS
+        url = f"http://127.0.0.1:{WEB_PORT}/api/auth/verify"
+        while time.monotonic() < deadline:
+            time.sleep(3)
+            try:
+                urllib.request.urlopen(url, timeout=5).close()
+                alive = True
+            except urllib.error.HTTPError:
+                alive = True  # 401 sin sesión: el panel contesta, que es lo que importa
+            except (OSError, ValueError):
+                alive = False
+            if alive:
+                if update_guard.confirm_ok(_REPO_DIR):
+                    _log(f"la versión {APP_VERSION} arranca y responde: actualización confirmada.")
+                return
+        try:
+            if update_guard.rollback(f"la versión {APP_VERSION} arrancó pero no respondía", _REPO_DIR):
+                schedule_restart()
+        except Exception as e:
+            _log(f"no se pudo volver a la versión anterior: {e}")
+
+    threading.Thread(target=run, daemon=True, name="update-health").start()
+
+
+def last_update() -> dict | None:
+    """Resultado de la última actualización aplicada (para avisar si se deshizo)."""
+    state = update_guard.read_state(_REPO_DIR)
+    if not state.get("status"):
+        return None
+    return {key: state.get(key) for key in ("status", "from_version", "to_version", "error", "at")}
+
+
 def get_status() -> dict:
     return {
         **_status,
@@ -350,4 +488,5 @@ def get_status() -> dict:
         "busy": is_busy(),
         "busy_reasons": busy_reasons(),
         "restart_pending": _restart_pending,
+        "last_update": last_update(),
     }

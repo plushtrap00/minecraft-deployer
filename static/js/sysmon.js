@@ -474,6 +474,16 @@ function renderAutoUpdateSection() {
     html += autoUpdateRow(t('Error'), status.last_error, 'red');
   }
 
+  // Resultado de la última actualización aplicada (ver update_guard.py).
+  var last = status.last_update;
+  if (last && last.status === 'rolled_back') {
+    html += noticeHtml('error', escHtml(t('La actualización a la {to} falló y se ha vuelto a la {from}: {error}.', {
+      to: last.to_version || '?', from: last.from_version || '?', error: last.error || '?'
+    })));
+  } else if (last && last.status === 'verifying') {
+    html += autoUpdateRow(t('Última actualización'), t('comprobando que la {version} arranca bien…', { version: last.to_version || '?' }), 'yellow');
+  }
+
   html += '<div class="mt-s">'
     + '<button type="button" class="btn-secondary btn-xs" id="auto-update-check-btn"' + (autoUpdateChecking ? ' disabled' : '') + '>'
     + (autoUpdateChecking ? t('Comprobando…') : t('Comprobar ahora')) + '</button>'

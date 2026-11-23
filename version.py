@@ -6,6 +6,12 @@ documentación de la API. Cada commit sube la versión (2.A.B, cada cifra de 0
 a 9: después de 2.0.9 va 2.1.0) y se etiqueta con `git tag v<versión>`.
 
 Historial resumido:
+- 3.0.5 (2026-11-23): las actualizaciones de la app se deshacen solas si salen
+  mal: antes de reiniciar se comprueba que la versión nueva carga (e instala
+  sus librerías nuevas si las necesita), y si después no llega a arrancar o a
+  responder, el panel vuelve solo a la versión anterior y lo avisa en Sistema
+  → Actualizaciones. Tampoco se actualiza si hay archivos de la app cambiados
+  a mano.
 - 3.0.4 (2026-11-23): repaso del castellano: fuera las expresiones
   latinoamericanas que quedaban en textos, comentarios, instaladores y
   documentación (p. ej. «Último chequeo» pasa a ser «Última comprobación»).
@@ -114,4 +120,4 @@ Historial resumido:
   otros usuarios.
 - 1.x: todo lo anterior (sin numerar).
 """
-APP_VERSION = "3.0.4"
+APP_VERSION = "3.0.5"
