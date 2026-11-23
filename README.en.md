@@ -130,7 +130,7 @@ There's no need to clear the browser cache: every panel file carries its own ver
 - **Session**: the sign-in is kept in a browser cookie (HttpOnly). When an account's password is changed or the account is deleted, its open sessions stop working.
 - **Passwords**: each user changes their own with the padlock button in the top bar. The administrator can set a new one for any other user from **Users** (in case they forget it).
 - **Upload limits**: by default, 8 GB per file and 32 GB extracted. They're changed in **Settings → App constants → Uploads**.
-- **Appearance**: the **Appearance** button in the top bar. That's where you pick the language, the theme (Amethyst, Overworld, Nether or End), turn sounds on (off by default) and see the achievement list. The language is saved in your account; theme, sounds and achievements in each browser (if you sign in from another computer, they start from scratch).
+- **Appearance**: the **Appearance** button in the top bar. That's where you pick the language, the theme (Amethyst, Overworld, Nether or End), turn sounds on (off by default) and see the achievement list. Your language and achievements are saved in your account (the same wherever you log in from); theme and sounds in each browser.
 
 ## Languages
 

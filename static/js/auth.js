@@ -59,6 +59,9 @@ function applyRoleUI() {
 function logout() {
   currentRole = 'user';
   currentUser = '';
+  if (typeof resetAccountAchievements === 'function') {
+    resetAccountAchievements();
+  }
   applyRoleUI();
   document.getElementById('login-screen').classList.remove('hidden');
   document.getElementById('login-pass').value = '';
@@ -94,6 +97,9 @@ function onLoginSuccess(role, user) {
   }
   if (typeof loadAutoUpdateStatus === 'function') {
     loadAutoUpdateStatus();
+  }
+  if (typeof loadAccountAchievements === 'function') {
+    loadAccountAchievements();
   }
   if (typeof applyInitialRoute === 'function') {
     applyInitialRoute();

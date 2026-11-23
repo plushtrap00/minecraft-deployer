@@ -130,7 +130,7 @@ No hace falta vaciar la caché del navegador: cada archivo del panel lleva su pr
 - **Sesión**: el inicio de sesión se guarda en una cookie del navegador (HttpOnly). Al cambiar la contraseña de una cuenta o borrarla, sus sesiones abiertas dejan de valer.
 - **Contraseñas**: cada usuario cambia la suya con el botón del candado de la barra superior. El administrador puede poner una nueva a cualquier otro usuario desde **Usuarios** (por si la olvida).
 - **Límites de subida**: por defecto, 8 GB por archivo y 32 GB descomprimido. Se cambian en **Configuración → Constantes → Subidas**.
-- **Apariencia**: botón **Apariencia** de la barra superior. Ahí se elige el idioma, el tema (Amatista, Superficie, Nether o End), se activan los sonidos (apagados por defecto) y se ve la lista de logros. El idioma se guarda en tu cuenta; el tema, los sonidos y los logros, en cada navegador (si entras desde otro equipo, empiezan de cero).
+- **Apariencia**: botón **Apariencia** de la barra superior. Ahí se elige el idioma, el tema (Amatista, Superficie, Nether o End), se activan los sonidos (apagados por defecto) y se ve la lista de logros. El idioma y los logros se guardan en tu cuenta (los ves igual entres desde donde entres); el tema y los sonidos, en cada navegador.
 
 ## Idiomas
 

@@ -66,3 +66,68 @@ def forget(username: str) -> None:
         data = _load()
         if data.pop(username, None) is not None:
             _write(data)
+
+
+# ── Logros ───────────────────────────────────────────────────────────────────
+# Van con la cuenta (no con el navegador) para que se vean igual en cualquier
+# dispositivo. «achievements» = {id: fecha en ms}; «ach_seen» = {id: [valores
+# ya vistos]} para los logros de «haz todas las X» (temas, secciones...).
+_ACH_ID_MAX = 40
+_ACH_MAX_ITEMS = 200
+_ACH_SEEN_MAX_VALUES = 50
+_ACH_VALUE_MAX = 60
+
+
+def _valid_ach_id(value) -> bool:
+    return (isinstance(value, str) and 0 < len(value) <= _ACH_ID_MAX
+            and all(c.isalnum() or c == "-" for c in value))
+
+
+def get_achievements(username: str) -> dict:
+    with _lock:
+        entry = _load().get(username) or {}
+    unlocked = entry.get("achievements") if isinstance(entry.get("achievements"), dict) else {}
+    seen = entry.get("ach_seen") if isinstance(entry.get("ach_seen"), dict) else {}
+    return {"unlocked": dict(unlocked), "seen": {k: list(v) for k, v in seen.items() if isinstance(v, list)}}
+
+
+def merge_achievements(username: str, unlocked: dict | None = None, seen: dict | None = None) -> dict:
+    """
+    Añade logros conseguidos y valores vistos sin quitar nada: si el mismo
+    logro llega dos veces (dos navegadores), se queda con la fecha más antigua.
+    Devuelve el estado completo tras la mezcla.
+    """
+    with _lock:
+        data = _load()
+        current = data.get(username)
+        entry: dict = current if isinstance(current, dict) else {}
+        have = entry.get("achievements") if isinstance(entry.get("achievements"), dict) else {}
+        have_seen = entry.get("ach_seen") if isinstance(entry.get("ach_seen"), dict) else {}
+        changed = False
+        for ach_id, when in (unlocked or {}).items():
+            if not _valid_ach_id(ach_id) or isinstance(when, bool) or not isinstance(when, (int, float)) or when <= 0:
+                continue
+            if ach_id not in have and len(have) >= _ACH_MAX_ITEMS:
+                continue
+            when = int(when)
+            if ach_id not in have or when < have[ach_id]:
+                have[ach_id] = when
+                changed = True
+        for ach_id, values in (seen or {}).items():
+            if not _valid_ach_id(ach_id) or not isinstance(values, list):
+                continue
+            if ach_id not in have_seen and len(have_seen) >= _ACH_MAX_ITEMS:
+                continue
+            bucket = have_seen.get(ach_id) if isinstance(have_seen.get(ach_id), list) else []
+            for value in values:
+                if (isinstance(value, str) and 0 < len(value) <= _ACH_VALUE_MAX
+                        and value not in bucket and len(bucket) < _ACH_SEEN_MAX_VALUES):
+                    bucket.append(value)
+                    changed = True
+            have_seen[ach_id] = bucket
+        if changed:
+            entry["achievements"] = have
+            entry["ach_seen"] = have_seen
+            data[username] = entry
+            _write(data)
+    return {"unlocked": dict(have), "seen": {k: list(v) for k, v in have_seen.items()}}

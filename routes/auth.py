@@ -246,6 +246,30 @@ def set_own_language(request: Request, body: LanguageBody):
     return response
 
 
+class AchievementsBody(BaseModel):
+    unlocked: dict = {}
+    seen: dict = {}
+
+
+def _session_user(request: Request) -> str:
+    username = getattr(request.state, "user", None)
+    if not username:
+        raise HTTPException(status_code=401, detail="No autorizado")
+    return username
+
+
+@router.get("/achievements")
+def get_own_achievements(request: Request):
+    """Logros de la cuenta con la sesión abierta (los mismos en cualquier navegador)."""
+    return user_prefs.get_achievements(_session_user(request))
+
+
+@router.post("/achievements")
+def add_own_achievements(request: Request, body: AchievementsBody):
+    """Suma logros y valores vistos a la cuenta; nunca quita ninguno."""
+    return user_prefs.merge_achievements(_session_user(request), body.unlocked, body.seen)
+
+
 def _set_session_cookie(response: JSONResponse, username: str) -> None:
     response.set_cookie(
         SESSION_COOKIE, create_token(username),

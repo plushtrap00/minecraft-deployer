@@ -1,10 +1,10 @@
 // -- Apariencia ----------------------------------------------------------------
-// Preferencias del navegador, temas, el diálogo de Apariencia, números que
+// Preferencias del navegador (tema y sonidos), temas, el diálogo de Apariencia, números que
 // cuentan hasta su valor, partículas al terminar algo y la frase del login.
 // Los sonidos están en sounds.js, los dibujos pixelados (logos, cabezas,
 // estados vacíos) en pixel_art.js y los logros en achievements.js.
-// Las preferencias se guardan en este navegador (localStorage) y, si no se
-// puede, simplemente no se recuerdan.
+// El tema y los sonidos se guardan en este navegador (localStorage) y, si no
+// se puede, simplemente no se recuerdan. Los logros van con la cuenta.
 
 function readPref(key, fallback) {
   try {

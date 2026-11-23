@@ -1,5 +1,7 @@
 // -- Logros ------------------------------------------------------------------------
-// Pequeños hitos que se celebran una sola vez por navegador.
+// Pequeños hitos que se celebran una sola vez por cuenta: se guardan en el
+// servidor (GET/POST /api/auth/achievements), así que se ven igual en
+// cualquier navegador o dispositivo con el que se entre.
 var ACHIEVEMENTS = [
   { id: 'first-install', name: 'Primer modpack instalado', hint: 'Instala un modpack o crea un servidor.' },
   { id: 'first-start', name: 'El servidor cobra vida', hint: 'Arranca un servidor hasta que esté listo para jugar.' },
@@ -35,20 +37,172 @@ var ACHIEVEMENTS = [
   { id: 'platinum', name: 'Platino', hint: 'Consigue todos los demás logros.' }
 ];
 
+// Estado de la cuenta: {id: fecha en ms} y {id: [valores vistos]}. Hasta
+// que llega del servidor (o sin sesión, en la pantalla de entrada), lo que se
+// consiga espera en deferredAchievements y se repasa al cargar: así no se
+// celebra otra vez un logro que la cuenta ya tenía.
+var accountAchievements = {};
+var accountAchSeen = {};
+var achievementsLoaded = false;
+var deferredAchievements = [];
+// Lo que no se pudo mandar (sin conexión) se reintenta en el siguiente envío.
+var achievementRetry = { unlocked: {}, seen: {} };
+
 function hasAchievement(id) {
-  return !!readPref('ach-' + id, '');
+  return !!accountAchievements[id];
+}
+
+function sendAchievements(payload) {
+  Object.keys(achievementRetry.unlocked).forEach(function(id) {
+    payload.unlocked[id] = payload.unlocked[id] || achievementRetry.unlocked[id];
+  });
+  Object.keys(achievementRetry.seen).forEach(function(id) {
+    payload.seen[id] = (payload.seen[id] || []).concat(achievementRetry.seen[id]);
+  });
+  achievementRetry = { unlocked: {}, seen: {} };
+  return apiFetch('/api/auth/achievements', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  }).then(function(response) {
+    if (!response.ok) {
+      throw new Error('HTTP ' + response.status);
+    }
+    return response.json();
+  }).then(applyAccountAchievements).catch(function(err) {
+    Object.keys(payload.unlocked).forEach(function(id) { achievementRetry.unlocked[id] = payload.unlocked[id]; });
+    Object.keys(payload.seen).forEach(function(id) {
+      achievementRetry.seen[id] = (achievementRetry.seen[id] || []).concat(payload.seen[id]);
+    });
+    throw err;
+  });
+}
+
+function applyAccountAchievements(data) {
+  // Lo conseguido mientras volaba la petición se conserva.
+  var unlocked = (data && data.unlocked) || {};
+  var seen = (data && data.seen) || {};
+  Object.keys(accountAchievements).forEach(function(id) {
+    unlocked[id] = unlocked[id] || accountAchievements[id];
+  });
+  Object.keys(accountAchSeen).forEach(function(id) {
+    seen[id] = (seen[id] || []).concat(accountAchSeen[id].filter(function(value) {
+      return (seen[id] || []).indexOf(value) < 0;
+    }));
+  });
+  accountAchievements = unlocked;
+  accountAchSeen = seen;
+  if (document.getElementById('achievement-list')) {
+    renderAchievementList();
+  }
+}
+
+// Logros que este navegador guardaba antes en localStorage (versiones
+// anteriores a la 3.0.3): se suben una vez a la primera cuenta que entre y se
+// borran de aquí, para que no se los quede también la siguiente.
+function legacyBrowserAchievements() {
+  var found = { unlocked: {}, seen: {}, keys: [] };
+  try {
+    for (var i = 0; i < localStorage.length; i++) {
+      var key = localStorage.key(i);
+      if (key && key.indexOf('mcd-ach-') === 0) {
+        found.keys.push(key);
+      }
+    }
+  } catch (err) {
+    return found;
+  }
+  found.keys.forEach(function(key) {
+    var value = readPref(key.slice('mcd-'.length), '');
+    if (key.indexOf('mcd-ach-seen-') === 0) {
+      try {
+        var list = JSON.parse(value);
+        if (Array.isArray(list)) {
+          found.seen[key.slice('mcd-ach-seen-'.length)] = list;
+        }
+      } catch (err) {}
+    } else if (Number(value) > 0) {
+      found.unlocked[key.slice('mcd-ach-'.length)] = Number(value);
+    }
+  });
+  return found;
+}
+
+// Se llama al entrar (onLoginSuccess): trae los logros de la cuenta (subiendo
+// antes los antiguos del navegador, si los hay) y repasa los pendientes.
+function loadAccountAchievements() {
+  var legacy = legacyBrowserAchievements();
+  var request;
+  if (legacy.keys.length) {
+    request = sendAchievements({ unlocked: legacy.unlocked, seen: legacy.seen });
+  } else {
+    request = apiFetch('/api/auth/achievements').then(function(response) {
+      if (!response.ok) {
+        throw new Error('HTTP ' + response.status);
+      }
+      return response.json();
+    }).then(applyAccountAchievements);
+  }
+  return request.then(function() {
+    legacy.keys.forEach(function(key) {
+      try { localStorage.removeItem(key); } catch (err) {}
+    });
+    achievementsLoaded = true;
+    var pending = deferredAchievements;
+    deferredAchievements = [];
+    pending.forEach(function(item) {
+      if (item[0] === 'unlock') {
+        unlockAchievement(item[1]);
+      } else {
+        collectForAchievement(item[1], item[2], item[3]);
+      }
+    });
+    checkPlatinum();
+  }).catch(function() {});
+}
+
+// Al salir, la siguiente cuenta no debe ver los logros de esta. Lo que quede
+// pendiente (hecho en la pantalla de entrada) es de quien entre después.
+function resetAccountAchievements() {
+  accountAchievements = {};
+  accountAchSeen = {};
+  achievementsLoaded = false;
+  achievementRetry = { unlocked: {}, seen: {} };
+}
+
+// Las métricas piden el mismo logro en cada sondeo: se apunta una sola vez.
+function deferAchievement(item) {
+  var key = item.slice(0, 3).join('|');
+  var already = deferredAchievements.some(function(other) { return other.slice(0, 3).join('|') === key; });
+  if (!already) {
+    deferredAchievements.push(item);
+  }
+}
+
+function checkPlatinum() {
+  var rest = ACHIEVEMENTS.filter(function(item) { return item.id !== 'platinum'; });
+  if (achievementsLoaded && !hasAchievement('platinum') && rest.every(function(item) { return hasAchievement(item.id); })) {
+    setTimeout(function() { unlockAchievement('platinum'); }, 1200);
+  }
 }
 
 function unlockAchievement(id) {
   var achievement = ACHIEVEMENTS.filter(function(item) { return item.id === id; })[0];
-  if (!achievement || hasAchievement(id)) {
+  if (!achievement) {
     return;
   }
-  writePref('ach-' + id, String(Date.now()));
-  // Si no se puede guardar, no se celebra: si no, saldría en cada visita.
-  if (!hasAchievement(id)) {
+  if (!achievementsLoaded) {
+    deferAchievement(['unlock', id]);
     return;
   }
+  if (hasAchievement(id)) {
+    return;
+  }
+  var now = Date.now();
+  accountAchievements[id] = now;
+  var single = { unlocked: {}, seen: {} };
+  single.unlocked[id] = now;
+  sendAchievements(single).catch(function() {});
   // Si el diálogo de Apariencia está abierto (p. ej. al probar los temas),
   // la lista se actualiza en el momento.
   renderAchievementList();
@@ -65,27 +219,25 @@ function unlockAchievement(id) {
     toastEl.classList.remove('show');
     setTimeout(function() { toastEl.remove(); }, 300);
   }, 5000);
-  var rest = ACHIEVEMENTS.filter(function(item) { return item.id !== 'platinum'; });
-  if (id !== 'platinum' && rest.every(function(item) { return hasAchievement(item.id); })) {
-    setTimeout(function() { unlockAchievement('platinum'); }, 1200);
+  if (id !== 'platinum') {
+    checkPlatinum();
   }
 }
 
 // Logros de «haz todas las X»: se apunta cada una vista y se desbloquea al
 // completar la lista.
 function collectForAchievement(id, value, required) {
-  var seen = [];
-  try {
-    seen = JSON.parse(readPref('ach-seen-' + id, '[]'));
-  } catch (err) {
-    seen = [];
+  if (!achievementsLoaded) {
+    deferAchievement(['collect', id, value, required]);
+    return;
   }
-  if (!Array.isArray(seen)) {
-    seen = [];
-  }
+  var seen = accountAchSeen[id] || [];
   if (seen.indexOf(value) < 0) {
-    seen.push(value);
-    writePref('ach-seen-' + id, JSON.stringify(seen));
+    seen = seen.concat(value);
+    accountAchSeen[id] = seen;
+    var single = { unlocked: {}, seen: {} };
+    single.seen[id] = [value];
+    sendAchievements(single).catch(function() {});
   }
   if (required.length && required.every(function(item) { return seen.indexOf(item) >= 0; })) {
     unlockAchievement(id);
@@ -141,7 +293,7 @@ function renderAchievementList() {
   document.getElementById('achievement-list').innerHTML = ACHIEVEMENTS.map(function(item) {
     var unlocked = hasAchievement(item.id);
     var hidden = item.secret && !unlocked;
-    var when = Number(readPref('ach-' + item.id, ''));
+    var when = Number(accountAchievements[item.id] || 0);
     var hint = !unlocked ? (hidden ? t('Logro secreto') : t(item.hint))
       : (when ? t('Conseguido el {date}', { date: new Date(when).toLocaleDateString(APP_LOCALE) }) : t('Conseguido'));
     return '<li class="achievement-row' + (unlocked ? ' unlocked' : '') + (hidden ? ' secret' : '') + '"'

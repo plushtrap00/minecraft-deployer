@@ -6,6 +6,9 @@ documentación de la API. Cada commit sube la versión (2.A.B, cada cifra de 0
 a 9: después de 2.0.9 va 2.1.0) y se etiqueta con `git tag v<versión>`.
 
 Historial resumido:
+- 3.0.3 (2026-11-23): los logros van con la cuenta, no con el navegador: se
+  ven igual entres desde el dispositivo que entres. Los que ya tenías en un
+  navegador se suben solos a tu cuenta la primera vez que entras con él.
 - 3.0.2 (2026-11-20): las novedades de cada versión (Sistema → Actualizaciones)
   salen en el idioma de cada cuenta. Las traducciones van en un archivo por
   idioma, static/i18n/changelog/<idioma>.json.
@@ -108,4 +111,4 @@ Historial resumido:
   otros usuarios.
 - 1.x: todo lo anterior (sin numerar).
 """
-APP_VERSION = "3.0.2"
+APP_VERSION = "3.0.3"
