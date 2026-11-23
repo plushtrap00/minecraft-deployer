@@ -6,6 +6,12 @@ documentación de la API. Cada commit sube la versión (2.A.B, cada cifra de 0
 a 9: después de 2.0.9 va 2.1.0) y se etiqueta con `git tag v<versión>`.
 
 Historial resumido:
+- 3.0.8 (2026-11-23): botón «Buscar actualizaciones» en la pestaña Mods:
+  reconoce cada mod por su hash en Modrinth (y en CurseForge si hay clave de
+  API), enseña los que tienen una versión más nueva para tu versión de
+  Minecraft y modloader (sin pasar de estable a beta) y actualiza los que
+  elijas comprobando lo descargado. Los archivos antiguos se guardan y se
+  pueden volver a poner con «Deshacer». Nuevo logro: Puesta a punto.
 - 3.0.7 (2026-11-23): verificación en dos pasos opcional para cada cuenta
   (botón del candado → Configurar): al entrar se pide también un código de 6
   cifras de una app del móvil, con 8 códigos de recuperación por si se pierde.
@@ -134,4 +140,4 @@ Historial resumido:
   otros usuarios.
 - 1.x: todo lo anterior (sin numerar).
 """
-APP_VERSION = "3.0.7"
+APP_VERSION = "3.0.8"

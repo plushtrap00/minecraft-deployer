@@ -231,3 +231,23 @@
     </div>
   </div>
 </div>
+
+<!-- Actualizaciones de los mods instalados (mod_updates.js) -->
+<div class="modal-overlay" id="mod-updates-modal">
+  <div class="modal mod-updates-dialog">
+    <div class="modal-header">
+      <span class="modal-icon"><svg class="icon" aria-hidden="true"><use href="#i-refresh-cw"/></svg></span>
+      <span class="modal-path">Actualizaciones de los mods</span>
+      <button class="modal-close" id="mod-updates-close" aria-label="Cerrar"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-scroll" id="mod-updates-body"></div>
+    </div>
+    <div class="modal-footer mod-dl-footer">
+      <button class="btn-secondary" id="mod-updates-undo" hidden>Deshacer</button>
+      <div class="flex-1"></div>
+      <button class="btn-secondary" id="mod-updates-cancel">Cerrar</button>
+      <button class="btn-primary" id="mod-updates-apply" hidden>Actualizar</button>
+    </div>
+  </div>
+</div>

@@ -437,6 +437,22 @@ var ACHIEVEMENT_ICONS = {
     ],
     palette: { o: '#3a3f4a', w: '#6a7488', W: '#9aa6bc', G: '#ffd24a', g: '#b8860b' }
   },
+  // Llave inglesa
+  'tune-up': {
+    rows: [
+      '......ss..',
+      '.....s..s.',
+      '.....s....',
+      '......s..s',
+      '.....sssss',
+      '....sss...',
+      '...sss....',
+      '..sss.....',
+      '.sss......',
+      '.ss.......'
+    ],
+    palette: { s: '#b9c3d3' }
+  },
   // Candado dorado
   'two-keys': {
     rows: [
