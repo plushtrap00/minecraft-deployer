@@ -224,7 +224,7 @@ def get_modrinth_categories() -> list:
 def _curseforge_headers() -> dict:
     if not CURSEFORGE_API_KEY:
         raise ModSearchError(
-            "CurseForge no está configurado: agrega CURSEFORGE_API_KEY a tu .env "
+            "CurseForge no está configurado: añade CURSEFORGE_API_KEY a tu .env "
             "(se consigue gratis en console.curseforge.com/#/api-keys)"
         )
     return {"x-api-key": CURSEFORGE_API_KEY, "Accept": "application/json"}
@@ -407,7 +407,7 @@ def _installed_normalized_ids(mods_dir: Path) -> set:
 
 
 def mark_installed(results: list, mods_dir: Path) -> list:
-    """Agrega result['installed'] = True/False comparando el slug contra los mod_id instalados."""
+    """Añade result['installed'] = True/False comparando el slug contra los mod_id instalados."""
     installed_ids = _installed_normalized_ids(mods_dir)
     for r in results:
         r["installed"] = bool(r.get("slug")) and _norm_id(r["slug"]) in installed_ids

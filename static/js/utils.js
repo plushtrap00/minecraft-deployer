@@ -289,7 +289,7 @@ function loaderTag(modloader) {
 
 // -- Tab en editores de código: inserta indentación en vez de mover el foco ----
 // Reutilizable en cualquier textarea de edición de código/config (config-editor,
-// props-raw-editor, y cualquier otro que se agregue) sin repetir la lógica.
+// props-raw-editor, y cualquier otro que se añada) sin repetir la lógica.
 function enableCodeEditorTab(textarea) {
   textarea.addEventListener('keydown', function(event) {
     if (event.key !== 'Tab') {

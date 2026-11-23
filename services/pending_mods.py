@@ -15,7 +15,7 @@ from services.mod_metadata import compare_mod_versions, read_mod_metadata
 # ── Mods pendientes de instalar manualmente ─────────────────────────────────────
 # Cuando el autor de un modpack de CurseForge bloquea la descarga por terceros
 # para un mod concreto, la API no da ninguna URL con la que resolverlo (ver
-# skipped_no_url en services/modpack_install.py) — el resto del modpack se
+# skipped_no_url en services/pack_install_curseforge.py) — el resto del modpack se
 # instala de todas formas, pero ese mod se queda fuera. Estos nombres se guardan aquí para
 # que server_start() (routes/server.py) se niegue a arrancar ese modpack
 # mientras sigan sin estar de verdad en mods/, en vez de dejar arrancar un
@@ -52,7 +52,7 @@ def get_pending_mods(modpack: str) -> list:
     instalar a mano. De paso descarta (autolimpieza barata, sin abrir ningún
     jar) cualquier entrada que calce con _KNOWN_CLIENT_ONLY_FINGERPRINTS —
     esto pasa cuando el propio mod bloqueado para terceros ES uno de esos
-    conocidos (services/modpack_install.py ya evita que ENTREN nuevos así,
+    conocidos (services/pack_install_*.py ya evita que ENTREN nuevos así,
     pero un mods-pendientes.json de antes de esa comprobación puede seguir
     teniendo uno): no tiene sentido pedir instalar a mano algo que ya se sabe
     que no hace falta en el servidor.

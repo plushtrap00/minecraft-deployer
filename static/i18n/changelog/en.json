@@ -1,6 +1,7 @@
 {
   "//": "Historial de versiones en inglés: una entrada por cada «- X.Y.Z (fecha): texto» del docstring de version.py, que es el original en español. Otro idioma = otro archivo <idioma>.json en esta carpeta. Ver services/auto_update.py.",
 
+  "3.1.4": "internals: modpack installation has been split into smaller modules (Modrinth, CurseForge, shared pieces and the duplicate warning), with no changes for you. Wording: «añadir» instead of «agregar» in the Spanish texts.",
   "3.1.3": "“When people play” on the Players page: streak of days in a row with someone playing, a summary of the last 7 days and a heatmap by day and hour. On Mondays the weekly summary arrives by Telegram or Discord. New achievement: “On a roll”.",
   "3.1.2": "limited accounts: they can see everything, but can only start, stop and restart the server and manage the whitelist (no mods, worlds, backups, console, downloads or RCON password). Chosen when creating the account or from the Users list, and the change applies straight away. Fixed: non-administrator accounts no longer get an error when viewing the firewall status.",
   "3.1.1": "scheduled restarts and stops can run only when nobody is online (if people are, they wait for them to leave, up to the maximum you choose), and the server can stop itself after being empty for a while. Fixed: the task form showed fields that didn't apply (Command, Which server).",

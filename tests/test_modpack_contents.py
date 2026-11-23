@@ -5,6 +5,7 @@ import unittest
 from unittest import mock
 
 from services import modpack_install as mi
+from services import pack_install_common as common, pack_install_curseforge as cf, pack_install_modrinth as mr
 
 
 def _zip(files: dict) -> zipfile.ZipFile:
@@ -18,8 +19,8 @@ def _zip(files: dict) -> zipfile.ZipFile:
 
 class PackContentsTests(unittest.TestCase):
     def setUp(self):
-        mi._pack_contents_cache.clear()
-        mi._pack_contents_locks.clear()
+        common._pack_contents_cache.clear()
+        common._pack_contents_locks.clear()
 
     def test_modrinth_statuses_and_embedded_jars(self):
         index = {
@@ -38,8 +39,8 @@ class PackContentsTests(unittest.TestCase):
                    "overrides/config/a.toml": b"", "client-overrides/mods/cli.jar": b"x"})
         projects = {"gvQqBUqZ": {"id": "gvQqBUqZ", "title": "Lithium", "slug": "lithium", "project_type": "mod",
                                  "icon_url": "https://cdn.modrinth.com/i.png"}}
-        with mock.patch.object(mi, "_get_modrinth_pack_index", return_value=(index, zf)) as get_index, \
-                mock.patch.object(mi, "_resolve_modrinth_projects", return_value=projects):
+        with mock.patch.object(mr, "_get_modrinth_pack_index", return_value=(index, zf)) as get_index, \
+                mock.patch.object(mr, "_resolve_modrinth_projects", return_value=projects):
             result = mi.get_modrinth_modpack_mods("p", "v")
             mi.get_modrinth_modpack_mods("p", "v")  # cacheado: no vuelve a descargar
         self.assertEqual(get_index.call_count, 1)
@@ -81,10 +82,10 @@ class PackContentsTests(unittest.TestCase):
             4: {"name": "Embeddium", "classId": 6}, 5: {"name": "Borrado", "classId": 6},
         }
         # Con Server Pack pero bloqueado también: se instala mod a mod.
-        with mock.patch.object(mi, "_download_curseforge_pack_zip", return_value=(zf, {"server_pack_file_id": 99})), \
-                mock.patch.object(mi, "_resolve_curseforge_file_urls", return_value=files), \
-                mock.patch.object(mi, "_resolve_curseforge_projects", return_value=projects), \
-                mock.patch.object(mi, "_resolve_curseforge_server_pack", return_value=None):
+        with mock.patch.object(cf, "_download_curseforge_pack_zip", return_value=(zf, {"server_pack_file_id": 99})), \
+                mock.patch.object(cf, "_resolve_curseforge_file_urls", return_value=files), \
+                mock.patch.object(cf, "_resolve_curseforge_projects", return_value=projects), \
+                mock.patch.object(cf, "_resolve_curseforge_server_pack", return_value=None):
             result = mi.get_curseforge_modpack_mods(10, 20)
         by_name = {m["name"]: m for m in result["mods"]}
         self.assertEqual(by_name["Create"]["status"], "install")
@@ -120,12 +121,12 @@ class PackContentsTests(unittest.TestCase):
 
     def _cf_with_server_pack(self, listing):
         zf, files, projects = self._cf_fixture()
-        with mock.patch.object(mi, "_download_curseforge_pack_zip", return_value=(zf, {"server_pack_file_id": 99})), \
-                mock.patch.object(mi, "_resolve_curseforge_file_urls", return_value=files), \
-                mock.patch.object(mi, "_resolve_curseforge_projects", return_value=projects), \
-                mock.patch.object(mi, "_resolve_curseforge_server_pack",
+        with mock.patch.object(cf, "_download_curseforge_pack_zip", return_value=(zf, {"server_pack_file_id": 99})), \
+                mock.patch.object(cf, "_resolve_curseforge_file_urls", return_value=files), \
+                mock.patch.object(cf, "_resolve_curseforge_projects", return_value=projects), \
+                mock.patch.object(cf, "_resolve_curseforge_server_pack",
                                   return_value={"download_url": "https://x/server.zip", "filename": "server.zip"}), \
-                mock.patch.object(mi, "_list_remote_zip", return_value=listing):
+                mock.patch.object(cf, "_list_remote_zip", return_value=listing):
             return mi.get_curseforge_modpack_mods(10, 20)
 
     def test_curseforge_server_pack_listing_is_used(self):
@@ -167,7 +168,7 @@ class RemoteZipListingTests(unittest.TestCase):
                 start, end = (int(x) for x in spec.split("-"))
                 chunk = data[start:end + 1]
             return chunk, len(data)
-        return mock.patch.object(mi, "_http_get_range", side_effect=fake_range)
+        return mock.patch.object(cf, "_http_get_range", side_effect=fake_range)
 
     def _zip_bytes(self, files: dict) -> bytes:
         buf = io.BytesIO()
@@ -179,14 +180,14 @@ class RemoteZipListingTests(unittest.TestCase):
     def test_lists_entries_with_sizes(self):
         data = self._zip_bytes({"mods/a.jar": b"x" * 10, "mods/ñandú.jar": b"yy", "config/b.toml": b""})
         with self._serve(data):
-            entries = mi._list_remote_zip("https://x/server.zip")
+            entries = cf._list_remote_zip("https://x/server.zip")
         self.assertEqual(entries, [("mods/a.jar", 10), ("mods/ñandú.jar", 2), ("config/b.toml", 0)])
 
     def test_large_directory_needs_a_second_request(self):
         files = {f"mods/mod-{i:05d}-con-un-nombre-bastante-largo.jar": b"" for i in range(2000)}
         data = self._zip_bytes(files)
         with self._serve(data) as fake:
-            entries = mi._list_remote_zip("https://x/server.zip")
+            entries = cf._list_remote_zip("https://x/server.zip")
         self.assertEqual(len(entries), 2000)
         self.assertEqual(fake.call_count, 2)
 
@@ -198,12 +199,12 @@ class RemoteZipListingTests(unittest.TestCase):
         eocd = data.rfind(b"PK\x05\x06")
         data[eocd + 12:eocd + 20] = b"\xff" * 8
         with self._serve(bytes(data)):
-            entries = mi._list_remote_zip("https://x/server.zip")
+            entries = cf._list_remote_zip("https://x/server.zip")
         self.assertEqual(len(entries), 70000)
 
     def test_no_range_support_returns_none(self):
         with self._serve(b"", ranges=False):
-            self.assertIsNone(mi._list_remote_zip("https://x/server.zip"))
+            self.assertIsNone(cf._list_remote_zip("https://x/server.zip"))
 
 
 if __name__ == "__main__":

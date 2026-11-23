@@ -278,9 +278,9 @@ function rejectedFlaggedLabels(items) {
 
 var BULK_CATEGORIES = [
   {
-    key: 'added', icon: 'circle-check', tone: 'green', modalTitle: t('Mods agregados'), modalType: 'list',
-    many: function(n) { return t('{n} mods agregados', { n: n }); },
-    fewPrefix: t('Se han agregado los mods: ')
+    key: 'added', icon: 'circle-check', tone: 'green', modalTitle: t('Mods añadidos'), modalType: 'list',
+    many: function(n) { return t('{n} mods añadidos', { n: n }); },
+    fewPrefix: t('Se han añadido los mods: ')
   },
   {
     key: 'already_installed', icon: 'info', tone: 'muted', modalTitle: t('Mods ya instalados'), modalType: 'list',
@@ -306,7 +306,7 @@ var BULK_CATEGORIES = [
   {
     key: 'errors', icon: 'circle-x', tone: 'red', modalTitle: t('Mods con error'), modalType: 'list',
     many: function(n) { return t('{n} mods con error', { n: n }); },
-    fewPrefix: t('No se pudieron agregar los mods: ')
+    fewPrefix: t('No se pudieron añadir los mods: ')
   }
 ];
 
@@ -502,7 +502,7 @@ function renderModModalPagination(containerId, page, totalPages, onChange) {
 }
 
 
-// -- Modal: lista simple de mods (agregados / ya instalados / con error) ------
+// -- Modal: lista simple de mods (añadidos / ya instalados / con error) ------
 
 function openModListModal(title, icon, items) {
   document.getElementById('mod-list-modal-title').textContent = title;

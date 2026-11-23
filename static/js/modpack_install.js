@@ -361,7 +361,7 @@ document.getElementById('dl-server-name').addEventListener('input', updateDlServ
 // -- Aviso de posible instalación duplicada ------------------------------------
 // Compara la lista de mods de la versión elegida contra los servidores ya
 // existentes (misma versión de MC) SIN descargar nada pesado — ver
-// find_similar_installed_modpacks() en services/modpack_install.py. Mientras
+// find_similar_installed_modpacks() en services/pack_install_duplicates.py. Mientras
 // se comprueba, el botón de instalar queda bloqueado (para que no dé tiempo a
 // pulsarlo antes de saber el resultado); si encuentra coincidencia, el botón
 // se marca con un aviso pero sigue permitiendo instalar igualmente (puede haber más
