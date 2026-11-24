@@ -6,6 +6,9 @@ documentación de la API. Cada commit sube la versión (2.A.B, cada cifra de 0
 a 9: después de 2.0.9 va 2.1.0) y se etiqueta con `git tag v<versión>`.
 
 Historial resumido:
+- 3.1.6 (2026-11-24): por dentro: las pruebas automáticas se ejecutan en
+  GitHub cada vez que se publica un cambio (con Python 3.10 y 3.14), sin
+  cambios para ti.
 - 3.1.5 (2026-11-23): más pruebas automáticas: lectura de mods (Fabric,
   NeoForge, Quilt), versiones compatibles, duplicados, análisis de caídas,
   lectura de la consola y que ninguna ruta del panel pueda salirse de la
@@ -175,4 +178,4 @@ Historial resumido:
   otros usuarios.
 - 1.x: todo lo anterior (sin numerar).
 """
-APP_VERSION = "3.1.5"
+APP_VERSION = "3.1.6"

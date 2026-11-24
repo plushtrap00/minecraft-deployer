@@ -1,0 +1,45 @@
+# Pruebas automáticas en cada push a main y en cada pull request.
+# 3.10 es la versión mínima que admite el panel (ver requirements.txt) y 3.14
+# la del servidor Ubuntu donde corre de verdad.
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unittest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.14"]
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Compilar todo
+        run: python -m compileall -q -x '(^|/)\.' .
+
+      - name: Tests
+        env:
+          PYTHONIOENCODING: utf-8
+        run: python -m unittest discover -s tests -t . -v
