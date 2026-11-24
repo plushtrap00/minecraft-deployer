@@ -38,6 +38,7 @@ function setHeroState(state, statusText, name) {
   document.getElementById('stop-btn').style.display = stoppable ? '' : 'none';
   document.getElementById('hero-client-pack-btn').style.display = state === 'stopped' ? 'none' : '';
   renderHeroIcon(state === 'stopped' ? null : name);
+  refreshServerPregen(state === 'stopped' ? null : name);
   if (state !== 'starting') {
     document.getElementById('startup-progress').hidden = true;
   }

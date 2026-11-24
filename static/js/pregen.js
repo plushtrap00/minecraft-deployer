@@ -109,13 +109,14 @@ function pregenStatusText(state, data) {
     : t('Esperando a que arranque el servidor: seguirá sola entonces.');
 }
 
-function pregenProgressHtml(data) {
+// Estado, barra y datos de una pregeneración en marcha: en la ventana y en la
+// tarjeta de la página Servidor.
+function pregenSummaryHtml(data) {
   var state = data.state;
   var progress = state.progress || {};
-  var html = '<div class="pregen-progress">'
-    + '<div class="pregen-progress-head"><strong>' + escHtml(pregenStatusText(state, data)) + '</strong>'
+  var html = '<div class="pregen-progress-head"><strong>' + escHtml(pregenStatusText(state, data)) + '</strong>'
     + (typeof progress.percent === 'number' && state.current ? '<span>' + escHtml(progress.percent.toFixed(1)) + ' %</span>' : '') + '</div>'
-    + '<div class="progress-wrap"><div class="progress-fill" id="pregen-fill"></div></div>';
+    + '<div class="progress-wrap"><div class="progress-fill"></div></div>';
   var facts = [];
   if (progress.chunks) {
     facts.push(t('{n} chunks', { n: progress.chunks.toLocaleString() }));
@@ -138,6 +139,18 @@ function pregenProgressHtml(data) {
   if (state.only_when_empty) {
     html += '<div class="pregen-facts">' + escHtml(t('Solo con el servidor vacío: se pausa cuando entra alguien.')) + '</div>';
   }
+  return html;
+}
+
+function setPregenFill(container, state) {
+  var fill = container.querySelector('.progress-fill');
+  if (fill) {
+    setFill(fill, (state.progress || {}).percent || 0);
+  }
+}
+
+function pregenProgressHtml(data) {
+  var html = '<div class="pregen-progress">' + pregenSummaryHtml(data);
   html += '<div class="button-row"><button type="button" class="btn-danger btn-sm" id="pregen-stop">' + icon('x') + escHtml(t('Cancelar pregeneración')) + '</button></div>'
     + '</div>';
   return html;
@@ -198,10 +211,7 @@ function renderPregen() {
     html += pregenFormHtml(data);
   }
   document.getElementById('pregen-body').innerHTML = html;
-  var fill = document.getElementById('pregen-fill');
-  if (fill) {
-    setFill(fill, (data.state.progress || {}).percent || 0);
-  }
+  setPregenFill(document.getElementById('pregen-body'), data.state);
   var footer = '';
   if (data.chunky.filename && data.chunky.by_panel && !pregenActive(data.state)) {
     footer = '<button type="button" class="btn-ghost btn-sm" id="pregen-uninstall">' + icon('trash-2') + escHtml(t('Quitar Chunky')) + '</button>';
@@ -303,7 +313,70 @@ function closePregen() {
   clearTimeout(pregen.poll);
   clearTimeout(pregen.estimateTimer);
   document.getElementById('pregen-modal').classList.remove('show');
+  refreshServerPregen(serverPregen.modpack, true);
 }
+
+// -- Tarjeta en la página Servidor ------------------------------------------------
+// Con un servidor encendido que tenga Chunky, su pregeneración se ve sin salir
+// de la consola. Sin Chunky no aparece: instalarlo es cosa de la ventana.
+var serverPregen = { modpack: null, timer: null };
+
+function refreshServerPregen(modpack, force) {
+  modpack = modpack || null;
+  if (modpack === serverPregen.modpack && serverPregen.timer && !force) {
+    return;  // ya se está siguiendo
+  }
+  clearTimeout(serverPregen.timer);
+  serverPregen.timer = null;
+  serverPregen.modpack = modpack;
+  var card = document.getElementById('server-pregen-card');
+  if (!modpack) {
+    card.style.display = 'none';
+    return;
+  }
+  var again = function(ms) {
+    serverPregen.timer = setTimeout(function() { refreshServerPregen(modpack, true); }, ms);
+  };
+  if (currentPage !== 'server' || document.hidden) {
+    again(20000);
+    return;
+  }
+  apiJson('/api/modpacks/' + encodeURIComponent(modpack) + '/pregen').then(function(result) {
+    if (serverPregen.modpack !== modpack) {
+      return;
+    }
+    var data = result.data;
+    if (!result.ok || !data.chunky || !data.chunky.filename) {
+      card.style.display = 'none';
+    } else {
+      card.style.display = '';
+      renderServerPregenCard(data);
+    }
+    again(result.ok && pregenActive(data.state) ? 5000 : 20000);
+  });
+}
+
+function renderServerPregenCard(data) {
+  var body = document.getElementById('server-pregen-body');
+  var active = pregenActive(data.state);
+  var html;
+  if (active) {
+    html = '<div class="pregen-progress">' + pregenSummaryHtml(data) + '</div>';
+  } else {
+    html = data.needs_restart
+      ? noticeHtml('warn', escHtml(t('Chunky está instalado, pero el servidor ya estaba encendido: no funcionará hasta que lo reinicies. Puedes dejar la pregeneración preparada y empezará sola después del reinicio.')))
+      : (pregenLastHtml(data.state) || '<p class="text-muted">' + escHtml(t('No hay ninguna pregeneración en marcha.')) + '</p>');
+  }
+  body.innerHTML = html;
+  setPregenFill(body, data.state);
+  document.getElementById('server-pregen-open-label').textContent = active ? t('Ver detalles') : t('Pregenerar');
+}
+
+document.getElementById('server-pregen-open').addEventListener('click', function() {
+  if (serverPregen.modpack) {
+    openPregen(serverPregen.modpack);
+  }
+});
 
 document.getElementById('pregen-modal').addEventListener('click', function(event) {
   if (event.target === this) {

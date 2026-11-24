@@ -6,6 +6,10 @@ documentación de la API. Cada commit sube la versión (2.A.B, cada cifra de 0
 a 9: después de 2.0.9 va 2.1.0) y se etiqueta con `git tag v<versión>`.
 
 Historial resumido:
+- 3.2.6 (2026-11-24): la pregeneración se ve también en la página Servidor:
+  con el servidor encendido y Chunky instalado aparece una tarjeta con el
+  progreso (porcentaje, chunks, velocidad y tiempo restante) que se actualiza
+  sola, sin cambiar de pestaña. Sin Chunky no aparece.
 - 3.2.5 (2026-11-24): arreglo de la pregeneración. Si instalas Chunky con el
   servidor encendido, el panel avisa de que no funcionará hasta reiniciarlo y
   la tarea espera a ese reinicio, en vez de mandar a la consola comandos que
@@ -223,4 +227,4 @@ Historial resumido:
   otros usuarios.
 - 1.x: todo lo anterior (sin numerar).
 """
-APP_VERSION = "3.2.5"
+APP_VERSION = "3.2.6"

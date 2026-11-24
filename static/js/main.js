@@ -279,6 +279,9 @@ document.querySelectorAll('.nav-aside button').forEach(function(button) {
 });
 
 function loadServerPageData() {
+  // Al volver a la página, la tarjeta de pregeneración se pide de nuevo.
+  clearTimeout(serverPregen.timer);
+  serverPregen.timer = null;
   loadMcDomain();
   checkServerStatus();
   loadFirewallStatus();

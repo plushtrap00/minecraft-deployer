@@ -59,6 +59,15 @@
     </div>
   </section>
 
+  <!-- Pregeneración del servidor encendido: solo si tiene Chunky (pregen.js) -->
+  <div class="card" id="server-pregen-card" style="display:none">
+    <div class="card-head">
+      <h2>Pregeneración</h2>
+      <button type="button" class="btn-secondary btn-sm" id="server-pregen-open"><svg class="icon" aria-hidden="true"><use href="#i-map"/></svg><span id="server-pregen-open-label">Pregenerar</span></button>
+    </div>
+    <div id="server-pregen-body"></div>
+  </div>
+
   <div class="card" id="server-picker" style="display:none">
     <div class="card-head">
       <h2>Elige qué servidor arrancar</h2>
