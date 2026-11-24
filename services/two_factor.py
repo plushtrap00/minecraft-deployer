@@ -32,7 +32,7 @@ from config import DEFAULT_SERVERS_PATH
 from services.secure_files import atomic_write_text
 
 STORE_FILE = DEFAULT_SERVERS_PATH / ".global" / "two_factor.json"
-ISSUER = "MC Deployer"
+ISSUER = "Server Deployer"
 PERIOD = 30
 DIGITS = 6
 # Se acepta el código del intervalo anterior y del siguiente (relojes un

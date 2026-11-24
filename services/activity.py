@@ -32,6 +32,7 @@ SYSTEM_USER = ""  # acciones automáticas (sin persona detrás)
 ACTIONS = {
     # Servidor
     "server.start": ("server", "Encendió {modpack}"),
+    "server.eula": ("server", "Aceptó la EULA de Minecraft para {modpack}"),
     "server.stop": ("server", "Paró {modpack}"),
     "server.restart": ("server", "Reinició {modpack}"),
     "server.command": ("server", "Mandó un comando a la consola"),
@@ -118,6 +119,7 @@ CATEGORIES = ("server", "players", "mods", "files", "install", "backups", "autom
 # (método, ruta) → acción. {x} es un trozo de la ruta que pasa a los parámetros.
 ROUTES = [
     ("POST", "/api/server/start", "server.start"),
+    ("POST", "/api/server/eula", "server.eula"),
     ("POST", "/api/server/stop", "server.stop"),
     ("POST", "/api/server/restart", "server.restart"),
     ("POST", "/api/server/command", "server.command"),

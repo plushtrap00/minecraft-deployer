@@ -278,7 +278,7 @@ async def test_notifications(request: Request, body: NotificationsBody):
     if not notify.is_configured(values):
         raise HTTPException(status_code=400, detail="Configura Telegram o Discord antes de probar")
     results = await asyncio.to_thread(
-        notify.send_now, values, "🧪 Mensaje de prueba de MC Deployer: los avisos funcionan."
+        notify.send_now, values, "🧪 Mensaje de prueba de Server Deployer: los avisos funcionan."
     )
     return JSONResponse({"results": results, "ok": all(r == "ok" for r in results.values())})
 

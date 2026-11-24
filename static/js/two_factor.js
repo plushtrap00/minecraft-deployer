@@ -130,7 +130,7 @@ function showRecoveryCodes(codes) {
 }
 
 function tfaCodesText() {
-  return t('Códigos de recuperación de MC Deployer ({user}). Cada uno sirve una sola vez.', { user: currentUser })
+  return t('Códigos de recuperación de Server Deployer ({user}). Cada uno sirve una sola vez.', { user: currentUser })
     + '\n\n' + tfaRecoveryCodes.join('\n') + '\n';
 }
 

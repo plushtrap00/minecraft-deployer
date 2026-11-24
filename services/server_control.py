@@ -26,7 +26,7 @@ from services import process as proc_module
 from services.metrics import mc_metrics, read_proc_ram, _parse_metrics_line
 from services.modpack import ensure_rcon_enabled, detect_modpack_version, prune_old_logs_and_crashes
 from services.pending_mods import get_pending_mods
-from services import sessions
+from services import eula, sessions
 from services.notify import notify
 from services.rcon import RconConnection, RconError
 from routes.deps import modpack_path
@@ -34,6 +34,10 @@ from routes.deps import modpack_path
 # Una sola operación de arrancar/parar/reiniciar a la vez (botón del panel,
 # tarea programada y reinicio tras caída podrían coincidir).
 _control_lock = threading.RLock()
+
+
+class EulaRequiredError(Exception):
+    """El servidor no tiene la EULA de Minecraft aceptada: una persona tiene que aceptarla."""
 
 
 class PendingModsError(Exception):
@@ -87,6 +91,11 @@ def start_server(modpack: str, force: bool = False, keep_output: bool = False) -
             raise HTTPException(status_code=400, detail="Ya hay un servidor en marcha")
 
         server_dir = modpack_path(modpack)
+
+        # La EULA la acepta una persona desde el panel (services/eula.py),
+        # nunca el panel por su cuenta: ni con force se arranca sin ella.
+        if not eula.accepted(server_dir):
+            raise EulaRequiredError()
 
         # Modpacks de CurseForge instalados con algún mod bloqueado por el autor
         # para descarga por terceros avisan antes de arrancar, pero se puede
@@ -376,15 +385,14 @@ def on_line(modpack: str, line: str) -> None:
         notify("leave", f"🚪 {name} ha salido de {modpack}.")
 
 
-def on_exit(modpack: str, crashed: bool, eula_accepted: bool, was_ready: bool, uptime_seconds: float) -> None:
+def on_exit(modpack: str, crashed: bool, eula_missing: bool, was_ready: bool, uptime_seconds: float) -> None:
     """El proceso de Minecraft ha terminado (llamado desde el hilo lector)."""
     if not modpack:
         return
     sessions.server_stopped(modpack)
-    if eula_accepted:
-        # Primer arranque: Minecraft se cierra tras crear eula.txt. Ya está
-        # aceptada, así que se vuelve a arrancar sin contarlo como caída.
-        _restart_later(modpack, 2, "EULA aceptada: arrancando de nuevo…")
+    if eula_missing:
+        # Minecraft se ha negado a arrancar por la EULA (no debería pasar: se
+        # comprueba antes de arrancar). No es una caída ni se reintenta.
         return
     if not crashed:
         notify("stopped", f"⏹️ {modpack} se ha parado.")

@@ -44,7 +44,7 @@ class TotpTests(unittest.TestCase):
 
     def test_uri(self):
         uri = two_factor.otpauth_uri("ana", "ABC")
-        self.assertEqual(uri, "otpauth://totp/MC%20Deployer%3Aana?secret=ABC&issuer=MC%20Deployer")
+        self.assertEqual(uri, "otpauth://totp/Server%20Deployer%3Aana?secret=ABC&issuer=Server%20Deployer")
 
 
 class QrTests(unittest.TestCase):

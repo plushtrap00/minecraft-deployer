@@ -1,5 +1,5 @@
 """
-main.py - Punto de entrada de Minecraft Server Deployer.
+main.py - Punto de entrada de Server Deployer for Minecraft.
 
 Crea la app FastAPI, registra todos los routers, y en __main__
 ejecuta las tareas de limpieza antes de arrancar uvicorn.
@@ -166,7 +166,7 @@ async def lifespan(app: FastAPI):
     notify_app_shutdown()
 
 
-app = FastAPI(title="Minecraft Server Deployer", version=APP_VERSION, lifespan=lifespan)
+app = FastAPI(title="Server Deployer for Minecraft", version=APP_VERSION, lifespan=lifespan)
 # Orden: Auth (fuera) → gzip → traducción de mensajes (dentro, sin comprimir).
 app.add_middleware(MessageTranslationMiddleware)
 app.add_middleware(GZipMiddleware, minimum_size=500)
@@ -206,7 +206,7 @@ if __name__ == "__main__":
     import uvicorn
     from config import DEFAULT_SERVERS_PATH, WEB_PORT
 
-    print("Minecraft Server Deployer arrancando...")
+    print("Server Deployer for Minecraft arrancando...")
 
     run_startup_cleanup(WEB_PORT)
 

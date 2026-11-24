@@ -369,22 +369,25 @@ class CrashRestartTest(unittest.TestCase):
         with mock.patch.object(automation, "load", return_value=self._settings()), \
                 mock.patch.object(server_control, "_restart_later") as later:
             for _ in range(3):
-                server_control.on_exit("pack", crashed=True, eula_accepted=False, was_ready=True, uptime_seconds=600)
+                server_control.on_exit("pack", crashed=True, eula_missing=False, was_ready=True, uptime_seconds=600)
         self.assertEqual(later.call_count, 2)
         self.assertIn("no lo vuelvo a arrancar", self.notify.call_args[0][1])
 
     def test_normal_stop_and_eula(self):
         with mock.patch.object(server_control, "_restart_later") as later:
-            server_control.on_exit("pack", crashed=False, eula_accepted=False, was_ready=True, uptime_seconds=5)
+            server_control.on_exit("pack", crashed=False, eula_missing=False, was_ready=True, uptime_seconds=5)
             self.assertEqual(self.notify.call_args[0][0], "stopped")
             later.assert_not_called()
-            server_control.on_exit("pack", crashed=False, eula_accepted=True, was_ready=False, uptime_seconds=5)
-            later.assert_called_once()
+            # Minecraft se niega a arrancar sin EULA: ni caída, ni reintento, ni aviso de parada.
+            self.notify.reset_mock()
+            server_control.on_exit("pack", crashed=False, eula_missing=True, was_ready=False, uptime_seconds=5)
+            later.assert_not_called()
+            self.notify.assert_not_called()
 
     def test_disabled_does_not_restart(self):
         with mock.patch.object(automation, "load", return_value=self._settings(enabled=False)), \
                 mock.patch.object(server_control, "_restart_later") as later:
-            server_control.on_exit("pack", crashed=True, eula_accepted=False, was_ready=False, uptime_seconds=5)
+            server_control.on_exit("pack", crashed=True, eula_missing=False, was_ready=False, uptime_seconds=5)
         later.assert_not_called()
         self.assertEqual(self.notify.call_args[0][0], "crash")
 

@@ -22,6 +22,7 @@ from pathlib import Path
 
 from config import DEFAULT_SERVERS_PATH, TEMP_DIR
 from app_constants import HTTP_TIMEOUT_SECONDS
+from services.mod_search import _USER_AGENT
 from services.modpack import _version_cache
 from services.mod_metadata import read_mod_metadata, mod_display_name, mc_version_compatible
 
@@ -54,7 +55,7 @@ def loader_key_from_display(modloader: str | None) -> str | None:
 
 
 def _http_get(url: str) -> bytes:
-    req = urllib.request.Request(url, headers={"User-Agent": "minecraft-deployer"})
+    req = urllib.request.Request(url, headers={"User-Agent": _USER_AGENT})
     with urllib.request.urlopen(req, timeout=_HTTP_TIMEOUT) as resp:
         return resp.read()
 

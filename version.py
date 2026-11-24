@@ -6,6 +6,12 @@ documentación de la API. Cada commit sube la versión (2.A.B, cada cifra de 0
 a 9: después de 2.0.9 va 2.1.0) y se etiqueta con `git tag v<versión>`.
 
 Historial resumido:
+- 3.1.9 (2026-11-24): la app pasa a llamarse «Server Deployer for Minecraft».
+  La EULA de Minecraft ya no se acepta sola: la primera vez que inicias cada
+  servidor el panel te la enseña y la aceptas tú (queda en Actividad). El
+  .mrpack del paquete para jugadores ya no mete los mods cuyo autor no
+  permite repartirlos fuera de CurseForge. Nueva sección «Aviso legal» en la
+  Ayuda.
 - 3.1.8 (2026-11-24): «Paquete para jugadores» (en la cabecera del modpack y
   en la de Servidor mientras está encendido): el modpack del servidor listo
   para instalarlo en tu ordenador con los mismos mods y versiones, en formato
@@ -187,4 +193,4 @@ Historial resumido:
   otros usuarios.
 - 1.x: todo lo anterior (sin numerar).
 """
-APP_VERSION = "3.1.8"
+APP_VERSION = "3.1.9"

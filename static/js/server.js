@@ -521,6 +521,29 @@ function offerForceStart(modpack, message) {
   );
 }
 
+// La EULA de Minecraft la acepta una persona, nunca el panel por su cuenta
+// (services/eula.py): si el servidor no la tiene, se enseña y se pide aceptarla.
+function offerEula(modpack, force, url) {
+  applyServerState(false, null);
+  showConfirm(
+    t('EULA de Minecraft'),
+    t('Para arrancar un servidor de Minecraft hay que aceptar su EULA (el acuerdo de licencia de Mojang). Léela antes: al aceptarla, la aceptas tú como responsable de este servidor.'),
+    function() {
+      var form = new FormData();
+      form.append('modpack', modpack);
+      apiJson('/api/server/eula', { method: 'POST', body: form }).then(function(result) {
+        if (result.ok) {
+          _launchServer(modpack, force);
+        } else {
+          showToast(result.data.detail || t('No se pudo aceptar la EULA'), 'error');
+        }
+      });
+    },
+    { icon: '📜', confirmLabel: t('La he leído y la acepto'), cancelLabel: t('Cancelar'), tone: 'accent',
+      link: { href: url, label: t('Leer la EULA de Minecraft') } }
+  );
+}
+
 function _launchServer(modpack, force) {
   setHeroState('starting', t('Arrancando…'), modpack);
 
@@ -541,7 +564,9 @@ function _launchServer(modpack, force) {
         applyServerState(true, modpack);
       } else {
         applyServerState(false, null);
-        if (result.data.pending_mods && result.data.pending_mods.length) {
+        if (result.data.eula_required) {
+          offerEula(modpack, force, result.data.eula_url);
+        } else if (result.data.pending_mods && result.data.pending_mods.length) {
           offerForceStart(modpack, result.data.detail);
         } else {
           showToast(result.data.detail || t('No se pudo iniciar el servidor'), 'error');

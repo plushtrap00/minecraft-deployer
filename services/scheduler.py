@@ -122,6 +122,8 @@ def run_task_in_background(task: dict) -> None:
             _task_status[task["id"]] = {"at": datetime.now().isoformat(timespec="seconds"), "ok": True, "message": message}
             notify("task", f"⏰ Tarea programada ({describe_task(task)}): {message}.")
             activity.record("automation.task", detail=f"{describe_task(task)}: {message}")
+        except server_control.EulaRequiredError:
+            _fail(task, "falta aceptar la EULA de Minecraft (se acepta al iniciarlo desde el panel)")
         except server_control.PendingModsError as e:
             _fail(task, "faltan mods por instalar: " + ", ".join(e.pending))
         except HTTPException as e:

@@ -100,6 +100,9 @@ function clientPackSummary(file) {
   if (file.manual && file.manual.length) {
     html += noticeHtml('warn', escHtml(t('No se han podido meter y hay que instalarlos a mano: {names}.', { names: clientPackNames(file.manual) })));
   }
+  if (file.restricted && file.restricted.length) {
+    html += noticeHtml('warn', escHtml(t('Sus autores no permiten repartirlos fuera de CurseForge, así que no van dentro: cada jugador tiene que descargarlos de CurseForge ({names}). El .zip de CurseForge no tiene este problema.', { names: clientPackNames(file.restricted) })));
+  }
   if (file.original_error) {
     html += noticeHtml('warn', escHtml(t('No se ha podido usar el modpack original ({error}): el paquete lleva solo los mods del servidor.', { error: t(file.original_error) })));
   }
@@ -164,6 +167,9 @@ function renderClientPack() {
     + '<li>' + escHtml(t('Modrinth App: arrastra el .mrpack a la ventana (o + → Importar desde archivo).')) + '</li>'
     + '<li>' + escHtml(t('Prism Launcher: Añadir instancia → Importar → elige cualquiera de los dos.')) + '</li>'
     + '</ul></details>';
+  // Los mods que van dentro tienen cada uno su licencia: pasárselo a tus
+  // jugadores es lo normal, publicarlo en internet puede no estar permitido.
+  html += '<p class="client-pack-legal">' + escHtml(t('El paquete es para tus jugadores. No lo publiques en internet: lleva mods de otros autores, cada uno con su licencia.')) + '</p>';
   document.getElementById('client-pack-body').innerHTML = html;
 }
 

@@ -1172,6 +1172,9 @@ code {
 .dialog-footer .btn-tone-accent { background: var(--accent); color: var(--on-accent); }
 .dialog-footer .btn-tone-yellow { background: var(--yellow); color: var(--on-yellow); }
 
+/* Enlace bajo el texto del diálogo (showConfirm(..., { link })). */
+#dialog-msg .dialog-link { display: inline-block; margin-top: 10px; color: var(--accent); font-weight: 600; }
+
 /* Avisos: se apilan (el más reciente abajo) en vez de pisarse unos a otros.
    Van por encima de los modales (1000) para que se vea, por ejemplo, el
    «Archivo guardado» del editor, pero por debajo del login y del overlay

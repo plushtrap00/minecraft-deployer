@@ -1,5 +1,5 @@
 """
-setup.py - Instalador interactivo de Minecraft Server Deployer.
+setup.py - Instalador interactivo de Server Deployer for Minecraft.
 
 Configura idioma, credenciales, puertos y ruta de servidores,
 y genera .env y docker-compose.yml listos para usar.
@@ -364,7 +364,7 @@ def generate_compose(
 def main():
     global LANG
     print("\n╔══════════════════════════════════════════════════╗")
-    print("║     Minecraft Server Deployer — Setup            ║")
+    print("║      Server Deployer for Minecraft — Setup       ║")
     print("╚══════════════════════════════════════════════════╝\n")
 
     existing_env = read_existing_env()

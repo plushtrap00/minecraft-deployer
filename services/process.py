@@ -5,7 +5,7 @@ Contiene:
 - Estado global del proceso (mc_process, locks, buffer de logs)
 - Estado de conexión RCON del proceso activo (mc_rcon_host, mc_rcon_port, mc_rcon_password)
 - _broadcast(): fanout a SSE clients
-- _accept_eula(): aceptar EULA automáticamente
+- Si Minecraft se niega a arrancar por la EULA, se avisa (no se acepta nunca sola)
 - _reader_thread(): lee stdout del proceso y alimenta SSE + métricas
 - _notify_stopped(): notifica a clientes que el servidor paró
 - notify_app_shutdown(): desbloquea las colas SSE para que la app pueda salir rápido
@@ -199,20 +199,6 @@ def _broadcast(line: str):
         mc_sse_clients.difference_update(dead)
 
 
-# ── EULA ───────────────────────────────────────────────────────────────────────
-def _accept_eula(server_dir: Path) -> bool:
-    """Acepta la EULA de Minecraft automáticamente si aún no está aceptada."""
-    eula_file = server_dir / "eula.txt"
-    if not eula_file.exists():
-        return False
-    text = eula_file.read_text(encoding="utf-8")
-    if "eula=true" in text.lower():
-        return False  # ya aceptada
-    new_text = text.replace("eula=false", "eula=true").replace("eula=False", "eula=true")
-    eula_file.write_text(new_text, encoding="utf-8")
-    return True
-
-
 # ── Notify stopped ─────────────────────────────────────────────────────────────
 def _notify_stopped():
     """Limpia el estado global y notifica a los clientes SSE que el servidor paró."""
@@ -307,7 +293,7 @@ def _reader_thread(proc, temp_script: str | None = None):
     Hilo que lee stdout+stderr del proceso MC línea a línea.
     - Alimenta el buffer de logs y los clientes SSE via _broadcast()
     - Parsea líneas para actualizar métricas
-    - Detecta la pantalla de EULA y la acepta automáticamente
+    - Detecta si Minecraft se niega a arrancar por la EULA (no la acepta)
     - Al terminar, elimina el script temporal y notifica a los clientes
     """
     # Import here to avoid circular imports
@@ -331,7 +317,7 @@ def _reader_thread(proc, temp_script: str | None = None):
     from services import metrics as _m
     _m.mc_start_time = datetime.datetime.utcnow()
 
-    eula_handled = False
+    eula_missing = False
     try:
         for raw in proc.stdout:
             line = raw.decode("utf-8", errors="replace").rstrip()
@@ -346,11 +332,10 @@ def _reader_thread(proc, temp_script: str | None = None):
                 server_control.on_line(modpack, line)
             if not saw_stopping and _STOPPING_RE.search(line):
                 saw_stopping = True
-            if not eula_handled and "you need to agree to the eula" in line.lower():
-                eula_handled = True
-                server_dir = DEFAULT_SERVERS_PATH / mc_running_modpack
-                if _accept_eula(server_dir):
-                    _broadcast("\x1b[33m[Deployer] EULA aceptada automáticamente. Reiniciando servidor...\x1b[0m")
+            if not eula_missing and "you need to agree to the eula" in line.lower():
+                # El panel nunca la acepta por su cuenta (ver services/eula.py).
+                eula_missing = True
+                _broadcast("\x1b[33m[Deployer] Falta aceptar la EULA de Minecraft: acéptala al iniciar el servidor desde el panel.\x1b[0m")
     finally:
         proc.wait()
         if temp_script:
@@ -369,8 +354,8 @@ def _reader_thread(proc, temp_script: str | None = None):
         _notify_stopped()
         server_control.on_exit(
             modpack,
-            crashed=not requested and not saw_stopping and not eula_handled,
-            eula_accepted=eula_handled,
+            crashed=not requested and not saw_stopping and not eula_missing,
+            eula_missing=eula_missing,
             was_ready=was_ready,
             uptime_seconds=time.monotonic() - started_at,
         )

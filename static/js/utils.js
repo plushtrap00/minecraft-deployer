@@ -411,7 +411,19 @@ function showConfirm(title, msg, onConfirm, options) {
   var overlay = document.getElementById('dialog-overlay');
   document.getElementById('dialog-icon').innerHTML = emojiIcon(options.icon || '⚠️');
   document.getElementById('dialog-title').textContent = title;
-  document.getElementById('dialog-msg').textContent = msg;
+  var msgBox = document.getElementById('dialog-msg');
+  msgBox.textContent = msg;
+  if (options.link) {
+    // Un enlace bajo el texto (p. ej. la EULA de Minecraft), en otra pestaña.
+    var link = document.createElement('a');
+    link.href = options.link.href;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.className = 'dialog-link';
+    link.textContent = options.link.label;
+    msgBox.appendChild(document.createElement('br'));
+    msgBox.appendChild(link);
+  }
   var btns = document.getElementById('dialog-buttons');
   var tone = options.tone || 'red';
   btns.innerHTML = '<button class="btn-secondary" id="dialog-cancel">' + escHtml(options.cancelLabel || t('Cancelar')) + '</button>'

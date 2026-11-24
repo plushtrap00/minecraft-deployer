@@ -86,7 +86,7 @@ def _post_json(url: str, payload: dict) -> None:
     data = json.dumps(payload).encode("utf-8")
     request = urllib.request.Request(url, data=data, headers={
         "Content-Type": "application/json",
-        "User-Agent": "MinecraftServerDeployer",
+        "User-Agent": "ServerDeployerForMinecraft",
     })
     with urllib.request.urlopen(request, timeout=_TIMEOUT) as response:
         response.read()
@@ -118,7 +118,7 @@ def send_telegram(token: str, chat_id: str, text: str) -> None:
 def send_discord(webhook: str, text: str) -> None:
     if not valid_discord_webhook(webhook):
         raise ValueError("La URL del webhook de Discord no es válida")
-    _post_json(webhook, {"content": text[:1900], "username": "MC Deployer"})
+    _post_json(webhook, {"content": text[:1900], "username": "Server Deployer"})
 
 
 def send_now(settings: dict, text: str) -> dict:
@@ -148,7 +148,7 @@ def detect_telegram_chat(token: str) -> dict:
     if not token:
         raise ValueError("Escribe primero el token del bot")
     url = f"https://api.telegram.org/bot{urllib.parse.quote(token, safe=':')}/getUpdates"
-    request = urllib.request.Request(url, headers={"User-Agent": "MinecraftServerDeployer"})
+    request = urllib.request.Request(url, headers={"User-Agent": "ServerDeployerForMinecraft"})
     try:
         with urllib.request.urlopen(request, timeout=_TIMEOUT) as response:
             body = json.loads(response.read().decode("utf-8"))

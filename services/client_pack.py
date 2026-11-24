@@ -256,7 +256,9 @@ def _plan(modpack: str, fmt: str, say) -> dict:
     jars = _server_jars(modpack)
     all_files = mod_updates._mod_files(server_dir / "mods")
     say("hash", 0, len(jars))
-    need_cf = {p.name for p in jars} if fmt == "curseforge" and CURSEFORGE_API_KEY else set()
+    # CurseForge también hace falta para el .mrpack: de los mods que no están en
+    # Modrinth (y habría que meter dentro), dice si su autor permite repartirlos.
+    need_cf = {p.name for p in jars} if CURSEFORGE_API_KEY else set()
     hashes = mod_updates._hashes(server_dir, jars, need_cf, lambda i, n: say("hash", i, n), prune=False)
 
     say("modrinth", 0, 0)
@@ -264,7 +266,7 @@ def _plan(modpack: str, fmt: str, say) -> dict:
     cf = {}
     if need_cf:
         say("curseforge", 0, 0)
-        cf = _curseforge_lookup(hashes)
+        cf = _curseforge_lookup(hashes if fmt == "curseforge" else {k: v for k, v in hashes.items() if k not in mr})
 
     original = {"files": [], "overrides": {}, "client_mods": set()}
     original_error = None
@@ -320,15 +322,15 @@ def _write_curseforge(plan: dict, out: Path) -> dict:
             "minecraft": {"version": plan["mc"],
                           "modLoaders": [{"id": f"{plan['loader']}-{plan['loader_version']}", "primary": True}]},
             "manifestType": "minecraftModpack", "manifestVersion": 1,
-            "name": plan["title"], "version": plan["version"], "author": "Minecraft Server Deployer",
+            "name": plan["title"], "version": plan["version"], "author": "Server Deployer for Minecraft",
             "files": files, "overrides": "overrides",
         }
         zf.writestr("manifest.json", json.dumps(manifest, indent=2, ensure_ascii=False))
-    return {"linked": len(files) - extras, "bundled": bundled, "extras": extras, "manual": manual}
+    return {"linked": len(files) - extras, "bundled": bundled, "extras": extras, "manual": manual, "restricted": []}
 
 
 def _write_mrpack(plan: dict, out: Path) -> dict:
-    files, bundled, manual = [], [], []
+    files, bundled, manual, restricted = [], [], [], []
     with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as zf:
         for entry in plan["entries"]:
             mr = entry["mr"]
@@ -338,6 +340,9 @@ def _write_mrpack(plan: dict, out: Path) -> dict:
                               "hashes": {"sha1": file["hashes"]["sha1"], "sha512": file["hashes"]["sha512"]},
                               "env": {"client": "required", "server": "required"},
                               "downloads": [file["url"]], "fileSize": file.get("size")})
+            elif entry["cf"] and not entry["cf"]["download_url"]:
+                # Su autor no permite que se reparta fuera de CurseForge: no se mete.
+                restricted.append(entry["filename"])
             else:
                 zf.write(entry["path"], f"overrides/mods/{entry['filename']}", compress_type=zipfile.ZIP_STORED)
                 bundled.append(entry["filename"])
@@ -352,12 +357,13 @@ def _write_mrpack(plan: dict, out: Path) -> dict:
             zf.writestr(f"overrides/{rel}", data)
         index = {
             "formatVersion": 1, "game": "minecraft", "versionId": plan["version"], "name": plan["title"],
-            "summary": "Generado por Minecraft Server Deployer",
+            "summary": "Generado por Server Deployer for Minecraft",
             "files": files,
             "dependencies": {"minecraft": plan["mc"], _MRPACK_LOADER_KEYS[plan["loader"]]: plan["loader_version"]},
         }
         zf.writestr("modrinth.index.json", json.dumps(index, indent=2, ensure_ascii=False))
-    return {"linked": len(files) - extras, "bundled": bundled, "extras": extras, "manual": manual}
+    return {"linked": len(files) - extras, "bundled": bundled, "extras": extras, "manual": manual,
+            "restricted": restricted}
 
 
 def _bundle_download(zf: zipfile.ZipFile, item: dict, manual: list) -> bool:

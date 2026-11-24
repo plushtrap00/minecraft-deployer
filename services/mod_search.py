@@ -20,6 +20,7 @@ import urllib.parse
 from pathlib import Path
 
 from config import CURSEFORGE_API_KEY
+from version import APP_VERSION
 from app_constants import (
     HTTP_TIMEOUT_SECONDS, MOD_DOWNLOAD_TIMEOUT_SECONDS, MOD_SEARCH_CATEGORIES_CACHE_TTL_SECONDS,
     CURSEFORGE_FILES_PAGE_SIZE, CURSEFORGE_FILES_MAX,
@@ -27,7 +28,9 @@ from app_constants import (
 
 _HTTP_TIMEOUT = HTTP_TIMEOUT_SECONDS
 _DOWNLOAD_TIMEOUT = MOD_DOWNLOAD_TIMEOUT_SECONDS
-_USER_AGENT = "minecraft-deployer/1.0 (mod search)"
+# Modrinth pide un User-Agent que identifique la aplicación y cómo contactar:
+# nombre/versión y la página del proyecto (nada de cada instalación).
+_USER_AGENT = f"plushtrap00/minecraft-deployer/{APP_VERSION} (+https://github.com/plushtrap00/minecraft-deployer)"
 _CATEGORIES_CACHE_TTL = MOD_SEARCH_CATEGORIES_CACHE_TTL_SECONDS
 
 MODRINTH_LOADERS = {"forge", "neoforge", "fabric", "quilt"}

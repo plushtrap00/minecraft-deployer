@@ -1203,3 +1203,9 @@
   padding-left: 18px;
   line-height: 1.6;
 }
+
+.client-pack-legal {
+  margin: 12px 0 0;
+  font-size: .8rem;
+  color: var(--muted);
+}

@@ -20,7 +20,7 @@ from services import process as proc_module
 from services.process import mc_process_lock, mc_output_lines, mc_output_lock, mc_sse_clients, mc_sse_lock
 from services import metrics as metrics_module
 from services.metrics import mc_metrics, read_proc_ram
-from services import server_control, history
+from services import eula, server_control, history
 from routes.deps import modpack_path
 
 router = APIRouter(prefix="/api/server", tags=["server"])
@@ -43,6 +43,13 @@ def server_start(request: Request, modpack: str = Form(...), force: str = Form("
     request.state.activity_params = {"modpack": modpack}
     try:
         server_control.start_server(modpack, force=(force == "1"))
+    except server_control.EulaRequiredError:
+        # Una persona tiene que aceptarla (POST /api/modpacks/{modpack}/eula).
+        return JSONResponse(status_code=409, content={
+            "detail": "Para arrancar el servidor hay que aceptar la EULA de Minecraft.",
+            "eula_required": True,
+            "eula_url": eula.EULA_URL,
+        })
     except server_control.PendingModsError as e:
         # Mods bloqueados por su autor para descarga por terceros: se avisa
         # antes de arrancar, pero se puede forzar (force=1).
@@ -54,6 +61,14 @@ def server_start(request: Request, modpack: str = Form(...), force: str = Form("
             "pending_mods": e.pending,
         })
     return JSONResponse({"success": True, "modpack": modpack})
+
+
+@router.post("/eula")
+def server_eula(request: Request, modpack: str = Form(...)):
+    """La persona que usa el panel acepta la EULA de Minecraft para este servidor."""
+    request.state.activity_params = {"modpack": modpack}
+    eula.accept(modpack_path(modpack), getattr(request.state, "user", None))
+    return JSONResponse({"success": True})
 
 
 @router.post("/stop")

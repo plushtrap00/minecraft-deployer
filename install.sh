@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ══════════════════════════════════════════════════════════════════════════════
-#  Minecraft Server Deployer — Instalador / Installer
+#  Server Deployer for Minecraft — Instalador / Installer
 #  Uso / Usage: bash install.sh
 # ══════════════════════════════════════════════════════════════════════════════
 set -euo pipefail
@@ -30,7 +30,7 @@ clear
 echo -e "${BOLD}${CYAN}"
 cat <<'BANNER'
   ╔═══════════════════════════════════════════════════╗
-  ║       Minecraft Server Deployer — Installer       ║
+  ║     Server Deployer for Minecraft — Installer     ║
   ╚═══════════════════════════════════════════════════╝
 BANNER
 echo -e "${NC}"
@@ -129,7 +129,7 @@ if [[ -f "$SAVED_MODE_FILE" ]]; then
     INSTALL_MODE=$(cat "$SAVED_MODE_FILE")
     ok "$(L "Modo anterior detectado:" "Previous mode detected:") $( [[ "$INSTALL_MODE" == "1" ]] && L "Contenedor" "Container" || L "Nativo" "Native" )"
 else
-    echo "  $(L "¿Cómo quieres instalar Minecraft Server Deployer?" "How do you want to install Minecraft Server Deployer?")"
+    echo "  $(L "¿Cómo quieres instalar Server Deployer for Minecraft?" "How do you want to install Server Deployer for Minecraft?")"
     echo ""
     echo "    1) $(L "Contenedor  — estás dentro de un contenedor Docker" "Container   — you're inside a Docker container")"
     echo "    2) $(L "Nativo      — directo en el sistema con systemd" "Native      — straight on the system with systemd")"
@@ -535,7 +535,7 @@ else
     SERVICE_FILE="/etc/systemd/system/minecraft-deployer.service"
     $SUDO tee "$SERVICE_FILE" > /dev/null <<EOF
 [Unit]
-Description=Minecraft Server Deployer
+Description=Server Deployer for Minecraft
 After=network.target
 
 [Service]

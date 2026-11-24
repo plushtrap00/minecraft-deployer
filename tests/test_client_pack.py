@@ -58,7 +58,8 @@ class ClientPackTests(unittest.TestCase):
         if "/fingerprints/" in url:
             fp = {mod_updates.curseforge_fingerprint(b"jei"): (238222, 1),
                   mod_updates.curseforge_fingerprint(b"solo cf"): (555, 2)}
-            matches = [{"id": pid, "file": {"id": fid, "fileFingerprint": f, "downloadUrl": "https://edge.forgecdn.net/x"}}
+            url = None if getattr(self, "restricted", False) else "https://edge.forgecdn.net/x"
+            matches = [{"id": pid, "file": {"id": fid, "fileFingerprint": f, "downloadUrl": url}}
                        for f, (pid, fid) in fp.items() if f in body["fingerprints"]]
             return {"data": {"exactMatches": matches}}
         raise AssertionError(url)
@@ -86,6 +87,16 @@ class ClientPackTests(unittest.TestCase):
         self.assertEqual(index["files"][0]["hashes"]["sha512"], hashlib.sha512(b"jei").hexdigest())
         self.assertIn("overrides/mods/propio.jar", names)
         self.assertNotIn("overrides/mods/viejo.jar", names)
+
+    def test_mrpack_respects_authors_that_forbid_redistribution(self):
+        # CurseForge da downloadUrl null cuando el autor no permite descargas por terceros:
+        # ese jar no se mete en el .mrpack (cada jugador lo baja de CurseForge).
+        self.restricted = True
+        meta = self.build("mrpack")
+        self.assertEqual(meta["restricted"], ["solo-cf.jar"])
+        self.assertEqual(meta["bundled"], ["propio.jar"])
+        with zipfile.ZipFile(self.server / ".client-pack" / "pack.mrpack") as zf:
+            self.assertNotIn("overrides/mods/solo-cf.jar", zf.namelist())
 
     def test_curseforge_zip(self):
         meta = self.build("curseforge")
