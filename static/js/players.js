@@ -68,7 +68,7 @@ function renderPlayerList(containerId, players, type, extraFn) {
     return '<div class="player-tile' + freshClass(type, name) + '">' + headHtml(player.name, player.uuid, 'lg')
       + '<div class="player-tile-info"><div class="pe-name">' + escHtml(name) + '</div>'
       + (extraFn ? extraFn(player) : '') + '</div>'
-      + '<button class="btn-ghost btn-xs player-remove-btn" data-type="' + type + '" data-name="' + escHtml(name) + '"'
+      + '<button type="button" class="btn-ghost btn-xs player-remove-btn" data-type="' + type + '" data-name="' + escHtml(name) + '"'
       + ' aria-label="' + escHtml(removeLabel + ': ' + name) + '">' + removeLabel + '</button>'
       + '</div>';
   }).join('') + '</div>';
@@ -89,7 +89,7 @@ function renderBanList(containerId, bans, type) {
       + '<div class="player-tile-info"><div class="pe-name">' + escHtml(name) + '</div>'
       + (ban.reason ? '<div class="pe-meta" title="' + escHtml(ban.reason) + '">' + escHtml(ban.reason) + '</div>' : '')
       + '</div>'
-      + '<button class="btn-ghost btn-xs player-unban-btn" data-type="' + type + '" data-name="' + escHtml(name) + '"'
+      + '<button type="button" class="btn-ghost btn-xs player-unban-btn" data-type="' + type + '" data-name="' + escHtml(name) + '"'
       + ' aria-label="' + escHtml(t('Desbanear: {name}', { name: name })) + '">' + t('Desbanear') + '</button>'
       + '</div>';
   }).join('') + '</div>';
@@ -305,16 +305,16 @@ function doUnbanIp(ip, button) {
 // Sync all
 document.getElementById('btn-sync-all').addEventListener('click', function() {
   busyWhile(document.getElementById('btn-sync-all'), function() {
-    return apiFetch('/api/players/sync', { method: 'POST' })
-      .then(function(response) { return response.json(); })
-      .then(function(data) {
-        if (data.warning) {
-          showToast(data.warning, '');
+    return apiJson('/api/players/sync', { method: 'POST' })
+      .then(function(result) {
+        if (!result.ok) {
+          showToast(result.data.detail || t('No se pudo sincronizar con los servidores'), 'error');
+        } else if (result.data.warning) {
+          showToast(result.data.warning, '');
         } else {
           showToast(t('Sincronizado con todos los servidores'), 'success');
         }
-      })
-      .catch(function() { showToast(t('No se pudo sincronizar con los servidores'), 'error'); });
+      });
   });
 });
 

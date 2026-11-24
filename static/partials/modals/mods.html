@@ -4,7 +4,7 @@
     <div class="modal-header">
       <span class="modal-icon" id="mod-upload-modal-icon"><svg class="icon" aria-hidden="true"><use href="#i-package"/></svg></span>
       <span class="modal-path" id="mod-upload-modal-title">Subida de mods</span>
-      <button class="modal-close" id="mod-upload-modal-close" aria-label="Cerrar"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+      <button type="button" class="modal-close" id="mod-upload-modal-close" aria-label="Cerrar"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
     </div>
     <div class="modal-body">
       <div class="modal-scroll" id="mod-upload-modal-body"></div>
@@ -18,7 +18,7 @@
     <div class="modal-header">
       <span class="modal-icon" id="mod-list-modal-icon"><svg class="icon" aria-hidden="true"><use href="#i-package"/></svg></span>
       <span class="modal-path" id="mod-list-modal-title"></span>
-      <button class="modal-close" id="mod-list-modal-close" aria-label="Cerrar"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+      <button type="button" class="modal-close" id="mod-list-modal-close" aria-label="Cerrar"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
     </div>
     <div class="modal-body">
       <div class="modal-scroll" id="mod-list-modal-body"></div>
@@ -26,7 +26,7 @@
     <div class="modal-footer">
       <span class="line-info" id="mod-list-modal-count"></span>
       <div class="modal-footer-actions">
-        <button class="btn-secondary" id="mod-list-modal-close2">Cerrar</button>
+        <button type="button" class="btn-secondary" id="mod-list-modal-close2">Cerrar</button>
       </div>
     </div>
   </div>
@@ -38,7 +38,7 @@
     <div class="modal-header">
       <span class="modal-icon"><svg class="icon" aria-hidden="true"><use href="#i-triangle-alert"/></svg></span>
       <span class="modal-path" id="mod-downgrade-modal-title">Mods que necesitan confirmación</span>
-      <button class="modal-close" id="mod-downgrade-modal-close" aria-label="Cerrar"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+      <button type="button" class="modal-close" id="mod-downgrade-modal-close" aria-label="Cerrar"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
     </div>
     <div class="modal-body">
       <div class="modal-scroll" id="mod-downgrade-modal-body"></div>
@@ -46,8 +46,8 @@
     <div class="modal-footer">
       <span class="line-info" id="mod-downgrade-modal-count"></span>
       <div class="modal-footer-actions">
-        <button class="btn-secondary" id="mod-downgrade-reject-all">Rechazar todos</button>
-        <button id="mod-downgrade-confirm">Confirmar seleccionados</button>
+        <button type="button" class="btn-secondary" id="mod-downgrade-reject-all">Rechazar todos</button>
+        <button type="button" id="mod-downgrade-confirm">Confirmar seleccionados</button>
       </div>
     </div>
   </div>
@@ -59,7 +59,7 @@
     <div class="modal-header">
       <span class="modal-icon"><svg class="icon" aria-hidden="true"><use href="#i-wrench"/></svg></span>
       <span class="modal-path">Cambiar versión del modloader</span>
-      <button class="modal-close" id="modloader-modal-close" aria-label="Cerrar"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+      <button type="button" class="modal-close" id="modloader-modal-close" aria-label="Cerrar"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
     </div>
     <div class="modal-body">
       <div class="modal-scroll" id="modloader-modal-body"></div>
@@ -67,8 +67,8 @@
     <div class="modal-footer">
       <div></div>
       <div class="modal-footer-actions">
-        <button class="btn-secondary" id="modloader-verify-btn">Verificar compatibilidad</button>
-        <button id="modloader-install-btn" disabled>Instalar</button>
+        <button type="button" class="btn-secondary" id="modloader-verify-btn">Verificar compatibilidad</button>
+        <button type="button" id="modloader-install-btn" disabled>Instalar</button>
       </div>
     </div>
   </div>
@@ -80,7 +80,7 @@
     <div class="modal-header">
       <span class="modal-icon"><svg class="icon" aria-hidden="true"><use href="#i-triangle-alert"/></svg></span>
       <span class="modal-path">Posibles mods duplicados</span>
-      <button class="modal-close" id="mod-duplicates-modal-close" aria-label="Cerrar"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+      <button type="button" class="modal-close" id="mod-duplicates-modal-close" aria-label="Cerrar"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
     </div>
     <div class="modal-body">
       <div class="modal-scroll" id="mod-duplicates-modal-body"></div>
@@ -94,7 +94,7 @@
     <div class="modal-header">
       <span class="modal-icon"><svg class="icon" aria-hidden="true"><use href="#i-monitor"/></svg></span>
       <span class="modal-path">Mods solo de cliente</span>
-      <button class="modal-close" id="mod-client-only-modal-close" aria-label="Cerrar"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+      <button type="button" class="modal-close" id="mod-client-only-modal-close" aria-label="Cerrar"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
     </div>
     <div class="modal-body">
       <div class="info-box">Los mods marcados como «solo cliente» no necesitan estar en la carpeta mods/ del servidor — no es un error que falten aquí, es lo esperado. La detección se basa en metadata que el propio mod declara, así que «sin detectar» no significa necesariamente que haga falta en el servidor.</div>
@@ -109,7 +109,7 @@
     <div class="modal-header">
       <span class="modal-icon"><svg class="icon" aria-hidden="true"><use href="#i-trash-2"/></svg></span>
       <span class="modal-path">Borrar mods deshabilitados</span>
-      <button class="modal-close" id="mod-delete-disabled-modal-close" aria-label="Cerrar"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+      <button type="button" class="modal-close" id="mod-delete-disabled-modal-close" aria-label="Cerrar"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
     </div>
     <div class="modal-body">
       <div class="info-box">Elige cuáles de los mods deshabilitados quieres borrar de verdad. Esta acción no se puede deshacer.</div>
@@ -118,8 +118,8 @@
     <div class="modal-footer">
       <span class="line-info" id="mod-delete-disabled-count">0 seleccionados</span>
       <div class="modal-footer-actions">
-        <button class="btn-secondary" id="mod-delete-disabled-cancel">Cancelar</button>
-        <button class="btn-danger" id="mod-delete-disabled-confirm">Borrar seleccionados</button>
+        <button type="button" class="btn-secondary" id="mod-delete-disabled-cancel">Cancelar</button>
+        <button type="button" class="btn-danger" id="mod-delete-disabled-confirm">Borrar seleccionados</button>
       </div>
     </div>
   </div>
@@ -131,7 +131,7 @@
     <div class="modal-header">
       <span class="modal-icon"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg></span>
       <span class="modal-path">Descargar mods</span>
-      <button class="modal-close" id="mod-download-modal-close" aria-label="Cerrar"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+      <button type="button" class="modal-close" id="mod-download-modal-close" aria-label="Cerrar"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
     </div>
     <div class="modal-body">
       <div class="modal-scroll">
@@ -166,8 +166,8 @@
       </div>
     </div>
     <div class="modal-footer mod-dl-footer">
-      <button class="btn-secondary" id="mod-download-cancel">Cancelar</button>
-      <button id="mod-download-confirm">Descargar</button>
+      <button type="button" class="btn-secondary" id="mod-download-cancel">Cancelar</button>
+      <button type="button" id="mod-download-confirm">Descargar</button>
     </div>
   </div>
 </div>
@@ -178,7 +178,7 @@
     <div class="modal-header">
       <span class="modal-icon"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg></span>
       <span class="modal-path">Buscar mods online</span>
-      <button class="modal-close" id="mod-search-modal-close" aria-label="Cerrar"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+      <button type="button" class="modal-close" id="mod-search-modal-close" aria-label="Cerrar"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
     </div>
     <div class="modal-body">
       <div class="mgmt-tabs source-switch" id="mod-search-tabs" role="tablist" aria-label="Dónde buscar">
@@ -221,13 +221,13 @@
     <div class="modal-header">
       <span class="modal-icon"><svg class="icon" aria-hidden="true"><use href="#i-link"/></svg></span>
       <span class="modal-path">Dependencias de los mods</span>
-      <button class="modal-close" id="mod-deps-modal-close" aria-label="Cerrar"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+      <button type="button" class="modal-close" id="mod-deps-modal-close" aria-label="Cerrar"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
     </div>
     <div class="modal-body">
       <div class="modal-scroll" id="mod-deps-modal-body"></div>
     </div>
     <div class="modal-footer mod-dl-footer">
-      <button class="btn-secondary" id="mod-deps-modal-done">Cerrar</button>
+      <button type="button" class="btn-secondary" id="mod-deps-modal-done">Cerrar</button>
     </div>
   </div>
 </div>
@@ -238,16 +238,16 @@
     <div class="modal-header">
       <span class="modal-icon"><svg class="icon" aria-hidden="true"><use href="#i-refresh-cw"/></svg></span>
       <span class="modal-path">Actualizaciones de los mods</span>
-      <button class="modal-close" id="mod-updates-close" aria-label="Cerrar"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+      <button type="button" class="modal-close" id="mod-updates-close" aria-label="Cerrar"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
     </div>
     <div class="modal-body">
       <div class="modal-scroll" id="mod-updates-body"></div>
     </div>
     <div class="modal-footer mod-dl-footer">
-      <button class="btn-secondary" id="mod-updates-undo" hidden>Deshacer</button>
+      <button type="button" class="btn-secondary" id="mod-updates-undo" hidden>Deshacer</button>
       <div class="flex-1"></div>
-      <button class="btn-secondary" id="mod-updates-cancel">Cerrar</button>
-      <button class="btn-primary" id="mod-updates-apply" hidden>Actualizar</button>
+      <button type="button" class="btn-secondary" id="mod-updates-cancel">Cerrar</button>
+      <button type="button" class="btn-primary" id="mod-updates-apply" hidden>Actualizar</button>
     </div>
   </div>
 </div>

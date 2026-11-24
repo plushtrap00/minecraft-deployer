@@ -34,3 +34,66 @@
   border-radius: 99px;
   font-weight: 600;
 }
+
+
+/* -- Pregenerar el mundo (pregen.js) -- */
+.pregen-dialog {
+  max-width: 640px;
+}
+
+.pregen-dialog .notice {
+  margin-bottom: 12px;
+}
+
+.pregen-install p {
+  margin: 0 0 10px;
+}
+
+.pregen-form {
+  margin-bottom: 10px;
+}
+
+.pregen-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  padding-top: 6px;
+}
+
+.pregen-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: var(--fs-sm);
+}
+
+#pregen-radius-custom {
+  margin-top: 6px;
+}
+
+.pregen-estimate {
+  margin: 12px 0;
+  font-size: var(--fs-sm);
+}
+
+.pregen-estimate .notice {
+  margin-top: 8px;
+}
+
+.pregen-progress-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.pregen-facts {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.pregen-progress .button-row {
+  margin-top: 14px;
+}

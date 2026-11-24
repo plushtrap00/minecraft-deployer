@@ -21,11 +21,11 @@ function loadUsers() {
           : '';
         var actions = isAdmin ? '' :
           '<div class="pe-actions">'
-          + '<button class="btn-ghost user-role-btn btn-xs" data-user="' + escHtml(u.username) + '" data-role="' + (isLimited ? 'user' : 'limited') + '">'
+          + '<button type="button" class="btn-ghost user-role-btn btn-xs" data-user="' + escHtml(u.username) + '" data-role="' + (isLimited ? 'user' : 'limited') + '">'
           + (isLimited ? icon('user-cog') + t('Dar acceso completo') : icon('eye') + t('Dejar limitada')) + '</button>'
-          + (u.two_factor ? '<button class="btn-ghost user-tfa-btn btn-xs" data-user="' + escHtml(u.username) + '">' + icon('shield') + t('Quitar 2FA') + '</button>' : '')
-          + '<button class="btn-ghost user-password-btn btn-xs" data-user="' + escHtml(u.username) + '">' + icon('lock') + t('Cambiar contraseña') + '</button>'
-          + '<button class="btn-danger user-delete-btn btn-xs" data-user="' + escHtml(u.username) + '">' + icon('trash-2') + t('Eliminar') + '</button></div>';
+          + (u.two_factor ? '<button type="button" class="btn-ghost user-tfa-btn btn-xs" data-user="' + escHtml(u.username) + '">' + icon('shield') + t('Quitar 2FA') + '</button>' : '')
+          + '<button type="button" class="btn-ghost user-password-btn btn-xs" data-user="' + escHtml(u.username) + '">' + icon('lock') + t('Cambiar contraseña') + '</button>'
+          + '<button type="button" class="btn-danger user-delete-btn btn-xs" data-user="' + escHtml(u.username) + '">' + icon('trash-2') + t('Eliminar') + '</button></div>';
         return '<div class="player-entry">'
           + '<span class="pe-name">' + escHtml(u.username) + '</span>'
           + badge + tfa + actions

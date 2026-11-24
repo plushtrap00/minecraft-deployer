@@ -67,6 +67,7 @@ function renderLogFileList(logs, crashes) {
     logList.innerHTML = '';
     logs.forEach(function(file) {
       var btn = document.createElement('button');
+      btn.type = 'button';
       btn.className = 'log-file-btn';
       btn.dataset.file = file.name;
       btn.title = file.name;
@@ -83,6 +84,7 @@ function renderLogFileList(logs, crashes) {
     crashes.forEach(function(file) {
       var label = formatCrashTimestamp(file.timestamp) || file.name;
       var btn = document.createElement('button');
+      btn.type = 'button';
       btn.className = 'log-file-btn crash-btn';
       btn.dataset.file = file.name;
       btn.title = file.name;

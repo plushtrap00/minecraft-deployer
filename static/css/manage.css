@@ -601,3 +601,196 @@
 .nw-type-custom {
   margin-top: 6px;
 }
+
+
+/* -- Modal "Actualizar el modpack" (pack_update.js) ---------------------------- */
+.pack-update-dialog {
+  max-width: 620px;
+}
+
+.pack-update-intro {
+  margin: 0 0 12px;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.pack-update-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.pack-link-results {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.pack-link-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+
+.pack-link-item img,
+.pack-link-noimg {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 6px;
+  object-fit: cover;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+
+.pack-version-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  cursor: pointer;
+}
+
+.pack-version-item:has(input:checked) {
+  border-color: var(--accent);
+  background: rgba(var(--accent-rgb), .06);
+}
+
+.pack-version-item.disabled {
+  cursor: default;
+  opacity: .6;
+}
+
+.pack-version-item input {
+  accent-color: var(--accent);
+}
+
+.mod-updates-tag.ok {
+  color: var(--green);
+  border-color: rgba(var(--green-rgb), .4);
+}
+
+#pack-version-warning:not(:empty) {
+  margin-bottom: 12px;
+}
+
+.pack-update-mods {
+  margin-top: 10px;
+  font-size: var(--fs-sm);
+}
+
+.pack-update-mods summary {
+  cursor: pointer;
+}
+
+.pack-update-mods ul {
+  margin: 6px 0 0;
+  padding-left: 20px;
+  font-size: var(--fs-xs);
+}
+
+/* -- Modal "Paquete para jugadores" (client_pack.js) ---------------------------- */
+.client-pack-dialog {
+  max-width: 760px;
+}
+
+.client-pack-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.client-pack-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+
+.client-pack-card.recommended {
+  border-color: rgba(var(--accent-rgb), .45);
+}
+
+.client-pack-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.client-pack-head .mod-updates-tag {
+  margin-left: auto;
+}
+
+.client-pack-ext {
+  font-family: var(--font-mono, monospace);
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+
+.client-pack-apps,
+.client-pack-note,
+.client-pack-status {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.client-pack-status {
+  color: var(--text);
+}
+
+.client-pack-status.muted {
+  color: var(--muted);
+}
+
+.client-pack-card .button-row {
+  margin-top: auto;
+}
+
+.client-pack-summary {
+  margin: 0;
+  padding-left: 18px;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.client-pack-help {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+
+.client-pack-help summary {
+  cursor: pointer;
+  color: var(--text);
+}
+
+.client-pack-help ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  line-height: 1.6;
+}
+
+.client-pack-legal {
+  margin: 12px 0 0;
+  font-size: .8rem;
+  color: var(--muted);
+}

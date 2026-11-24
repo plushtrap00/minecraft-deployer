@@ -28,10 +28,10 @@ function renderWorlds(data) {
       ? '<span class="world-active-badge">' + t('Activo') + '</span>'
       : '';
     var activateBtn = !world.active
-      ? '<button class="btn-secondary wc-activate btn-xs" data-world="' + escHtml(world.name) + '">' + icon('check') + t('Activar') + '</button>'
+      ? '<button type="button" class="btn-secondary wc-activate btn-xs" data-world="' + escHtml(world.name) + '">' + icon('check') + t('Activar') + '</button>'
       : '';
     var deleteBtn = !world.active
-      ? '<button class="btn-danger wc-delete btn-xs" data-world="' + escHtml(world.name) + '">' + icon('trash-2') + t('Borrar') + '</button>'
+      ? '<button type="button" class="btn-danger wc-delete btn-xs" data-world="' + escHtml(world.name) + '">' + icon('trash-2') + t('Borrar') + '</button>'
       : '';
     var downloadUrl = '/api/modpacks/' + encodeURIComponent(currentModpack) + '/worlds/' + encodeURIComponent(world.name) + '/download';
     var downloadBtn = '<a href="' + downloadUrl + '" download="' + escHtml(world.name) + '.zip" class="btn-secondary btn-xs no-underline wc-download">' + icon('download') + t('Descargar') + '</a>';

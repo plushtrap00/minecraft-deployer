@@ -5,6 +5,258 @@
    en su API) y, al pasar el ratón, el icono flota como un objeto tirado en
    el suelo. El modpack elegido lleva el brillo de encantamiento. */
 
+/* -- Buscar mods online (Modrinth / CurseForge) -------------------------- */
+
+/* Un poco más ancho que .modal-sm (680px): con la columna de categorías al
+   lado, la lista de resultados necesita más aire que en el layout apilado
+   anterior. */
+.mod-search-dialog {
+  max-width: 780px;
+}
+
+.mod-search-toolbar {
+  display: flex;
+  gap: 8px;
+  /* .modal-body no trae padding propio (solo .modal-scroll lo tiene); sin
+     este margen la barra de búsqueda quedaba pegada a los bordes del modal
+     mientras el resto (ya dentro de .modal-scroll) sí respetaba 20px. */
+  margin: 0 20px 10px;
+  flex-wrap: wrap;
+}
+
+.mod-search-toolbar input[type="text"] {
+  flex: 1;
+  min-width: 160px;
+}
+
+/* Layout de dos columnas: categorías a la izquierda, resultados a la
+   derecha, ambas ocupando el resto del alto del modal. min-height:0 es
+   necesario para que .mod-search-sidebar y .mod-search-results-col (sus
+   hijos) puedan de verdad limitar su propio overflow en vez de que el
+   navegador los infle a su alto de contenido (el mismo problema que ya
+   se corrigió antes para el panel apilado, pero en el eje del row). */
+.mod-search-columns {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  margin: 0 20px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  overflow: hidden;
+}
+
+/* Columna de categorías: colapsable como un todo (header con flecha,
+   relevante sobre todo en el layout apilado de móvil — ver responsive.css)
+   y con checkboxes de subcategorías expandibles por separado (icono +/−),
+   igual que el filtro lateral de curseforge.com. */
+.mod-search-sidebar {
+  flex: 0 0 190px;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--border);
+  background: var(--card);
+  min-height: 0;
+}
+
+.mod-search-sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 8px 12px;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text);
+  background: none;
+  border-bottom: 1px solid var(--border);
+  user-select: none;
+}
+
+/* Solo tiene sentido colapsar el panel entero cuando compite por espacio
+   vertical con los resultados, es decir en el layout apilado de móvil. */
+.mod-search-category-panel-toggle {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: var(--fs-sm);
+  padding: 2px 4px;
+  line-height: 1;
+}
+
+.mod-search-category-panel-toggle .icon {
+  transition: transform .2s;
+}
+
+.mod-search-category-panel-toggle.collapsed .icon {
+  transform: rotate(180deg);
+}
+
+.mod-search-category-panel-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 6px;
+}
+
+.mod-search-category-panel-body.collapsed {
+  display: none;
+}
+
+/* Columna de resultados: la lista scrollea (reusa .modal-scroll) y la
+   paginación queda pegada abajo dentro del mismo ancho, no del modal
+   entero — por eso vive aquí dentro en vez de en el .modal-footer global. */
+.mod-search-results-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--bg);
+}
+
+/* .mod-search-category-row solo aporta el layout horizontal (opción + "+"
+   cuando existe); el padding/hover vive en .mod-search-category-option
+   porque las subcategorías se renderizan como opciones sueltas, sin row. */
+.mod-search-category-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mod-search-category-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: var(--radius-control);
+  font-size: var(--fs-sm);
+  color: var(--text);
+  cursor: pointer;
+  min-width: 0;
+  transition: background .12s, color .12s;
+}
+
+.mod-search-category-option:hover {
+  background: rgba(var(--accent-rgb), .08);
+}
+
+.mod-search-category-option input {
+  accent-color: var(--accent);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.mod-search-category-option.sub {
+  padding-left: 28px;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+
+/* Icono "+"/"−" sutil junto al nombre, sin fondo ni borde de botón (igual
+   que el filtro de categorías real de curseforge.com). */
+.mod-search-category-expand {
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-size: var(--fs-lg);
+  line-height: 1;
+  padding: 0 2px;
+  cursor: pointer;
+}
+
+.mod-search-category-expand:hover {
+  color: var(--text);
+}
+
+.mod-search-category-expand.open {
+  color: var(--accent);
+}
+
+.mod-search-subcategory-list {
+  display: none;
+  flex-direction: column;
+}
+
+.mod-search-subcategory-list.show {
+  display: flex;
+}
+
+/* Tarjetas de resultado: más abajo, en este mismo archivo. */
+.mod-search-icon {
+  flex-shrink: 0;
+  object-fit: cover;
+}
+
+.mod-search-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.mod-search-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mod-search-title {
+  font-weight: 600;
+  font-size: var(--fs-md);
+}
+
+.mod-search-badge {
+  font-size: var(--fs-2xs);
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: var(--radius);
+  white-space: nowrap;
+  background: rgba(var(--green-rgb), .15);
+  color: var(--green);
+  border: 1px solid rgba(var(--green-rgb), .35);
+}
+
+.mod-search-desc {
+  font-size: var(--fs-xs);
+  color: var(--muted);
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.mod-search-files-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.mod-search-files-header .mod-search-title {
+  font-size: var(--fs-lg);
+}
+
+/* Columna de ancho fijo para que "Instalar" (botón corto) y "Sin descarga
+   directa" (texto largo) queden siempre en la misma posición, en vez de que
+   el ancho del texto de la versión empuje la acción a un lado u otro. */
+.mod-search-file-action {
+  flex: 0 0 130px;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  text-align: right;
+}
+
+
 /* -- Elegir dónde buscar ------------------------------------------------- */
 .mgmt-tabs.source-switch {
   display: inline-flex;
@@ -93,14 +345,6 @@
 }
 
 /* -- Panel de categorías -------------------------------------------------- */
-.mod-search-sidebar {
-  background: var(--card);
-}
-
-.mod-search-sidebar-header {
-  background: none;
-}
-
 .search-cat-title {
   flex: 1;
   display: inline-flex;
@@ -140,9 +384,6 @@
   text-decoration: underline;
 }
 
-.mod-search-category-option {
-  transition: background .12s, color .12s;
-}
 
 .mod-search-category-option:has(input:checked) {
   background: rgba(var(--accent-rgb), .14);
@@ -174,9 +415,6 @@
 }
 
 /* -- Columna de resultados ---------------------------------------------- */
-.mod-search-results-col {
-  background: var(--bg);
-}
 
 .mod-search-results-col .modal-scroll {
   padding: 12px;
@@ -422,9 +660,6 @@
 }
 
 /* -- Versiones de un mod -------------------------------------------------- */
-.mod-search-files-header {
-  flex-wrap: wrap;
-}
 
 .search-files-mod {
   display: flex;

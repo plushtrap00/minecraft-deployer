@@ -494,12 +494,6 @@
   background: var(--card);
 }
 
-.console-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 600;
-}
 
 .console-modpack {
   color: var(--muted);
@@ -550,9 +544,6 @@
   background: rgba(var(--red-rgb), .08);
 }
 
-.log-info {
-  color: var(--info);
-}
 
 .log-done {
   color: var(--green);

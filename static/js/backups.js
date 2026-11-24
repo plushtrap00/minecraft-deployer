@@ -97,8 +97,8 @@ function renderBackups(data) {
       + '<span role="cell" class="num">' + escHtml(formatBytes(item.size)) + '</span>'
       + '<span role="cell" class="backup-actions">'
       + '<a class="btn-ghost btn-xs" href="' + backupUrl(currentModpack, item.name) + '/download" download title="' + t('Descargar') + '">' + icon('download') + '<span class="visually-hidden">' + t('Descargar') + '</span></a>'
-      + '<button class="btn-secondary btn-xs" data-action="restore">' + icon('rotate-ccw') + t('Restaurar') + '</button>'
-      + '<button class="btn-ghost btn-xs" data-action="delete" title="' + t('Borrar') + '" aria-label="' + t('Borrar') + '">' + icon('trash-2') + '</button>'
+      + '<button type="button" class="btn-secondary btn-xs" data-action="restore">' + icon('rotate-ccw') + t('Restaurar') + '</button>'
+      + '<button type="button" class="btn-ghost btn-xs" data-action="delete" title="' + t('Borrar') + '" aria-label="' + t('Borrar') + '">' + icon('trash-2') + '</button>'
       + '</span></div>';
   });
   list.innerHTML = html + '</div>';

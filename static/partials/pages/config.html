@@ -2,9 +2,9 @@
 <div class="page" id="page-config">
   <div class="card pb-0">
     <div class="mgmt-tabs" id="cfg-tabs">
-      <button class="mgmt-tab active" id="cfgtab-env"><svg class="icon" aria-hidden="true"><use href="#i-settings"/></svg>Variables de entorno</button>
-      <button class="mgmt-tab" id="cfgtab-constants"><svg class="icon" aria-hidden="true"><use href="#i-sliders-horizontal"/></svg>Constantes de la app</button>
-      <button class="mgmt-tab" id="cfgtab-notify"><svg class="icon" aria-hidden="true"><use href="#i-bell"/></svg>Avisos</button>
+      <button type="button" class="mgmt-tab active" id="cfgtab-env"><svg class="icon" aria-hidden="true"><use href="#i-settings"/></svg>Variables de entorno</button>
+      <button type="button" class="mgmt-tab" id="cfgtab-constants"><svg class="icon" aria-hidden="true"><use href="#i-sliders-horizontal"/></svg>Constantes de la app</button>
+      <button type="button" class="mgmt-tab" id="cfgtab-notify"><svg class="icon" aria-hidden="true"><use href="#i-bell"/></svg>Avisos</button>
     </div>
   </div>
 
@@ -69,7 +69,7 @@
           <input type="number" id="cfg-env-AUTO_UPDATE_INTERVAL_SECONDS" class="w-full" min="30">
         </div>
       </div>
-      <button id="cfg-save-env-btn" class="add-user-btn mt-l">Guardar .env</button>
+      <button type="button" id="cfg-save-env-btn" class="add-user-btn mt-l">Guardar .env</button>
     </div>
   </div>
 
@@ -77,7 +77,7 @@
     <div class="card">
       <div class="info-box">Números de ajuste (timeouts, límites, tamaños de caché) compartidos por todas las instalaciones — a diferencia del .env, este archivo no tiene secretos y sí se versiona en git. Los cambios <strong>no se aplican en caliente</strong> — al guardar se te ofrecerá reiniciar la app para aplicarlos.</div>
       <div id="config-constants-form"><div class="skeleton-rows" role="status" aria-label="Cargando"><div></div><div></div><div></div></div></div>
-      <button id="cfg-save-constants-btn" class="add-user-btn mt-l">Guardar constantes</button>
+      <button type="button" id="cfg-save-constants-btn" class="add-user-btn mt-l">Guardar constantes</button>
     </div>
   </div>
 

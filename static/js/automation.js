@@ -194,7 +194,7 @@ function renderTasks() {
   if (!tasks.length) {
     list.innerHTML = emptyArt('sign', t('Nada programado'),
       t('Por ejemplo, reiniciar el servidor cada madrugada avisando antes a quien esté jugando.'),
-      '<button class="btn-secondary" id="task-preset-btn">' + icon('refresh-cw') + t('Reinicio diario a las 05:00') + '</button>', true);
+      '<button type="button" class="btn-secondary" id="task-preset-btn">' + icon('refresh-cw') + t('Reinicio diario a las 05:00') + '</button>', true);
     document.getElementById('task-preset-btn').addEventListener('click', function() {
       openTaskForm({ kind: 'restart', time: '05:00', days: [0, 1, 2, 3, 4, 5, 6], warn_minutes: 5 });
     });
@@ -218,9 +218,9 @@ function renderTasks() {
       + taskStatusHtml(task)
       + '</div>'
       + '<div class="task-actions">'
-      + '<button class="btn-ghost btn-xs" data-action="run" title="' + t('Ejecutar ahora para probarla') + '">' + icon('play') + t('Probar') + '</button>'
-      + '<button class="btn-ghost btn-xs" data-action="edit" aria-label="' + t('Editar') + '" title="' + t('Editar') + '">' + icon('pencil') + '</button>'
-      + '<button class="btn-ghost btn-xs" data-action="delete" aria-label="' + t('Borrar') + '" title="' + t('Borrar') + '">' + icon('trash-2') + '</button>'
+      + '<button type="button" class="btn-ghost btn-xs" data-action="run" title="' + t('Ejecutar ahora para probarla') + '">' + icon('play') + t('Probar') + '</button>'
+      + '<button type="button" class="btn-ghost btn-xs" data-action="edit" aria-label="' + t('Editar') + '" title="' + t('Editar') + '">' + icon('pencil') + '</button>'
+      + '<button type="button" class="btn-ghost btn-xs" data-action="delete" aria-label="' + t('Borrar') + '" title="' + t('Borrar') + '">' + icon('trash-2') + '</button>'
       + '</div></div>';
   }).join('') + '</div>';
 }

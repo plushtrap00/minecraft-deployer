@@ -272,7 +272,7 @@ function loadServerPickList() {
       if (!packs.length) {
         list.innerHTML = emptyArt('chest', t('Todavía no hay servidores'),
           t('Instala un modpack o crea un servidor vanilla y aparecerá aquí, listo para arrancar.'),
-          '<button class="btn-go" id="pick-empty-install">' + icon('package-plus') + t('Instalar un modpack') + '</button>');
+          '<button type="button" class="btn-go" id="pick-empty-install">' + icon('package-plus') + t('Instalar un modpack') + '</button>');
         document.getElementById('pick-empty-install').addEventListener('click', function() {
           document.getElementById('tab-deploy').click();
         });
@@ -312,7 +312,7 @@ function serverCard(pack) {
     + '<div class="server-card-sub">' + loaderTag(pack.modloader)
     + (pack.mc_version ? '<span>Minecraft ' + escHtml(pack.mc_version) + '</span>' : '') + '</div></div></div>'
     + '<div class="server-card-facts">' + facts.join('') + '</div>'
-    + '<button class="btn-go"' + (pack.start_script ? '' : ' disabled') + ' aria-label="' + escHtml(t('Iniciar {name}', { name: pack.name })) + '">'
+    + '<button type="button" class="btn-go"' + (pack.start_script ? '' : ' disabled') + ' aria-label="' + escHtml(t('Iniciar {name}', { name: pack.name })) + '">'
     + icon('play') + t('Iniciar') + '</button>';
   if (pack.start_script) {
     card.querySelector('button').addEventListener('click', function() { startServer(pack.name); });

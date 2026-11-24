@@ -7,9 +7,9 @@
   </div>
 
   <div class="mgmt-tabs deploy-modes">
-    <button class="mgmt-tab active" id="deploy-mode-import"><svg class="icon" aria-hidden="true"><use href="#i-upload"/></svg>Subir un modpack</button>
-    <button class="mgmt-tab" id="deploy-mode-create"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Crear desde cero</button>
-    <button class="mgmt-tab" id="deploy-mode-download"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>Buscar y descargar</button>
+    <button type="button" class="mgmt-tab active" id="deploy-mode-import"><svg class="icon" aria-hidden="true"><use href="#i-upload"/></svg>Subir un modpack</button>
+    <button type="button" class="mgmt-tab" id="deploy-mode-create"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Crear desde cero</button>
+    <button type="button" class="mgmt-tab" id="deploy-mode-download"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>Buscar y descargar</button>
   </div>
 
   <div id="deploy-import-section">
@@ -26,13 +26,13 @@
       <span class="fb-icon"><svg class="icon" aria-hidden="true"><use href="#i-package"/></svg></span>
       <span class="fb-name" id="fb-name"></span>
       <span class="fb-size" id="fb-size"></span>
-      <button class="btn-clear" id="fb-clear" aria-label="Quitar archivo"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
+      <button type="button" class="btn-clear" id="fb-clear" aria-label="Quitar archivo"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>
     </div>
   </div>
 
   <div class="card step">
     <h2 class="step-title"><span class="step-num" aria-hidden="true">2</span>Nombre del servidor</h2>
-    <input type="text" id="folder-name" placeholder="ej: ATM9, SkyFactory4, survival-v2…" class="w-full">
+    <input type="text" id="folder-name" aria-label="Nombre del servidor" placeholder="ej: ATM9, SkyFactory4, survival-v2…" class="w-full">
     <p class="hint">Se instalará en <code>~/servers-minecraft/<em>nombre</em></code></p>
   </div>
 
@@ -61,7 +61,7 @@
       <p id="result-msg" class="result-msg"></p>
       <div class="result-grid" id="result-grid"></div>
     </div>
-    <div class="step-action"><span class="step-missing" data-missing-for="deploy-btn"></span><button class="deploy-btn btn-go" id="deploy-btn"><svg class="icon" aria-hidden="true"><use href="#i-upload"/></svg>Instalar servidor</button></div>
+    <div class="step-action"><span class="step-missing" data-missing-for="deploy-btn"></span><button type="button" class="deploy-btn btn-go" id="deploy-btn"><svg class="icon" aria-hidden="true"><use href="#i-upload"/></svg>Instalar servidor</button></div>
   </div>
   </div>
   <!-- /deploy-import-section -->
@@ -69,7 +69,7 @@
   <div id="deploy-create-section" style="display:none">
     <div class="card step">
       <h2 class="step-title"><span class="step-num" aria-hidden="true">1</span>Nombre del servidor</h2>
-      <input type="text" id="create-name" placeholder="ej: survival-nuevo, test-fabric…" class="w-full">
+      <input type="text" id="create-name" aria-label="Nombre del servidor" placeholder="ej: survival-nuevo, test-fabric…" class="w-full">
       <p class="hint">Se creará en <code>~/servers-minecraft/<em>nombre</em></code></p>
     </div>
 
@@ -106,7 +106,7 @@
     <div class="card step">
       <h2 class="step-title"><span class="step-num" aria-hidden="true">4</span>Crear</h2>
       <div id="create-progress-body"></div>
-      <div class="step-action"><span class="step-missing" data-missing-for="create-server-btn"></span><button class="deploy-btn btn-go" id="create-server-btn"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Crear servidor</button></div>
+      <div class="step-action"><span class="step-missing" data-missing-for="create-server-btn"></span><button type="button" class="deploy-btn btn-go" id="create-server-btn"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Crear servidor</button></div>
     </div>
   </div>
 
@@ -179,7 +179,7 @@
     <div class="card step" id="dl-install-card" style="display:none">
       <h2 class="step-title"><span class="step-num" aria-hidden="true">4</span>Instalar</h2>
       <div id="dl-progress-body"></div>
-      <div class="step-action"><span class="step-missing" data-missing-for="dl-install-btn"></span><button class="deploy-btn btn-go" id="dl-install-btn"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>Descargar e instalar</button></div>
+      <div class="step-action"><span class="step-missing" data-missing-for="dl-install-btn"></span><button type="button" class="deploy-btn btn-go" id="dl-install-btn"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>Descargar e instalar</button></div>
     </div>
   </div>
 </div>

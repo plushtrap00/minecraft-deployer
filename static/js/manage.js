@@ -49,7 +49,7 @@ function renderModpacks(packs) {
   if (!packs || !packs.length) {
     list.innerHTML = emptyArt('chest', t('El cofre está vacío'),
       t('Todavía no hay modpacks instalados. Sube uno, créalo desde cero o búscalo en Modrinth o CurseForge.'),
-      '<button class="btn-go" id="packs-empty-install">' + icon('package-plus') + t('Instalar un modpack') + '</button>');
+      '<button type="button" class="btn-go" id="packs-empty-install">' + icon('package-plus') + t('Instalar un modpack') + '</button>');
     document.getElementById('packs-empty-install').addEventListener('click', function() {
       document.getElementById('tab-deploy').click();
     });
@@ -89,7 +89,7 @@ function renderModpacks(packs) {
       + '<span class="pack-num" role="cell" data-label="Mods">' + (pack.mods_count === null || pack.mods_count === undefined ? '—' : pack.mods_count) + '</span>'
       + '<span class="pack-muted" role="cell" data-label="Último arranque">' + (pack.last_played ? formatRelativeDate(pack.last_played) : t('Nunca')) + '</span>'
       + '<span class="pack-num pack-size" role="cell" data-label="Tamaño">…</span>'
-      + '<span class="pack-actions" role="cell"><button class="btn-secondary btn-sm">' + t('Gestionar') + '</button></span>';
+      + '<span class="pack-actions" role="cell"><button type="button" class="btn-secondary btn-sm">' + t('Gestionar') + '</button></span>';
     row.querySelector('button').addEventListener('click', function(event) {
       event.stopPropagation();
       openModpack(pack.name);

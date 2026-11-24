@@ -40,15 +40,15 @@ function renderRamConfig(data) {
     + '<div class="ram-grid">'
     + '<div><label class="field-label">' + t('RAM mínima') + ' <span class="text-accent">(-Xms)</span></label>'
     + '<div class="input-row"><input type="number" id="ram-cfg-min-val" value="' + escHtml(min.val) + '" min="1">'
-    + '<select id="ram-cfg-min-unit"><option value="G"' + (min.unit === 'G' ? ' selected' : '') + '>GB</option>'
+    + '<select id="ram-cfg-min-unit" aria-label="' + escHtml(t('Unidad de la RAM mínima')) + '"><option value="G"' + (min.unit === 'G' ? ' selected' : '') + '>GB</option>'
     + '<option value="M"' + (min.unit === 'M' ? ' selected' : '') + '>MB</option></select></div></div>'
     + '<div><label class="field-label">' + t('RAM máxima') + ' <span class="text-accent">(-Xmx)</span></label>'
     + '<div class="input-row"><input type="number" id="ram-cfg-max-val" value="' + escHtml(max.val) + '" min="1">'
-    + '<select id="ram-cfg-max-unit"><option value="G"' + (max.unit === 'G' ? ' selected' : '') + '>GB</option>'
+    + '<select id="ram-cfg-max-unit" aria-label="' + escHtml(t('Unidad de la RAM máxima')) + '"><option value="G"' + (max.unit === 'G' ? ' selected' : '') + '>GB</option>'
     + '<option value="M"' + (max.unit === 'M' ? ' selected' : '') + '>MB</option></select></div></div>'
     + '</div>'
-    + '<p id="ram-cfg-warn" class="ram-warn" style="display:none"></p>'
-    + '<button id="ram-cfg-save-btn" class="add-user-btn mt-m">' + t('Guardar RAM') + '</button>';
+    + '<p id="ram-cfg-warn" class="ram-warn" role="alert" style="display:none"></p>'
+    + '<button type="button" id="ram-cfg-save-btn" class="add-user-btn mt-m">' + t('Guardar RAM') + '</button>';
 
   ['ram-cfg-min-val', 'ram-cfg-max-val', 'ram-cfg-min-unit', 'ram-cfg-max-unit'].forEach(function(id) {
     document.getElementById(id).addEventListener('input', checkRamCfg);

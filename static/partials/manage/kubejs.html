@@ -4,8 +4,8 @@
     <div class="info-box">Scripts de KubeJS para modificar el comportamiento del modpack mediante código.</div>
     <div class="config-sidebar">
       <div class="config-search kjs-search-row">
-        <input type="text" id="kubejs-search" placeholder="Buscar script…">
-        <button class="btn-secondary btn-sm" id="btn-new-kjs-file" title="Crear un script nuevo"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Nuevo</button>
+        <input type="text" id="kubejs-search" aria-label="Buscar script" placeholder="Buscar script…">
+        <button type="button" class="btn-secondary btn-sm" id="btn-new-kjs-file" title="Crear un script nuevo"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Nuevo</button>
         <a class="btn-secondary btn-sm" id="btn-download-kjs" title="Descargar la carpeta kubejs/ como .zip"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg>Descargar</a>
       </div>
       <div class="mod-tree-body" id="kubejs-tree"><div class="pad-m"><div class="skeleton-rows" role="status" aria-label="Cargando"><div></div><div></div><div></div></div></div></div>
@@ -35,8 +35,8 @@
         </div>
       </div>
       <div class="form-actions">
-        <button class="btn-secondary" id="kjs-cancel-new">Cancelar</button>
-        <button id="kjs-confirm-new">Crear script</button>
+        <button type="button" class="btn-secondary" id="kjs-cancel-new">Cancelar</button>
+        <button type="button" id="kjs-confirm-new">Crear script</button>
       </div>
     </div>
     <p class="hint mt-m">Haz clic en cualquier archivo para editarlo</p>

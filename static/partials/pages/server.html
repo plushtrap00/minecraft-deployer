@@ -23,9 +23,9 @@
         </div>
       </div>
       <div class="server-hero-actions">
-        <button id="clean-stop-btn" style="display:none"><svg class="icon" aria-hidden="true"><use href="#i-square"/></svg>Detener</button>
-        <button class="btn-ghost btn-sm" id="stop-btn" style="display:none" title="Mata el proceso sin guardar, como Ctrl+C. Úsalo solo si «Detener» no responde."><svg class="icon" aria-hidden="true"><use href="#i-power"/></svg>Forzar parada</button>
-        <button class="btn-ghost btn-sm" id="hero-client-pack-btn" style="display:none" title="El modpack de este servidor para instalarlo en tu ordenador"><svg class="icon" aria-hidden="true"><use href="#i-package"/></svg>Paquete para jugadores</button>
+        <button type="button" id="clean-stop-btn" style="display:none"><svg class="icon" aria-hidden="true"><use href="#i-square"/></svg>Detener</button>
+        <button type="button" class="btn-ghost btn-sm" id="stop-btn" style="display:none" title="Mata el proceso sin guardar, como Ctrl+C. Úsalo solo si «Detener» no responde."><svg class="icon" aria-hidden="true"><use href="#i-power"/></svg>Forzar parada</button>
+        <button type="button" class="btn-ghost btn-sm" id="hero-client-pack-btn" style="display:none" title="El modpack de este servidor para instalarlo en tu ordenador"><svg class="icon" aria-hidden="true"><use href="#i-package"/></svg>Paquete para jugadores</button>
       </div>
     </div>
 
@@ -53,7 +53,7 @@
       </div>
       <div class="server-metrics-footer">
         <span id="metrics-updated" title="TPS y MSPT se leen por RCON (Forge/NeoForge). La CPU está en Sistema."></span>
-        <button class="btn-ghost btn-xs" id="btn-refresh-metrics"><svg class="icon" aria-hidden="true"><use href="#i-refresh-cw"/></svg>Actualizar</button>
+        <button type="button" class="btn-ghost btn-xs" id="btn-refresh-metrics"><svg class="icon" aria-hidden="true"><use href="#i-refresh-cw"/></svg>Actualizar</button>
       </div>
       <div id="rcon-warning" class="warn-box" style="display:none"></div>
     </div>
@@ -78,8 +78,8 @@
   <div class="console-card" id="console-card" style="display:none">
     <div class="console-head">
       <div class="console-views" role="tablist" aria-label="Vista de la consola">
-        <button class="console-view active" id="console-view-log" role="tab" aria-selected="true"><svg class="icon" aria-hidden="true"><use href="#i-terminal"/></svg>Consola</button>
-        <button class="console-view" id="console-view-chat" role="tab" aria-selected="false"><svg class="icon" aria-hidden="true"><use href="#i-message-square"/></svg>Chat</button>
+        <button type="button" class="console-view active" id="console-view-log" role="tab" aria-selected="true"><svg class="icon" aria-hidden="true"><use href="#i-terminal"/></svg>Consola</button>
+        <button type="button" class="console-view" id="console-view-chat" role="tab" aria-selected="false"><svg class="icon" aria-hidden="true"><use href="#i-message-square"/></svg>Chat</button>
       </div>
       <span id="console-modpack" class="console-modpack"></span>
       <label class="console-follow"><input type="checkbox" id="console-follow" checked> Seguir al final</label>
@@ -89,7 +89,7 @@
     <div class="cmd-row">
       <span class="cmd-prompt" aria-hidden="true">&gt;</span>
       <input type="text" id="cmd-input" placeholder="Escribe un comando: say Hola, list, whitelist add Alex…" autocomplete="off" spellcheck="false" aria-label="Comando para el servidor">
-      <button class="btn-secondary btn-sm" id="cmd-send-btn">Enviar</button>
+      <button type="button" class="btn-secondary btn-sm" id="cmd-send-btn">Enviar</button>
     </div>
   </div>
 

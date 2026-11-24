@@ -260,9 +260,14 @@ function openFile(path, type) {
   document.getElementById('editor-modal').classList.add('show');
   var endpoint = type === 'kjs' ? '/kubejs-file' : (type === 'wf' ? '/world-file' : '/config-file');
   var extraQuery = type === 'wf' ? '&world_name=' + encodeURIComponent(selectedWfWorld) : '';
-  apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + endpoint + '?path=' + encodeURIComponent(path) + extraQuery)
-    .then(function(response) { return response.json(); })
-    .then(function(data) {
+  apiJson('/api/modpacks/' + encodeURIComponent(currentModpack) + endpoint + '?path=' + encodeURIComponent(path) + extraQuery)
+    .then(function(result) {
+      if (!result.ok) {
+        // Sin esto, un archivo que ya no existe se abría con «undefined» dentro
+        // (y guardar lo escribía así).
+        throw new Error(result.data.detail);
+      }
+      var data = result.data;
       cfgRawText = data.content;
       document.getElementById('config-editor').value = data.content;
       if (canForm) {
@@ -277,8 +282,8 @@ function openFile(path, type) {
       editorBaseline = currentEditorText();
       syncLines();
     })
-    .catch(function() {
-      document.getElementById('config-editor').value = t('# Error al cargar');
+    .catch(function(error) {
+      document.getElementById('config-editor').value = t('# Error al cargar') + (error && error.message ? ': ' + error.message : '');
       syncLines();
     });
 }
@@ -326,7 +331,9 @@ document.getElementById('editor-modal').addEventListener('click', function(event
 });
 
 document.getElementById('modal-save-btn').addEventListener('click', function() {
-  if (!selectedConfigPath) {
+  // Sin contenido cargado (aún «Cargando…» o falló al abrirlo) no se guarda:
+  // se escribiría ese texto encima del archivo de verdad.
+  if (!selectedConfigPath || editorBaseline === null) {
     return;
   }
   var parts = selectedConfigPath.split(':');

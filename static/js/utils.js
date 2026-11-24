@@ -387,7 +387,7 @@ function showAlert(msg, icon) {
   document.getElementById('dialog-title').textContent = t('Aviso');
   document.getElementById('dialog-msg').textContent = msg;
   var btns = document.getElementById('dialog-buttons');
-  btns.innerHTML = '<button id="dialog-ok">' + t('Aceptar') + '</button>';
+  btns.innerHTML = '<button type="button" id="dialog-ok">' + t('Aceptar') + '</button>';
   document.getElementById('dialog-ok').addEventListener('click', function() {
     overlay.classList.remove('show');
   });
@@ -426,8 +426,8 @@ function showConfirm(title, msg, onConfirm, options) {
   }
   var btns = document.getElementById('dialog-buttons');
   var tone = options.tone || 'red';
-  btns.innerHTML = '<button class="btn-secondary" id="dialog-cancel">' + escHtml(options.cancelLabel || t('Cancelar')) + '</button>'
-    + '<button id="dialog-ok" class="btn-tone-' + tone + '">' + escHtml(options.confirmLabel || t('Confirmar')) + '</button>';
+  btns.innerHTML = '<button type="button" class="btn-secondary" id="dialog-cancel">' + escHtml(options.cancelLabel || t('Cancelar')) + '</button>'
+    + '<button type="button" id="dialog-ok" class="btn-tone-' + tone + '">' + escHtml(options.confirmLabel || t('Confirmar')) + '</button>';
   document.getElementById('dialog-cancel').addEventListener('click', function() {
     overlay.classList.remove('show');
     if (options.onCancel) {
@@ -563,6 +563,18 @@ function closeTopModal(overlay) {
   }
 }
 
+// Ids para enlazar etiquetas y títulos (aria-labelledby). Antes de
+// watchModals, que ya los usa al cargar.
+var a11yIdCounter = 0;
+
+function ensureId(el, prefix) {
+  if (!el.id) {
+    a11yIdCounter += 1;
+    el.id = prefix + '-' + a11yIdCounter;
+  }
+  return el.id;
+}
+
 (function watchModals() {
   var observer = new MutationObserver(function(mutations) {
     mutations.forEach(function(mutation) {
@@ -586,6 +598,12 @@ function closeTopModal(overlay) {
   document.querySelectorAll('.modal-overlay').forEach(function(overlay) {
     overlay.setAttribute('role', 'dialog');
     overlay.setAttribute('aria-modal', 'true');
+    // Nombre del diálogo para los lectores de pantalla: el título de su
+    // cabecera (sin esto se anunciaba solo «diálogo»).
+    var title = overlay.querySelector('.modal-header .dialog-title, .modal-header .modal-path');
+    if (title && !overlay.hasAttribute('aria-labelledby')) {
+      overlay.setAttribute('aria-labelledby', ensureId(title, 'dlg'));
+    }
     observer.observe(overlay, { attributes: true, attributeFilter: ['class'] });
   });
 })();
@@ -628,15 +646,6 @@ document.addEventListener('keydown', function(event) {
 // así se enfoca al pulsar el texto y los lectores de pantalla saben qué es.
 // Un MutationObserver lo aplica también a lo que se pinta después (formulario
 // de config de mods, RAM...), sin que cada render tenga que acordarse.
-var a11yIdCounter = 0;
-
-function ensureId(el, prefix) {
-  if (!el.id) {
-    a11yIdCounter += 1;
-    el.id = prefix + '-' + a11yIdCounter;
-  }
-  return el.id;
-}
 
 function enhanceToggle(track) {
   if (track.dataset.a11y) {

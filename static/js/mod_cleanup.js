@@ -15,13 +15,14 @@ function openDuplicatesModal() {
   document.getElementById('mod-duplicates-modal-body').innerHTML = '<p class="empty-msg">' + t('Buscando posibles duplicados…') + '</p>';
   document.getElementById('mod-duplicates-modal').classList.add('show');
 
-  apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/duplicates')
-    .then(function(response) { return response.json(); })
-    .then(function(data) {
-      renderDuplicatesModal(data.groups || []);
-    })
-    .catch(function(error) {
-      document.getElementById('mod-duplicates-modal-body').innerHTML = modErrorHtml(t('No se pudo conectar con el panel: {error}', { error: error.message }));
+  apiJson('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/duplicates')
+    .then(function(result) {
+      if (!result.ok) {
+        // Un fallo no puede acabar en «Sin duplicados. Todo en orden».
+        document.getElementById('mod-duplicates-modal-body').innerHTML = modErrorHtml(result.data.detail || t('No se pudo cargar'));
+        return;
+      }
+      renderDuplicatesModal(result.data.groups || []);
     });
 }
 
@@ -76,14 +77,14 @@ function openClientOnlyModal() {
   document.getElementById('mod-client-only-modal-body').innerHTML = '<p class="empty-msg">' + t('Analizando metadata de los mods…') + '</p>';
   document.getElementById('mod-client-only-modal').classList.add('show');
 
-  apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/client-only')
-    .then(function(response) { return response.json(); })
-    .then(function(data) {
-      clientOnlyModalData = data;
-      renderClientOnlyModal(data);
-    })
-    .catch(function(error) {
-      document.getElementById('mod-client-only-modal-body').innerHTML = modErrorHtml(t('No se pudo conectar con el panel: {error}', { error: error.message }));
+  apiJson('/api/modpacks/' + encodeURIComponent(currentModpack) + '/mods/client-only')
+    .then(function(result) {
+      if (!result.ok) {
+        document.getElementById('mod-client-only-modal-body').innerHTML = modErrorHtml(result.data.detail || t('No se pudo cargar'));
+        return;
+      }
+      clientOnlyModalData = result.data;
+      renderClientOnlyModal(result.data);
     });
 }
 

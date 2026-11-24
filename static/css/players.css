@@ -152,10 +152,6 @@
   margin-bottom: 0;
 }
 
-.player-entry .pe-icon {
-  display: flex;
-  color: var(--muted);
-}
 
 /* -- Jugadores → Estadísticas ----------------------------------------------- */
 .stats-scroll {

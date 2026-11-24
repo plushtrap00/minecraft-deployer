@@ -131,44 +131,6 @@
   flex-shrink: 0;
 }
 
-.sysmon-temp-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 4px;
-}
-
-.sysmon-temp-chip {
-  font-size: var(--fs-xs);
-  color: var(--muted);
-  margin-top: 4px;
-  font-weight: 600;
-}
-
-.sysmon-temp-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: rgba(255, 255, 255, .04);
-  border-radius: var(--radius-tag);
-  padding: 4px 8px;
-  font-size: var(--fs-sm);
-}
-
-.sysmon-temp-deg {
-  font-weight: 700;
-}
-
-.sysmon-temp-deg.ok {
-  color: var(--green);
-}
-
-.sysmon-temp-deg.warn {
-  color: var(--yellow);
-}
-
-.sysmon-temp-deg.bad {
-  color: var(--red);
-}
 
 .sysmon-proc-row {
   display: flex;

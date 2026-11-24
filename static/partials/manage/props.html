@@ -4,7 +4,7 @@
     <div class="info-box">Los cambios requieren reinicio del servidor para aplicarse. Las propiedades no reconocidas aparecen en el editor avanzado al final.</div>
     <div class="card-toolbar">
       <span class="card-toolbar-title">server.properties</span>
-      <button id="save-props-btn">Guardar cambios</button>
+      <button type="button" id="save-props-btn">Guardar cambios</button>
     </div>
 
     <!-- Form sections -->
@@ -88,9 +88,9 @@
           <div class="section-toolbar">
             <span class="section-toolbar-title">Mundos instalados</span>
             <div class="button-row-tight">
-              <button id="btn-pregen" class="btn-secondary btn-sm" title="Genera de antemano el terreno alrededor del spawn (con el mod Chunky)"><svg class="icon" aria-hidden="true"><use href="#i-map"/></svg>Pregenerar</button>
-              <button id="btn-upload-world" class="btn-secondary btn-sm"><svg class="icon" aria-hidden="true"><use href="#i-upload"/></svg>Subir mundo</button>
-              <button id="btn-new-world" class="btn-secondary btn-sm"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Nuevo mundo</button>
+              <button type="button" id="btn-pregen" class="btn-secondary btn-sm" title="Genera de antemano el terreno alrededor del spawn (con el mod Chunky)"><svg class="icon" aria-hidden="true"><use href="#i-map"/></svg>Pregenerar</button>
+              <button type="button" id="btn-upload-world" class="btn-secondary btn-sm"><svg class="icon" aria-hidden="true"><use href="#i-upload"/></svg>Subir mundo</button>
+              <button type="button" id="btn-new-world" class="btn-secondary btn-sm"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Nuevo mundo</button>
             </div>
           </div>
           <div id="worlds-list"><div class="skeleton-rows" role="status" aria-label="Cargando"><div></div><div></div><div></div></div></div>
@@ -117,8 +117,8 @@
             <div id="uw-progress" class="form-progress" style="display:none"></div>
             <div class="warn-box mb-m">Si el servidor está en marcha, detenlo antes de activar el mundo subido.</div>
             <div class="form-actions">
-              <button class="btn-secondary" id="uw-cancel-inline">Cancelar</button>
-              <button id="uw-confirm">Subir mundo</button>
+              <button type="button" class="btn-secondary" id="uw-cancel-inline">Cancelar</button>
+              <button type="button" id="uw-confirm">Subir mundo</button>
             </div>
           </div>
 
@@ -157,8 +157,8 @@
             </div>
             <div class="warn-box mb-m">El mundo se genera al iniciar el servidor. Si está en marcha, detenlo primero.</div>
             <div class="form-actions">
-              <button class="btn-secondary" id="nw-cancel-inline">Cancelar</button>
-              <button id="nw-confirm">Preparar mundo</button>
+              <button type="button" class="btn-secondary" id="nw-cancel-inline">Cancelar</button>
+              <button type="button" id="nw-confirm">Preparar mundo</button>
             </div>
           </div>
         </div>
