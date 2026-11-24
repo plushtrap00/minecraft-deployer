@@ -33,6 +33,7 @@ from pathlib import Path
 
 from config import CURSEFORGE_API_KEY, DEFAULT_SERVERS_PATH
 from services.modpack import detect_modpack_version
+from services.mod_hashes import curseforge_fingerprint
 from services.mod_metadata import mod_display_name
 from services.mod_checks import process_mod_jar
 from services.pending_mods import resolve_pending_mods
@@ -252,39 +253,6 @@ def find_missing_dependencies(mods_dir: Path) -> list:
 
 
 # ── Búsqueda de candidatos en Modrinth / CurseForge ────────────────────────────
-
-def curseforge_fingerprint(data: bytes) -> int:
-    """
-    Fingerprint de CurseForge: MurmurHash2 (32 bits, semilla 1) del archivo
-    sin los bytes de espacio en blanco 9/10/13/32 — así es como lo calcula su
-    propio cliente, y es lo que espera POST /v1/fingerprints.
-    """
-    data = data.translate(None, b"\t\n\r ")
-    m = 0x5BD1E995
-    mask = 0xFFFFFFFF
-    length = len(data)
-    h = (1 ^ length) & mask
-    full = length - (length % 4)
-    for i in range(0, full, 4):
-        k = (data[i] | (data[i + 1] << 8) | (data[i + 2] << 16) | (data[i + 3] << 24))
-        k = (k * m) & mask
-        k ^= k >> 24
-        k = (k * m) & mask
-        h = (h * m) & mask
-        h ^= k
-    tail = length % 4
-    if tail == 3:
-        h ^= data[full + 2] << 16
-    if tail >= 2:
-        h ^= data[full + 1] << 8
-    if tail >= 1:
-        h ^= data[full]
-        h = (h * m) & mask
-    h ^= h >> 13
-    h = (h * m) & mask
-    h ^= h >> 15
-    return h
-
 
 def _modrinth_required_projects(jar_paths: list) -> dict:
     """{filename: [project_id]} de las dependencias obligatorias que Modrinth tiene registradas para cada jar (por sha1)."""

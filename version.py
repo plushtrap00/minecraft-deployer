@@ -6,6 +6,9 @@ documentación de la API. Cada commit sube la versión (2.A.B, cada cifra de 0
 a 9: después de 2.0.9 va 2.1.0) y se etiqueta con `git tag v<versión>`.
 
 Historial resumido:
+- 3.1.7 (2026-11-24): por dentro: la huella de CurseForge con la que se
+  reconocen los mods se calcula en un solo sitio, y la búsqueda de
+  dependencias que faltan la calcula algo más rápido. Sin cambios para ti.
 - 3.1.6 (2026-11-24): por dentro: las pruebas automáticas se ejecutan en
   GitHub cada vez que se publica un cambio (con Python 3.10 y 3.14), sin
   cambios para ti.
@@ -178,4 +181,4 @@ Historial resumido:
   otros usuarios.
 - 1.x: todo lo anterior (sin numerar).
 """
-APP_VERSION = "3.1.6"
+APP_VERSION = "3.1.7"

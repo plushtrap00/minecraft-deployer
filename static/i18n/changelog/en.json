@@ -1,6 +1,7 @@
 {
   "//": "Historial de versiones en inglés: una entrada por cada «- X.Y.Z (fecha): texto» del docstring de version.py, que es el original en español. Otro idioma = otro archivo <idioma>.json en esta carpeta. Ver services/auto_update.py.",
 
+  "3.1.7": "under the hood: the CurseForge fingerprint used to recognise mods is computed in a single place, and the missing-dependency search computes it somewhat faster. No changes for you.",
   "3.1.6": "under the hood: automated tests now run on GitHub every time a change is published (with Python 3.10 and 3.14), no changes for you.",
   "3.1.5": "more automated tests: reading mods (Fabric, NeoForge, Quilt), compatible versions, duplicates, crash analysis, console parsing and that no panel route can escape the server folder. Fixed: crash analysis now also points to mods whose Java package has underscores.",
   "3.1.4": "internals: modpack installation has been split into smaller modules (Modrinth, CurseForge, shared pieces and the duplicate warning), with no changes for you. Wording: «añadir» instead of «agregar» in the Spanish texts.",

@@ -20,15 +20,14 @@ en <servidor>/.mods-replaced/<lote>/ para poder deshacer el lote entero.
 import hashlib
 import json
 import shutil
-import sys
 import threading
 import time
 import urllib.parse
-from array import array
 from pathlib import Path
 from typing import Any
 
 from config import CURSEFORGE_API_KEY, DEFAULT_SERVERS_PATH
+from services.mod_hashes import curseforge_fingerprint  # noqa: F401 (también se usa desde fuera)
 from services.mod_metadata import mod_display_name
 from services.mod_search import (
     CURSEFORGE_GAME_ID, CURSEFORGE_LOADER_TYPES, ModSearchError,
@@ -58,38 +57,6 @@ def _post(url: str, body: dict, headers: dict | None = None) -> dict:
 def _get_list(url: str) -> list:
     data = _http_get_json(url)
     return data if isinstance(data, list) else []
-
-
-# ── Hashes ────────────────────────────────────────────────────────────────────
-
-def curseforge_fingerprint(data: bytes) -> int:
-    """MurmurHash2 (semilla 1) del archivo sin espacios, tabuladores ni saltos de línea."""
-    data = data.translate(None, b"\t\n\r ")
-    n = len(data)
-    m, mask = 0x5BD1E995, 0xFFFFFFFF
-    h = (1 ^ n) & mask
-    body = n - (n & 3)
-    words = array("I")
-    words.frombytes(data[:body])
-    if sys.byteorder != "little":
-        words.byteswap()
-    for k in words:
-        k = (k * m) & mask
-        k ^= k >> 24
-        k = (k * m) & mask
-        h = ((h * m) & mask) ^ k
-    tail, rest = data[body:], n & 3
-    if rest == 3:
-        h ^= tail[2] << 16
-    if rest >= 2:
-        h ^= tail[1] << 8
-    if rest >= 1:
-        h ^= tail[0]
-        h = (h * m) & mask
-    h ^= h >> 13
-    h = (h * m) & mask
-    h ^= h >> 15
-    return h
 
 
 def _mod_files(mods_dir: Path) -> list:
