@@ -16,7 +16,8 @@ from services.backups import world_folders
 from services.busy import BusyGuard
 from services.server_create import validate_new_server_name
 
-_SKIP_ROOT = {"logs", "crash-reports", "debug"}
+# .client-pack: el paquete para jugadores del original (pesa y lleva su nombre).
+_SKIP_ROOT = {"logs", "crash-reports", "debug", ".client-pack"}
 
 
 def clone_modpack(source: str, new_name: str, include_world: bool) -> dict:

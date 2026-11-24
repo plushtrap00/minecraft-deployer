@@ -1115,3 +1115,91 @@
   padding-left: 20px;
   font-size: var(--fs-xs);
 }
+
+/* -- Modal "Paquete para jugadores" (client_pack.js) ---------------------------- */
+.client-pack-dialog {
+  max-width: 760px;
+}
+
+.client-pack-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+  margin: 12px 0;
+}
+
+.client-pack-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+
+.client-pack-card.recommended {
+  border-color: rgba(var(--accent-rgb), .45);
+}
+
+.client-pack-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.client-pack-head .mod-updates-tag {
+  margin-left: auto;
+}
+
+.client-pack-ext {
+  font-family: var(--font-mono, monospace);
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+
+.client-pack-apps,
+.client-pack-note,
+.client-pack-status {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.client-pack-status {
+  color: var(--text);
+}
+
+.client-pack-status.muted {
+  color: var(--muted);
+}
+
+.client-pack-card .button-row {
+  margin-top: auto;
+}
+
+.client-pack-summary {
+  margin: 0;
+  padding-left: 18px;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.client-pack-help {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+
+.client-pack-help summary {
+  cursor: pointer;
+  color: var(--text);
+}
+
+.client-pack-help ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  line-height: 1.6;
+}

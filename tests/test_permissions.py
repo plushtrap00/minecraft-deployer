@@ -32,6 +32,10 @@ class LimitedRoleTests(unittest.TestCase):
             ("POST", "/api/auth/password"),
             ("POST", "/api/auth/logout"),
             ("POST", "/api/auth/achievements"),
+            # Paquete para jugadores: prepararlo y bajarlo (es lo que necesita para entrar)
+            ("GET", "/api/modpacks/pack/client-pack"),
+            ("POST", "/api/modpacks/pack/client-pack"),
+            ("GET", "/api/modpacks/pack/client-pack/download"),
         ):
             self.assertTrue(self.allowed(method, path), (method, path))
 
@@ -54,6 +58,8 @@ class LimitedRoleTests(unittest.TestCase):
             ("GET", "/api/modpacks/pack/worlds/world/download"),
             ("GET", "/api/modpacks/pack/backups/copia.zip/download"),
             ("GET", "/api/modpacks/pack/mods/download"),
+            ("GET", "/api/modpacks/pack/kubejs/download"),
+            ("GET", "/api/modpacks/pack/logs/latest.log/download"),
             # Algo que todavía no existe: cerrado por defecto
             ("POST", "/api/algo/nuevo"),
         ):

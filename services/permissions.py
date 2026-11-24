@@ -5,8 +5,9 @@ services/permissions.py - Qué puede hacer cada rol.
 - user: todo menos cuentas, firewall y configuración del panel (eso lo cortan
   las propias rutas con require_admin).
 - limited: lo ve todo, pero solo puede encender, parar y reiniciar el
-  servidor, gestionar la lista blanca y su propia cuenta. Pensado para dar
-  acceso a un amigo sin que pueda tocar mods, mundos, copias ni la consola.
+  servidor, gestionar la lista blanca y su propia cuenta, y preparar y bajar
+  el paquete para jugadores (services/client_pack.py). Pensado para dar acceso
+  a un amigo sin que pueda tocar mods, mundos, copias ni la consola.
 
 El rol limitado se comprueba en el middleware (main.py) con una lista de lo
 permitido: una ruta nueva que cambie algo queda cerrada para él por defecto.
@@ -20,6 +21,7 @@ LIMITED_ACTIONS = {
     "server.start", "server.stop", "server.restart",
     "players.whitelist_add", "players.whitelist_remove",
     "auth.password", "auth.2fa_on", "auth.2fa_off", "auth.2fa_codes",
+    "mods.client_pack",
 }
 
 # Peticiones que cambian algo pero no salen en el registro: solo de su cuenta.
@@ -45,8 +47,10 @@ def allowed(role: str | None, method: str, path: str) -> bool:
         # Incluye los GET que cambian algo (instalaciones por SSE...).
         return found[0] in LIMITED_ACTIONS
     if method in ("GET", "HEAD"):
-        # Mirar sí; llevarse el mundo, las copias o los mods, no.
-        return not path.rstrip("/").endswith("/download")
+        # Mirar sí; llevarse el mundo, las copias o los mods, no. El paquete
+        # para jugadores sí: es lo que necesita para poder entrar a jugar.
+        path = path.rstrip("/")
+        return not path.endswith("/download") or path.endswith("/client-pack/download")
     return (method, path) in LIMITED_SAFE
 
 

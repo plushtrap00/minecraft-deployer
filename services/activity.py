@@ -76,6 +76,7 @@ ACTIONS = {
     "mods.dependencies": ("mods", "Empezó a instalar las dependencias que faltaban en {modpack}"),
     "mods.update": ("mods", "Actualizó un mod de {modpack}"),
     "mods.update_undo": ("mods", "Deshizo actualizaciones de mods en {modpack}"),
+    "mods.client_pack": ("mods", "Preparó el paquete para jugadores de {modpack}"),
     # Copias
     "backups.create": ("backups", "Hizo una copia de {modpack}"),
     "backups.restore": ("backups", "Restauró la copia {name} de {modpack}"),
@@ -158,6 +159,7 @@ ROUTES = [
     ("GET", "/api/modpacks/{modpack}/mods/dependencies/install/stream", "mods.dependencies"),
     ("POST", "/api/modpacks/{modpack}/mods/updates/apply", "mods.update"),
     ("POST", "/api/modpacks/{modpack}/mods/updates/undo", "mods.update_undo"),
+    ("POST", "/api/modpacks/{modpack}/client-pack", "mods.client_pack"),
     ("POST", "/api/modpacks/{modpack}/backups", "backups.create"),
     ("POST", "/api/modpacks/{modpack}/backups/{name}/restore", "backups.restore"),
     ("DELETE", "/api/modpacks/{modpack}/backups/{name}", "backups.delete"),
