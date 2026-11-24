@@ -2009,7 +2009,6 @@
   "Dimensiones": "Dimensions",
   "Solo con el servidor vacío (se pausa cuando entra alguien y sigue cuando se va)": "Only while the server is empty (pauses when someone joins and carries on when they leave)",
   "Al equipo le queda poca memoria libre. Pregenerar exige mucho al servidor: mejor con el servidor vacío.": "The machine is low on free memory. Pregenerating puts a heavy load on the server: better with the server empty.",
-  "Chunky se cargará cuando reinicies el servidor; hasta entonces la tarea esperará.": "Chunky will load when you restart the server; until then the task will wait.",
   "Empezar a pregenerar": "Start pregenerating",
   "Genera de antemano el terreno alrededor del spawn. Luego, explorar no obliga al servidor a crear el mundo sobre la marcha: menos tirones y menos riesgo de que se cuelgue generando.": "Generates the terrain around spawn ahead of time. Afterwards, exploring doesn't force the server to create the world on the fly: less lag and less risk of it hanging while generating.",
   "Quitar Chunky": "Remove Chunky",
@@ -2069,5 +2068,9 @@
   "Jugador que banear": "Player to ban",
   "Motivo del baneo (opcional)": "Ban reason (optional)",
   "IP que banear": "IP to ban",
-  "Motivo del baneo de la IP (opcional)": "IP ban reason (optional)"
+  "Motivo del baneo de la IP (opcional)": "IP ban reason (optional)",
+  "El servidor está encendido: Chunky se descargará ahora, pero no funcionará hasta que reinicies el servidor.": "The server is running: Chunky will be downloaded now, but it won't work until you restart the server.",
+  "Esperando a que reinicies el servidor: Chunky se instaló con él encendido y aún no está cargado.": "Waiting for you to restart the server: Chunky was installed while it was running and isn't loaded yet.",
+  "Chunky está instalado, pero el servidor ya estaba encendido: no funcionará hasta que lo reinicies. Puedes dejar la pregeneración preparada y empezará sola después del reinicio.": "Chunky is installed, but the server was already running: it won't work until you restart it. You can set up the pregeneration now and it will start by itself after the restart.",
+  "Chunky {version} instalado. Reinicia el servidor para que se cargue: hasta entonces no funciona.": "Chunky {version} installed. Restart the server so it loads: until then it doesn't work."
 }

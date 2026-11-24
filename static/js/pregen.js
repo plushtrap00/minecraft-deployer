@@ -2,7 +2,7 @@
 // Diálogo #pregen-modal (partials/modals/pregen.html). Backend en
 // routes/pregen.py y services/pregen.py: instala Chunky si se pide, calcula
 // el disco con los datos del propio mundo y lleva la tarea por la consola.
-var pregen = { modpack: null, data: null, available: null, poll: null, estimateTimer: null, justInstalled: false };
+var pregen = { modpack: null, data: null, available: null, poll: null, estimateTimer: null };
 
 var PREGEN_DIMENSIONS = {
   'minecraft:overworld': 'Overworld',
@@ -22,7 +22,6 @@ function openPregen(modpack) {
   pregen.modpack = modpack;
   pregen.data = null;
   pregen.available = null;
-  pregen.justInstalled = false;
   document.getElementById('pregen-title').textContent = '· ' + modpack;
   document.getElementById('pregen-modal').classList.add('show');
   document.getElementById('pregen-body').innerHTML = modSearchSpinnerHtml(t('Cargando…'));
@@ -88,6 +87,9 @@ function pregenInstallHtml() {
         mods: available.dependencies.map(function(dep) { return dep.title; }).join(', ')
       })) + '</p>'
       : '')
+    + (pregen.data && pregen.data.server_running
+      ? noticeHtml('warn', escHtml(t('El servidor está encendido: Chunky se descargará ahora, pero no funcionará hasta que reinicies el servidor.')))
+      : '')
     + '<div class="button-row"><button type="button" class="btn-primary btn-sm" id="pregen-install">' + icon('download') + escHtml(t('Instalar Chunky')) + '</button></div>'
     + '</div>';
 }
@@ -98,6 +100,9 @@ function pregenStatusText(state, data) {
   }
   if (state.status === 'paused_players') {
     return t('En pausa: hay jugadores conectados. Seguirá sola cuando se vayan.');
+  }
+  if (data.needs_restart) {
+    return t('Esperando a que reinicies el servidor: Chunky se instaló con él encendido y aún no está cargado.');
   }
   return data.server_running
     ? t('Empezará en cuanto el servidor termine de arrancar.')
@@ -175,8 +180,8 @@ function pregenFormHtml(data) {
   if (data.low_ram) {
     html += noticeHtml('warn', escHtml(t('Al equipo le queda poca memoria libre. Pregenerar exige mucho al servidor: mejor con el servidor vacío.')));
   }
-  if (pregen.justInstalled && data.server_running) {
-    html += noticeHtml('info', escHtml(t('Chunky se cargará cuando reinicies el servidor; hasta entonces la tarea esperará.')));
+  if (data.needs_restart) {
+    html += noticeHtml('warn', escHtml(t('Chunky está instalado, pero el servidor ya estaba encendido: no funcionará hasta que lo reinicies. Puedes dejar la pregeneración preparada y empezará sola después del reinicio.')));
   }
   html += '<div class="button-row"><button type="button" class="btn-primary btn-sm" id="pregen-start">' + icon('play') + escHtml(t('Empezar a pregenerar')) + '</button></div>';
   return html;
@@ -311,8 +316,11 @@ document.getElementById('pregen-modal').addEventListener('click', function(event
   }
   if (target.id === 'pregen-install') {
     postPregen('/install', target, function(data) {
-      pregen.justInstalled = true;
-      showToast(t('Chunky {version} instalado', { version: data.version }), 'success');
+      if (data.restart_needed) {
+        showToast(t('Chunky {version} instalado. Reinicia el servidor para que se cargue: hasta entonces no funciona.', { version: data.version }), 'warn');
+      } else {
+        showToast(t('Chunky {version} instalado', { version: data.version }), 'success');
+      }
     });
   } else if (target.id === 'pregen-start') {
     startPregen(target);

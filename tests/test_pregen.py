@@ -72,6 +72,7 @@ class PregenTests(unittest.TestCase):
             self.addCleanup(patcher.stop)
         pregen._last_save = 0.0
         pregen._live.clear()
+        pregen._loaded.clear()
 
     # ── Chunky ────────────────────────────────────────────────────────────────
     def versions(self, url):
@@ -264,6 +265,55 @@ class PregenTests(unittest.TestCase):
         with self.assertRaises(pregen.PregenError):
             pregen.cancel("pack")
 
+
+    def test_installed_with_the_server_running_waits_for_a_restart(self):
+        # El servidor arranca sin Chunky; luego se instala y se pide pregenerar.
+        self.running = "pack"
+        pregen.on_start("pack")
+        state = self.start(["minecraft:overworld"])
+        self.assertEqual(self.sent, [])
+        self.assertEqual(state["status"], "waiting")
+        self.assertTrue(pregen.status("pack")["needs_restart"])
+        # Reinicio: ahora sí carga.
+        pregen.on_start("pack")
+        self.assertFalse(pregen.status("pack")["needs_restart"])
+        pregen._kick("pack")
+        self.assertIn("chunky start", self.sent)
+
+    def test_unknown_command_puts_the_task_back_to_waiting(self):
+        # El panel no vio arrancar el servidor: lo da por cargado, y la consola le corrige.
+        self.start(["minecraft:overworld"])
+        self.running = "pack"
+        pregen._kick("pack")
+        self.assertEqual(pregen.load_state("pack")["current"], "minecraft:overworld")
+        pregen.on_line("pack", "[17:30:49] [Server thread/INFO] [minecraft/MinecraftServer]: chunky radius 2000<--[HERE]")
+        state = pregen.load_state("pack")
+        self.assertEqual((state["status"], state["current"]), ("waiting", None))
+        self.assertEqual(state["pending"], ["minecraft:overworld"])
+        self.assertTrue(pregen.status("pack")["needs_restart"])
+        self.sent.clear()
+        pregen._kick("pack")
+        self.assertEqual(self.sent, [])
+        # Alguien escribiéndolo en el chat no cuenta.
+        pregen._loaded.clear()
+        pregen._kick("pack")
+        pregen.on_line("pack", "[17:31] [Server thread/INFO]: <Steve> chunky start<--[HERE]")
+        self.assertEqual(pregen.load_state("pack")["status"], "running")
+
+    def test_task_chunky_never_received_starts_again_after_restart(self):
+        # Lo que quedó de versiones anteriores: «en marcha» sin que Chunky la tuviera.
+        self.start(["minecraft:overworld"])
+        state = pregen.load_state("pack")
+        pregen._save_state("pack", {**state, "status": "running", "current": "minecraft:overworld"})
+        pregen.on_exit("pack")
+        self.running = "pack"
+        pregen.on_start("pack")
+        pregen._kick("pack")
+        self.assertEqual(self.sent[-1], "chunky continue")
+        self.sent.clear()
+        pregen.on_line("pack", "[18:00:00] [Server thread/INFO] [Chunky/]: [Chunky] No tasks to continue.")
+        self.assertIn("chunky start", self.sent)
+        self.assertEqual(pregen.load_state("pack")["status"], "running")
 
 class PanelModsKeptOnUpdateTests(unittest.TestCase):
     def test_merge_keeps_panel_mods_even_without_pack_list(self):

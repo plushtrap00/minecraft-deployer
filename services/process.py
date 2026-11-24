@@ -316,6 +316,7 @@ def _reader_thread(proc, temp_script: str | None = None):
     # Actualizar start_time en el módulo de métricas
     from services import metrics as _m
     _m.mc_start_time = datetime.datetime.utcnow()
+    server_control.on_start(modpack)
 
     eula_missing = False
     try:

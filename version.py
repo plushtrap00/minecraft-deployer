@@ -6,6 +6,11 @@ documentación de la API. Cada commit sube la versión (2.A.B, cada cifra de 0
 a 9: después de 2.0.9 va 2.1.0) y se etiqueta con `git tag v<versión>`.
 
 Historial resumido:
+- 3.2.5 (2026-11-24): arreglo de la pregeneración. Si instalas Chunky con el
+  servidor encendido, el panel avisa de que no funcionará hasta reiniciarlo y
+  la tarea espera a ese reinicio, en vez de mandar a la consola comandos que
+  Minecraft aún no conoce. Una pregeneración que se quedó así a medias vuelve
+  a empezar sola tras el reinicio en vez de quedarse colgada.
 - 3.2.4 (2026-11-24): el botón Pregenerar pasa a la cabecera de cada
   servidor, junto a Paquete para jugadores, y se ve desde cualquier pestaña
   (antes estaba escondido en Propiedades, junto a los mundos instalados).
@@ -218,4 +223,4 @@ Historial resumido:
   otros usuarios.
 - 1.x: todo lo anterior (sin numerar).
 """
-APP_VERSION = "3.2.4"
+APP_VERSION = "3.2.5"

@@ -59,12 +59,20 @@ _RUNNING_RE = re.compile(
     r"Task running for (\S+?)\.? Processed: (\d+) chunks \(([\d.,]+)%\)"
     r"(?:, ETA: (\d+):(\d+):(\d+))?(?:, Rate: ([\d.,]+) cps)?")
 _DONE_RE = re.compile(r"Task finished for (\S+?)\.? Processed: (\d+) chunks")
-_ALREADY_RE = re.compile(r"A task was already started for this world")
+# El texto cambia entre versiones de Chunky (1.4.23: «Task already started for X!»).
+_ALREADY_RE = re.compile(r"A task was already started for this world|Task already started for ")
+_NO_TASKS_RE = re.compile(r"No tasks to continue")
+# Minecraft no conoce el comando: Chunky no está cargado (p. ej. se instaló con el
+# servidor encendido). La línea es «chunky radius 2000<--[HERE]».
+_UNKNOWN_CMD_RE = re.compile(r"\]:\s*chunky\b[^<]*<--\[HERE\]")
 _NO_DISK_RE = re.compile(r"The server only has (.+?) disk space remaining")
 
 _lock = threading.RLock()
 _last_save = 0.0
 _live: dict = {}  # modpack → (dimensión, último progreso)
+# modpack → si Chunky estaba en mods/ al arrancar el servidor. Un jar que llega
+# después (instalado con el servidor encendido) no se carga hasta reiniciar.
+_loaded: dict = {}
 
 
 class PregenError(Exception):
@@ -238,8 +246,10 @@ def install(modpack: str) -> dict:
         marks = panel_mods(server_dir)
         marks["chunky"] = version["filename"]
         _save_panel_mods(server_dir, marks)
+    from services import server_control
     return {"filename": version["filename"], "version": version["version"],
-            "dependencies": [d["filename"] for d in version["dependencies"]]}
+            "dependencies": [d["filename"] for d in version["dependencies"]],
+            "restart_needed": server_control.running_modpack() == modpack}
 
 
 def uninstall(modpack: str) -> None:
@@ -509,6 +519,7 @@ def status(modpack: str) -> dict:
         "chunky": {"filename": jar, "by_panel": bool(jar) and panel_mods(server_dir).get("chunky") == jar},
         "state": state,
         "server_running": running_here,
+        "needs_restart": bool(jar) and running_here and not chunky_loaded(modpack),
         "players": len(mc_metrics.get("players_online") or []) if running_here else 0,
         "low_ram": _low_ram(),
         "dimensions": list(DIMENSIONS),
@@ -575,6 +586,11 @@ def _kick(modpack: str) -> None:
         state = load_state(modpack)
         if not _active(state) or server_control.running_modpack() != modpack or not proc_module.mc_ready:
             return
+        if not chunky_loaded(modpack):
+            # Sin Chunky cargado, sus comandos no existen: se espera al reinicio.
+            if state["status"] != "waiting" or state.get("current"):
+                _save_state(modpack, {**state, "status": "waiting", "current": None, "progress": None})
+            return
         if state["only_when_empty"] and not _empty():
             if state["status"] != "paused_players":
                 _save_state(modpack, {**state, "status": "paused_players"})
@@ -611,6 +627,17 @@ def _finish(modpack: str, state: dict) -> None:
 
 # ── Sucesos del servidor (los llama server_control) ───────────────────────────
 
+def on_start(modpack: str) -> None:
+    """Al lanzar el servidor: lo que haya en mods/ ahora es lo que va a cargar."""
+    _loaded[modpack] = find_chunky(_server_dir(modpack)) is not None
+
+
+def chunky_loaded(modpack: str) -> bool:
+    # Si el panel no vio arrancar el servidor, se da por cargado: si no lo está,
+    # la consola lo dice (_UNKNOWN_CMD_RE) y la tarea vuelve a esperar.
+    return _loaded.get(modpack, True)
+
+
 def on_ready(modpack: str) -> None:
     # Unos segundos después de «Done»: los mods terminan de cargar y Chunky
     # retoma su tarea guardada antes de que le lleguen comandos.
@@ -639,13 +666,25 @@ def on_exit(modpack: str) -> None:
 
 
 def on_line(modpack: str, line: str) -> None:
-    if "Task " not in line and "A task" not in line and "disk space" not in line:
+    if ("Task " not in line and "A task" not in line and "disk space" not in line
+            and "No tasks" not in line and "<--[HERE]" not in line):
         return
     if _CHAT_RE.search(line):
         return  # alguien lo ha escrito en el chat
     with _lock:
+        if _UNKNOWN_CMD_RE.search(line):
+            _loaded[modpack] = False
+            state = load_state(modpack)
+            if _active(state) and (state["status"] != "waiting" or state.get("current")):
+                _save_state(modpack, {**state, "status": "waiting", "current": None, "progress": None})
+            return
         state = load_state(modpack)
         if not _active(state):
+            return
+        if _NO_TASKS_RE.search(line) and state.get("current"):
+            # Chunky no tenía guardada la tarea (nunca le llegó): se empieza de nuevo.
+            state["current"] = None
+            _begin_next(modpack, state)
             return
         match = _RUNNING_RE.search(line)
         if match:

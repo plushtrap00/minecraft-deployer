@@ -377,6 +377,10 @@ def _pregen(event: str, *args) -> None:
         print(f"[pregen] {event}: {e}")
 
 
+def on_start(modpack: str) -> None:
+    _pregen("on_start", modpack)
+
+
 def on_ready(modpack: str) -> None:
     notify("ready", f"✅ {modpack} está listo para jugar.")
     _pregen("on_ready", modpack)
