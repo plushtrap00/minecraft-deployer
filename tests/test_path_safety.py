@@ -82,6 +82,51 @@ class PathSafetyTests(unittest.TestCase):
         self.refused(lambda: worlds.get_world_file("pack", "..", "pack/server.properties"), 400)
         self.untouched()
 
+    def test_folder_itself_is_not_a_file(self):
+        # Ruta vacía, "." o una subcarpeta: 404 limpio, no un 500 al leerla como archivo.
+        request = SimpleNamespace(state=SimpleNamespace())
+        (self.pack / "config" / "sub").mkdir()
+        for path in ("", ".", "sub"):
+            self.refused(lambda: mod_files.get_config_file("pack", path), 404)
+            self.refused(lambda: mod_files.save_config_file(request, "pack", path, "x"), 404)
+            self.refused(lambda: mod_files.get_kubejs_file("pack", path), 404)
+            self.refused(lambda: mod_files.save_kubejs_file("pack", path, "x"), 404)
+            self.refused(lambda: worlds.get_world_file("pack", "world", path), 404)
+            self.refused(lambda: worlds.save_world_file("pack", "world", path, "x"), 404)
+        self.assertIsNone(logs._find_log_or_crash_path(self.pack, "."))
+        # Nombres enormes: 400, no «File name too long».
+        self.refused(lambda: mod_files.create_kubejs_file("pack", "__root__", "a" * 5000), 400)
+        self.refused(lambda: mod_files.create_kubejs_file("pack", "a" * 5000, "x.js"), 400)
+
+    def test_damaged_gz_log(self):
+        import asyncio
+        (self.pack / "logs" / "roto.log.gz").write_bytes(b"no es gzip")
+        with mock.patch.object(logs, "DEFAULT_SERVERS_PATH", self.root):
+            with self.assertRaises(HTTPException) as ctx:
+                asyncio.run(logs.get_log_file("pack", "roto.log.gz"))
+        self.assertEqual(ctx.exception.status_code, 422)
+
+    def test_listings_see_new_files_in_subfolders(self):
+        import os
+        import time
+        from services import utils
+        stats = self.pack / "world" / "stats"
+        (self.pack / "config" / "sub").mkdir()
+        stats.mkdir()
+        with mock.patch.object(utils, "DEFAULT_SERVERS_PATH", self.root):
+            self.assertEqual(utils.get_mod_configs("pack"), {"__root__": ["mod.toml"]})
+            self.assertEqual(utils.get_world_files("pack", "world"), {})
+            # Archivos nuevos dentro de subcarpetas (la carpeta de arriba no cambia de fecha).
+            top = (self.pack / "config").stat().st_mtime_ns, (self.pack / "world").stat().st_mtime_ns
+            (self.pack / "config" / "sub" / "nuevo.toml").write_text("x=1", encoding="utf-8")
+            (stats / "jugador.json").write_text("{}", encoding="utf-8")
+            later = time.time_ns() + 5_000_000_000
+            os.utime(self.pack / "config" / "sub", ns=(later, later))
+            os.utime(stats, ns=(later, later))
+            self.assertEqual(((self.pack / "config").stat().st_mtime_ns, (self.pack / "world").stat().st_mtime_ns), top)
+            self.assertEqual(utils.get_mod_configs("pack")["sub"], ["sub/nuevo.toml"])
+            self.assertEqual(utils.get_world_files("pack", "world"), {"stats": ["stats/jugador.json"]})
+
     def test_logs_and_mods(self):
         for name in ("../server.properties", "..", "a/b.log", "a\\b.log"):
             self.refused(lambda: logs._find_log_or_crash_path(self.pack, name), 403)

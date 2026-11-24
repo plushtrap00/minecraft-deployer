@@ -6,6 +6,12 @@ documentación de la API. Cada commit sube la versión (2.A.B, cada cifra de 0
 a 9: después de 2.0.9 va 2.1.0) y se etiqueta con `git tag v<versión>`.
 
 Historial resumido:
+- 3.2.2 (2026-11-24): arreglos. En la pantalla de entrada ya no se borra
+  sola la contraseña que estás escribiendo (ni el aviso de error) cada 30
+  segundos. Las listas de configuración, KubeJS y archivos del mundo ya
+  muestran lo que el servidor crea en subcarpetas (p. ej. las estadísticas
+  de un jugador nuevo) sin reiniciar el panel. Un log comprimido dañado
+  dice que está dañado y se puede descargar, en vez de dar un error.
 - 3.2.1 (2026-11-24): el código del panel pasa a tener licencia MIT
   (archivo LICENSE): software libre que cualquiera puede usar, modificar y
   repartir. Sin cambios en el funcionamiento.
@@ -202,4 +208,4 @@ Historial resumido:
   otros usuarios.
 - 1.x: todo lo anterior (sin numerar).
 """
-APP_VERSION = "3.2.1"
+APP_VERSION = "3.2.2"

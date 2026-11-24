@@ -28,7 +28,7 @@ from services.modpack import (
 )
 from services.busy import BusyGuard
 
-from routes.deps import valid_modpack, modpack_path, attachment_headers, world_path
+from routes.deps import valid_modpack, modpack_path, attachment_headers, world_path, file_inside
 from services.secure_files import atomic_write_text
 from services.uploads import save_upload
 
@@ -237,13 +237,7 @@ def get_world_file(modpack: str, world_name: str, path: str):
     world_dir = world_path(base, world_name)
     if not world_dir.exists():
         raise HTTPException(status_code=404, detail="El mundo no existe")
-    full_path = world_dir / path
-    try:
-        full_path.resolve().relative_to(world_dir.resolve())
-    except ValueError:
-        raise HTTPException(status_code=403, detail="Ruta no permitida")
-    if not full_path.exists():
-        raise HTTPException(status_code=404, detail="Archivo no encontrado")
+    full_path = file_inside(world_dir, path)
     return JSONResponse({"content": full_path.read_text(encoding="utf-8", errors="replace"), "path": path})
 
 
@@ -253,13 +247,7 @@ def save_world_file(modpack: str, world_name: str = Form(...), path: str = Form(
     world_dir = world_path(base, world_name)
     if not world_dir.exists():
         raise HTTPException(status_code=404, detail="El mundo no existe")
-    full_path = world_dir / path
-    try:
-        full_path.resolve().relative_to(world_dir.resolve())
-    except ValueError:
-        raise HTTPException(status_code=403, detail="Ruta no permitida")
-    if not full_path.exists():
-        raise HTTPException(status_code=404, detail="Archivo no encontrado")
+    full_path = file_inside(world_dir, path)
     atomic_write_text(full_path, content)
     return JSONResponse({"success": True})
 

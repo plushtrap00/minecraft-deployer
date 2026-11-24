@@ -8,6 +8,7 @@ Rutas:
 """
 import re
 import gzip
+import zlib
 import asyncio
 from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException
@@ -43,7 +44,7 @@ def _find_log_or_crash_path(base: Path, filename: str) -> Path | None:
     if ".." in filename or "/" in filename or "\\" in filename:
         raise HTTPException(status_code=403, detail="Nombre de archivo inválido")
     return next(
-        (c for c in [base / "logs" / filename, base / "crash-reports" / filename] if c.exists()),
+        (c for c in [base / "logs" / filename, base / "crash-reports" / filename] if c.is_file()),
         None
     )
 
@@ -88,7 +89,11 @@ async def get_log_file(modpack: str, filename: str):
         def _read_gz():
             with gzip.open(file_path, "rt", encoding="utf-8", errors="replace") as f:
                 return f.read()
-        raw = await asyncio.to_thread(_read_gz)
+        try:
+            raw = await asyncio.to_thread(_read_gz)
+        except (OSError, EOFError, zlib.error):
+            # Se cortó al comprimirlo (el servidor se apagó a medias, disco lleno...).
+            raise HTTPException(status_code=422, detail="El archivo está dañado y no se puede leer; puedes descargarlo tal cual")
     else:
         raw = await asyncio.to_thread(file_path.read_text, encoding="utf-8", errors="replace")
     # analyze_crash() solo tiene sentido (y solo es fiable) para crash reports

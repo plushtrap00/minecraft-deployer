@@ -49,6 +49,22 @@ async def valid_modpack(request: Request) -> None:
         modpack_path(modpack)
 
 
+def file_inside(base: Path, rel: str) -> Path:
+    """
+    Archivo rel dentro de base: 403 si se sale de ella, 404 si no existe o no
+    es un archivo (una ruta vacía o "." es la propia carpeta, y leerla o
+    escribirla como archivo daba un error 500).
+    """
+    path = base / rel
+    try:
+        path.resolve().relative_to(base.resolve())
+    except ValueError:
+        raise HTTPException(status_code=403, detail="Ruta no permitida")
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="Archivo no encontrado")
+    return path
+
+
 def attachment_headers(filename: str) -> dict:
     """
     Cabecera Content-Disposition para descargar un archivo con ese nombre.

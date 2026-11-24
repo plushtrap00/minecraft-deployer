@@ -63,13 +63,21 @@ function applyRoleUI() {
 // sesión ya no vale, no hace falta avisar al servidor) y endSession() al
 // pulsar "Salir".
 function logout() {
+  var screen = document.getElementById('login-screen');
+  // Ya en la pantalla de entrada (un sondeo que da 401 sin sesión): no se toca
+  // nada, o se borraría la contraseña que se está escribiendo y el error.
+  if (!screen.classList.contains('hidden')) {
+    currentRole = 'user';
+    currentUser = '';
+    return;
+  }
   currentRole = 'user';
   currentUser = '';
   if (typeof resetAccountAchievements === 'function') {
     resetAccountAchievements();
   }
   applyRoleUI();
-  document.getElementById('login-screen').classList.remove('hidden');
+  screen.classList.remove('hidden');
   document.getElementById('login-pass').value = '';
   document.getElementById('login-error').textContent = '';
 }

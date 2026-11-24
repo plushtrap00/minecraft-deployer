@@ -111,15 +111,23 @@ function loadLogFile(filename) {
   downloadLink.style.display = 'none';
 
   apiFetch('/api/modpacks/' + encodeURIComponent(currentModpack) + '/logs/' + encodeURIComponent(filename))
-    .then(function(response) { return response.json(); })
-    .then(function(data) {
-      rawLogContent = data.content;
-      renderLog(true);
-
+    .then(function(response) {
+      return response.json().then(function(data) { return { ok: response.ok, status: response.status, data: data }; });
+    })
+    .then(function(result) {
+      var data = result.data;
       downloadLink.href = '/api/modpacks/' + encodeURIComponent(currentModpack) + '/logs/' + encodeURIComponent(filename)
         + '/download';
+      if (!result.ok) {
+        // 422: un .gz dañado (routes/logs.py) no se puede ver, pero sí descargar tal cual.
+        viewer.innerHTML = '<span class="text-red">' + escHtml(data.detail || t('Error al cargar archivo')) + '</span>';
+        downloadLink.style.display = result.status === 422 ? '' : 'none';
+        renderCrashInfo(null);
+        return;
+      }
+      rawLogContent = data.content;
+      renderLog(true);
       downloadLink.style.display = '';
-
       renderCrashInfo(data.crash_info);
     })
     .catch(function() {

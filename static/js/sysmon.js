@@ -103,6 +103,12 @@ function scheduleNextAutoUpdatePoll() {
 
 function loadAutoUpdateStatus() {
   var wasRestarting = autoUpdateRestarting;
+  // Sin sesión no hay nada que preguntar (daría 401): el bucle sigue y
+  // onLoginSuccess() lo adelanta en cuanto se entra.
+  if (!wasRestarting && !document.getElementById('login-screen').classList.contains('hidden')) {
+    scheduleNextAutoUpdatePoll();
+    return;
+  }
   apiFetch('/api/auto-update/status')
     .then(function(response) { return response.json(); })
     .then(function(data) {

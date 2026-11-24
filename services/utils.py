@@ -25,9 +25,27 @@ from services.uploads import check_extracted_size
 KUBEJS_EXTENSIONS = {".js", ".ts", ".json", ".yaml", ".yml", ".txt", ".md"}
 WORLD_EXTENSIONS = {".json", ".txt", ".mcfunction", ".yaml", ".yml", ".mcmeta"}
 
-_configs_cache: dict = {}      # modpack -> (dir_mtime, result)
-_kubejs_cache: dict = {}       # modpack -> (dir_mtime, result)
-_world_files_cache: dict = {}  # (modpack, world_name) -> (dir_mtime, result)
+_configs_cache: dict = {}      # modpack -> (firma del árbol, result)
+_kubejs_cache: dict = {}       # modpack -> (firma del árbol, result)
+_world_files_cache: dict = {}  # (modpack, world_name) -> (firma del árbol, result)
+
+
+def _tree_signature(root: Path) -> tuple:
+    """
+    Firma para saber si cambió algo dentro de root, a cualquier profundidad:
+    la fecha más reciente de TODAS sus carpetas y cuántas hay. Crear, borrar o
+    renombrar un archivo cambia la fecha de su carpeta; mirar solo la de root
+    no veía lo nuevo en subcarpetas (las stats de un jugador nuevo, la config
+    que un mod crea en config/<mod>/) hasta reiniciar el panel.
+    """
+    newest = count = 0
+    for dirpath, _dirs, _files in os.walk(root):
+        try:
+            newest = max(newest, os.stat(dirpath).st_mtime_ns)
+        except OSError:
+            pass
+        count += 1
+    return newest, count
 
 
 def get_system_ram_gb() -> float | None:
@@ -59,16 +77,13 @@ def get_mod_configs(modpack_name: str) -> dict:
     Devuelve un dict {mod_key: [lista de rutas relativas]} con los archivos
     de configuración de un modpack, agrupados por subcarpeta bajo config/.
     Los archivos en la raíz de config/ se agrupan bajo '__root__'.
-    Resultado cacheado por mtime del directorio config/.
+    Resultado cacheado mientras no cambie nada dentro de config/.
     """
     config_dir = DEFAULT_SERVERS_PATH / modpack_name / "config"
     if not config_dir.exists():
         return {}
 
-    try:
-        mtime = config_dir.stat().st_mtime
-    except Exception:
-        mtime = None
+    mtime = _tree_signature(config_dir)
 
     if modpack_name in _configs_cache:
         cached_mtime, cached_result = _configs_cache[modpack_name]
@@ -84,7 +99,7 @@ def get_mod_configs(modpack_name: str) -> dict:
         rel = path.relative_to(config_dir)
         parts = rel.parts
         mod_key = "__root__" if len(parts) == 1 else parts[0]
-        mods.setdefault(mod_key, []).append(str(rel))
+        mods.setdefault(mod_key, []).append(rel.as_posix())
 
     _configs_cache[modpack_name] = (mtime, mods)
     return mods
@@ -94,16 +109,13 @@ def get_kubejs_files(modpack_name: str) -> dict:
     """
     Devuelve un dict {grupo: [lista de rutas relativas]} con los archivos
     KubeJS de un modpack, agrupados por subcarpeta bajo kubejs/.
-    Resultado cacheado por mtime del directorio kubejs/.
+    Resultado cacheado mientras no cambie nada dentro de kubejs/.
     """
     kubejs_dir = DEFAULT_SERVERS_PATH / modpack_name / "kubejs"
     if not kubejs_dir.exists():
         return {}
 
-    try:
-        mtime = kubejs_dir.stat().st_mtime
-    except Exception:
-        mtime = None
+    mtime = _tree_signature(kubejs_dir)
 
     if modpack_name in _kubejs_cache:
         cached_mtime, cached_result = _kubejs_cache[modpack_name]
@@ -119,7 +131,7 @@ def get_kubejs_files(modpack_name: str) -> dict:
         rel = path.relative_to(kubejs_dir)
         parts = rel.parts
         group = parts[0] if len(parts) > 1 else "__root__"
-        groups.setdefault(group, []).append(str(rel))
+        groups.setdefault(group, []).append(rel.as_posix())
 
     _kubejs_cache[modpack_name] = (mtime, groups)
     return groups
@@ -134,16 +146,13 @@ def get_world_files(modpack_name: str, world_name: str) -> dict:
     Devuelve un dict {carpeta: [lista de rutas relativas]} con los archivos de
     texto editables de un mundo (stats/, advancements/, datapacks/...).
     Excluye binarios como level.dat, region/*.mca y playerdata/*.dat.
-    Resultado cacheado por mtime de la carpeta del mundo.
+    Resultado cacheado mientras no cambie nada dentro del mundo.
     """
     world_dir = DEFAULT_SERVERS_PATH / modpack_name / world_name
     if not world_dir.exists():
         return {}
 
-    try:
-        mtime = world_dir.stat().st_mtime
-    except Exception:
-        mtime = None
+    mtime = _tree_signature(world_dir)
 
     cache_key = (modpack_name, world_name)
     if cache_key in _world_files_cache:
@@ -160,7 +169,7 @@ def get_world_files(modpack_name: str, world_name: str) -> dict:
         rel = path.relative_to(world_dir)
         parts = rel.parts
         group = parts[0] if len(parts) > 1 else "__root__"
-        groups.setdefault(group, []).append(str(rel))
+        groups.setdefault(group, []).append(rel.as_posix())
 
     _world_files_cache[cache_key] = (mtime, groups)
     return groups

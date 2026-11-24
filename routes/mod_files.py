@@ -20,7 +20,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from config import DEFAULT_SERVERS_PATH
 from services.utils import get_mod_configs, get_kubejs_files, invalidate_kubejs_cache
 
-from routes.deps import valid_modpack, modpack_path, attachment_headers
+from routes.deps import valid_modpack, modpack_path, attachment_headers, file_inside
 from services.secure_files import atomic_write_text
 
 
@@ -36,28 +36,14 @@ def get_mod_config_list(modpack: str):
 
 @router.get("/{modpack}/config-file")
 def get_config_file(modpack: str, path: str):
-    full_path = DEFAULT_SERVERS_PATH / modpack / "config" / path
-    base = (DEFAULT_SERVERS_PATH / modpack / "config").resolve()
-    try:
-        full_path.resolve().relative_to(base)
-    except ValueError:
-        raise HTTPException(status_code=403, detail="Ruta no permitida")
-    if not full_path.exists():
-        raise HTTPException(status_code=404, detail="Archivo no encontrado")
+    full_path = file_inside(DEFAULT_SERVERS_PATH / modpack / "config", path)
     return JSONResponse({"content": full_path.read_text(encoding="utf-8", errors="replace"), "path": path})
 
 
 @router.post("/{modpack}/config-file")
 def save_config_file(request: Request, modpack: str, path: str = Form(...), content: str = Form(...)):
     request.state.activity_detail = "config/" + path
-    full_path = DEFAULT_SERVERS_PATH / modpack / "config" / path
-    base = (DEFAULT_SERVERS_PATH / modpack / "config").resolve()
-    try:
-        full_path.resolve().relative_to(base)
-    except ValueError:
-        raise HTTPException(status_code=403, detail="Ruta no permitida")
-    if not full_path.exists():
-        raise HTTPException(status_code=404, detail="Archivo no encontrado")
+    full_path = file_inside(DEFAULT_SERVERS_PATH / modpack / "config", path)
     atomic_write_text(full_path, content)
     return JSONResponse({"success": True})
 
@@ -73,14 +59,7 @@ def get_kubejs_list(modpack: str):
 
 @router.get("/{modpack}/kubejs-file")
 def get_kubejs_file(modpack: str, path: str):
-    full_path = DEFAULT_SERVERS_PATH / modpack / "kubejs" / path
-    base = (DEFAULT_SERVERS_PATH / modpack / "kubejs").resolve()
-    try:
-        full_path.resolve().relative_to(base)
-    except ValueError:
-        raise HTTPException(status_code=403, detail="Ruta no permitida")
-    if not full_path.exists():
-        raise HTTPException(status_code=404, detail="Archivo no encontrado")
+    full_path = file_inside(DEFAULT_SERVERS_PATH / modpack / "kubejs", path)
     return JSONResponse({"content": full_path.read_text(encoding="utf-8", errors="replace"), "path": path})
 
 
@@ -93,12 +72,13 @@ def create_kubejs_file(
     kjs_dir = DEFAULT_SERVERS_PATH / modpack / "kubejs"
     if not kjs_dir.exists():
         raise HTTPException(status_code=404, detail="Este modpack no tiene carpeta kubejs/")
-    if not re.match(r'^[\w.\-]+$', filename):
+    # Con longitud máxima: un nombre enorme daba «File name too long» (error 500).
+    if not re.match(r'^[\w.\-]{1,100}$', filename):
         raise HTTPException(status_code=400, detail="Nombre de archivo inválido (solo letras, números, _, -, .)")
     if subfolder == '__root__':
         rel_path = filename
     else:
-        if not re.match(r'^[\w\-/]+$', subfolder):
+        if not re.match(r'^[\w\-/]{1,200}$', subfolder):
             raise HTTPException(status_code=400, detail="Ruta de carpeta inválida")
         rel_path = subfolder.strip('/') + '/' + filename
     full_path = DEFAULT_SERVERS_PATH / modpack / "kubejs" / rel_path
@@ -117,14 +97,7 @@ def create_kubejs_file(
 
 @router.post("/{modpack}/kubejs-file")
 def save_kubejs_file(modpack: str, path: str = Form(...), content: str = Form(...)):
-    full_path = DEFAULT_SERVERS_PATH / modpack / "kubejs" / path
-    base = (DEFAULT_SERVERS_PATH / modpack / "kubejs").resolve()
-    try:
-        full_path.resolve().relative_to(base)
-    except ValueError:
-        raise HTTPException(status_code=403, detail="Ruta no permitida")
-    if not full_path.exists():
-        raise HTTPException(status_code=404, detail="Archivo no encontrado")
+    full_path = file_inside(DEFAULT_SERVERS_PATH / modpack / "kubejs", path)
     atomic_write_text(full_path, content)
     return JSONResponse({"success": True})
 
@@ -166,7 +139,7 @@ def move_kubejs_file(modpack: str, from_path: str = Form(...), to_path: str = Fo
 
     if not src.exists() or not src.is_file():
         raise HTTPException(status_code=404, detail="Archivo de origen no encontrado")
-    if not re.match(r'^[\w.\-]+$', dest.name):
+    if not re.match(r'^[\w.\-]{1,100}$', dest.name) or len(to_path) > 300:
         raise HTTPException(status_code=400, detail="Nombre de archivo destino inválido (solo letras, números, _, -, .)")
     if dest.exists():
         raise HTTPException(status_code=400, detail=f"Ya existe un archivo en {to_path}")
