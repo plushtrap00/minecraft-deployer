@@ -6,6 +6,9 @@ documentación de la API. Cada commit sube la versión (2.A.B, cada cifra de 0
 a 9: después de 2.0.9 va 2.1.0) y se etiqueta con `git tag v<versión>`.
 
 Historial resumido:
+- 3.2.4 (2026-11-24): el botón Pregenerar pasa a la cabecera de cada
+  servidor, junto a Paquete para jugadores, y se ve desde cualquier pestaña
+  (antes estaba escondido en Propiedades, junto a los mundos instalados).
 - 3.2.3 (2026-11-24): repaso de la interfaz por dentro. Si un archivo de
   configuración ya no existe, el editor lo dice en vez de abrirlo con
   «undefined» dentro (y ya no se puede guardar ese texto encima); un fallo al
@@ -215,4 +218,4 @@ Historial resumido:
   otros usuarios.
 - 1.x: todo lo anterior (sin numerar).
 """
-APP_VERSION = "3.2.3"
+APP_VERSION = "3.2.4"
