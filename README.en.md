@@ -233,3 +233,7 @@ They cover path and name validation, safe archive extraction, sessions, firewall
 - **APIs**: each install uses its own CurseForge API key, and their use is subject to CurseForge's and Modrinth's terms.
 - **No telemetry**: the panel sends nothing to its developer. It only connects to the mod and modloader APIs, Mojang, GitHub (to check for updates), mc-heads.net (player heads) and Telegram/Discord if you set up notifications.
 - **Bundled third-party content**: [Lucide](https://lucide.dev) icons (ISC licence, `static/LICENSE-lucide.txt`) and the IBM Plex and Pixelify Sans fonts (SIL Open Font License 1.1, `static/fonts/`). The pixel art and sounds are original (generated in code).
+
+## Licence
+
+Server Deployer for Minecraft's code is free software under the [MIT](LICENSE) licence: you can use, modify and share it, including in other projects, as long as you keep the copyright notice and the licence. It's provided as is, without warranty. Third-party mods, modpacks, icons and fonts keep their own licences (see **Legal notice**).

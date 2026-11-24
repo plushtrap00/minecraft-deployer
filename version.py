@@ -6,6 +6,9 @@ documentación de la API. Cada commit sube la versión (2.A.B, cada cifra de 0
 a 9: después de 2.0.9 va 2.1.0) y se etiqueta con `git tag v<versión>`.
 
 Historial resumido:
+- 3.2.1 (2026-11-24): el código del panel pasa a tener licencia MIT
+  (archivo LICENSE): software libre que cualquiera puede usar, modificar y
+  repartir. Sin cambios en el funcionamiento.
 - 3.2.0 (2026-11-24): pregenerar el mundo con Chunky, desde Propiedades. El
   panel solo lo instala si se lo pides (y lo deja fuera del paquete para
   jugadores), te dice antes cuánto ocupará según tu propio mundo, no empieza
@@ -199,4 +202,4 @@ Historial resumido:
   otros usuarios.
 - 1.x: todo lo anterior (sin numerar).
 """
-APP_VERSION = "3.2.0"
+APP_VERSION = "3.2.1"

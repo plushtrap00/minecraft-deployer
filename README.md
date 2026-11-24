@@ -233,3 +233,7 @@ Cubren la validación de rutas y nombres, la extracción segura de archivos, las
 - **APIs**: cada instalación usa su propia clave de la API de CurseForge, y su uso está sujeto a sus condiciones y a las de Modrinth.
 - **Sin telemetría**: el panel no envía nada a quien lo desarrolla. Solo se conecta a las APIs de mods y modloaders, a Mojang, a GitHub (para buscar actualizaciones), a mc-heads.net (cabezas de los jugadores) y a Telegram/Discord si configuras los avisos.
 - **Contenido de terceros incluido**: iconos [Lucide](https://lucide.dev) (licencia ISC, `static/LICENSE-lucide.txt`) y fuentes IBM Plex y Pixelify Sans (SIL Open Font License 1.1, `static/fonts/`). Los dibujos pixelados y los sonidos son propios (generados por código).
+
+## Licencia
+
+El código de Server Deployer for Minecraft es software libre con licencia [MIT](LICENSE): puedes usarlo, modificarlo y repartirlo, también en otros proyectos, siempre que conserves el aviso de copyright y la licencia. Se ofrece tal cual, sin garantías. Los mods, modpacks, iconos y fuentes de terceros mantienen sus propias licencias (ver **Aviso legal**).
