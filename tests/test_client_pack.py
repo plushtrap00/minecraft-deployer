@@ -98,6 +98,13 @@ class ClientPackTests(unittest.TestCase):
         with zipfile.ZipFile(self.server / ".client-pack" / "pack.mrpack") as zf:
             self.assertNotIn("overrides/mods/solo-cf.jar", zf.namelist())
 
+    def test_mods_the_panel_installed_for_itself_stay_out(self):
+        # Chunky para pregenerar (services/pregen.py): es del servidor, aunque nadie lo sepa por fuera.
+        (self.server / ".panel-mods.json").write_text(json.dumps({"chunky": "propio.jar"}), encoding="utf-8")
+        meta = self.build("curseforge")
+        self.assertIn("propio.jar", meta["excluded"])
+        self.assertEqual(meta["bundled"], [])
+
     def test_curseforge_zip(self):
         meta = self.build("curseforge")
         self.assertEqual(meta["bundled"], ["propio.jar"])

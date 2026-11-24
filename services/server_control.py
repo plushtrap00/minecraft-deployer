@@ -368,11 +368,22 @@ _crash_history: deque = deque()  # (momento, modpack) de las últimas caídas
 _RESTART_DELAY_SECONDS = 10
 
 
+def _pregen(event: str, *args) -> None:
+    """La pregeneración (services/pregen.py) nunca puede romper el control del servidor."""
+    try:
+        from services import pregen
+        getattr(pregen, event)(*args)
+    except Exception as e:  # noqa: BLE001
+        print(f"[pregen] {event}: {e}")
+
+
 def on_ready(modpack: str) -> None:
     notify("ready", f"✅ {modpack} está listo para jugar.")
+    _pregen("on_ready", modpack)
 
 
 def on_line(modpack: str, line: str) -> None:
+    _pregen("on_line", modpack, line)
     match = _JOIN_LEAVE_RE.search(line)
     if not match:
         return
@@ -383,6 +394,7 @@ def on_line(modpack: str, line: str) -> None:
     else:
         sessions.left(modpack, name)
         notify("leave", f"🚪 {name} ha salido de {modpack}.")
+    _pregen("on_players_changed", modpack)
 
 
 def on_exit(modpack: str, crashed: bool, eula_missing: bool, was_ready: bool, uptime_seconds: float) -> None:
@@ -390,6 +402,7 @@ def on_exit(modpack: str, crashed: bool, eula_missing: bool, was_ready: bool, up
     if not modpack:
         return
     sessions.server_stopped(modpack)
+    _pregen("on_exit", modpack)
     if eula_missing:
         # Minecraft se ha negado a arrancar por la EULA (no debería pasar: se
         # comprueba antes de arrancar). No es una caída ni se reintenta.

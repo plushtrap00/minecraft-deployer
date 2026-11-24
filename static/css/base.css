@@ -163,6 +163,7 @@ button .icon {
 
 /* Icono delante del texto en botones, menús y títulos. (Las pestañas usan
    gap y no lo necesitan.) */
+.btn-primary > .icon:first-child,
 .btn-secondary > .icon:first-child,
 .btn-ghost > .icon:first-child,
 .btn-danger > .icon:first-child,

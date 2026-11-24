@@ -149,10 +149,13 @@ def merge_into(staging: Path, server_dir: Path, pack_mods: list | None, level_na
     old_names = _jar_names(old_mods)
     new_names = set(_jar_names(new_mods))
     kept, removed = [], []
+    # Lo que instaló el panel para sí mismo (Chunky...) se queda siempre.
+    from services.pregen import panel_mods
+    for_panel = set(panel_mods(server_dir).values())
     for name in old_names:
         if name in new_names:
             continue
-        if pack_mods is not None and name not in pack_mods:
+        if name in for_panel or (pack_mods is not None and name not in pack_mods):
             kept.append(name)  # lo añadiste tú
         else:
             removed.append(name)

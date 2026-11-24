@@ -44,6 +44,7 @@ from routes.modpack_install import router as modpack_install_router
 from routes.mod_search import router as mod_search_router
 from routes.mod_updates import router as mod_updates_router
 from routes.client_pack import router as client_pack_router
+from routes.pregen import router as pregen_router
 from routes.modpack_update import router as modpack_update_router
 from routes.activity import router as activity_router
 from routes.players import router as players_router
@@ -192,6 +193,7 @@ app.include_router(modpack_install_router)
 app.include_router(mod_search_router)
 app.include_router(mod_updates_router)
 app.include_router(client_pack_router)
+app.include_router(pregen_router)
 app.include_router(modpack_update_router)
 app.include_router(activity_router)
 app.include_router(upload_router)

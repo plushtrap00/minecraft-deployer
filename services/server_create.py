@@ -5,7 +5,8 @@ A diferencia de services/modloader.py (que cambia la versión de loader de un
 modpack YA EXISTENTE), este módulo arranca de una carpeta vacía: descubre
 versiones de Minecraft vanilla (API oficial de Mojang), reusa la descarga/
 instalación de modloader ya existente para Forge/NeoForge/Fabric/Quilt, y
-escribe los archivos base (server.properties, eula.txt, run.sh, variables.txt)
+escribe los archivos base (server.properties, run.sh, variables.txt; la EULA
+no, ver services/eula.py)
 para que el resto de la app funcione con el servidor desde el primer arranque.
 """
 import re
@@ -67,9 +68,7 @@ def _write_run_script(server_dir: Path, jar_name: str, ram_min: str, ram_max: st
 
 def _bootstrap_common_files(server_dir: Path, mc_version: str, loader_key: str | None, loader_version: str | None) -> None:
     """
-    server.properties mínimo + eula ya aceptada (mismo criterio que ya usa
-    _accept_eula en services/process.py: se acepta sin preguntar) + los
-    archivos globales de jugadores, igual que ya hace upload_and_extract al
+    server.properties mínimo + los archivos globales de jugadores, igual que ya hace upload_and_extract al
     importar un modpack existente, para que ops/whitelist/bans sean
     consistentes en todos los servers desde el primer arranque.
     """
@@ -86,7 +85,7 @@ def _bootstrap_common_files(server_dir: Path, mc_version: str, loader_key: str |
             "gamemode=survival\n",
             encoding="utf-8",
         )
-    (server_dir / "eula.txt").write_text("eula=true\n", encoding="utf-8")
+    # Sin eula.txt: la EULA la acepta una persona al arrancarlo (services/eula.py).
 
     # El loader la crea solo al primer arranque, pero el objetivo es poder
     # subir mods ANTES de arrancar el server por primera vez (routes/modpacks.py

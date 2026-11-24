@@ -279,9 +279,15 @@ def _plan(modpack: str, fmt: str, say) -> dict:
         except Exception as e:  # noqa: BLE001 - sin el modpack original el paquete sigue sirviendo
             original_error = str(e) or type(e).__name__
 
+    # Los que instaló el panel para sí mismo (Chunky para pregenerar...) son del servidor.
+    from services.pregen import panel_mods
+    for_panel = set(panel_mods(server_dir).values())
     entries, excluded = [], []
     for path in jars:
         name = _client_name(path.name)
+        if path.name in for_panel:
+            excluded.append(name)
+            continue
         mr_info = mr.get(path.name)
         # Si el modpack original lo pone en el cliente, va (aunque Modrinth diga que
         # es solo de servidor: quitarlo podría impedir entrar). Si no, se mira Modrinth
