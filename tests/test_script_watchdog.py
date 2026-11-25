@@ -129,6 +129,47 @@ class PatchSourcedVariablesTest(unittest.TestCase):
         self.assertEqual(patch_sourced_variables(script), script)
 
 
+class StuckShutdownTest(unittest.TestCase):
+    """«stop» desde la consola o el juego con Minecraft atascado al cerrarse."""
+
+    def setUp(self):
+        self.broadcast = mock.patch.object(process, "_broadcast").start()
+        mock.patch.object(process, "_kill_process_group", side_effect=lambda p: p.kill()).start()
+        mock.patch.object(process, "find_java_descendant_pid", return_value=99).start()
+        self.java_alive = True
+        mock.patch.object(process, "_pid_running", side_effect=lambda pid: self.java_alive).start()
+
+    def tearDown(self):
+        mock.patch.stopall()
+        process.mc_stopping = False
+
+    def test_forces_stuck_java(self):
+        proc = FakeProc()
+        process._force_stop_after(proc, timeout=0.3)
+        self.assertTrue(proc.killed)
+        self.assertIn("se fuerza el cierre", self.broadcast.call_args[0][0])
+
+    def test_leaves_clean_shutdown_alone(self):
+        proc = FakeProc()
+        threading.Timer(0.1, lambda: setattr(self, "java_alive", False)).start()
+        process._force_stop_after(proc, timeout=2)
+        self.assertFalse(proc.killed)
+        self.broadcast.assert_not_called()
+
+    def test_mark_stopping_closes_rcon_and_metrics_skip_it(self):
+        from services import server_control
+        conn = mock.Mock()
+        proc = FakeProc()
+        with mock.patch.object(process, "mc_process", proc), mock.patch.object(process, "mc_rcon_conn", conn), \
+                mock.patch.object(server_control, "read_proc_ram"), \
+                mock.patch.object(server_control, "refresh_via_rcon") as via_rcon, \
+                mock.patch.object(server_control, "_last_metrics_refresh", 0.0):
+            process.mark_stopping()
+            conn.close.assert_called_once()
+            self.assertTrue(server_control.refresh_metrics())
+            via_rcon.assert_not_called()
+
+
 class DisableScriptRestartLoopTest(unittest.TestCase):
     # Bucle del startserver.sh de All the Mods 10 (igual en ATM9 con ATM9_RESTART).
     ATM_LOOP = (

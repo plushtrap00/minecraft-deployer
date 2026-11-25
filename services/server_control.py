@@ -177,6 +177,7 @@ def start_server(modpack: str, force: bool = False, keep_output: bool = False) -
 
         proc_module.mc_modloader = detect_modpack_version(modpack).get("modloader")
         proc_module.mc_stop_requested = False
+        proc_module.mc_stopping = False
 
         proc = subprocess.Popen(
             ["bash", patched_script],
@@ -201,7 +202,7 @@ def start_server(modpack: str, force: bool = False, keep_output: bool = False) -
 
 def _rcon_warmup(conn: RconConnection, proc: subprocess.Popen):
     """Autentica el RCON en cuanto el puerto esté disponible."""
-    while proc.poll() is None:
+    while proc.poll() is None and not proc_module.mc_stopping:
         try:
             conn.command("list")
             return
@@ -222,6 +223,8 @@ def stop_server(timeout: float = GRACEFUL_STOP_TIMEOUT_SECONDS) -> bool:
             if proc is None or proc.poll() is not None:
                 raise HTTPException(status_code=400, detail="No hay servidor en marcha")
             proc_module.mc_stop_requested = True
+        proc_module.mark_stopping()
+        with proc_module.mc_process_lock:
             try:
                 proc.stdin.write(b"save-all\n")
                 proc.stdin.write(b"stop\n")
@@ -364,10 +367,13 @@ def refresh_metrics() -> bool:
             return False
         conn = proc_module.mc_rcon_conn
         modloader = proc_module.mc_modloader
+        stopping = proc_module.mc_stopping
     with _metrics_refresh_lock:
         if time.monotonic() - _last_metrics_refresh < METRICS_MIN_INTERVAL:
             return True
-        if conn is not None:
+        if stopping:
+            pass  # cerrándose: nada por RCON (ver proc_module.mc_stopping)
+        elif conn is not None:
             refresh_via_rcon(conn, modloader)
         else:
             mc_metrics["rcon_status"] = "no configurado (reinicia el servidor desde el panel)"

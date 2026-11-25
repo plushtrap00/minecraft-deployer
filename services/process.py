@@ -20,7 +20,7 @@ from collections import deque
 from pathlib import Path
 
 from config import DEFAULT_SERVERS_PATH
-from app_constants import MAX_LOG_LINES
+from app_constants import GRACEFUL_STOP_TIMEOUT_SECONDS, MAX_LOG_LINES
 
 # ── Estado global ──────────────────────────────────────────────────────────────
 mc_process = None
@@ -67,6 +67,14 @@ _DONE_LINE_RE = re.compile(r'\]: Done \(\d')
 # ninguna de las dos cosas, se ha caído (services/server_control.py decide si
 # vuelve a arrancarlo).
 mc_stop_requested = False
+
+# True desde que Minecraft empieza a cerrarse («Stopping the server» o el botón
+# Detener). A partir de ahí no se manda nada por RCON: el hilo de RCON de
+# Minecraft ejecuta cada comando en el hilo principal, y ese hilo, ya en el
+# cierre, espera a que el de RCON termine. Un «list» de las métricas en ese
+# momento los dejaba esperándose el uno al otro para siempre («Waited N seconds
+# attempting force stop!») y el servidor no llegaba a cerrarse.
+mc_stopping = False
 _STOPPING_RE = re.compile(r'\]: Stopping (the )?server', re.IGNORECASE)
 
 # Esperas de líneas concretas de la consola (p. ej. «Saved the game» tras un
@@ -277,6 +285,38 @@ def _script_watchdog(proc, interval: float = SCRIPT_WATCHDOG_INTERVAL,
                 pass
 
 
+def mark_stopping() -> None:
+    """Minecraft se está cerrando: se corta el RCON (ver mc_stopping)."""
+    global mc_stopping
+    with mc_process_lock:
+        mc_stopping = True
+        conn = mc_rcon_conn
+    if conn is not None:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+
+def _force_stop_after(proc, timeout: float = GRACEFUL_STOP_TIMEOUT_SECONDS) -> None:
+    """
+    «stop» escrito en la consola o en el juego: el botón Detener ya fuerza el
+    cierre si Minecraft no termina a tiempo (server_control.stop_server), pero
+    por esta vía nadie lo hacía y un cierre atascado se quedaba así para
+    siempre. Si pasado el mismo plazo java sigue vivo, se cierra el grupo.
+    """
+    java_pid = find_java_descendant_pid(proc.pid)
+    if java_pid is not None and java_pid != proc.pid:
+        if wait_java_exit(java_pid, timeout):
+            return  # cerró bien; si el script se queda esperando, lo atiende _script_watchdog
+    elif wait_process_exit(proc, timeout):
+        return
+    if proc.poll() is None:
+        _broadcast(f"\x1b[33m[Deployer] Minecraft sigue sin cerrarse {int(timeout)} s después de «stop»; "
+                   "se fuerza el cierre.\x1b[0m")
+        _kill_process_group(proc)
+
+
 def _kill_process_group(proc) -> None:
     try:
         os.killpg(os.getpgid(proc.pid), signal.SIGKILL)
@@ -300,7 +340,7 @@ def _reader_thread(proc, temp_script: str | None = None):
     from services.metrics import mc_metrics, _parse_metrics_line
     import datetime
 
-    global mc_running_modpack, mc_ready, mc_ready_since, mc_stop_requested
+    global mc_running_modpack, mc_ready, mc_ready_since, mc_stop_requested, mc_stopping
     from services import server_control
 
     mc_ready = False
@@ -333,6 +373,9 @@ def _reader_thread(proc, temp_script: str | None = None):
                 server_control.on_line(modpack, line)
             if not saw_stopping and _STOPPING_RE.search(line):
                 saw_stopping = True
+                mark_stopping()
+                if not mc_stop_requested:
+                    threading.Thread(target=_force_stop_after, args=(proc,), daemon=True).start()
             if not eula_missing and "you need to agree to the eula" in line.lower():
                 # El panel nunca la acepta por su cuenta (ver services/eula.py).
                 eula_missing = True
@@ -352,6 +395,7 @@ def _reader_thread(proc, temp_script: str | None = None):
         mc_metrics["tps"] = None
         requested = mc_stop_requested
         mc_stop_requested = False
+        mc_stopping = False
         _notify_stopped()
         server_control.on_exit(
             modpack,

@@ -6,6 +6,12 @@ documentación de la API. Cada commit sube la versión (2.A.B, cada cifra de 0
 a 9: después de 2.0.9 va 2.1.0) y se etiqueta con `git tag v<versión>`.
 
 Historial resumido:
+- 3.2.8 (2026-11-25): parar el servidor con «stop» desde la consola o desde
+  el juego ya no puede dejarlo colgado para siempre a medio cerrar («Waited N
+  seconds attempting force stop!»): el panel deja de pedirle métricas en cuanto
+  empieza a apagarse, que era lo que lo bloqueaba, y si aun así Minecraft no
+  termina de cerrarse en el plazo de apagado, fuerza el cierre igual que el
+  botón Detener.
 - 3.2.7 (2026-11-25): los servidores cuyo script de arranque se reinicia solo
   («Restarting automatically in 10 seconds», como All the Mods 9 y 10) ya no
   vuelven a encenderse al pararlos con «stop» desde la consola o desde el
@@ -232,4 +238,4 @@ Historial resumido:
   otros usuarios.
 - 1.x: todo lo anterior (sin numerar).
 """
-APP_VERSION = "3.2.7"
+APP_VERSION = "3.2.8"
