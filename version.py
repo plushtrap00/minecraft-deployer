@@ -6,6 +6,11 @@ documentación de la API. Cada commit sube la versión (2.A.B, cada cifra de 0
 a 9: después de 2.0.9 va 2.1.0) y se etiqueta con `git tag v<versión>`.
 
 Historial resumido:
+- 3.2.7 (2026-11-25): los servidores cuyo script de arranque se reinicia solo
+  («Restarting automatically in 10 seconds», como All the Mods 9 y 10) ya no
+  vuelven a encenderse al pararlos con «stop» desde la consola o desde el
+  juego. Si quieres que se levante tras una caída, usa el reinicio automático
+  del panel.
 - 3.2.6 (2026-11-24): la pregeneración se ve también en la página Servidor:
   con el servidor encendido y Chunky instalado aparece una tarjeta con el
   progreso (porcentaje, chunks, velocidad y tiempo restante) que se actualiza
@@ -227,4 +232,4 @@ Historial resumido:
   otros usuarios.
 - 1.x: todo lo anterior (sin numerar).
 """
-APP_VERSION = "3.2.6"
+APP_VERSION = "3.2.7"

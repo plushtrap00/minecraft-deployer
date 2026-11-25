@@ -80,6 +80,26 @@ def patch_sourced_variables(script: bytes) -> bytes:
     return _SOURCE_VARIABLES_RE.sub(rb'\1\2\nRESTART=false\2\nWAIT_FOR_USER_INPUT=false\2', script)
 
 
+_RESTART_ASSIGN_RE = re.compile(rb'(?m)^(\s*RESTART\s*=\s*)["\']?true["\']?')
+# «${ATM10_RESTART:-true}», «${RESTART:=true}»...: el bucle propio del script
+# se activa si la variable no está definida. El nombre cambia en cada pack
+# (ATM9_RESTART, ATM10_RESTART...), así que vale cualquiera que acabe en RESTART.
+_RESTART_DEFAULT_RE = re.compile(rb'\$\{(\w*RESTART)(:?[-=])(["\']?)true\3\}', re.IGNORECASE)
+
+
+def disable_script_restart_loop(script: bytes) -> bytes:
+    """
+    Muchos scripts de arranque relanzan java en un bucle cuando se cierra
+    («Restarting automatically in 10 seconds»). El panel ya tiene su propio
+    reinicio tras caída (opcional), y con el bucle del script un «stop» desde la
+    consola o desde el juego volvía a encender el servidor. Se desactiva tanto
+    la asignación «RESTART=true» como el valor por defecto «${X_RESTART:-true}».
+    """
+    script = _RESTART_ASSIGN_RE.sub(rb'\1false', script)
+    script = _RESTART_DEFAULT_RE.sub(rb'${\1\2\3false\3}', script)
+    return patch_sourced_variables(script)
+
+
 def start_server(modpack: str, force: bool = False, keep_output: bool = False) -> None:
     """
     Arranca el servidor. Lanza HTTPException (400/404) o PendingModsError si
@@ -116,14 +136,8 @@ def start_server(modpack: str, force: bool = False, keep_output: bool = False) -
                 detail=f"No se encontró script de arranque (startserver.sh / start.sh / run.sh) en {server_dir}"
             )
 
-        # Parchear RESTART=true → false para evitar bucles de reinicio del propio script
-        script_content = script.read_bytes()
-        script_content = re.sub(
-            rb'(?m)^(\s*RESTART\s*=\s*)["\']?true["\']?',
-            rb'\1false',
-            script_content
-        )
-        script_content = patch_sourced_variables(script_content)
+        # Sin el bucle de reinicio propio del script (ver disable_script_restart_loop)
+        script_content = disable_script_restart_loop(script.read_bytes())
         tmp = tempfile.NamedTemporaryFile(mode='wb', suffix='.sh', dir=str(server_dir), delete=False)
         tmp.write(script_content)
         tmp.close()

@@ -1,6 +1,7 @@
 {
   "//": "Historial de versiones en inglés: una entrada por cada «- X.Y.Z (fecha): texto» del docstring de version.py, que es el original en español. Otro idioma = otro archivo <idioma>.json en esta carpeta. Ver services/auto_update.py.",
 
+  "3.2.7": "Servers whose start script restarts itself (\"Restarting automatically in 10 seconds\", like All the Mods 9 and 10) no longer come back up when you stop them with \"stop\" from the console or in game. If you want them back up after a crash, use the panel's auto-restart.",
   "3.2.6": "Pregeneration also shows on the Server page: with the server running and Chunky installed, a card shows the progress (percentage, chunks, speed and time left) and updates by itself, without switching tabs. Without Chunky it doesn't appear.",
   "3.2.5": "Pregeneration fix. If you install Chunky while the server is running, the panel warns that it won't work until you restart it and the task waits for that restart, instead of sending the console commands Minecraft doesn't know yet. A pregeneration left half-way like that starts again by itself after the restart instead of getting stuck.",
   "3.2.4": "The Pregenerate button moves to each server's header, next to Player pack, and can be seen from any tab (it used to be tucked away in Properties, next to the installed worlds).",
